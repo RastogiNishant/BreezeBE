@@ -568,7 +568,11 @@ class MarketPlaceService {
       let query = EstateSyncContactRequest.query()
         .where('email', email)
         .where('estate_id', estate_id)
-        .update({ email: user.email, status: STATUS_EMAIL_VERIFY, user_id: user.id })
+        .update({
+          email: user.email,
+          status: STATUS_EMAIL_VERIFY,
+          user_id: user.id,
+        })
 
       if (trx) {
         await query.transacting(trx)

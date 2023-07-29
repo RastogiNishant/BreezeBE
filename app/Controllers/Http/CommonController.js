@@ -12,7 +12,7 @@ const GeoService = use('App/Services/GeoService')
 const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
-
+const ShortenLinkService = use('App/Services/ShortenLinkService')
 const Estate = use('App/Models/Estate')
 
 const Static = use('Static')
@@ -120,6 +120,45 @@ class CommonController {
     const template_dir = process.env.EXCEL_TEMPLATE_DIR || 'excel-template'
     const relative_path = `${template_dir}/${lang}_template.xlsx`
     response.res(File.getPublicUrl(relative_path))
+  }
+
+  async searchCities({ request, response }) {
+    const { country_code, city } = request.all()
+    const result = await CommonService.searchCities(city, country_code)
+    response.res(result)
+  }
+
+  async getAvailableCountries({ response }) {
+    return response.res(constants.COUNTRIES)
+  }
+
+  async getOffers({ request, response }) {
+    const { country_code, city, rent_max, duration } = request.all()
+    let { page, limit = 20 } = request.all()
+    if (!page || page < 1) {
+      page = 1
+    }
+    const result = await CommonService.getOffers(
+      { rent_max, country_code, city, duration },
+      page,
+      limit
+    )
+    return response.res(result)
+  }
+
+  async getOriginalUrl({ request, response }) {
+    const { key } = request.all()
+
+    if (key?.length !== constants.SHORTENURL_LENGTH) {
+      return response.res(true)
+    }
+
+    const shortenLinkData = await ShortenLinkService.get(key)
+    if (!shortenLinkData?.link) {
+      return response.res(true)
+    }
+
+    response.redirect(shortenLinkData.link)
   }
 }
 

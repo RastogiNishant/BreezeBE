@@ -90,6 +90,7 @@
 		"md5": "^2.3.0",
 		"moment": "^2.24.0",
 		"moment-timezone": "^0.5.40",
+		"nanoid": "^4.0.2",
 		"newrelic": "^10.0.0",
 		"node-async-exec": "^1.2.0",
 		"node-fetch": "^2.6.7",
