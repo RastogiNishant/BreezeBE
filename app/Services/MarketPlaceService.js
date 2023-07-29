@@ -5,8 +5,13 @@ const crypto = require('crypto')
 const HttpException = require('../Exceptions/HttpException')
 const Promise = require('bluebird')
 const Logger = use('Logger')
+const l = use('Localize')
 const Database = use('Database')
 const { createDynamicLink } = require('../Libs/utils')
+const SMSService = use('App/Services/SMSService')
+const yup = require('yup')
+const { phoneSchema } = require('../Libs/schemas')
+const ShortenLinkService = use('App/Services/ShortenLinkService')
 const {
   DEFAULT_LANG,
   ROLE_USER,
@@ -33,6 +38,9 @@ const {
   INCOME_TYPE_HOUSE_WORK,
   INCOME_TYPE_UNEMPLOYED,
   INCOME_TYPE_PENSIONER,
+  MARKETPLACE_LIST,
+  SHORTENURL_LENGTH,
+  DOMAIN,
 } = require('../constants')
 
 const familySize = {
@@ -112,6 +120,7 @@ const {
     NO_PROSPECT_KNOCK,
     NO_ESTATE_EXIST,
     MARKET_PLACE_CONTACT_EXIST,
+    ERROR_MARKET_PLACE_CONTACT_EXIST_CODE,
     NO_ACTIVE_ESTATE_EXIST,
     ERROR_CONTACT_REQUEST_EXIST,
     ERROR_CONTACT_REQUEST_NO_EXIST,
@@ -126,7 +135,6 @@ class MarketPlaceService {
     if (!payload?.propertyId) {
       return
     }
-
     const propertyId = payload.propertyId
     const listing = await EstateSyncListing.query()
       .where('estate_sync_property_id', propertyId)
@@ -149,11 +157,13 @@ class MarketPlaceService {
 
     contact.publisher = await EstateSyncService.getPublisherFromTargetId(payload.targetId)
     contact.other_info = MarketPlaceService.parseOtherInfoFromMessage(
-      payload?.message,
+      payload?.message || '',
       contact.publisher
     )
 
     if (!(await EstateService.isPublished(contact.estate_id))) {
+      // FIXME: we don't throw errors back to the webhook caller. It will just reschedule
+      // another call with the same content
       throw new HttpException(NO_ACTIVE_ESTATE_EXIST, 400)
     }
 
@@ -168,19 +178,80 @@ class MarketPlaceService {
       return true
     }
 
-    let newContactRequest
     const trx = await Database.beginTransaction()
     try {
-      newContactRequest = (await EstateSyncContactRequest.createItem(contact, trx)).toJSON()
-      await this.handlePendingKnock(contact, trx)
-
+      const { link, newContactRequest, estate, landlord_name, lang } =
+        await this.handlePendingKnock(contact, trx)
       await trx.commit()
+
+      //sending knock email 10 seconds later
+      require('./QueueService').sendKnockRequestEmail(
+        {
+          link,
+          contact: newContactRequest,
+          estate,
+          landlord_name,
+          lang,
+        },
+        30000
+      )
+
       await this.sendContactRequestWebsocket(newContactRequest)
       return newContactRequest
     } catch (e) {
       Logger.error(`createContact error ${e.message || e}`)
 
       await trx.rollback()
+    }
+  }
+
+  static async inviteProspect({ contact, link, estate, landlord_name, lang = DEFAULT_LANG }) {
+    await MarketPlaceService.sendSMS({ contact, estate, link, lang })
+    require('./MailService').sendPendingKnockEmail({
+      link,
+      contact,
+      estate,
+      landlord_name,
+      lang,
+    })
+  }
+
+  static async sendSMS({ contact, estate, link, lang }) {
+    if (!contact?.contact_info?.phone) {
+      return
+    }
+    let phone_number = contact.contact_info.phone.replace(' ', '')
+    if (contact.contact_info.phone[0] === '0') {
+      phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
+    }
+    try {
+      let publisher = contact?.publisher ? MARKETPLACE_LIST?.[contact.publisher] : ``
+      publisher = publisher ? l.get(publisher) : ''
+
+      await yup
+        .object()
+        .shape({
+          phone_number: phoneSchema,
+        })
+        .validate({ phone_number })
+
+      const shortLink = `${DOMAIN}/${contact.hash}`
+
+      const from =
+        process.env.NODE_ENV === 'production'
+          ? l.get('sms.prospect.marketplace_title', lang).replace('{{partner_name}}', publisher)
+          : ''
+      const txt = l
+        .get('sms.prospect.marketplace_request', lang)
+        .replace('{{url}}', shortLink)
+        .replace('{{city}}', `${estate.city ?? ``}`)
+        .replace('{{postcode}}', `${estate.zip ?? ''}`)
+        .replace('{{partner_name}}', `${publisher ?? ''}`)
+        .replace('{{site_url}}', DOMAIN)
+
+      await SMSService.send({ to: phone_number, txt, from })
+    } catch (e) {
+      console.log('sending sms error', e.message)
     }
   }
 
@@ -226,31 +297,39 @@ class MarketPlaceService {
       other_info: contact?.other_info,
       contact_info: contact?.contact_info,
     })
-    await EstateSyncContactRequest.query()
-      .where('email', contact.email)
-      .where('estate_id', contact.estate_id)
-      .update({
-        code,
-        user_id: user_id || null,
-        link: shortLink,
-        status: user_id ? STATUS_EMAIL_VERIFY : STATUS_DRAFT,
-      })
-      .transacting(trx)
+
+    const { nanoid } = await import('nanoid')
+    const hash = nanoid(process.env.SHORT_URL_LEN ?? SHORTENURL_LENGTH)
+
+    const newContactRequest = {
+      ...contact,
+      hash,
+      code,
+      link: shortLink,
+      user_id: user_id ?? null,
+      status: user_id ? STATUS_EMAIL_VERIFY : STATUS_DRAFT,
+    }
+
+    await EstateSyncContactRequest.createItem(
+      {
+        ...newContactRequest,
+      },
+      trx
+    )
+
+    await ShortenLinkService.create({ hash, link: shortLink })
 
     //send invitation email to a user to come to our app
     const user = estate.toJSON().user
     const landlord_name = `${user.firstname} ${user.secondname}`
-    //sending knock email 10 seconds later
-    require('./QueueService').sendKnockRequestEmail(
-      {
-        link: shortLink,
-        email: contact.email,
-        estate: estate.toJSON(),
-        landlord_name,
-        lang,
-      },
-      30000
-    )
+
+    return {
+      link: shortLink,
+      newContactRequest,
+      estate: estate.toJSON(),
+      landlord_name,
+      lang,
+    }
   }
 
   static async inviteByLandlord({ id, user }) {
@@ -270,38 +349,49 @@ class MarketPlaceService {
     //   throw new HttpException(ERROR_ALREADY_CONTACT_REQUEST_INVITED_BY_LANDLORD, 400)
     // }
 
-    const prospects = (await UserService.getByEmailWithRole([contact.email], ROLE_USER)).toJSON()
+    const trx = await Database.beginTransaction()
+    try {
+      contact.is_invited_by_landlord = true
+      const { shortLink, code, lang, user_id } = await this.createDynamicLink({
+        contact,
+        estate: contact.estate,
+        email: contact.email,
+        other_info: contact?.other_info,
+        contact_info: contact?.contact_info,
+      })
 
-    contact.is_invited_by_landlord = true
-    const { shortLink, code, lang, user_id } = await this.createDynamicLink({
-      contact,
-      estate: contact.estate,
-      email: contact.email,
-      other_info: contact?.other_info,
-      contact_info: contact?.contact_info,
-    })
+      await EstateSyncContactRequest.query()
+        .where('id', id)
+        .update({
+          is_invited_by_landlord: true,
+          link: shortLink,
+        })
+        .transacting(trx)
 
-    await EstateSyncContactRequest.query().where('id', id).update({
-      is_invited_by_landlord: true,
-      link: shortLink,
-    })
+      await ShortenLinkService.update({ hash: contact.hash, link: shortLink }, trx)
+      await trx.commit()
 
-    require('./MailService').sendPendingKnockEmail({
-      link: contact.link,
-      email: contact.email,
-      estate: contact.estate,
-      landlord_name: `${user.firstname} ${user.secondname}`,
-      lang,
-    })
+      require('./MailService').sendPendingKnockEmail({
+        link: shortLink,
+        contact,
+        estate: contact.estate,
+        landlord_name: `${user.firstname} ${user.secondname}`,
+        lang,
+      })
 
-    return {
-      ...contact,
-      updated_at: moment.utc(new Date()).format(),
-      firstname: contact?.contact_info?.firstName,
-      secondname: contact?.contact_info?.lastName,
-      from_market_place: 1,
-      match_type: MATCH_TYPE_MARKET_PLACE,
-      is_invited_by_landlord: true,
+      return {
+        ...contact,
+        updated_at: moment.utc(new Date()).format(),
+        firstname: contact?.contact_info?.firstName,
+        secondname: contact?.contact_info?.lastName,
+        from_market_place: 1,
+        match_type: MATCH_TYPE_MARKET_PLACE,
+        is_invited_by_landlord: true,
+      }
+    } catch (e) {
+      Logger.error(`inviteByLandlord error ${e.message}`)
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -449,14 +539,19 @@ class MarketPlaceService {
           data2,
         })
       const knockRequest = await this.getKnockRequest({ estate_id, email })
+      console.log(`knockRequest ${estate_id} ${email}=`, knockRequest)
       if (!knockRequest) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
 
       if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
-        throw new HttpException(MARKET_PLACE_CONTACT_EXIST, 400)
+        throw new HttpException(
+          MARKET_PLACE_CONTACT_EXIST,
+          400,
+          ERROR_MARKET_PLACE_CONTACT_EXIST_CODE
+        )
       }
-
+      console.log(`knockRequest code = ${knockRequest.code} ${code}`)
       if (!knockRequest.code || code != knockRequest.code) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }
@@ -670,6 +765,7 @@ class MarketPlaceService {
 
       const contactIds = contacts.map((contact) => contact.id)
       await EstateSyncContactRequest.query().update({ email_sent: true }).whereIn('id', contactIds)
+      console.log('sendReminderEmail completed')
     } catch (e) {
       Logger.error(`Contact Request sendReminderEmail error ${e.message || e}`)
     }
@@ -824,7 +920,13 @@ class MarketPlaceService {
     return {}
   }
 
-  static async getInfoFromContactRequests(email, estate_id) {
+  static async getInfoFromContactRequests({ email, data1, data2 }) {
+    const { estate_id, ...data } = this.decryptDynamicLink({ data1, data2 })
+
+    if (!estate_id) {
+      return null
+    }
+
     return await EstateSyncContactRequest.query()
       .select(Database.raw(`other_info->'employment' as profession`))
       .select(Database.raw(`other_info->'family_size' as members`))
