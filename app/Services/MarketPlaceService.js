@@ -11,6 +11,7 @@ const { createDynamicLink } = require('../Libs/utils')
 const SMSService = use('App/Services/SMSService')
 const yup = require('yup')
 const { phoneSchema } = require('../Libs/schemas')
+const tinyurl = require('tinyurl')
 const {
   DEFAULT_LANG,
   ROLE_USER,
@@ -182,6 +183,8 @@ class MarketPlaceService {
       const { link, estate, landlord_name, lang } = await this.handlePendingKnock(contact, trx)
       await trx.commit()
 
+      const shortenLink = await tinyurl.shorten(link)
+      console.log('shortenLink=', shortenLink)
       //sending knock email 10 seconds later
       require('./QueueService').sendKnockRequestEmail(
         {
@@ -204,7 +207,7 @@ class MarketPlaceService {
   }
 
   static async inviteProspect({ contact, link, estate, landlord_name, lang = DEFAULT_LANG }) {
-    await MarketPlaceService.sendSMS({ contact, link, lang })
+    await MarketPlaceService.sendSMS({ contact, estate, link, lang })
     require('./MailService').sendPendingKnockEmail({
       link,
       contact,
@@ -233,10 +236,13 @@ class MarketPlaceService {
         })
         .validate({ phone_number })
 
-      const txt =
-        l
-          .get('sms.prospect.marketplace_request', lang)
-          .replace('{{partner_name}}', `${publisher ?? ''}`) + link
+      const txt = l
+        .get('sms.prospect.marketplace_request', lang)
+        .replace('{{url}}', link)
+        .replace('{{city}}', `${estate.city ?? ``}`)
+        .replace('{{postcode}}', `${estate.zip ?? ''}`)
+        .replace('{{partner_name}}', `${publisher ?? ''}`)
+        .replace('{{site_url}}', 'breeze4me.de')
 
       await SMSService.send({ to: phone_number, txt })
     } catch (e) {
