@@ -35,7 +35,11 @@ const {
   PROPERTY_HANDLE_FINISHED,
   WEBSOCKET_TENANT_REDIS_KEY,
   WEBSOCKET_LANDLORD_REDIS_KEY,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
 } = require('../constants')
+const {
+  exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE },
+} = require('../exceptions')
 const WebSocket = use('App/Classes/Websocket')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -77,6 +81,19 @@ class ImportService {
             },
           }
         }
+
+        if (estate.published_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+          await trx.rollback()
+          return {
+            singleErrors: {
+              error: [ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE],
+              line,
+              property_id: data.property_id,
+              address: data.address,
+            },
+          }
+        }
+
         await ImportService.updateImportBySixCharCode({ estate, data }, trx)
       } else {
         if (!data.address) {
