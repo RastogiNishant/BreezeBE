@@ -121,7 +121,6 @@ const {
     ERROR_PROPERTY_AREADY_PUBLISHED,
     ERROR_PROPERTY_AVAILABLE_DURATION,
     ERROR_PROPERTY_UNDER_REVIEW,
-    ERROR_PROPERTY_ALREADY_RENTED,
     ERROR_PROPERTY_INVALID_STATUS,
     ERROR_PROPERTY_NOT_PUBLISHED,
   },
@@ -129,7 +128,6 @@ const {
     ERROR_PROPERTY_AREADY_PUBLISHED_CODE,
     ERROR_PROPERTY_AVAILABLE_DURATION_CODE,
     ERROR_PROPERTY_UNDER_REVIEW_CODE,
-    ERROR_PROPERTY_ALREADY_RENTED_CODE,
     ERROR_PROPERTY_INVALID_STATUS_CODE,
     ERROR_PROPERTY_NOT_PUBLISHED_CODE,
   },
@@ -836,6 +834,7 @@ class EstateService {
 
       const taskService = require('./TaskService')
       await taskService.deleteByEstateById(id, trx)
+      await require('./EstateSyncService').unpublishEstate(id)
 
       await trx.commit()
       return estate
@@ -1483,9 +1482,9 @@ class EstateService {
 
     if (estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
       throw new HttpException(
-        ERROR_PROPERTY_ALREADY_RENTED,
+        ERROR_PROPERTY_AREADY_PUBLISHED,
         400,
-        ERROR_PROPERTY_ALREADY_RENTED_CODE
+        ERROR_PROPERTY_NOT_PUBLISHED_CODE
       )
     }
     if (
@@ -1608,9 +1607,10 @@ class EstateService {
   }
 
   static async offMarketPublish(estate) {
-    if (estate.status === STATUS_ACTIVE) {
-      throw HttpException(ERROR_PROPERTY_ALREADY_RENTED, 400, ERROR_PROPERTY_ALREADY_RENTED_CODE)
+    if (estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+      throw HttpException(ERROR_PROPERTY_AREADY_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
     }
+
     try {
       await estate.updateItem(
         {
@@ -2861,7 +2861,6 @@ class EstateService {
       property_id_list.splice(property_id_list.length - 1, 1)
     }
 
-    console.log('property_id_list=', property_id_list)
     const property_id = property_id_list.join('')
 
     const duplicatedCount = await this.countDuplicateProperty(property_id)
