@@ -489,7 +489,8 @@ class MatchService {
     only_count = false,
     has_notification_sent = true,
   }) {
-    let count = 0
+    let totalCount = 0
+    let totalCategoryCounts = {}
     let success = true
     let message = ''
     try {
@@ -526,14 +527,14 @@ class MatchService {
         Logger.info(
           `matchByUser before getting inner matches ${userId} ${new Date().toISOString()}`
         )
-        const innerMatches = await this.createNewMatches(
+        const insideMatchResult = await this.createNewMatches(
           { tenant, has_notification_sent, only_count },
           trx
         )
-        count += innerMatches?.length ?? innerMatches
+        totalCount += insideMatchResult?.count ?? 0
 
         Logger.info(`matchByUser after getting inner matches ${userId} ${new Date().toISOString()}`)
-        const outsideMatches = await ThirdPartyMatchService.createNewMatches(
+        const outsideMatchesResult = await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
             has_notification_sent,
@@ -542,10 +543,17 @@ class MatchService {
           trx
         )
 
-        count += outsideMatches?.length ?? outsideMatches
+        totalCount += outsideMatchesResult?.count ?? 0
         Logger.info(
           `matchByUser after getting outside matches ${userId} ${new Date().toISOString()}`
         )
+
+        if (only_count) {
+          totalCategoryCounts = EstateService.sumCategoryCounts({
+            insideMatchCounts: insideMatchResult?.categoryCounts || {},
+            outsideMatchCounts: outsideMatchesResult?.categoryCounts || {},
+          })
+        }
         await trx.commit()
       } catch (e) {
         console.log('matchByUser error', e.message)
@@ -564,7 +572,8 @@ class MatchService {
             event: WEBSOCKET_EVENT_MATCH_COUNT,
             userId,
             data: {
-              count,
+              count: totalCount,
+              categories_count: totalCategoryCounts,
               success,
               message,
             },
@@ -576,12 +585,12 @@ class MatchService {
             limit: 20,
           })
           Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
-          count = matches?.count || 0
+          totalCount = matches?.count || 0
           WebSocket.publishToTenant({
             event: WEBSOCKET_EVENT_MATCH_CREATED,
             userId,
             data: {
-              count,
+              count: totalCount,
               matches,
               success,
               message,
@@ -595,7 +604,7 @@ class MatchService {
             event: WEBSOCKET_EVENT_MATCH_COUNT,
             userId,
             data: {
-              count,
+              count: totalCount,
               success: false,
               message: e?.message,
             },
@@ -620,10 +629,13 @@ class MatchService {
   static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
-    let estates = await EstateService.searchEstatesQuery(tenant)
+    let { estates, categoryCounts } = await EstateService.searchEstatesQuery(tenant)
 
     if (only_count) {
-      return estates?.length
+      return {
+        categoryCounts,
+        count: estates?.length,
+      }
     }
 
     const estateIds = estates.reduce((estateIds, estate) => {
@@ -670,10 +682,11 @@ class MatchService {
     }
 
     if (isEmpty(matches)) {
-      return matches
+      return {
+        count: 0,
+        matches: [],
+      }
     }
-
-    let i = 0
 
     let queries = `INSERT INTO matches 
                   ( user_id, estate_id, percent, status )    
@@ -699,7 +712,10 @@ class MatchService {
       }
     }
 
-    return matches
+    return {
+      count: matches?.length,
+      matches,
+    }
   }
 
   /**
