@@ -93,7 +93,8 @@ class UpdateTenant extends Base {
               APARTMENT_TYPE_GALLERY,
               APARTMENT_TYPE_ATTIC,
             ])
-        ),
+        )
+        .nullable(),
       house_type: yup
         .array()
         .of(
@@ -116,7 +117,7 @@ class UpdateTenant extends Base {
         .nullable(),
 
       garden: yup.boolean(),
-      options: yup.array().of(yup.number().integer().positive().max(999)),
+      options: yup.array().of(yup.number().integer().positive().max(999)).nullable(),
       rent_start: yup.date(),
       transfer_budget_min: yup.number().integer().positive().min(0).max(500000).nullable(),
       transfer_budget_max: yup.number().integer().positive().min(0).max(500000).nullable(),

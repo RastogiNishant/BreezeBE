@@ -1267,7 +1267,7 @@ class EstateService {
       list.push({ min: start, max: start + interval })
       start += interval
     }
-    console.log(`fieldName ${fieldName}=`, list)
+
     list.forEach((element) => {
       counts[`${element.min}_${element.max}`] = estates.filter(
         (estate) => estate[fieldName] >= element.min && estate[fieldName] < element.max
@@ -1309,12 +1309,15 @@ class EstateService {
     }
   }
 
-  static async sumCategoryCounts({ insideMatchCounts, outsideMatchCounts }) {
+  static sumCategoryCounts({ insideMatchCounts, outsideMatchCounts }) {
     let counts = {}
+
     Object.keys(insideMatchCounts).forEach((categoryKey) => {
-      counts[categoryKey] = Object.keys(insideMatchCounts[categoryKey]).map(
-        (key) => insideMatchCounts[categoryKey][key] + outsideMatchCounts[categoryKey][key]
-      )
+      counts[categoryKey] = Object.keys(insideMatchCounts[categoryKey]).map((key) => ({
+        [key]:
+          (insideMatchCounts?.[categoryKey]?.[key] || 0) +
+          (outsideMatchCounts?.[categoryKey]?.[key] || 0),
+      }))
     })
     return counts
   }
