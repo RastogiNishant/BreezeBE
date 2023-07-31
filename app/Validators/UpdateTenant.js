@@ -37,6 +37,7 @@ const {
   HOUSE_TYPE_GARDENHOUSE,
   //Minor
   MAX_MINOR_COUNT,
+  MAX_ROOM_COUNT,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -66,8 +67,8 @@ class UpdateTenant extends Base {
       budget_min: yup.number().integer().min(0),
       budget_max: yup.number().integer().min(0),
       include_utility: yup.boolean(),
-      rooms_min: yup.number().positive().max(10),
-      rooms_max: yup.number().positive().max(10),
+      rooms_min: yup.number().positive().max(MAX_ROOM_COUNT),
+      rooms_max: yup.number().positive().max(MAX_ROOM_COUNT),
       floor_min: yup.number().min(0).max(21),
       floor_max: yup.number().min(0).max(21),
       space_min: yup.number().min(5).max(500),

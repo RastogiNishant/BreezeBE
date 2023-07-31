@@ -111,6 +111,12 @@ const {
   STATUS_EMAIL_VERIFY,
   ESTATE_FIELD_FOR_TASK,
   PROPERTY_TYPE_SHORT_TERM,
+  MAX_ROOM_COUNT,
+  MAX_SPACE_COUNT,
+  SPACE_INTERVAL_COUNT,
+  ROOM_INTERVAL_COUNT,
+  RENT_INTERVAL_COUNT,
+  MAX_RENT_COUNT,
 } = require('../constants')
 
 const {
@@ -136,6 +142,7 @@ const {
 
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
+const internal = require('stream')
 
 const MAX_DIST = 10000
 
@@ -1245,7 +1252,71 @@ class EstateService {
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
-    return await this.filterEstates(tenant, estates)
+    const categoryCounts = this.calculateInsideCategoryCounts(estates)
+    const filteredEstates = await this.filterEstates(tenant, estates)
+    return {
+      estates: filteredEstates,
+      categoryCounts,
+    }
+  }
+
+  static calculateCounts({ estates, fieldName, start, end, interval }) {
+    let list = []
+    let counts = []
+    while (start < end) {
+      list.push({ min: start, max: start + interval })
+      start += interval
+    }
+    console.log(`fieldName ${fieldName}=`, list)
+    list.forEach((element) => {
+      counts[`${element.min}_${element.max}`] = estates.filter(
+        (estate) => estate[fieldName] >= element.min && estate[fieldName] < element.max
+      )?.length
+    })
+
+    return counts
+  }
+
+  static calculateInsideCategoryCounts(estates) {
+    const rooms_number = this.calculateCounts({
+      estates,
+      fieldName: 'rooms_number',
+      start: 0,
+      end: MAX_ROOM_COUNT,
+      interval: ROOM_INTERVAL_COUNT,
+    })
+
+    const area = this.calculateCounts({
+      estates,
+      fieldName: 'area',
+      start: 0,
+      end: MAX_SPACE_COUNT,
+      interval: SPACE_INTERVAL_COUNT,
+    })
+
+    const net_rent = this.calculateCounts({
+      estates,
+      fieldName: 'net_rent',
+      start: 0,
+      end: MAX_RENT_COUNT,
+      interval: RENT_INTERVAL_COUNT,
+    })
+
+    return {
+      rooms_number,
+      area,
+      net_rent,
+    }
+  }
+
+  static async sumCategoryCounts({ insideMatchCounts, outsideMatchCounts }) {
+    let counts = {}
+    Object.keys(insideMatchCounts).forEach((categoryKey) => {
+      counts[categoryKey] = Object.keys(insideMatchCounts[categoryKey]).map(
+        (key) => insideMatchCounts[categoryKey][key] + outsideMatchCounts[categoryKey][key]
+      )
+    })
+    return counts
   }
 
   static async filterEstates(tenant, estates) {
