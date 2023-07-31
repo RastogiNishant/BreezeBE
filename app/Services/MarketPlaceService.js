@@ -238,7 +238,12 @@ class MarketPlaceService {
           .get('sms.prospect.marketplace_request', lang)
           .replace('{{partner_name}}', `${publisher ?? ''}`) + link
 
-      await SMSService.send({ to: phone_number, txt })
+      const from =
+        process.env.NODE_ENV === 'production'
+          ? l.get('sms.prospect.marketplace_title', lang).replace('{{partner_name}}', publisher)
+          : ''
+
+      await SMSService.send({ to: phone_number, txt, from })
     } catch (e) {
       console.log('sending sms error', e.message)
     }
