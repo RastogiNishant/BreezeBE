@@ -980,6 +980,7 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
+  WEBSOCKET_EVENT_MATCH_COUNT: 'tenant:matchCount',
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_TASK_UPDATED: 'taskUpdated',
@@ -1348,6 +1349,7 @@ Estates: [ESTATES]
     'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
   },
 
+  SHORTENURL_LENGTH: 10,
   EXPIRED_FINAL_CONFIRM_PERIOD: 48, // hourly based
 
   ROOM_INTERVAL_COUNT: 1,

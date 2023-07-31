@@ -92,6 +92,7 @@ const {
   MATCH_TYPE_MATCH,
   WEBSOCKET_TENANT_REDIS_KEY,
   EXPIRED_FINAL_CONFIRM_PERIOD,
+  WEBSOCKET_EVENT_MATCH_COUNT,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -525,10 +526,14 @@ class MatchService {
         Logger.info(
           `matchByUser before getting inner matches ${userId} ${new Date().toISOString()}`
         )
-        await this.createNewMatches({ tenant, has_notification_sent, only_count }, trx)
+        const innerMatches = await this.createNewMatches(
+          { tenant, has_notification_sent, only_count },
+          trx
+        )
+        count += innerMatches?.length ?? innerMatches
 
         Logger.info(`matchByUser after getting inner matches ${userId} ${new Date().toISOString()}`)
-        await ThirdPartyMatchService.createNewMatches(
+        const outsideMatches = await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
             has_notification_sent,
@@ -536,6 +541,8 @@ class MatchService {
           },
           trx
         )
+
+        count += outsideMatches?.length ?? outsideMatches
         Logger.info(
           `matchByUser after getting outside matches ${userId} ${new Date().toISOString()}`
         )
@@ -552,35 +559,59 @@ class MatchService {
       message = e.message
     } finally {
       try {
-        const matches = await EstateService.getTenantEstates({
-          user_id: userId,
-          page: 1,
-          limit: 20,
-        })
-        Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
-        count = matches?.count || 0
-        WebSocket.publishToTenant({
-          event: WEBSOCKET_EVENT_MATCH_CREATED,
-          userId,
-          data: {
-            count,
-            matches,
-            success,
-            message,
-          },
-        })
+        if (only_count) {
+          WebSocket.publishToTenant({
+            event: WEBSOCKET_EVENT_MATCH_COUNT,
+            userId,
+            data: {
+              count,
+              success,
+              message,
+            },
+          })
+        } else {
+          const matches = await EstateService.getTenantEstates({
+            user_id: userId,
+            page: 1,
+            limit: 20,
+          })
+          Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
+          count = matches?.count || 0
+          WebSocket.publishToTenant({
+            event: WEBSOCKET_EVENT_MATCH_CREATED,
+            userId,
+            data: {
+              count,
+              matches,
+              success,
+              message,
+            },
+          })
+        }
       } catch (e) {
         console.log('match by user error', e.message)
-        WebSocket.publishToTenant({
-          event: WEBSOCKET_EVENT_MATCH_CREATED,
-          userId,
-          data: {
-            count: 0,
-            matches: [],
-            success: false,
-            message: e?.message,
-          },
-        })
+        if (only_count) {
+          WebSocket.publishToTenant({
+            event: WEBSOCKET_EVENT_MATCH_COUNT,
+            userId,
+            data: {
+              count,
+              success: false,
+              message: e?.message,
+            },
+          })
+        } else {
+          WebSocket.publishToTenant({
+            event: WEBSOCKET_EVENT_MATCH_CREATED,
+            userId,
+            data: {
+              count: 0,
+              matches: [],
+              success: false,
+              message: e?.message,
+            },
+          })
+        }
       }
       Logger.info(`matchByUser finish ${userId} ${new Date().toISOString()}`)
     }
