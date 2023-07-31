@@ -234,10 +234,12 @@ class MarketPlaceService {
         })
         .validate({ phone_number })
 
-      phone_number = '+19086913115'
       const shortLink = `${process.env.APP_URL}/${contact.hash}`
-      console.log('shortLink=', shortLink)
 
+      const from =
+        process.env.NODE_ENV === 'production'
+          ? l.get('sms.prospect.marketplace_title', lang).replace('{{partner_name}}', publisher)
+          : ''
       const txt = l
         .get('sms.prospect.marketplace_request', lang)
         .replace('{{url}}', shortLink)
@@ -245,8 +247,8 @@ class MarketPlaceService {
         .replace('{{postcode}}', `${estate.zip ?? ''}`)
         .replace('{{partner_name}}', `${publisher ?? ''}`)
         .replace('{{site_url}}', 'breeze4me.de')
-      console.log('sms text=', txt)
-      await SMSService.send({ to: phone_number, txt })
+
+      await SMSService.send({ to: phone_number, txt, from })
     } catch (e) {
       console.log('sending sms error', e.message)
     }
