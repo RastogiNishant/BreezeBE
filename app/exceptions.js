@@ -107,6 +107,10 @@ const exceptions = {
   NO_MATCH_EXIST: 'No match exists',
   ERROR_PREMIUM_MEMBER_PLAN_SELECT: 'Please upgrade your plan',
   ERROR_PLAN_SELECT: 'Your trial has been ended',
+  ERROR_WRONG_ROLE: 'You have wrong role',
+  ERROR_NO_AUTHENTICATE: 'You have no permission',
+  ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE:
+    'Your property is already published, to manipulate that property, please unpublish it first',
 }
 
 const exceptionCodes = {

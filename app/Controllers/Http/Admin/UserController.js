@@ -29,6 +29,7 @@ const {
   WEBSOCKET_EVENT_USER_ACTIVATE,
   WEBSOCKET_EVENT_USER_DEACTIVATE,
   STATUS_OFFLINE_ACTIVE,
+  PUBLISH_STATUS_INIT,
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD },
@@ -173,7 +174,7 @@ class UserController {
           if (estateIds.length > 0) {
             await Estate.query()
               .whereIn('id', estateIds)
-              .update({ status: STATUS_DRAFT })
+              .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_INIT })
               .transacting(trx)
           }
 

@@ -467,7 +467,7 @@ Route.group(() => {
 
   // Extend or deactivate Estate
   Route.put('/extend', 'EstateController.extendEstate').middleware(['valid:ExtendEstate,EstateId'])
-  Route.get('/deactivate', 'EstateController.deactivateEstate')
+  //Route.get('/deactivate', 'EstateController.deactivateEstate')
 
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
   Route.get('/quickLinks', 'EstateController.getEstatesQuickLinks')
@@ -475,7 +475,10 @@ Route.group(() => {
   Route.get('/latest', 'EstateController.getLatestEstates').middleware(['valid:Pagination'])
 
   Route.get('/:id', 'EstateController.getEstate').middleware(['valid:Id'])
-  Route.put('/:id', 'EstateController.updateEstate').middleware(['valid:UpdateEstate'])
+  Route.put('/:id', 'EstateController.updateEstate').middleware([
+    'valid:UpdateEstate',
+    'EstateCanEdit',
+  ])
   Route.get('/:id/link', 'EstateController.createShareLink').middleware(['valid:Id'])
   //Estate Amenities
   Route.get('/:estate_id/amenities', 'EstateAmenityController.get').middleware([
@@ -489,18 +492,22 @@ Route.group(() => {
   Route.post('/:estate_id/amenities', 'EstateAmenityController.add').middleware([
     'valid:EstateId,CreateEstateAmenity',
     'LandlordOwnsThisEstate',
+    'EstateCanEdit',
   ])
   Route.post('/:estate_id/bulk/amenities', 'EstateAmenityController.addBulk').middleware([
     'valid:EstateId,CreateBulkEstateAmenities',
     'LandlordOwnsThisEstate',
+    'EstateCanEdit',
   ])
   Route.put('/:estate_id/amenities/:location', 'EstateAmenityController.update').middleware([
     'valid:EstateId,EstateAmenitiesLocation,UpdateEstateAmenity',
     'LandlordOwnsThisEstate',
+    'EstateCanEdit',
   ])
   Route.delete('/:estate_id/amenities/:location', 'EstateAmenityController.delete').middleware([
     'valid:EstateId,EstateAmenitiesLocation,Id',
     'LandlordOwnsThisEstate',
+    'EstateCanEdit',
   ])
 
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
@@ -510,17 +517,24 @@ Route.group(() => {
   Route.get('/:estate_id/rooms', 'RoomController.getEstateRooms').middleware(['valid:EstateId'])
   Route.post('/:estate_id/rooms', 'RoomController.createRoom').middleware([
     'valid:CreateRoom,EstateId',
+    'EstateCanEdit',
   ])
   Route.post('/:estate_id/bulk_rooms', 'RoomController.createBulkRoom').middleware([
     'valid:CreateBulkRoom,EstateId',
+    'EstateCanEdit',
   ])
   Route.get('/:estate_id/files', 'EstateController.getFiles').middleware['LandlordOwnsThisEstate']
-  Route.post('/:estate_id/files', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
+  Route.post('/:estate_id/files', 'EstateController.addFile').middleware([
+    'valid:EstateAddFile',
+    'EstateCanEdit',
+  ])
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
     'valid:EstateId,Id',
+    'EstateCanEdit',
   ])
   Route.delete('/:estate_id/files', 'EstateController.removeMultipleFiles').middleware([
     'valid:EstateId,Ids',
+    'EstateCanEdit',
   ])
   Route.put('/:estate_id/files/order', 'EstateController.updateOrder').middleware([
     'valid:EstateAddFile,Ids',
@@ -534,13 +548,16 @@ Route.group(() => {
 
   Route.put('/:estate_id/rooms/:room_id', 'RoomController.updateRoom').middleware([
     'valid:CreateRoom,EstateId,RoomId',
+    'EstateCanEdit',
   ])
   Route.delete('/:estate_id/rooms/:room_id', 'RoomController.removeRoom').middleware([
     'valid:RoomId',
+    'EstateCanEdit',
   ])
   // Room photos add
   Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
     'valid:RoomId',
+    'EstateCanEdit',
   ])
   Route.put('/:estate_id/rooms/:room_id/images/order', 'RoomController.orderRoomPhoto').middleware([
     'valid:RoomId,Ids',
@@ -548,7 +565,7 @@ Route.group(() => {
   Route.delete(
     '/:estate_id/rooms/:room_id/images/:id',
     'RoomController.removeRoomPhoto'
-  ).middleware(['valid:RoomId,Id'])
+  ).middleware(['valid:RoomId,Id', 'EstateCanEdit'])
 
   Route.post('/:estate_id/invite-to-view', 'EstateController.inviteToView').middleware([
     'valid:LandlordInviteToView',
@@ -586,7 +603,10 @@ Route.group(() => {
     'valid:InvitationIds',
   ])
 
-  Route.put('/:id/let', 'EstateController.changeLettingType').middleware(['valid:UpdateEstate'])
+  Route.put('/:id/let', 'EstateController.changeLettingType').middleware([
+    'valid:UpdateEstate',
+    'EstateCanEdit',
+  ])
   Route.get('/search/property_id', 'EstateController.searchByPropertyId')
 })
   .prefix('/api/v1/estates')
