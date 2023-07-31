@@ -211,8 +211,14 @@ class QueueService {
    *
    */
   static async performEvery3rdHour23rdMinuteJob() {
-    const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
+    const ThirdPartyOfferService = require('./ThirdPartyOfferService')
     return Promise.all([wrapException(ThirdPartyOfferService.pullOhneMakler)])
+  }
+
+  static async performEvery1HourJob() {
+    const MatchService = require('./MatchService')
+
+    return Promise.all([wrapException(MatchService.moveExpiredFinalConfirmToTop)])
   }
 
   static async pullGewobag() {
@@ -330,7 +336,7 @@ class QueueService {
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
           return QueueService.performEvery3rdHour23rdMinuteJob()
         case SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB:
-          return
+          return QueueService.performEvery1HourJob()
         case SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB:
           return QueueService.pullGewobag()
         case SCHEDULED_13H_DAY_JOB:

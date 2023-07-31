@@ -91,6 +91,7 @@ const {
   MATCH_TYPE_BUDDY,
   MATCH_TYPE_MATCH,
   WEBSOCKET_TENANT_REDIS_KEY,
+  EXPIRED_FINAL_CONFIRM_PERIOD,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -1880,6 +1881,31 @@ class MatchService {
       console.log('tenantCancelCommit', e.message)
       throw new HttpException(e.message, e.status || 400)
     }
+  }
+
+  static async moveExpiredFinalConfirmToTop() {
+    const matches = (
+      await Match.query()
+        .where('status', MATCH_STATUS_COMMIT)
+        .where(
+          'status_at',
+          '<=',
+          moment
+            .utc(new Date())
+            .add(-1 * EXPIRED_FINAL_CONFIRM_PERIOD, 'days')
+            .format()
+        )
+        .fetch()
+    ).toJSON()
+    Logger.info('moveExpiredFinalConfirmToTop=', matches?.length)
+    await Promise.map(
+      matches || [],
+      async (match) => {
+        await MatchService.tenantCancelCommit(match.estate_id, match.user_id)
+      },
+      { concurrency: 1 }
+    )
+    Logger.info('completed moveExpiredFinalConfirmToTop')
   }
 
   static async handleFinalMatch(estate_id, user, fromInvitation, trx) {

@@ -1347,6 +1347,8 @@ Estates: [ESTATES]
     'immobilienscout-24': 'landlord.web.my-properties.txt_immobilienscout24',
     'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
   },
+
+  EXPIRED_FINAL_CONFIRM_PERIOD: 48, // hourly based
 }
 
 module.exports = constants
