@@ -194,7 +194,7 @@ class MatchService {
     let scoreL = 0
     let scoreT = 0
 
-    const estateBudget = estate.budget || 0
+    const estateBudget = estate.net_rent || 0
     const prospectBudget = prospect.budget_max || 0
 
     // LANDLORD calculation part
@@ -481,7 +481,12 @@ class MatchService {
   /**
    *
    */
-  static async matchByUser({ userId, ignoreNullFields = false, has_notification_sent = true }) {
+  static async matchByUser({
+    userId,
+    ignoreNullFields = false,
+    only_count = false,
+    has_notification_sent = true,
+  }) {
     let count = 0
     let success = true
     let message = ''
@@ -519,12 +524,14 @@ class MatchService {
         Logger.info(
           `matchByUser before getting inner matches ${userId} ${new Date().toISOString()}`
         )
-        await this.createNewMatches({ tenant, has_notification_sent }, trx)
+        await this.createNewMatches({ tenant, has_notification_sent, only_count }, trx)
+
         Logger.info(`matchByUser after getting inner matches ${userId} ${new Date().toISOString()}`)
         await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
             has_notification_sent,
+            only_count,
           },
           trx
         )
@@ -578,9 +585,15 @@ class MatchService {
     }
   }
 
-  static async createNewMatches({ tenant, has_notification_sent = true }, trx) {
+  static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
+    tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
     let estates = await EstateService.searchEstatesQuery(tenant)
+
+    if (only_count) {
+      return estates?.length
+    }
+
     const estateIds = estates.reduce((estateIds, estate) => {
       return [...estateIds, estate.id]
     }, [])
@@ -592,7 +605,7 @@ class MatchService {
 
     let passedEstates = []
     let idx = 0
-    tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
+
     while (idx < estates.length) {
       const percent = await MatchService.calculateMatchPercent(tenant, estates[idx])
       passedEstates.push({ estate_id: estates[idx].id, percent })

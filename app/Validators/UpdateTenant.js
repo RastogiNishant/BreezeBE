@@ -63,8 +63,8 @@ class UpdateTenant extends Base {
         .string()
         .oneOf([TRANSPORT_TYPE_CAR, TRANSPORT_TYPE_WALK, TRANSPORT_TYPE_SOCIAL]),
       dist_min: yup.number().integer().oneOf([15, 30, 45, 60]),
-      budget_min: yup.number().integer().min(0).max(100),
-      budget_max: yup.number().integer().min(0).max(100),
+      budget_min: yup.number().integer().min(0),
+      budget_max: yup.number().integer().min(0),
       include_utility: yup.boolean(),
       rooms_min: yup.number().positive().max(10),
       rooms_max: yup.number().positive().max(10),
@@ -117,10 +117,18 @@ class UpdateTenant extends Base {
       garden: yup.boolean(),
       options: yup.array().of(yup.number().integer().positive().max(999)),
       rent_start: yup.date(),
-      transfer_budget_min: yup.number().integer().positive().min(0).max(2500).nullable(),
+      transfer_budget_min: yup.number().integer().positive().min(0).max(500000).nullable(),
       transfer_budget_max: yup.number().integer().positive().min(0).max(500000).nullable(),
       is_short_term_rent: yup.boolean(),
-      residency_duration_min: yup.number().integer().nullable().min(0).nullable(),
+      residency_duration_min: yup
+        .number()
+        .integer()
+        .when(['is_short_term_rent'], (is_short_term_rent) => {
+          if (is_short_term_rent) {
+            return yup.number().integer().min(1).required()
+          }
+          return yup.number().integer().min(1).nullable()
+        }),
       residency_duration_max: yup
         .number()
         .integer()
@@ -142,6 +150,7 @@ class UpdateTenant extends Base {
         })
         .nullable(),
       selected_adults_count: yup.number().integer(),
+      only_count: yup.boolean(),
     })
 }
 

@@ -8,7 +8,7 @@ const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
 const Tenant = use('App/Models/Tenant')
 const Database = use('Database')
-const { without } = require('lodash')
+const { without, omit } = require('lodash')
 const Logger = use('Logger')
 
 const {
@@ -111,7 +111,10 @@ class TenantController {
         data.residency_duration_max = null
       }
       // Deactivate tenant on personal data change
-      const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
+      const shouldDeactivateTenant = without(
+        Object.keys(omit(data, ['only_count'])),
+        ...Tenant.updateIgnoreFields
+      ).length
 
       if (shouldDeactivateTenant) {
         tenant.notify_sent = [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID]
@@ -119,7 +122,7 @@ class TenantController {
       } else {
       }
 
-      await tenant.updateItemWithTrx(data, trx)
+      await tenant.updateItemWithTrx(omit(data, ['only_count']), trx)
 
       await trx.commit()
 
@@ -136,6 +139,7 @@ class TenantController {
       QueueService.getTenantMatchProperties({
         userId: auth.user.id,
         has_notification_sent: false,
+        only_count: data.only_count,
       })
 
       response.res(await Tenant.find(tenant.id))

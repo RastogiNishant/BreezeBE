@@ -110,6 +110,7 @@ const {
   TASK_SYSTEM_TYPE,
   STATUS_EMAIL_VERIFY,
   ESTATE_FIELD_FOR_TASK,
+  PROPERTY_TYPE_SHORT_TERM,
 } = require('../constants')
 
 const {
@@ -1215,12 +1216,13 @@ class EstateService {
   /**
    *
    */
-  static searchEstatesQuery(tenant) {
-    return Database.select(Database.raw(`TRUE as inside`))
+  static async searchEstatesQuery(tenant) {
+    let estates = await Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
       .from({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .crossJoin({ _e: 'estates' })
+      // .innerJoin({ _a: 'amenities' }, '_e.id', '_a.estate_id')
       .leftJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', tenant.user_id).on('_m.estate_id', '_e.id')
       })
@@ -1231,6 +1233,130 @@ class EstateService {
       })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+
+    const estateIds = estates.map((estate) => estate.id)
+    const amenities = (
+      await Amenity.query()
+        .select('estate_id', 'option_id', 'location')
+        .whereIn('estate_id', estateIds)
+        .fetch()
+    ).toJSON()
+
+    const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
+    estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
+
+    return await this.filterEstates(tenant, estates)
+  }
+
+  static async filterEstates(tenant, estates) {
+    Logger.info(`before filterEstates count ${estates?.length}`)
+
+    const minTenantBudget = tenant?.budget_min || 0
+    const maxTenantBudget = tenant?.budget_max || 0
+
+    estates = estates.filter((estate) => {
+      const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
+      return budget >= minTenantBudget && budget <= maxTenantBudget
+    })
+    Logger.info(`filterEstates after budget ${estates?.length}`)
+
+    //transfer budget
+    estates = estates.filter(
+      (estate) =>
+        !estate.transfer_budget ||
+        (estate.transfer_budget >= (tenant.transfer_budget_min ?? 0) &&
+          estate.transfer_budget <= (tenant.transfer_budget_max ?? 0))
+    )
+    Logger.info(`filterEstates after transfer ${estates?.length}`)
+
+    if (tenant.rent_start) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.vacant_date ||
+          moment.utc(estate.vacant_date).add(-1, 'day').format() <=
+            moment.utc(tenant.rent_start).format()
+      )
+    }
+    Logger.info(`filterEstates after rent start ${estates?.length}`)
+
+    if (tenant.is_short_term_rent) {
+      estates = estates.filter((estate) => {
+        const vacant_date = estate.vacant_date
+        const rent_end_at = estate.rent_end_at
+
+        if (tenant.residency_duration_min && tenant.residency_duration_max) {
+          // if it's inside property
+          if (!estate.source_id) {
+            if (!vacant_date || !rent_end_at) {
+              return false
+            }
+
+            const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
+            if (
+              rent_duration < tenant.residency_duration_min * 24 * 60 * 60 * 1000 ||
+              rent_duration > tenant.residency_duration_max * 24 * 60 * 60 * 1000
+            ) {
+              return false
+            }
+          } else {
+            if (estate.property_type !== PROPERTY_TYPE_SHORT_TERM) {
+              return false
+            }
+          }
+          return true
+        }
+        return true
+      })
+    }
+    Logger.info(`filterEstates after short term ${estates?.length}`)
+
+    estates = estates.filter(
+      (estate) =>
+        !estate.rooms_number ||
+        (estate.rooms_number >= (tenant.rooms_min || 1) &&
+          estate.rooms_number <= (tenant.rooms_max || 1))
+    )
+    Logger.info(`filterEstates after rooms ${estates?.length}`)
+
+    estates = estates.filter(
+      (estate) =>
+        !estate.area ||
+        (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
+    )
+    Logger.info(`filterEstates after area ${estates?.length}`)
+
+    if (tenant.apt_type?.length) {
+      estates = estates.filter(
+        (estate) => !estate.apt_type || tenant.apt_type.includes(estate.apt_type)
+      )
+    }
+    Logger.info(`filterEstates apt type after ${estates?.length}`)
+
+    //tenant.house_type.every((el) => (estate?.house_type || []).includes(el))
+    if (tenant.house_type?.length) {
+      estates = estates.filter(
+        (estate) => !estate.house_type || tenant.house_type.includes(estate.house_type)
+      )
+    }
+    Logger.info(`filterEstates after house type ${estates?.length}`)
+
+    if (tenant.options?.length) {
+      const options = await require('../Services/OptionService').getOptions()
+      const OhneMaker = require('../Classes/OhneMakler')
+      estates = estates.filter((estate) => {
+        let amenities = estate.amenities || []
+        if (estate.source_id) {
+          amenities = OhneMaker.getOptionIds(amenities, options)
+        } else {
+          amenities = amenities.map((amenity) => amenity.option_id)
+        }
+
+        return tenant.options.every((op) => amenities.includes(op))
+      })
+      Logger.info(`filterEstates after amenity ${estates.length}`)
+    }
+
+    return estates
   }
 
   static async searchEstateByPoint(point_id) {
