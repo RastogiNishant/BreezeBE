@@ -586,6 +586,14 @@ class MatchService {
     }
   }
 
+  static async calculateCounts({ estates, fieldName, start, end, interval }) {
+    let list = []
+    let i = 0
+    while (i < end) {
+      list.push({ start, end: start + interval * (i + 1) })
+    }
+  }
+
   static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
