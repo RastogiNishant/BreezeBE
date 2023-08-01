@@ -980,6 +980,7 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
+  WEBSOCKET_EVENT_MATCH_COUNT: 'tenant:matchCount',
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_TASK_UPDATED: 'taskUpdated',
@@ -1347,6 +1348,16 @@ Estates: [ESTATES]
     'immobilienscout-24': 'landlord.web.my-properties.txt_immobilienscout24',
     'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
   },
+
+  SHORTENURL_LENGTH: 10,
+  EXPIRED_FINAL_CONFIRM_PERIOD: 48, // hourly based
+
+  ROOM_INTERVAL_COUNT: 1,
+  MAX_ROOM_COUNT: 10,
+  SPACE_INTERVAL_COUNT: 7.5,
+  MAX_SPACE_COUNT: 150,
+  RENT_INTERVAL_COUNT: 100,
+  MAX_RENT_COUNT: 2000,
 }
 
 module.exports = constants

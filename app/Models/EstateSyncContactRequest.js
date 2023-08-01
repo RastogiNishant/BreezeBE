@@ -14,6 +14,7 @@ class EstateSyncContactRequest extends Model {
       'code',
       'status',
       'link',
+      'hash',
       'is_invited_by_landlord',
       'other_info',
       'publisher',

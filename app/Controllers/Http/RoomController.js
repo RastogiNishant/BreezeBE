@@ -52,7 +52,7 @@ class RoomController {
           newRooms.push(room)
         })
       )
-      Event.fire('estate::update', estate_id)
+      //Event.fire('estate::update', estate_id)
       await trx.commit()
       response.res(newRooms)
     } catch (e) {
@@ -68,7 +68,7 @@ class RoomController {
 
     try {
       const room = await RoomService.createRoom({ user: auth.user, estate_id, roomData }, trx)
-      Event.fire('estate::update', estate_id)
+      //Event.fire('estate::update', estate_id)
       await trx.commit()
       response.res(room)
     } catch (e) {
@@ -108,7 +108,7 @@ class RoomController {
 
       await EstateService.updateCover({ room: room.toJSON() }, trx)
 
-      Event.fire('estate::update', estate_id)
+      //Event.fire('estate::update', estate_id)
       await trx.commit()
 
       response.res(room)
@@ -134,7 +134,7 @@ class RoomController {
         { estate_id: room.estate_id, removeRoomId: room_id, removeImages: room.toJSON().images },
         trx
       )
-      Event.fire('estate::update', room.estate_id)
+      //Event.fire('estate::update', room.estate_id)
       await trx.commit()
 
       response.res(true)
@@ -208,7 +208,7 @@ class RoomController {
     try {
       const image = await RoomService.removeImage(id, trx)
       await EstateService.updateCover({ room: room.toJSON(), removeImages: [image] }, trx)
-      Event.fire('estate::update', room.estate_id)
+      //Event.fire('estate::update', room.estate_id)
 
       await trx.commit()
       response.res(true)

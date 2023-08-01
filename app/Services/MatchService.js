@@ -91,6 +91,8 @@ const {
   MATCH_TYPE_BUDDY,
   MATCH_TYPE_MATCH,
   WEBSOCKET_TENANT_REDIS_KEY,
+  EXPIRED_FINAL_CONFIRM_PERIOD,
+  WEBSOCKET_EVENT_MATCH_COUNT,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -194,7 +196,7 @@ class MatchService {
     let scoreL = 0
     let scoreT = 0
 
-    const estateBudget = estate.budget || 0
+    const estateBudget = estate.net_rent || 0
     const prospectBudget = prospect.budget_max || 0
 
     // LANDLORD calculation part
@@ -481,8 +483,14 @@ class MatchService {
   /**
    *
    */
-  static async matchByUser({ userId, ignoreNullFields = false, has_notification_sent = true }) {
-    let count = 0
+  static async matchByUser({
+    userId,
+    ignoreNullFields = false,
+    only_count = false,
+    has_notification_sent = true,
+  }) {
+    let totalCount = 0
+    let totalCategoryCounts = {}
     let success = true
     let message = ''
     try {
@@ -519,18 +527,33 @@ class MatchService {
         Logger.info(
           `matchByUser before getting inner matches ${userId} ${new Date().toISOString()}`
         )
-        await this.createNewMatches({ tenant, has_notification_sent }, trx)
+        const insideMatchResult = await this.createNewMatches(
+          { tenant, has_notification_sent, only_count },
+          trx
+        )
+        totalCount += insideMatchResult?.count ?? 0
+
         Logger.info(`matchByUser after getting inner matches ${userId} ${new Date().toISOString()}`)
-        await ThirdPartyMatchService.createNewMatches(
+        const outsideMatchesResult = await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
             has_notification_sent,
+            only_count,
           },
           trx
         )
+
+        totalCount += outsideMatchesResult?.count ?? 0
         Logger.info(
           `matchByUser after getting outside matches ${userId} ${new Date().toISOString()}`
         )
+
+        if (only_count) {
+          totalCategoryCounts = EstateService.sumCategoryCounts({
+            insideMatchCounts: insideMatchResult?.categoryCounts || {},
+            outsideMatchCounts: outsideMatchesResult?.categoryCounts || {},
+          })
+        }
         await trx.commit()
       } catch (e) {
         console.log('matchByUser error', e.message)
@@ -544,43 +567,77 @@ class MatchService {
       message = e.message
     } finally {
       try {
-        const matches = await EstateService.getTenantEstates({
-          user_id: userId,
-          page: 1,
-          limit: 20,
-        })
-        Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
-        count = matches?.count || 0
-        WebSocket.publishToTenant({
-          event: WEBSOCKET_EVENT_MATCH_CREATED,
-          userId,
-          data: {
-            count,
-            matches,
-            success,
-            message,
-          },
-        })
+        if (only_count) {
+          WebSocket.publishToTenant({
+            event: WEBSOCKET_EVENT_MATCH_COUNT,
+            userId,
+            data: {
+              count: totalCount,
+              categories_count: totalCategoryCounts,
+              success,
+              message,
+            },
+          })
+        } else {
+          const matches = await EstateService.getTenantEstates({
+            user_id: userId,
+            page: 1,
+            limit: 20,
+          })
+          Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
+          totalCount = matches?.count || 0
+          WebSocket.publishToTenant({
+            event: WEBSOCKET_EVENT_MATCH_CREATED,
+            userId,
+            data: {
+              count: totalCount,
+              matches,
+              success,
+              message,
+            },
+          })
+        }
       } catch (e) {
         console.log('match by user error', e.message)
-        WebSocket.publishToTenant({
-          event: WEBSOCKET_EVENT_MATCH_CREATED,
-          userId,
-          data: {
-            count: 0,
-            matches: [],
-            success: false,
-            message: e?.message,
-          },
-        })
+        if (only_count) {
+          WebSocket.publishToTenant({
+            event: WEBSOCKET_EVENT_MATCH_COUNT,
+            userId,
+            data: {
+              count: totalCount,
+              success: false,
+              message: e?.message,
+            },
+          })
+        } else {
+          WebSocket.publishToTenant({
+            event: WEBSOCKET_EVENT_MATCH_CREATED,
+            userId,
+            data: {
+              count: 0,
+              matches: [],
+              success: false,
+              message: e?.message,
+            },
+          })
+        }
       }
       Logger.info(`matchByUser finish ${userId} ${new Date().toISOString()}`)
     }
   }
 
-  static async createNewMatches({ tenant, has_notification_sent = true }, trx) {
+  static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
-    let estates = await EstateService.searchEstatesQuery(tenant)
+    tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
+    let { estates, categoryCounts } = await EstateService.searchEstatesQuery(tenant)
+
+    if (only_count) {
+      return {
+        categoryCounts,
+        count: estates?.length,
+      }
+    }
+
     const estateIds = estates.reduce((estateIds, estate) => {
       return [...estateIds, estate.id]
     }, [])
@@ -592,7 +649,7 @@ class MatchService {
 
     let passedEstates = []
     let idx = 0
-    tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
+
     while (idx < estates.length) {
       const percent = await MatchService.calculateMatchPercent(tenant, estates[idx])
       passedEstates.push({ estate_id: estates[idx].id, percent })
@@ -625,10 +682,11 @@ class MatchService {
     }
 
     if (isEmpty(matches)) {
-      return matches
+      return {
+        count: 0,
+        matches: [],
+      }
     }
-
-    let i = 0
 
     let queries = `INSERT INTO matches 
                   ( user_id, estate_id, percent, status )    
@@ -654,7 +712,10 @@ class MatchService {
       }
     }
 
-    return matches
+    return {
+      count: matches?.length,
+      matches,
+    }
   }
 
   /**
@@ -1867,6 +1928,31 @@ class MatchService {
       console.log('tenantCancelCommit', e.message)
       throw new HttpException(e.message, e.status || 400)
     }
+  }
+
+  static async moveExpiredFinalConfirmToTop() {
+    const matches = (
+      await Match.query()
+        .where('status', MATCH_STATUS_COMMIT)
+        .where(
+          'status_at',
+          '<=',
+          moment
+            .utc(new Date())
+            .add(-1 * EXPIRED_FINAL_CONFIRM_PERIOD, 'days')
+            .format()
+        )
+        .fetch()
+    ).toJSON()
+    Logger.info('moveExpiredFinalConfirmToTop=', matches?.length)
+    await Promise.map(
+      matches || [],
+      async (match) => {
+        await MatchService.tenantCancelCommit(match.estate_id, match.user_id)
+      },
+      { concurrency: 1 }
+    )
+    Logger.info('completed moveExpiredFinalConfirmToTop')
   }
 
   static async handleFinalMatch(estate_id, user, fromInvitation, trx) {

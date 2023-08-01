@@ -1,5 +1,4 @@
 'use strict'
-
 const constants = require('../../constants')
 const { get, map } = require('lodash')
 const File = use('App/Classes/File')
@@ -11,7 +10,7 @@ const GeoService = use('App/Services/GeoService')
 const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
-
+const ShortenLinkService = use('App/Services/ShortenLinkService')
 const Estate = use('App/Models/Estate')
 
 const Static = use('Static')
@@ -143,6 +142,21 @@ class CommonController {
       limit
     )
     return response.res(result)
+  }
+
+  async getOriginalUrl({ request, response }) {
+    const { key } = request.all()
+
+    if (key?.length !== constants.SHORTENURL_LENGTH) {
+      return response.res(true)
+    }
+
+    const shortenLinkData = await ShortenLinkService.get(key)
+    if (!shortenLinkData?.link) {
+      return response.res(true)
+    }
+
+    response.redirect(shortenLinkData.link)
   }
 }
 

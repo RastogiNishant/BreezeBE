@@ -22,7 +22,7 @@ const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
-const EstateSyncListing = use('App/Models/EstateSyncListing')
+
 const Database = use('Database')
 const Promise = require('bluebird')
 const randomstring = require('randomstring')
@@ -103,7 +103,6 @@ const {
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
-const EstateSyncService = require('../../Services/EstateSyncService')
 
 class EstateController {
   /**
@@ -337,18 +336,19 @@ class EstateController {
     }
   }
 
-  /**
-   *
-   */
-  async deactivateEstate({ request, auth, response }) {
-    const { estate_id } = request.all()
-    const estate = await EstateService.getQuery()
-      .where('id', estate_id)
-      .where('user_id', auth.user.id)
-      .whereNot('status', STATUS_DELETE)
-      .update({ status: STATUS_DELETE })
-    response.res(estate)
-  }
+  // /**
+  //  *
+  //  */
+  // async deactivateEstate({ request, auth, response }) {
+  //   const { estate_id } = request.all()
+  //   const estate = await EstateService.getQuery()
+  //     .where('id', estate_id)
+  //     .where('user_id', auth.user.id)
+  //     .whereNot('status', STATUS_DELETE)
+  //     .update({ status: STATUS_DELETE })
+
+  //   response.res(estate)
+  // }
 
   async importEstate({ request, auth, response }) {
     try {
@@ -616,7 +616,7 @@ class EstateController {
         )
         await EstateService.updateCover({ estate_id: estate.id, addImage: result[0] }, trx)
         await trx.commit()
-        Event.fire('estate::update', estate_id)
+        //Event.fire('estate::update', estate_id)
         return response.res(result)
       } catch (e) {
         await trx.rollback()
