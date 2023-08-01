@@ -6,6 +6,7 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const File = use('App/Classes/File')
+const Logger = use('Logger')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Promise = require('bluebird')
 const uuid = require('uuid')
@@ -381,8 +382,9 @@ class ThirdPartyOfferService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
-  static searchTenantEstatesQuery(tenant) {
-    return Database.select(Database.raw(`FALSE as inside`))
+  static async searchTenantEstatesQuery(tenant) {
+    Logger.info(`\n----start ThirdPartyOfferService--- ${tenant.user_id}`)
+    let estates = await Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')
       .select(Database.raw(`NULL as rooms`))
       .from({ _t: 'tenants' })
@@ -395,6 +397,13 @@ class ThirdPartyOfferService {
       .whereNull('tpoi.id')
       .where('_t.user_id', tenant.user_id)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+
+    const categoryCounts = EstateService.calculateInsideCategoryCounts(estates)
+    const filteredEstates = await EstateService.filterEstates(tenant, estates)
+    return {
+      estates: filteredEstates,
+      categoryCounts,
+    }
   }
 
   static getActiveMatchesQuery(userId) {

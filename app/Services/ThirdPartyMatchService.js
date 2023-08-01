@@ -21,9 +21,19 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const Logger = use('Logger')
 
 class ThirdPartyMatchService {
-  static async createNewMatches({ tenant, has_notification_sent = true }, trx) {
+  static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
     Logger.info(`createNewMatches start ${new Date().toISOString()}`)
-    const estates = await ThirdPartyOfferService.searchTenantEstatesQuery(tenant)
+    const { estates, categoryCounts } = await ThirdPartyOfferService.searchTenantEstatesQuery(
+      tenant
+    )
+
+    if (only_count) {
+      return {
+        categoryCounts,
+        count: estates?.length,
+      }
+    }
+
     Logger.info(`ThirdPartyOfferService.searchTenantEstatesQuery after ${new Date().toISOString()}`)
     let passedEstates = []
     let idx = 0
@@ -66,7 +76,10 @@ class ThirdPartyMatchService {
       `ThirdPartyOfferService createNewMatches after updateMatches ${new Date().toISOString()}`
     )
 
-    return matches
+    return {
+      count: matches?.length,
+      matches,
+    }
   }
 
   static async createMatchesForEstate({ estate, has_notification_sent = false }, trx) {

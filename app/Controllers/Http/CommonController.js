@@ -1,8 +1,6 @@
 'use strict'
-
-const { COUNTRIES } = require('../../constants')
+const constants = require('../../constants')
 const { get, map } = require('lodash')
-const { DEFAULT_LANG } = require('../../constants')
 const File = use('App/Classes/File')
 
 // const GeoAPI = use('GeoAPI')
@@ -12,7 +10,7 @@ const GeoService = use('App/Services/GeoService')
 const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
-
+const ShortenLinkService = use('App/Services/ShortenLinkService')
 const Estate = use('App/Models/Estate')
 
 const Static = use('Static')
@@ -116,7 +114,7 @@ class CommonController {
 
   async getExcelTemplate({ request, response }) {
     let { lang } = request.all()
-    lang = lang ? lang : DEFAULT_LANG
+    lang = lang ? lang : constants.DEFAULT_LANG
     const template_dir = process.env.EXCEL_TEMPLATE_DIR || 'excel-template'
     const relative_path = `${template_dir}/${lang}_template.xlsx`
     response.res(File.getPublicUrl(relative_path))
@@ -129,7 +127,7 @@ class CommonController {
   }
 
   async getAvailableCountries({ response }) {
-    return response.res(COUNTRIES)
+    return response.res(constants.COUNTRIES)
   }
 
   async getOffers({ request, response }) {
@@ -144,6 +142,21 @@ class CommonController {
       limit
     )
     return response.res(result)
+  }
+
+  async getOriginalUrl({ request, response }) {
+    const { key } = request.all()
+
+    if (key?.length !== constants.SHORTENURL_LENGTH) {
+      return response.res(true)
+    }
+
+    const shortenLinkData = await ShortenLinkService.get(key)
+    if (!shortenLinkData?.link) {
+      return response.res(true)
+    }
+
+    response.redirect(shortenLinkData.link)
   }
 }
 
