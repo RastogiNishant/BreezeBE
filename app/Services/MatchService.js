@@ -196,7 +196,7 @@ class MatchService {
     let scoreL = 0
     let scoreT = 0
 
-    const estateBudget = estate.net_rent || 0
+    const estateBudget = estate.budget || 0
     const prospectBudget = prospect.budget_max || 0
 
     // LANDLORD calculation part
