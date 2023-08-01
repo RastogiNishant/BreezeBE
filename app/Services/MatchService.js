@@ -1707,6 +1707,15 @@ class MatchService {
       .count('*')
   }
 
+  static async canRequestFinalCommit(estateId) {
+    const counts = await this.matchCount([MATCH_STATUS_COMMIT], [estateId])
+
+    if (counts?.[0]?.count) {
+      return false
+    }
+    return true
+  }
+
   /**
    *
    */
@@ -1922,6 +1931,16 @@ class MatchService {
         event: WEBSOCKET_EVENT_MATCH_STAGE,
       })
 
+      this.emitMatch({
+        data: {
+          estate_id: estateId,
+          user_id: userId,
+          old_status: MATCH_STATUS_COMMIT,
+          status: MATCH_STATUS_TOP,
+        },
+        role: ROLE_USER,
+      })
+
       NoticeService.prospectIsNotInterested(estateId)
     } catch (e) {
       await trx.rollback()
@@ -1944,11 +1963,13 @@ class MatchService {
         )
         .fetch()
     ).toJSON()
-    Logger.info('moveExpiredFinalConfirmToTop=', matches?.length)
+    Logger.info('moveExpiredFinalConfirmToTop=', matches)
     await Promise.map(
       matches || [],
       async (match) => {
         await MatchService.tenantCancelCommit(match.estate_id, match.user_id)
+        const estate = await EstateService.getById(match.estate_id)
+        await NoticeService.finalMatchConfirmExpired(estate)
       },
       { concurrency: 1 }
     )

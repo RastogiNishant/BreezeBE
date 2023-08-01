@@ -134,6 +134,9 @@ const {
 
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
+
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
 } = require('../constants')
 
 const mapping = [
@@ -202,6 +205,7 @@ const mapping = [
   [NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID, NOTICE_TYPE_ADMIN_APPROVES_PUBLISH],
   [NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID, NOTICE_TYPE_PROSPECT_GREEN_MATCH],
   [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID, NOTICE_TYPE_TENANT_PROFILE_FILL_UP],
+  [NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID, NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED],
 ]
 
 class NotificationsService {
@@ -1018,7 +1022,17 @@ class NotificationsService {
   static async prospectFillUpProfileReminder(notices) {
     const title = 'prospect.notification.event.incomplete_profile'
     const body = 'prospect.notification.next.incomplete_profile'
-    console.log('prospectFillUpProfileReminder=', notices)
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async finalConfirmRequestExpired(notices) {
+    const title = 'landlord.notification.event.final_expiration'
+    const body = (data, lang) => {
+      return (
+        `${capitalize(data.estate_address)} \n` +
+        l.get(`landlord.notification.next.final_expiration`, lang)
+      )
+    }
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

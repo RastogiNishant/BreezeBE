@@ -119,6 +119,8 @@ const {
   NOTICE_TYPE_PROSPECT_GREEN_MATCH,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP,
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
 } = require('../constants')
 
 class NoticeService {
@@ -798,6 +800,21 @@ class NoticeService {
     }
   }
 
+  static async finalMatchConfirmExpired(estate) {
+    let notices = [
+      {
+        user_id: estate.user_id,
+        type: NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
+        data: {
+          estate_id: estate.id,
+          estate_address: estate.address,
+        },
+      },
+    ]
+    await NoticeService.insertNotices(notices)
+    NotificationsService.finalConfirmRequestExpired(notices)
+  }
+
   /**
    *
    */
@@ -998,6 +1015,8 @@ class NoticeService {
         return NotificationsService.sendProspectGreenMatch([notice])
       case NOTICE_TYPE_TENANT_PROFILE_FILL_UP:
         return NotificationsService.prospectFillUpProfileReminder([notice])
+      case NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED:
+        return NotificationsService.finalConfirmRequestExpired([notice])
     }
   }
 
