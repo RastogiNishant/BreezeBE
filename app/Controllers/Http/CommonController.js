@@ -148,12 +148,12 @@ class CommonController {
     const { key } = request.all()
 
     if (key?.length !== constants.SHORTENURL_LENGTH) {
-      return response.res(true)
+      return response.redirect(`https://www.breeze4me.de/404`)
     }
 
     const shortenLinkData = await ShortenLinkService.get(key)
     if (!shortenLinkData?.link) {
-      return response.res(true)
+      return response.redirect(`https://www.breeze4me.de/404`)
     }
 
     response.redirect(shortenLinkData.link)
