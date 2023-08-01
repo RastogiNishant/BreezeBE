@@ -525,7 +525,7 @@ Route.group(() => {
   ])
   Route.get('/:estate_id/files', 'EstateController.getFiles').middleware['LandlordOwnsThisEstate']
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware([
-    'valid:EstateAddFile',
+    'valid:EstateAddFile,EstateId',
     'EstateCanEdit',
   ])
   Route.delete('/:estate_id/files/:id', 'EstateController.removeFile').middleware([
@@ -551,21 +551,21 @@ Route.group(() => {
     'EstateCanEdit',
   ])
   Route.delete('/:estate_id/rooms/:room_id', 'RoomController.removeRoom').middleware([
-    'valid:RoomId',
+    'valid:RoomId,EstateId',
     'EstateCanEdit',
   ])
   // Room photos add
   Route.post('/:estate_id/rooms/:room_id/images', 'RoomController.addRoomPhoto').middleware([
-    'valid:RoomId',
+    'valid:RoomId,EstateId',
     'EstateCanEdit',
   ])
   Route.put('/:estate_id/rooms/:room_id/images/order', 'RoomController.orderRoomPhoto').middleware([
-    'valid:RoomId,Ids',
+    'valid:RoomId,Ids,EstateId',
   ])
   Route.delete(
     '/:estate_id/rooms/:room_id/images/:id',
     'RoomController.removeRoomPhoto'
-  ).middleware(['valid:RoomId,Id', 'EstateCanEdit'])
+  ).middleware(['valid:RoomId,Id,EstateId', 'EstateCanEdit'])
 
   Route.post('/:estate_id/invite-to-view', 'EstateController.inviteToView').middleware([
     'valid:LandlordInviteToView',
