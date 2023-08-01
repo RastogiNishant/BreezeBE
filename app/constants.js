@@ -1352,15 +1352,15 @@ Estates: [ESTATES]
     'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
   },
 
-  SHORTENURL_LENGTH: 10,
+  SHORTENURL_LENGTH: 9,
   EXPIRED_FINAL_CONFIRM_PERIOD: 2, // hourly based
 
   ROOM_INTERVAL_COUNT: 1,
   MAX_ROOM_COUNT: 10,
   SPACE_INTERVAL_COUNT: 7.5,
-  MAX_SPACE_COUNT: 150,
+  MAX_SPACE_COUNT: 500,
   RENT_INTERVAL_COUNT: 100,
-  MAX_RENT_COUNT: 2000,
+  MAX_RENT_COUNT: 5000,
 }
 
 module.exports = constants
