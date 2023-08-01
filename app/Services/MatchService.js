@@ -1711,9 +1711,10 @@ class MatchService {
     const counts = await this.matchCount([MATCH_STATUS_COMMIT], [estateId])
 
     if (counts?.[0]?.count) {
-      return false
+      return true
     }
-    return true
+
+    return false
   }
 
   /**
