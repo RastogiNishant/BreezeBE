@@ -111,6 +111,8 @@ const exceptions = {
   ERROR_NO_AUTHENTICATE: 'You have no permission',
   ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE:
     'Your property is already published, to manipulate that property, please unpublish it first',
+  ERROR_MATCH_COMMIT_DOUBLE:
+    'You have already requests final match, please cancel that one first to proceed',
 }
 
 const exceptionCodes = {
@@ -119,6 +121,7 @@ const exceptionCodes = {
   UPLOAD_EXCEL_PROGRESS_ERROR_CODE: 2000100,
   WRONG_PROSPECT_CODE_ERROR_CODE: 3000100,
   NO_TIME_SLOT_ERROR_CODE: 4000100,
+  ERROR_MATCH_COMMIT_DOUBLE_CODE: 5000800,
   NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE: 6000100,
   ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID: 7000100,
   ERROR_MARKET_PLACE_CONTACT_EXIST_CODE: 7000300,
