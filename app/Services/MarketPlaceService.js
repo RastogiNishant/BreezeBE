@@ -40,6 +40,7 @@ const {
   INCOME_TYPE_PENSIONER,
   MARKETPLACE_LIST,
   SHORTENURL_LENGTH,
+  DOMAIN,
 } = require('../constants')
 
 const familySize = {
@@ -234,7 +235,7 @@ class MarketPlaceService {
         })
         .validate({ phone_number })
 
-      const shortLink = `${process.env.APP_URL}/${contact.hash}`
+      const shortLink = `${DOMAIN}/${contact.hash}`
 
       const from =
         process.env.NODE_ENV === 'production'
@@ -246,7 +247,7 @@ class MarketPlaceService {
         .replace('{{city}}', `${estate.city ?? ``}`)
         .replace('{{postcode}}', `${estate.zip ?? ''}`)
         .replace('{{partner_name}}', `${publisher ?? ''}`)
-        .replace('{{site_url}}', 'breeze4me.de')
+        .replace('{{site_url}}', DOMAIN)
 
       await SMSService.send({ to: phone_number, txt, from })
     } catch (e) {
