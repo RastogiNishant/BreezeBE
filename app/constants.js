@@ -1,4 +1,5 @@
 const constants = {
+  DOMAIN: 'breeze4me.de',
   TEST_ENVIRONMENT: 'test',
   DEV_ENVIRONMENT: 'development',
   USER_ACTIVATION_STATUS_NOT_ACTIVATED: 1,
