@@ -73,6 +73,7 @@ const {
   PUBLISH_PROPERTY,
   UNPUBLISH_PROPERTY,
   PUBLISH_OFFLINE_PROPERTY,
+  DEFAULT_LANG,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum, omit } = require('lodash')
@@ -393,6 +394,7 @@ class EstateController {
           user_id: auth.user.id,
           template: 'xls',
           import_id: importItem.id,
+          lang: auth.user.lang ?? DEFAULT_LANG,
         })
         response.res(importItem)
       } else {
