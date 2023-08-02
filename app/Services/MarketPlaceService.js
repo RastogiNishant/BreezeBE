@@ -299,7 +299,7 @@ class MarketPlaceService {
     })
 
     const { nanoid } = await import('nanoid')
-    const hash = nanoid(SHORTENURL_LENGTH)
+    const hash = nanoid(process.env.SHORT_URL_LEN ?? SHORTENURL_LENGTH)
 
     const newContactRequest = {
       ...contact,
