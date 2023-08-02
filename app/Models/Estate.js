@@ -57,6 +57,7 @@ const {
   PUBLISH_TYPE_ONLINE_MARKET,
   TASK_COMMON_TYPE,
   STATUS_EMAIL_VERIFY,
+  PUBLISH_STATUS_INIT,
 } = require('../constants')
 
 class Estate extends Model {
@@ -253,6 +254,7 @@ class Estate extends Model {
         instance.letting_type === LETTING_TYPE_LET &&
         ![STATUS_DRAFT, STATUS_DELETE, STATUS_OFFLINE_ACTIVE].includes(instance.status)
       ) {
+        instance.publish_status = PUBLISH_STATUS_INIT
         instance.status = STATUS_DRAFT
       }
     })
@@ -559,6 +561,7 @@ class Estate extends Model {
         available_end_at:
           this.available_end_at ||
           moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
+        notify_sent: null,
       },
       trx,
       true

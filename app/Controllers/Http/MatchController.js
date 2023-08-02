@@ -56,8 +56,8 @@ const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
 const {
-  exceptions: { UNSECURE_PROFILE_SHARE },
-  exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE },
+  exceptions: { UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE },
+  exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE_CODE },
 } = require('../../exceptions')
 
 class MatchController {
@@ -500,6 +500,11 @@ class MatchController {
     if (finalMatch) {
       throw new HttpException('There is a final match for that property', 400)
     }
+
+    if (!(await MatchService.canRequestFinalCommit(estate_id))) {
+      throw new HttpException(ERROR_MATCH_COMMIT_DOUBLE, 400, ERROR_MATCH_COMMIT_DOUBLE_CODE)
+    }
+
     const isValidMatch = await MatchService.checkMatchIsValidForFinalRequest(estate_id, user_id)
     if (isValidMatch) {
       await MatchService.requestFinalConfirm(estate_id, user_id)

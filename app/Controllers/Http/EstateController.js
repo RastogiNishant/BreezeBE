@@ -22,7 +22,7 @@ const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
-const EstateSyncListing = use('App/Models/EstateSyncListing')
+
 const Database = use('Database')
 const Promise = require('bluebird')
 const randomstring = require('randomstring')
@@ -103,7 +103,6 @@ const {
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
-const EstateSyncService = require('../../Services/EstateSyncService')
 
 class EstateController {
   /**
@@ -135,6 +134,8 @@ class EstateController {
 
         MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
+      // Run task to separate get coords and point of estate
+      QueueService.getEstateCoords(estate.id)
 
       response.res(estate)
     } catch (e) {
@@ -160,6 +161,8 @@ class EstateController {
         page: 1,
         params: { id },
       })
+
+      QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -333,18 +336,19 @@ class EstateController {
     }
   }
 
-  /**
-   *
-   */
-  async deactivateEstate({ request, auth, response }) {
-    const { estate_id } = request.all()
-    const estate = await EstateService.getQuery()
-      .where('id', estate_id)
-      .where('user_id', auth.user.id)
-      .whereNot('status', STATUS_DELETE)
-      .update({ status: STATUS_DELETE })
-    response.res(estate)
-  }
+  // /**
+  //  *
+  //  */
+  // async deactivateEstate({ request, auth, response }) {
+  //   const { estate_id } = request.all()
+  //   const estate = await EstateService.getQuery()
+  //     .where('id', estate_id)
+  //     .where('user_id', auth.user.id)
+  //     .whereNot('status', STATUS_DELETE)
+  //     .update({ status: STATUS_DELETE })
+
+  //   response.res(estate)
+  // }
 
   async importEstate({ request, auth, response }) {
     try {
@@ -612,7 +616,7 @@ class EstateController {
         )
         await EstateService.updateCover({ estate_id: estate.id, addImage: result[0] }, trx)
         await trx.commit()
-        Event.fire('estate::update', estate_id)
+        //Event.fire('estate::update', estate_id)
         return response.res(result)
       } catch (e) {
         await trx.rollback()
@@ -730,36 +734,17 @@ class EstateController {
    */
   async getTenantEstate({ request, auth, response }) {
     const { id } = request.all()
-
-    let estate = await EstateService.getEstateWithDetails({
+    const tenantEstate = await EstateService.getTenantEstate({
       id,
-      user_id: auth.user.id,
-      role: auth.user.role,
+      user_id: auth?.user?.id,
+      role: auth?.user?.role,
     })
-
-    if (!estate) {
-      throw new HttpException('Invalid estate', 404)
-    }
-
-    estate.isoline = await EstateService.getIsolines(estate)
-    const match = await MatchService.getMatches(auth.user.id, id)
-
-    estate = estate.toJSON({
-      isShort: true,
-      role: auth.user.role,
-      extraFields: ['landlord_type', 'hash', 'property_type'],
-    })
-    estate = {
-      ...estate,
-      match: match?.percent,
-    }
-    estate = await EstateService.assignEstateAmenities(estate)
-    response.res(estate)
+    response.res(tenantEstate)
   }
 
   async getThirdPartyOfferEstate({ request, auth, response }) {
     const { id } = request.all()
-    let estate = await ThirdPartyOfferService.getEstate(auth.user.id, id)
+    let estate = await ThirdPartyOfferService.getEstate({ userId: auth?.user?.id, id })
     if (!estate) {
       throw new HttpException('Estate not found.', 404)
     }
@@ -1221,7 +1206,10 @@ class EstateController {
       }
       const insideEstates = await EstateService.searchEstateByPoint(point.id)
       const outsideEstates = await ThirdPartyOfferService.searchTenantEstatesByPoint(point.id)
-      response.res([...insideEstates, ...outsideEstates])
+      response.res({
+        isoline: point?.data?.data,
+        estates: [...insideEstates, ...outsideEstates],
+      })
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }

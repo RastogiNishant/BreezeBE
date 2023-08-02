@@ -1,8 +1,6 @@
 'use strict'
-
 const constants = require('../../constants')
 const { get, map } = require('lodash')
-const { DEFAULT_LANG } = require('../../constants')
 const File = use('App/Classes/File')
 
 // const GeoAPI = use('GeoAPI')
@@ -12,7 +10,7 @@ const GeoService = use('App/Services/GeoService')
 const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
-
+const ShortenLinkService = use('App/Services/ShortenLinkService')
 const Estate = use('App/Models/Estate')
 
 const Static = use('Static')
@@ -116,10 +114,49 @@ class CommonController {
 
   async getExcelTemplate({ request, response }) {
     let { lang } = request.all()
-    lang = lang ? lang : DEFAULT_LANG
+    lang = lang ? lang : constants.DEFAULT_LANG
     const template_dir = process.env.EXCEL_TEMPLATE_DIR || 'excel-template'
     const relative_path = `${template_dir}/${lang}_template.xlsx`
     response.res(File.getPublicUrl(relative_path))
+  }
+
+  async searchCities({ request, response }) {
+    const { country_code, city } = request.all()
+    const result = await CommonService.searchCities(city, country_code)
+    response.res(result)
+  }
+
+  async getAvailableCountries({ response }) {
+    return response.res(constants.COUNTRIES)
+  }
+
+  async getOffers({ request, response }) {
+    const { country_code, city, rent_max, duration } = request.all()
+    let { page, limit = 20 } = request.all()
+    if (!page || page < 1) {
+      page = 1
+    }
+    const result = await CommonService.getOffers(
+      { rent_max, country_code, city, duration },
+      page,
+      limit
+    )
+    return response.res(result)
+  }
+
+  async getOriginalUrl({ request, response }) {
+    const { key } = request.all()
+
+    if (key?.length !== constants.SHORTENURL_LENGTH) {
+      return response.redirect(`https://www.breeze4me.de/404`)
+    }
+
+    const shortenLinkData = await ShortenLinkService.get(key)
+    if (!shortenLinkData?.link) {
+      return response.redirect(`https://www.breeze4me.de/404`)
+    }
+
+    response.redirect(shortenLinkData.link)
   }
 }
 

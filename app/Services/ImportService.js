@@ -33,7 +33,14 @@ const {
   WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS,
   PREPARING_TO_UPLOAD,
   PROPERTY_HANDLE_FINISHED,
+  WEBSOCKET_TENANT_REDIS_KEY,
+  WEBSOCKET_LANDLORD_REDIS_KEY,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
 } = require('../constants')
+const {
+  exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE },
+} = require('../exceptions')
+const WebSocket = use('App/Classes/Websocket')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
 
@@ -49,6 +56,7 @@ class ImportService {
   /**
    *
    */
+
   static async createSingleEstate({ data, line, six_char_code }, userId) {
     let estate
     line += 1
@@ -73,6 +81,19 @@ class ImportService {
             },
           }
         }
+
+        if (estate.published_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+          await trx.rollback()
+          return {
+            singleErrors: {
+              error: [ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE],
+              line,
+              property_id: data.property_id,
+              address: data.address,
+            },
+          }
+        }
+
         await ImportService.updateImportBySixCharCode({ estate, data }, trx)
       } else {
         if (!data.address) {
@@ -276,15 +297,10 @@ class ImportService {
    */
 
   static async emitImported({ data, user_id, event = WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS }) {
-    const channel = `landlord:*`
-    const topicName = `landlord:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-
-    if (topic) {
-      topic.broadcast(event, data)
-    }
+    WebSocket.publishToLandlord({ event, userId: user_id, data })
   }
 
+  //TODO: if a property is already published, no need to update property responding error message
   static async updateImportBySixCharCode({ estate, data }, trx) {
     try {
       let estate_data = omit(data, [
@@ -369,7 +385,7 @@ class ImportService {
         //TODO: only has to remove rooms which don't have images & reindex room names according to room type
         //await require('./RoomService').removeAllRoom(estate.id, trx)
       }
-
+      require('./QueueService').getEstateCoords(estate.id)
       return estate
     } catch (e) {
       console.log('update estate error happened=', e.message)

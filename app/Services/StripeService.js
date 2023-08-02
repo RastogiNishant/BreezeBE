@@ -28,7 +28,7 @@ const SubscriptionService = require('./SubscriptionService')
 const OrderService = require('./OrderService')
 const Database = use('Database')
 const Logger = use('Logger')
-const Ws = use('Ws')
+const WebSocket = use('App/Classes/Websocket')
 const moment = require('moment')
 
 const {
@@ -386,13 +386,11 @@ class StripeService {
   }
 
   static async emitEvent({ user_id, event, data }) {
-    const channel = `landlord:*`
-    const topicName = `landlord:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-
-    if (topic) {
-      topic.broadcast(event, data)
-    }
+    WebSocket.publishToLandlord({
+      event,
+      userId: user_id,
+      data,
+    })
   }
 }
 

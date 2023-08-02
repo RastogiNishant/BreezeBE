@@ -20,7 +20,7 @@ const FileBucket = use('App/Classes/File')
 const l = use('Localize')
 const Promise = require('bluebird')
 const docMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG, File.IMAGE_PDF]
-const Ws = use('Ws')
+const WebSocket = use('App/Classes/Websocket')
 
 const {
   FAMILY_STATUS_NO_CHILD,
@@ -576,12 +576,7 @@ class MemberService {
   }
 
   static async emitMemberInvitation({ data, user_id }) {
-    const channel = `tenant:*`
-    const topicName = `tenant:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-    if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_MEMBER_INVITATION, data)
-    }
+    WebSocket.publishToTenant({ event: WEBSOCKET_EVENT_MEMBER_INVITATION, userId: user_id, data })
   }
 
   static async mergeTenantAccounts(user, visibility_to_other) {

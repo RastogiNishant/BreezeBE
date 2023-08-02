@@ -233,7 +233,7 @@ class RoomService {
           { room: room.toJSON(), addImage: images[0] },
           trx
         )
-        Event.fire('estate::update', room.estate_id)
+        //Event.fire('estate::update', room.estate_id)
         await trx.commit()
         return images
       } else {

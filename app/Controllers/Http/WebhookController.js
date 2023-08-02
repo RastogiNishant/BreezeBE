@@ -14,6 +14,9 @@ class WebhookController {
       case 'property.processing_succeeded':
         await EstateSyncService.propertyProcessingSucceeded(eventPayload)
         break
+      case 'property.processing_failed':
+        await EstateSyncService.propertyProcessingFailed(eventPayload)
+        break
       case 'publication.succeeded':
         await EstateSyncService.publicationSucceeded(eventPayload)
         break

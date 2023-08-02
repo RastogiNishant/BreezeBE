@@ -30,10 +30,9 @@ const Drive = use('Drive')
 const Hash = use('Hash')
 const Config = use('Config')
 const GoogleAuth = use('GoogleAuth')
-const Ws = use('Ws')
 const { getIpBasedInfo } = use('App/Libs/getIpBasedInfo')
 const Admin = use('App/Models/Admin')
-
+const WebSocket = use('App/Classes/Websocket')
 const {
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
@@ -121,8 +120,7 @@ class UserService {
     // Manages the outside tenant invitation flow
     if (
       !userData?.source_estate_id &&
-      (userData?.invite_type === OUTSIDE_TENANT_INVITE_TYPE ||
-        userData?.invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE) &&
+      userData?.invite_type === OUTSIDE_TENANT_INVITE_TYPE &&
       userData?.data1 &&
       userData?.data2
     ) {
@@ -136,14 +134,17 @@ class UserService {
 
     let otherInfo = null
     if (
-      userData?.source_estate_id &&
-      userData?.invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE
+      userData?.invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE &&
+      userData?.data1 &&
+      userData?.data2
     ) {
-      otherInfo = await require('./MarketPlaceService.js').getInfoFromContactRequests(
-        userData.email,
-        userData.source_estate_id
-      )
+      otherInfo = await require('./MarketPlaceService.js').getInfoFromContactRequests({
+        email: userData.email,
+        data1: userData?.data1,
+        data2: userData?.data2,
+      })
     }
+
     if (otherInfo && !userData?.birthday && otherInfo?.birthday) {
       userData.birthday = otherInfo.birthday
     }
@@ -153,22 +154,26 @@ class UserService {
       try {
         // Create empty tenant and link to user
 
-        const tenant = userData?.signupData
         const tenantData = {
           user_id: user.id,
-          coord: tenant?.address?.coord,
-          dist_type: tenant?.transport,
-          dist_min: tenant?.time,
-          address: tenant?.address?.title,
+          coord: userData?.signupData?.address?.coord,
+          dist_type: userData?.signupData?.transport,
+          dist_min: userData?.signupData?.time,
+          address: userData?.signupData?.address?.title,
         }
+
         if (otherInfo?.pets === true) {
           tenantData.pets = PETS_SMALL
         } else if (otherInfo?.pets === false) {
           tenantData.pets = PETS_NO
         }
+
         tenantData.members_count = otherInfo?.members || null
         tenantData.income = otherInfo?.income || null
-        await Tenant.create(tenantData, trx)
+
+        const tenant = await Tenant.create(tenantData, trx)
+        await require('./TenantService').updateTenantIsoline({ tenant, tenantid: tenant.id }, trx)
+
         const memberInfo = {
           firstname: user?.firstname,
           secondname: user?.secondname,
@@ -271,20 +276,27 @@ class UserService {
       status: STATUS_ACTIVE,
     }
 
-    const user = await UserService.createUser(userData)
+    const trx = await Database.beginTransaction()
 
-    if (request) {
-      logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
-        role: user.role,
-        email: user.email,
-        method,
-      })
-    }
+    try {
+      const user = await UserService.createUser(userData, trx)
+      await trx.commit()
+      if (request) {
+        logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
+          role: user.role,
+          email: user.email,
+          method,
+        })
+      }
 
-    if (process.env.NODE_ENV !== TEST_ENVIRONMENT) {
-      Event.fire('mautic:createContact', user.id)
+      if (process.env.NODE_ENV !== TEST_ENVIRONMENT) {
+        Event.fire('mautic:createContact', user.id)
+      }
+      return user
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
     }
-    return user
   }
 
   /**
@@ -1495,10 +1507,11 @@ class UserService {
     ids = !Array.isArray(ids) ? [ids] : ids
 
     ids.map((id) => {
-      const topic = Ws.getChannel(`landlord:*`).topic(`landlord:${id}`)
-      if (topic) {
-        topic.broadcast(WEBSOCKET_EVENT_USER_ACTIVATE, { ...data })
-      }
+      WebSocket.publishToLandlord({
+        event: WEBSOCKET_EVENT_USER_ACTIVATE,
+        userId: id,
+        data,
+      })
     })
   }
 

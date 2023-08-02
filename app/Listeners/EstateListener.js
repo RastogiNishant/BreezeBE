@@ -2,7 +2,6 @@
 
 const EstateListener = (exports = module.exports = {})
 const Estate = use('App/Models/Estate')
-
 const { STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE } = require('../constants')
 
 EstateListener.changeEstate = async (estateId) => {
@@ -10,4 +9,5 @@ EstateListener.changeEstate = async (estateId) => {
     .where('id', estateId)
     .whereIn('status', [STATUS_EXPIRE, STATUS_ACTIVE])
     .update({ status: STATUS_DRAFT })
+  // Run task to separate get coords and point of estate
 }

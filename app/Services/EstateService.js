@@ -23,7 +23,7 @@ const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
 const QueueService = use('App/Services/QueueService')
-
+const WebSocket = use('App/Classes/Websocket')
 const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
@@ -109,6 +109,14 @@ const {
   TASK_COMMON_TYPE,
   TASK_SYSTEM_TYPE,
   STATUS_EMAIL_VERIFY,
+  ESTATE_FIELD_FOR_TASK,
+  PROPERTY_TYPE_SHORT_TERM,
+  MAX_ROOM_COUNT,
+  MAX_SPACE_COUNT,
+  SPACE_INTERVAL_COUNT,
+  ROOM_INTERVAL_COUNT,
+  RENT_INTERVAL_COUNT,
+  MAX_RENT_COUNT,
 } = require('../constants')
 
 const {
@@ -120,7 +128,6 @@ const {
     ERROR_PROPERTY_AREADY_PUBLISHED,
     ERROR_PROPERTY_AVAILABLE_DURATION,
     ERROR_PROPERTY_UNDER_REVIEW,
-    ERROR_PROPERTY_ALREADY_RENTED,
     ERROR_PROPERTY_INVALID_STATUS,
     ERROR_PROPERTY_NOT_PUBLISHED,
   },
@@ -128,7 +135,6 @@ const {
     ERROR_PROPERTY_AREADY_PUBLISHED_CODE,
     ERROR_PROPERTY_AVAILABLE_DURATION_CODE,
     ERROR_PROPERTY_UNDER_REVIEW_CODE,
-    ERROR_PROPERTY_ALREADY_RENTED_CODE,
     ERROR_PROPERTY_INVALID_STATUS_CODE,
     ERROR_PROPERTY_NOT_PUBLISHED_CODE,
   },
@@ -136,6 +142,7 @@ const {
 
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
+const internal = require('stream')
 
 const MAX_DIST = 10000
 
@@ -372,12 +379,12 @@ class EstateService {
   }
 
   static async getEstateWithDetails({ id, user_id, role }) {
-    const estateQuery = Estate.query()
+    let estateQuery = Estate.query()
       .select(Database.raw('estates.*'))
       .select(Database.raw(`coalesce(_c.landlord_type, 'private') as landlord_type`))
       .leftJoin(
         Database.raw(`
-          (select 
+          (select
             users.id as user_id,
             companies.type as landlord_type
           from users
@@ -388,33 +395,32 @@ class EstateService {
           this.on('estates.user_id', '_c.user_id').on('estates.id', id)
         }
       )
-      .where('estates.id', id)
-      .whereNot('status', STATUS_DELETE)
-      .withCount('notifications', function (n) {
+    estateQuery.where('estates.id', id).whereNot('status', STATUS_DELETE)
+
+    if (user_id) {
+      estateQuery.withCount('notifications', function (n) {
         n.where('user_id', user_id)
       })
-      .withCount('visits')
-      .withCount('knocked')
-      .withCount('decided')
-      .withCount('invite')
-      .withCount('final')
-      .withCount('contact_requests')
-      .withCount('inviteBuddies')
+    }
+
+    if (user_id && role === ROLE_LANDLORD) {
+      estateQuery
+        .withCount('visits')
+        .withCount('knocked')
+        .withCount('decided')
+        .withCount('invite')
+        .withCount('final')
+        .withCount('contact_requests')
+        .withCount('inviteBuddies')
+        .with('current_tenant', function (q) {
+          q.with('user')
+        })
+      estateQuery.with('estateSyncListings')
+    }
+
+    estateQuery
       .with('point')
       .with('files')
-      .with('current_tenant', function (q) {
-        q.with('user')
-      })
-      .with('user', function (u) {
-        u.select('id', 'company_id')
-        u.with('company', function (c) {
-          c.select('id', 'avatar', 'name', 'visibility')
-          c.with('contacts', function (ct) {
-            ct.select('id', 'full_name', 'company_id')
-          })
-        })
-      })
-
       .with('rooms', function (b) {
         b.whereNot('status', STATUS_DELETE)
           .with('images')
@@ -442,7 +448,18 @@ class EstateService {
               .orderBy('amenities.sequence_order', 'desc')
           })
       })
-      .with('estateSyncListings')
+
+    if (user_id && role === ROLE_USER) {
+      estateQuery.with('user', function (u) {
+        u.select('id', 'company_id')
+        u.with('company', function (c) {
+          c.select('id', 'avatar', 'name', 'visibility')
+          c.with('contacts', function (ct) {
+            ct.select('id', 'full_name', 'company_id')
+          })
+        })
+      })
+    }
 
     if (user_id && role === ROLE_LANDLORD) {
       estateQuery.where('estates.user_id', user_id)
@@ -612,15 +629,14 @@ class EstateService {
       }
 
       // Run processing estate geo nearest
-      QueueService.getEstateCoords(estate.id)
       const estateData = await estate.toJSON({ isOwner: true })
       return {
         hash: estateHash?.hash || null,
         ...estateData,
       }
     } catch (e) {
-      console.log('Creating estate error =', e.message)
-      throw new HttpException(e.message, e.status || 500)
+      Logger.error(`Creating estate error = ${userId} e.message`)
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
@@ -708,10 +724,7 @@ class EstateService {
       if (data.delete_energy_proof && energy_proof) {
         FileBucket.remove(energy_proof)
       }
-      // Run processing estate geo nearest
-      if (data.address) {
-        QueueService.getEstateCoords(estate.id)
-      }
+
       if (insideTrx) {
         await trx.commit()
       }
@@ -829,6 +842,7 @@ class EstateService {
 
       const taskService = require('./TaskService')
       await taskService.deleteByEstateById(id, trx)
+      await require('./EstateSyncService').unpublishEstate(id)
 
       await trx.commit()
       return estate
@@ -1209,12 +1223,13 @@ class EstateService {
   /**
    *
    */
-  static searchEstatesQuery(tenant) {
-    return Database.select(Database.raw(`TRUE as inside`))
+  static async searchEstatesQuery(tenant) {
+    let estates = await Database.select(Database.raw(`TRUE as inside`))
       .select('_e.*')
       .from({ _t: 'tenants' })
       .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
       .crossJoin({ _e: 'estates' })
+      // .innerJoin({ _a: 'amenities' }, '_e.id', '_a.estate_id')
       .leftJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', tenant.user_id).on('_m.estate_id', '_e.id')
       })
@@ -1225,19 +1240,204 @@ class EstateService {
       })
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+
+    const estateIds = estates.map((estate) => estate.id)
+    const amenities = (
+      await Amenity.query()
+        .select('estate_id', 'option_id', 'location')
+        .whereIn('estate_id', estateIds)
+        .fetch()
+    ).toJSON()
+
+    const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
+    estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
+
+    const categoryCounts = this.calculateInsideCategoryCounts(estates, tenant)
+    const filteredEstates = await this.filterEstates(tenant, estates)
+    return {
+      estates: filteredEstates,
+      categoryCounts,
+    }
+  }
+
+  static calculateCounts({ estates, fieldName, start, end, interval }) {
+    let list = []
+    let counts = []
+    while (start < end) {
+      list.push({ min: start, max: start + interval })
+      start += interval
+    }
+
+    list.forEach((element) => {
+      counts[`${element.min}_${element.max}`] = estates.filter(
+        (estate) => estate[fieldName] >= element.min && estate[fieldName] < element.max
+      )?.length
+    })
+
+    return counts
+  }
+
+  static calculateInsideCategoryCounts(estates, tenant) {
+    const rooms_number = this.calculateCounts({
+      estates,
+      fieldName: 'rooms_number',
+      start: 0,
+      end: MAX_ROOM_COUNT,
+      interval: ROOM_INTERVAL_COUNT,
+    })
+
+    const area = this.calculateCounts({
+      estates,
+      fieldName: 'area',
+      start: 0,
+      end: MAX_SPACE_COUNT,
+      interval: SPACE_INTERVAL_COUNT,
+    })
+
+    const net_rent = this.calculateCounts({
+      estates,
+      fieldName: 'net_rent',
+      start: 0,
+      end: tenant.income ?? MAX_RENT_COUNT,
+      interval: RENT_INTERVAL_COUNT,
+    })
+
+    return {
+      rooms_number,
+      area,
+      net_rent,
+    }
+  }
+
+  static sumCategoryCounts({ insideMatchCounts, outsideMatchCounts }) {
+    let counts = {}
+
+    Object.keys(insideMatchCounts).forEach((categoryKey) => {
+      counts[categoryKey] = Object.keys(insideMatchCounts[categoryKey]).map((key) => ({
+        [key]:
+          (insideMatchCounts?.[categoryKey]?.[key] || 0) +
+          (outsideMatchCounts?.[categoryKey]?.[key] || 0),
+      }))
+    })
+    return counts
+  }
+
+  static async filterEstates(tenant, estates) {
+    Logger.info(`before filterEstates count ${estates?.length}`)
+
+    const minTenantBudget = tenant?.budget_min || 0
+    const maxTenantBudget = tenant?.budget_max || 0
+
+    estates = estates.filter((estate) => {
+      const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
+      return budget >= minTenantBudget && budget <= maxTenantBudget
+    })
+    Logger.info(`filterEstates after budget ${estates?.length}`)
+
+    //transfer budget
+    estates = estates.filter(
+      (estate) =>
+        !estate.transfer_budget ||
+        (estate.transfer_budget >= (tenant.transfer_budget_min ?? 0) &&
+          estate.transfer_budget <= (tenant.transfer_budget_max ?? 0))
+    )
+    Logger.info(`filterEstates after transfer ${estates?.length}`)
+
+    if (tenant.rent_start) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.vacant_date ||
+          moment.utc(estate.vacant_date).add(-1, 'day').format() <=
+            moment.utc(tenant.rent_start).format()
+      )
+    }
+    Logger.info(`filterEstates after rent start ${estates?.length}`)
+
+    if (tenant.is_short_term_rent) {
+      estates = estates.filter((estate) => {
+        const vacant_date = estate.vacant_date
+        const rent_end_at = estate.rent_end_at
+
+        if (tenant.residency_duration_min && tenant.residency_duration_max) {
+          // if it's inside property
+          if (!estate.source_id) {
+            if (!vacant_date || !rent_end_at) {
+              return false
+            }
+
+            const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
+            if (
+              rent_duration < tenant.residency_duration_min * 24 * 60 * 60 * 1000 ||
+              rent_duration > tenant.residency_duration_max * 24 * 60 * 60 * 1000
+            ) {
+              return false
+            }
+          } else {
+            if (estate.property_type !== PROPERTY_TYPE_SHORT_TERM) {
+              return false
+            }
+          }
+          return true
+        }
+        return true
+      })
+    }
+    Logger.info(`filterEstates after short term ${estates?.length}`)
+
+    estates = estates.filter(
+      (estate) =>
+        !estate.rooms_number ||
+        (estate.rooms_number >= (tenant.rooms_min || 1) &&
+          estate.rooms_number <= (tenant.rooms_max || 1))
+    )
+    Logger.info(`filterEstates after rooms ${estates?.length}`)
+
+    estates = estates.filter(
+      (estate) =>
+        !estate.area ||
+        (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
+    )
+    Logger.info(`filterEstates after area ${estates?.length}`)
+
+    if (tenant.apt_type?.length) {
+      estates = estates.filter(
+        (estate) => !estate.apt_type || tenant.apt_type.includes(estate.apt_type)
+      )
+    }
+    Logger.info(`filterEstates apt type after ${estates?.length}`)
+
+    //tenant.house_type.every((el) => (estate?.house_type || []).includes(el))
+    if (tenant.house_type?.length) {
+      estates = estates.filter(
+        (estate) => !estate.house_type || tenant.house_type.includes(estate.house_type)
+      )
+    }
+    Logger.info(`filterEstates after house type ${estates?.length}`)
+
+    if (tenant.options?.length) {
+      const options = await require('../Services/OptionService').getOptions()
+      const hashOptions = groupBy(options, 'title')
+      const OhneMaker = require('../Classes/OhneMakler')
+      estates = estates.filter((estate) => {
+        let amenities = estate.amenities || []
+        if (estate.source_id) {
+          amenities = OhneMaker.getOptionIds(amenities, hashOptions)
+        } else {
+          amenities = amenities.map((amenity) => amenity.option_id)
+        }
+        return tenant.options.every((op) => amenities.includes(op))
+      })
+      Logger.info(`filterEstates after amenity ${estates.length}`)
+    }
+
+    return estates
   }
 
   static async searchEstateByPoint(point_id) {
+    const estateFields = ESTATE_FIELD_FOR_TASK.map((field) => `_e.${field}`)
     return await Database.select(Database.raw(`TRUE as inside`))
-      .select(
-        '_e.id',
-        '_e.coord_raw as coord',
-        '_e.street',
-        '_e.city',
-        '_e.address',
-        '_e.house_number',
-        '_e.country'
-      )
+      .select('_e.id', 'net_rent', 'extra_costs', 'available_end_at')
+      .select(estateFields)
       .from({ _e: 'estates' })
       .innerJoin({ _p: 'points' }, function () {
         this.on('_p.id', point_id)
@@ -1482,9 +1682,9 @@ class EstateService {
 
     if (estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
       throw new HttpException(
-        ERROR_PROPERTY_ALREADY_RENTED,
+        ERROR_PROPERTY_AREADY_PUBLISHED,
         400,
-        ERROR_PROPERTY_ALREADY_RENTED_CODE
+        ERROR_PROPERTY_NOT_PUBLISHED_CODE
       )
     }
     if (
@@ -1607,9 +1807,10 @@ class EstateService {
   }
 
   static async offMarketPublish(estate) {
-    if (estate.status === STATUS_ACTIVE) {
-      throw HttpException(ERROR_PROPERTY_ALREADY_RENTED, 400, ERROR_PROPERTY_ALREADY_RENTED_CODE)
+    if (estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+      throw HttpException(ERROR_PROPERTY_AREADY_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
     }
+
     try {
       await estate.updateItem(
         {
@@ -2442,16 +2643,15 @@ class EstateService {
   }
 
   static emitValidAddress({ id, user_id, coord, address }) {
-    const channel = `landlord:*`
-    const topicName = `landlord:${user_id}`
-    const topic = Ws.getChannel(channel).topic(topicName)
-    if (topic) {
-      topic.broadcast(WEBSOCKET_EVENT_VALID_ADDRESS, {
+    WebSocket.publishToLandlord({
+      event: WEBSOCKET_EVENT_VALID_ADDRESS,
+      userId: user_id,
+      data: {
         id,
         coord,
         address,
-      })
-    }
+      },
+    })
   }
 
   static async getFilesByEstateId(estateId) {
@@ -2962,6 +3162,39 @@ class EstateService {
       query.whereNotIn('estates.id', excludeIds)
     }
     return (await query.select('estates.id').groupBy('estates.id').fetch()).toJSON()?.length || 0
+  }
+
+  static async getTenantEstate({ id, user_id, role }) {
+    console.log(`getTenantEstate= ${user_id} ${role}`)
+    let estate = await this.getEstateWithDetails({
+      id,
+      user_id: user_id ?? null,
+      role: role ?? null,
+    })
+
+    if (!estate) {
+      throw new HttpException('Invalid estate', 404)
+    }
+
+    estate.isoline = await this.getIsolines(estate)
+    estate = estate.toJSON({
+      isShort: true,
+      role: role ?? null,
+      extraFields: ['landlord_type', 'hash', 'property_type'],
+    })
+
+    let match
+    if (user_id && role === ROLE_USER) {
+      match = await require('./MatchService').getMatches(user_id, id)
+    }
+
+    estate = {
+      ...estate,
+      match: match?.percent,
+    }
+
+    estate = await EstateService.assignEstateAmenities(estate)
+    return estate
   }
 }
 module.exports = EstateService

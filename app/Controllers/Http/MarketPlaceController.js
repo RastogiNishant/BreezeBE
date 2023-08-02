@@ -30,7 +30,7 @@ class MarketPlaceController {
       response.res(true)
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e.message, 400)
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
 
