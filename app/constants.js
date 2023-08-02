@@ -502,6 +502,7 @@ const constants = {
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH: 'notification_landlord_admin_approves_publish',
   NOTICE_TYPE_PROSPECT_GREEN_MATCH: 'notification_prospect_green_match',
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP: 'notification_prospect_fill_up_profile',
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED: 'notification_final_match_request_expired',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -560,6 +561,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID: 61,
   NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID: 62,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID: 63,
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID: 64,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -1350,15 +1352,15 @@ Estates: [ESTATES]
     'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
   },
 
-  SHORTENURL_LENGTH: 10,
-  EXPIRED_FINAL_CONFIRM_PERIOD: 48, // hourly based
+  SHORTENURL_LENGTH: 9,
+  EXPIRED_FINAL_CONFIRM_PERIOD: 2, // hourly based
 
   ROOM_INTERVAL_COUNT: 1,
   MAX_ROOM_COUNT: 10,
   SPACE_INTERVAL_COUNT: 7.5,
-  MAX_SPACE_COUNT: 150,
+  MAX_SPACE_COUNT: 500,
   RENT_INTERVAL_COUNT: 100,
-  MAX_RENT_COUNT: 2000,
+  MAX_RENT_COUNT: 5000,
 }
 
 module.exports = constants

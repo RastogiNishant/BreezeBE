@@ -1252,7 +1252,7 @@ class EstateService {
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
-    const categoryCounts = this.calculateInsideCategoryCounts(estates)
+    const categoryCounts = this.calculateInsideCategoryCounts(estates, tenant)
     const filteredEstates = await this.filterEstates(tenant, estates)
     return {
       estates: filteredEstates,
@@ -1277,7 +1277,7 @@ class EstateService {
     return counts
   }
 
-  static calculateInsideCategoryCounts(estates) {
+  static calculateInsideCategoryCounts(estates, tenant) {
     const rooms_number = this.calculateCounts({
       estates,
       fieldName: 'rooms_number',
@@ -1298,7 +1298,7 @@ class EstateService {
       estates,
       fieldName: 'net_rent',
       start: 0,
-      end: MAX_RENT_COUNT,
+      end: tenant.income ?? MAX_RENT_COUNT,
       interval: RENT_INTERVAL_COUNT,
     })
 
@@ -1416,15 +1416,15 @@ class EstateService {
 
     if (tenant.options?.length) {
       const options = await require('../Services/OptionService').getOptions()
+      const hashOptions = groupBy(options, 'title')
       const OhneMaker = require('../Classes/OhneMakler')
       estates = estates.filter((estate) => {
         let amenities = estate.amenities || []
         if (estate.source_id) {
-          amenities = OhneMaker.getOptionIds(amenities, options)
+          amenities = OhneMaker.getOptionIds(amenities, hashOptions)
         } else {
           amenities = amenities.map((amenity) => amenity.option_id)
         }
-
         return tenant.options.every((op) => amenities.includes(op))
       })
       Logger.info(`filterEstates after amenity ${estates.length}`)
