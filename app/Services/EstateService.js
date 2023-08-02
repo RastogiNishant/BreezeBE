@@ -1416,15 +1416,15 @@ class EstateService {
 
     if (tenant.options?.length) {
       const options = await require('../Services/OptionService').getOptions()
+      const hashOptions = groupBy(options, 'title')
       const OhneMaker = require('../Classes/OhneMakler')
       estates = estates.filter((estate) => {
         let amenities = estate.amenities || []
         if (estate.source_id) {
-          amenities = OhneMaker.getOptionIds(amenities, options)
+          amenities = OhneMaker.getOptionIds(amenities, hashOptions)
         } else {
           amenities = amenities.map((amenity) => amenity.option_id)
         }
-
         return tenant.options.every((op) => amenities.includes(op))
       })
       Logger.info(`filterEstates after amenity ${estates.length}`)
