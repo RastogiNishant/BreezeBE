@@ -14,6 +14,7 @@ const FileBucket = use('App/Classes/File')
 const schema = require('../Validators/CreateBuddy').schema()
 const Logger = use('Logger')
 const fsPromise = require('fs/promises')
+const l = use('Localize')
 const {
   STATUS_DRAFT,
   DATE_FORMAT,
@@ -57,7 +58,7 @@ class ImportService {
    *
    */
 
-  static async createSingleEstate({ data, line, six_char_code }, userId) {
+  static async createSingleEstate({ data, line, six_char_code }, userId, lang) {
     let estate
     line += 1
     const warnings = []
@@ -86,7 +87,11 @@ class ImportService {
           await trx.rollback()
           return {
             singleErrors: {
-              error: [ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE],
+              error: [
+                l
+                  .get('landlord.web.my-properties.import.txt_online_id_not_editable', lang)
+                  .replace('{{property_id}}', data.property_id),
+              ],
               line,
               property_id: data.property_id,
               address: data.address,
@@ -197,7 +202,7 @@ class ImportService {
   /**
    * s3_bucket_file_name: s3 bucket relative URL
    */
-  static async process({ s3_bucket_file_name, filePath, user_id, type, import_id }) {
+  static async process({ s3_bucket_file_name, filePath, user_id, type, import_id, lang }) {
     let createErrors = []
     let result = []
     let errors = []
@@ -231,7 +236,7 @@ class ImportService {
         async (i, index) => {
           if (i) {
             const { estateResult, singleWarnings, singleErrors } =
-              await ImportService.createSingleEstate(i, user_id)
+              await ImportService.createSingleEstate(i, user_id, lang)
 
             if (singleErrors) {
               createErrors = createErrors.concat(singleErrors)
