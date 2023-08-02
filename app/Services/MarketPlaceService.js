@@ -223,7 +223,10 @@ class MarketPlaceService {
     let phone_number = contact.contact_info.phone.replace(' ', '')
     if (contact.contact_info.phone[0] === '0') {
       phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
+    } else if (contact.contact_info.phone[0] !== '+') {
+      phone_number = phone_number.replace(contact.contact_info.phone[0], '+49')
     }
+
     try {
       let publisher = contact?.publisher ? MARKETPLACE_LIST?.[contact.publisher] : ``
       publisher = publisher ? l.get(publisher) : ''
@@ -482,7 +485,7 @@ class MarketPlaceService {
     //prepopulated user info:
     const prospect_firstname = contact_info.firstName || ``
     const prospect_secondname = contact_info.lastName || ``
-    const prospect_birthday = other_info?.birthday || ``
+    const prospect_birthday = other_info?.birthday || `1970-01-01`
 
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
