@@ -193,7 +193,7 @@ class MatchService {
   static calculateLandlordScore(prospect, estate, debug = false) {
     let scoreL = 0
 
-    let landlordBudgetPoints = 0
+    let landlordBudgetScore = 0
     let creditScorePoints = 0
     let rentArrearsScore = 0
     let ageInRangeScore = 0
@@ -232,9 +232,9 @@ class MatchService {
     //Landlord Budget Points...
     const LANDLORD_BUDGET_POINT_FACTOR = 0.1
     if (estateBudgetRel >= realBudget) {
-      landlordBudgetPoints = 1
+      landlordBudgetScore = 1
     } else {
-      landlordBudgetPoints =
+      landlordBudgetScore =
         ((-realBudget + estateBudgetRel + LANDLORD_BUDGET_POINT_FACTOR) /
           LANDLORD_BUDGET_POINT_FACTOR) *
         Number(
@@ -243,11 +243,11 @@ class MatchService {
             0
         )
     }
-    log({ estateBudgetRel, realBudget, landlordBudgetPoints })
-    if (!landlordBudgetPoints > 0) {
+    log({ estateBudgetRel, realBudget, landlordBudgetScore })
+    if (!landlordBudgetScore > 0) {
       return 0
     }
-    scoreL += landlordBudgetPoints * landlordBudgetWeight
+    scoreL += landlordBudgetScore * landlordBudgetWeight
 
     // Credit Score Points
     const userCurrentCredit = Number(prospect.credit_score) || 0
@@ -370,7 +370,7 @@ class MatchService {
       return {
         scoreL,
         scoreLPer,
-        landlordBudgetPoints,
+        landlordBudgetScore,
         creditScorePoints,
         rentArrearsScore,
         ageInRangeScore,
@@ -382,24 +382,35 @@ class MatchService {
   }
 
   static calculateProspectScore(prospect, estate, debug = false) {
-    let prospectBudgetPoints = 0
+    let prospectBudgetScore = 0
+    let roomsScore = 0
+    let spaceScore = 0
     let aptTypeScore = 0
     let houseTypeScore = 0
-    let spacePoints = 0
     let amenitiesScore = 0
-    let rentStartPoints = 0
+    let rentStartScore = 0
 
     const amenitiesCount = 7
     // Prospect Score Weights
     const prospectBudgetWeight = 2
+    const roomsWeight = 0.2
+    const areaWeight = 0.4
     const rentStartWeight = 0.5
     const amenitiesWeight = 0.4 / amenitiesCount
-    const areaWeight = 0.4
     const floorWeight = 0.3
-    const roomsWeight = 0.2
     const aptTypeWeight = 0.1
     const houseTypeWeight = 0.1
-    const maxScoreT = 4
+    const maxScoreT =
+      prospectBudgetWeight +
+      rentStartWeight +
+      0.4 + //amenitiesWeight
+      areaWeight +
+      floorWeight +
+      roomsWeight +
+      aptTypeWeight +
+      houseTypeWeight
+
+    let scoreT = 0
 
     const prospectBudget = prospect.budget_max || 0
     const estatePrice = Estate.getFinalPrice(estate)
@@ -407,37 +418,98 @@ class MatchService {
     const realBudget = estatePrice / userIncome
 
     const prospectBudgetRel = prospectBudget / 100
-    if (realBudget > 1) {
-      prospectBudgetPoints = 0
-    } else if (prospectBudgetRel >= realBudget) {
-      prospectBudgetPoints = 1
-      //prospectBudgetPoints = realBudget / prospectBudgetRel - old fmla
-    } else {
-      prospectBudgetPoints = (realBudget - 1) / (prospectBudgetRel - 1)
-    }
-    prospectBudgetPoints = prospectBudgetWeight * prospectBudgetPoints
-    log({ userIncome, prospectBudgetPoints, realBudget, prospectBudget: prospectBudget / 100 })
-    scoreT = prospectBudgetPoints
 
-    const estateArea = Number(estate.area) || 0
-    if (estateArea >= prospect.space_min && estateArea <= prospect.space_max) {
-      spacePoints = areaWeight
-      scoreT += spacePoints
+    //Prospect Budget Points
+    const PROSPECT_BUDGET_POINT_FACTOR = 0.1
+    if (realBudget > 1) {
+      prospectBudgetScore = 0
+    } else if (prospectBudgetRel >= realBudget) {
+      prospectBudgetScore = 1
     } else {
-      if (estateArea > prospect.space_max) {
-        spacePoints = areaWeight * (0.9 + (estateArea - prospect.space_max) / estateArea) * 0.1
-      } else if (estateArea < prospect.space_min) {
-        spacePoints =
-          areaWeight * (0.9 + (prospect.space_min - estateArea) / prospect.space_min) * 0.1
+      prospectBudgetScore =
+        ((-realBudget + prospectBudgetRel + PROSPECT_BUDGET_POINT_FACTOR) /
+          PROSPECT_BUDGET_POINT_FACTOR) *
+        Number(
+          (-realBudget + prospectBudgetRel + PROSPECT_BUDGET_POINT_FACTOR) /
+            PROSPECT_BUDGET_POINT_FACTOR >
+            0
+        )
+    }
+    log({ userIncome, prospectBudgetScore, realBudget, prospectBudget: prospectBudget / 100 })
+    if (!prospectBudgetScore > 0) {
+      return 0
+    }
+    scoreT = prospectBudgetScore * prospectBudgetWeight
+
+    // Rooms Score
+    const LESSER_THAN_ROOMS_SCORE_FACTOR = 1.5
+    const GREATER_THAN_ROOMS_SCORE_FACTOR = 2.5
+    const estateRooms = Number(estate.rooms_number) || 1
+    const prospectRoomsMin = Number(prospect.rooms_min) || 0
+    const prospectRoomsMax = Number(prospect.rooms_max) || 1
+    if (estateRooms >= prospectRoomsMin && estateRooms <= prospectRoomsMax) {
+      roomsScore = 1
+    } else {
+      if (estateRooms > prospectRoomsMax) {
+        roomsScore =
+          (1 - (estateRooms - prospectRoomsMax) / GREATER_THAN_ROOMS_SCORE_FACTOR) *
+          Number(1 - (estateRooms - prospectRoomsMax) / GREATER_THAN_ROOMS_SCORE_FACTOR >= 0)
+      } else if (estateRooms < prospectRoomsMin) {
+        roomsScore =
+          (Number(
+            (estateRooms - prospectRoomsMin + LESSER_THAN_ROOMS_SCORE_FACTOR) /
+              LESSER_THAN_ROOMS_SCORE_FACTOR >=
+              0
+          ) *
+            (estateRooms - prospectRoomsMin + LESSER_THAN_ROOMS_SCORE_FACTOR)) /
+          LESSER_THAN_ROOMS_SCORE_FACTOR
       }
-      scoreT += spacePoints
+    }
+    log({
+      roomsNumber: estateRooms,
+      roomsMin: prospectRoomsMin,
+      roomsMax: prospectRoomsMax,
+      roomsScore,
+    })
+    if (roomsScore <= 0) {
+      return 0
+    }
+    scoreT += roomsScore * roomsWeight
+
+    //Space Score
+    const estateArea = Number(estate.area) || 0
+    const LESSER_THAN_SPACE_SCORE_FACTOR = 5.1
+    const GREATER_THAN_SPACE_SCORE_FACTOR = 10.1
+    const prospectSpaceMin = Number(prospect.space_min) || 0
+    const prospectSpaceMax = Number(prospect.space_max) || 1
+    if (estateArea >= prospectSpaceMin && estateArea <= prospectSpaceMax) {
+      spaceScore = 1
+    } else {
+      if (estateArea > prospectSpaceMax) {
+        spaceScore =
+          (1 - (estateArea - prospectSpaceMax) / GREATER_THAN_SPACE_SCORE_FACTOR) *
+          Number(1 - (estateArea - prospectSpaceMax) / GREATER_THAN_SPACE_SCORE_FACTOR >= 0)
+      } else if (estateArea < prospect.space_min) {
+        spaceScore =
+          (Number(
+            (estateArea - prospectSpaceMin + LESSER_THAN_SPACE_SCORE_FACTOR) /
+              LESSER_THAN_SPACE_SCORE_FACTOR >=
+              0
+          ) *
+            (estateArea - prospectSpaceMin + LESSER_THAN_SPACE_SCORE_FACTOR)) /
+          LESSER_THAN_SPACE_SCORE_FACTOR
+      }
     }
     log({
       estateArea,
-      prospectMin: prospect.space_min,
-      prospectMax: prospect.space_max,
-      spacePoints,
+      prospectSpaceMin,
+      prospectSpaceMax,
+      spaceScore,
     })
+    if (spaceScore <= 0) {
+      return 0
+    }
+    scoreT += spaceScore * areaWeight
 
     // Apt floor in range
     const estateFloors = parseInt(estate.number_floors) || 0
@@ -458,31 +530,6 @@ class MatchService {
       floorMin: prospect.floor_min,
       floorMax: prospect.floor_max,
       floorScore,
-    })
-
-    // Rooms
-    if (estate.rooms_number >= prospect.rooms_min && estate.rooms_number <= prospect.rooms_max) {
-      roomsPoints = roomsWeight
-      scoreT += roomsPoints
-    } else {
-      if (estate.rooms_number > prospect.rooms_max) {
-        roomsPoints =
-          roomsWeight *
-          (0.9 + (estate.rooms_number - prospect.rooms_max) / estate.rooms_number) *
-          0.1
-      } else if (estate.rooms_number < prospect.rooms_min) {
-        roomsPoints =
-          roomsWeight *
-          (0.9 + (prospect.rooms_min - estate.rooms_number) / prospect.rooms_min) *
-          0.1
-      }
-      scoreT += roomsPoints
-    }
-    log({
-      roomsNumber: estate.rooms_number,
-      roomsMin: prospect.rooms_min,
-      roomsMax: prospect.rooms_max,
-      roomsPoints,
     })
 
     // Apartment type is equal
