@@ -617,13 +617,13 @@ class MatchService {
     let success = true
     let message = ''
     try {
-      Logger.info(`matchByUser start ${userId} ${new Date().toISOString()}`)
+      Logger.info(`matchByUser start ${userId} ${moment.utc(new Date()).toISOString()}`)
       const tenant = await MatchService.getProspectForScoringQuery()
         .select('_p.data as polygon')
         .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
         .where({ 'tenants.user_id': userId })
         .first()
-      Logger.info(`matchByUser get tenant ${userId} ${new Date().toISOString()}`)
+      Logger.info(`matchByUser get tenant ${userId} ${moment.utc(new Date()).toISOString()}`)
       const polygon = get(tenant, 'polygon.data.0.0')
       if (!tenant || !polygon) {
         if (ignoreNullFields) {
@@ -648,7 +648,9 @@ class MatchService {
       const trx = await Database.beginTransaction()
       try {
         Logger.info(
-          `matchByUser before getting inner matches ${userId} ${new Date().toISOString()}`
+          `matchByUser before getting inner matches ${userId} ${moment
+            .utc(new Date())
+            .toISOString()}`
         )
         const insideMatchResult = await this.createNewMatches(
           { tenant, has_notification_sent, only_count },
@@ -656,7 +658,11 @@ class MatchService {
         )
         totalCount += insideMatchResult?.count ?? 0
 
-        Logger.info(`matchByUser after getting inner matches ${userId} ${new Date().toISOString()}`)
+        Logger.info(
+          `matchByUser after getting inner matches ${userId} ${moment
+            .utc(new Date())
+            .toISOString()}`
+        )
         const outsideMatchesResult = await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
@@ -668,7 +674,9 @@ class MatchService {
 
         totalCount += outsideMatchesResult?.count ?? 0
         Logger.info(
-          `matchByUser after getting outside matches ${userId} ${new Date().toISOString()}`
+          `matchByUser after getting outside matches ${userId} ${moment
+            .utc(new Date())
+            .toISOString()}`
         )
 
         if (only_count) {
@@ -707,7 +715,9 @@ class MatchService {
             page: 1,
             limit: 20,
           })
-          Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
+          Logger.info(
+            `matchByUser after fetching matches ${userId} ${moment.utc(new Date()).toISOString()}`
+          )
           totalCount = matches?.count || 0
           WebSocket.publishToTenant({
             event: WEBSOCKET_EVENT_MATCH_CREATED,
@@ -745,7 +755,7 @@ class MatchService {
           })
         }
       }
-      Logger.info(`matchByUser finish ${userId} ${new Date().toISOString()}`)
+      Logger.info(`matchByUser finish ${userId} ${moment.utc(new Date()).toISOString()}`)
     }
   }
 
