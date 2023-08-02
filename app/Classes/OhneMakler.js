@@ -285,18 +285,18 @@ class OhneMakler {
     return this[type][key]
   }
 
-  static getOptionIds(amenities, options) {
+  static getOptionIds(amenities, hashOptions) {
     if (!amenities?.length) {
       return []
     }
 
-    const hashOptions = groupBy(options, 'title')
-    const amenityKeys = amenities.map(
-      (amenity) =>
+    const amenityKeys = amenities.map((amenity) => {
+      return (
         Object.keys(OhneMakler.amenities).find((key) => OhneMakler.amenities[key] === amenity) ?? ''
-    )
+      )
+    })
 
-    return amenityKeys.map((key) => hashOptions?.[key] ?? 0)
+    return amenityKeys.map((key) => hashOptions?.[key]?.[0].id ?? 0)
   }
 
   parseHouseAndApartmentTypes(estate, newEstate) {
