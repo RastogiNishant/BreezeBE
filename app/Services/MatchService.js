@@ -120,20 +120,17 @@ const inRange = (value, start, end) => {
 }
 
 const log = (data) => {
-  return false
+  //return false
   //Logger.info('LOG', data)
-  //console.log(data)
+  console.log(data)
 }
 
 class MatchService {
   /**
    * Get matches percent between estate/prospect
    */
-  static async calculateMatchPercent(prospect, estate) {
+  static async calculateMatchPercent(prospect, estate, type = 'both') {
     // Property Score weight
-    // landlordBudgetWeight = 1
-    // creditScoreWeight = 1
-    // rentArrearsWeight = 1
 
     const vacant_date = estate.vacant_date
     const rent_end_at = estate.rent_end_at
@@ -171,33 +168,10 @@ class MatchService {
       return 0
     }
 
-    const ageWeight = 0.6
-    const householdSizeWeight = 0.3
-    const petsWeight = 0.1
-    const maxScoreL = 4
-
-    const amenitiesCount = 7
-    // Prospect Score Weights
-    const prospectBudgetWeight = 2
-    const rentStartWeight = 0.5
-    const amenitiesWeight = 0.4 / amenitiesCount
-    const areaWeight = 0.4
-    const floorWeight = 0.3
-    const roomsWeight = 0.2
-    const aptTypeWeight = 0.1
-    const houseTypeWeight = 0.1
-    const maxScoreT = 4
-
-    const userIncome = parseFloat(prospect.income) || 0
-    const estatePrice = Estate.getFinalPrice(estate)
-    let prospectHouseholdSize = parseInt(prospect.members_count) || 1 //adult count
-    let estateFamilySizeMax = parseInt(estate.family_size_max) || 1
-    let estateFamilySizeMin = parseInt(estate.family_size_min) || 1
     let scoreL = 0
     let scoreT = 0
 
     const estateBudget = estate.budget || 0
-    const prospectBudget = prospect.budget_max || 0
 
     // LANDLORD calculation part
     // Get landlord income score
@@ -212,17 +186,202 @@ class MatchService {
       //added to prevent division by zero on calculation for realBudget
       return 0
     }
-    const realBudget = estatePrice / userIncome
+    const scoreLPer = MatchService.calculateLandlordScore(prospect, estate)
+    const scoreTPer = MatchService.calculateProspectScore(prospect, estate)
+  }
+
+  static calculateLandlordScore(prospect, estate, debug = false) {
+    let scoreL = 0
 
     let landlordBudgetPoints = 0
     let creditScorePoints = 0
     let rentArrearsScore = 0
-    let familyStatusScore = 0
     let ageInRangeScore = 0
     let householdSizeScore = 0
     let petsScore = 0
-    let roomsPoints = 0
-    let floorScore = 0
+
+    const landlordBudgetWeight = 1
+    const creditScoreWeight = 1
+    const rentArrearsWeight = 1
+    const ageInRangeWeight = 0.6
+    const householdSizeWeight = 0.3
+    const petsWeight = 0.1
+
+    const maxScoreL =
+      landlordBudgetWeight +
+      creditScoreWeight +
+      rentArrearsWeight +
+      ageInRangeWeight +
+      householdSizeWeight +
+      petsWeight
+
+    const estateBudget = estate.budget || 0
+    const estatePrice = Estate.getFinalPrice(estate)
+    const userIncome = parseFloat(prospect.income) || 0
+    const realBudget = estatePrice / userIncome
+    let prospectHouseholdSize = parseInt(prospect.members_count) || 1 //adult count
+    let estateFamilySizeMax = parseInt(estate.family_size_max) || 1
+    let estateFamilySizeMin = parseInt(estate.family_size_min) || 1
+
+    if (realBudget > 1) {
+      //This means estatePrice is bigger than prospect's income. Prospect can't afford it
+      return 0
+    }
+    let estateBudgetRel = estateBudget / 100
+
+    //Landlord Budget Points...
+    const LANDLORD_BUDGET_POINT_FACTOR = 0.1
+    if (estateBudgetRel >= realBudget) {
+      landlordBudgetPoints = 1
+    } else {
+      landlordBudgetPoints =
+        ((-realBudget + estateBudgetRel + LANDLORD_BUDGET_POINT_FACTOR) /
+          LANDLORD_BUDGET_POINT_FACTOR) *
+        Number(
+          (-realBudget + estateBudgetRel + LANDLORD_BUDGET_POINT_FACTOR) /
+            LANDLORD_BUDGET_POINT_FACTOR >
+            0
+        )
+    }
+    log({ estateBudgetRel, realBudget, landlordBudgetPoints })
+    if (!landlordBudgetPoints > 0) {
+      return 0
+    }
+    scoreL += landlordBudgetPoints * landlordBudgetWeight
+
+    // Credit Score Points
+    const userCurrentCredit = Number(prospect.credit_score) || 0
+    const userRequiredCredit = Number(estate.credit_score) || 0
+    const CREDIT_SCORE_POINT_FACTOR = 5
+    if ((userCurrentCredit === 100 && userRequiredCredit === 100) || userRequiredCredit === 0) {
+      creditScorePoints = 1
+    } else if (userRequiredCredit === 100) {
+      creditScorePoints = 0
+    } else if (userCurrentCredit > userRequiredCredit) {
+      creditScorePoints =
+        0.9 + (0.1 / (100 - userRequiredCredit)) * (userCurrentCredit - userRequiredCredit)
+    } else {
+      creditScorePoints =
+        (0.9 / CREDIT_SCORE_POINT_FACTOR) *
+        (userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR) *
+        Number(userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR > 0)
+    }
+    log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
+    if (!creditScorePoints > 0) {
+      return 0
+    }
+    scoreL += creditScorePoints * creditScoreWeight
+
+    // Get rent arrears score
+    if (!estate.rent_arrears && prospect.rent_arrears === NO_UNPAID_RENTAL) {
+      rentArrearsScore = 1
+    }
+    if (!rentArrearsScore > 0) {
+      return 0
+    }
+    scoreL += rentArrearsWeight * rentArrearsScore
+    log({
+      estateRentArrears: estate.rent_arrears,
+      prospectUnpaidRental: prospect.rent_arrears,
+    })
+
+    // Age In Range Score
+    const LESSER_THAN_MIN_AGE_FACTOR = 5.1
+    const GREATER_THAN_MAX_AGE_FACTOR = 5.1
+    if (estate.min_age && estate.max_age && prospect.members_age) {
+      const isInRangeArray = (prospect.members_age || []).map((age) => {
+        return inRange(age, estate.min_age, estate.max_age)
+      })
+      if (isInRangeArray.every((val, i, arr) => val === arr[0]) && isInRangeArray[0] === true) {
+        //all ages are within the age range of the estate
+        ageInRangeScore = 1
+      } else {
+        //some ages are outside range...
+        if (max(prospect.members_age) > estate.max_age) {
+          ageInRangeScore =
+            (1 - (max(prospect.members_age) - estate.max_age) / GREATER_THAN_MAX_AGE_FACTOR) *
+            Number((max(prospect.members_age) - estate.max_age) / GREATER_THAN_MAX_AGE_FACTOR > 0)
+        } else if (min(prospect.members_age) < estate.min_age) {
+          ageInRangeScore =
+            (Number(
+              (min(prospect.members_age) - estate.min_age + LESSER_THAN_MIN_AGE_FACTOR) /
+                LESSER_THAN_MIN_AGE_FACTOR >=
+                0
+            ) *
+              (min(prospect.members_age) - estate.min_age + LESSER_THAN_MIN_AGE_FACTOR)) /
+            LESSER_THAN_MIN_AGE_FACTOR
+        }
+      }
+    }
+    if (!ageInRangeScore > 0) {
+      return 0
+    }
+    scoreL += ageInRangeScore * ageInRangeWeight
+    log({
+      estateMinAge: estate.min_age,
+      estateMaxAge: estate.max_age,
+      prospectMembersAge: prospect.members_age,
+      ageInRangeScore,
+    })
+
+    // Household size
+    const LESSER_THAN_HOUSEHOLD_SIZE_FACTOR = 1.1
+    const GREATER_THAN_HOUSEHOLD_SIZE_FACTOR = 1.1
+    if (
+      prospectHouseholdSize >= estateFamilySizeMin &&
+      prospectHouseholdSize <= estateFamilySizeMax
+    ) {
+      // Prospect Household Size is within the range of the estate's family size
+      householdSizeScore = 1
+    } else {
+      if (prospectHouseholdSize > estateFamilySizeMax) {
+        householdSizeScore =
+          (1 - (prospectHouseholdSize - estateFamilySizeMax) / GREATER_THAN_HOUSEHOLD_SIZE_FACTOR) *
+          Number(
+            1 - (prospectHouseholdSize - estateFamilySizeMax) / GREATER_THAN_HOUSEHOLD_SIZE_FACTOR >
+              0
+          )
+      } else if (prospectHouseholdSize < estateFamilySizeMin) {
+        householdSizeScore =
+          (((prospectHouseholdSize - estateFamilySizeMin + LESSER_THAN_HOUSEHOLD_SIZE_FACTOR) /
+            LESSER_THAN_HOUSEHOLD_SIZE_FACTOR >=
+            0) *
+            (prospectHouseholdSize - estateFamilySizeMin + LESSER_THAN_HOUSEHOLD_SIZE_FACTOR)) /
+          LESSER_THAN_HOUSEHOLD_SIZE_FACTOR
+      }
+    }
+    log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax, householdSizeScore })
+    if (!householdSizeScore > 0) {
+      return 0
+    }
+    scoreL += householdSizeScore * householdSizeWeight
+
+    // Pets
+    if (prospect.pets === estate.pets_allowed) {
+      petsScore = 1
+    }
+    log({ prospectPets: prospect.pets, estatePets: estate.pets_allowed })
+    scoreL += petsWeight * petsScore
+
+    const scoreLPer = scoreL / maxScoreL
+    log({ scoreLandlordPercent: scoreLPer })
+
+    if (debug) {
+      return {
+        scoreL,
+        scoreLPer,
+        landlordBudgetPoints,
+        creditScorePoints,
+        rentArrearsScore,
+        ageInRangeScore,
+        householdSizeScore,
+        petsScore,
+      }
+    }
+    return scoreLPer
+  }
+
+  static calculateProspectScore(prospect, estate, debug = false) {
     let prospectBudgetPoints = 0
     let aptTypeScore = 0
     let houseTypeScore = 0
@@ -230,125 +389,24 @@ class MatchService {
     let amenitiesScore = 0
     let rentStartPoints = 0
 
-    /*
-    IF(E2>1,0,IF(D2>=E2,1,(E2-1)/(D2-1)))
-    E2 - realBudget
-    D2 - estateBudgetRel*/
-    if (realBudget > 1) {
-      //This means estatePrice is bigger than prospect's income. Prospect can't afford it
-      return 0
-    }
-    let estateBudgetRel = estateBudget / 100
-    log({ estateBudgetRel, realBudget })
-    if (estateBudgetRel >= realBudget) {
-      //landlordBudgetPoints = realBudget / estateBudgetRel
-      landlordBudgetPoints = 1
-    } else {
-      landlordBudgetPoints = (realBudget - 1) / (estateBudgetRel - 1)
-    }
-    scoreL += landlordBudgetPoints
+    const amenitiesCount = 7
+    // Prospect Score Weights
+    const prospectBudgetWeight = 2
+    const rentStartWeight = 0.5
+    const amenitiesWeight = 0.4 / amenitiesCount
+    const areaWeight = 0.4
+    const floorWeight = 0.3
+    const roomsWeight = 0.2
+    const aptTypeWeight = 0.1
+    const houseTypeWeight = 0.1
+    const maxScoreT = 4
 
-    // Get credit score income
-    const userCurrentCredit = Number(prospect.credit_score) || 0
-    const userRequiredCredit = Number(estate.credit_score) || 0
+    const prospectBudget = prospect.budget_max || 0
+    const estatePrice = Estate.getFinalPrice(estate)
+    const userIncome = parseFloat(prospect.income) || 0
+    const realBudget = estatePrice / userIncome
 
-    log({ userCurrentCredit, userRequiredCredit })
-
-    if ((userCurrentCredit === 100 && userRequiredCredit === 100) || userRequiredCredit === 0) {
-      creditScorePoints = 1
-    } else if (userRequiredCredit === 100) {
-      creditScorePoints = 0
-    } else if (userCurrentCredit > userRequiredCredit) {
-      creditScorePoints =
-        0.9 + ((userCurrentCredit - userRequiredCredit) * (1 - 0.9)) / (100 - userRequiredCredit)
-    } else {
-      creditScorePoints = (1 - (userRequiredCredit - userCurrentCredit) / userRequiredCredit) * 0.9
-    }
-    scoreL += creditScorePoints
-    log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
-
-    // Get rent arrears score
-    const rentArrearsWeight = 1
-    if (!estate.rent_arrears || prospect.rent_arrears === NO_UNPAID_RENTAL) {
-      log({ rentArrearsPoints: rentArrearsWeight })
-      scoreL += rentArrearsWeight
-      rentArrearsScore = 1
-    }
-    log({ estateRentArrears: estate.rent_arrears, prospectUnpaidRental: prospect.rent_arrears })
-
-    // prospect's age
-    log({
-      estateMinAge: estate.min_age,
-      estateMaxAge: estate.max_age,
-      prospectMembersAge: prospect.members_age,
-    })
-    if (estate.min_age && estate.max_age && prospect.members_age) {
-      const isInRangeArray = (prospect.members_age || []).map((age) => {
-        return inRange(age, estate.min_age, estate.max_age)
-      })
-      if (isInRangeArray.every((val, i, arr) => val === arr[0]) && isInRangeArray[0] === true) {
-        //all ages are within the age range of the estate
-        scoreL += ageWeight
-        ageInRangeScore = ageWeight
-      } else {
-        //some ages are outside range...
-        if (max(prospect.members_age) > estate.max_age) {
-          ageInRangeScore =
-            ageWeight * (1 - (max(prospect.members_age) - estate.max_age) / estate.max_age)
-        } else if (min(prospect.members_age) < estate.min_age) {
-          ageInRangeScore =
-            ageWeight * (1 - (estate.min_age - min(prospect.members_age)) / estate.min_age)
-        }
-        scoreL += ageInRangeScore
-      }
-    }
-
-    //Household size
-    log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax })
-    if (
-      prospectHouseholdSize >= estateFamilySizeMin &&
-      prospectHouseholdSize <= estateFamilySizeMax
-    ) {
-      // Prospect Household Size is within the range of the estate's family size
-      householdSizeScore = householdSizeWeight
-      scoreL += householdSizeWeight
-    } else {
-      if (prospectHouseholdSize > estateFamilySizeMax) {
-        householdSizeScore =
-          householdSizeWeight *
-          (1 - (prospectHouseholdSize - estateFamilySizeMax) / estateFamilySizeMax)
-      } else if (prospectHouseholdSize < estateFamilySizeMin) {
-        householdSizeScore =
-          householdSizeWeight *
-          (1 - (estateFamilySizeMin - prospectHouseholdSize) / estateFamilySizeMin)
-      }
-      scoreL += householdSizeScore
-    }
-    // Pets
-    log({ prospectPets: prospect.pets, estatePets: estate.pets_allowed })
-    if (prospect.pets === estate.pets_allowed) {
-      scoreL += petsWeight
-      log({ petsWeight })
-      petsScore = petsWeight
-    }
-
-    const scoreLPer = scoreL / maxScoreL
-    log({ scoreLandlordPercent: scoreLPer })
-
-    // Check if we need to proceed
-    if (scoreLPer < 0.5) {
-      log('landlord score fails.')
-      return 0
-    }
-
-    // -----------------------
-    // prospect calculation part
-    // -----------------------
     const prospectBudgetRel = prospectBudget / 100
-    /* IF(E2>1,0,IF(D2>=E2,1,(E2-1)/(D2-1)))
-    E2 - realBudget
-    D2 - prospectBudgetRel
-    */
     if (realBudget > 1) {
       prospectBudgetPoints = 0
     } else if (prospectBudgetRel >= realBudget) {
