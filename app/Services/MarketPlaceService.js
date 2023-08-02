@@ -252,7 +252,7 @@ class MarketPlaceService {
         .replace('{{partner_name}}', `${publisher ?? ''}`)
         .replace('{{site_url}}', DOMAIN)
 
-      await SMSService.send({ to: phone_number, txt, from })
+      await SMSService.send({ to: phone_number, txt })
     } catch (e) {
       console.log('sending sms error', e.message)
     }
