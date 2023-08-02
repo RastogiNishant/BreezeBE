@@ -485,7 +485,7 @@ class MarketPlaceService {
     //prepopulated user info:
     const prospect_firstname = contact_info.firstName || ``
     const prospect_secondname = contact_info.lastName || ``
-    const prospect_birthday = other_info?.birthday || ``
+    const prospect_birthday = other_info?.birthday || `1970-01-01`
 
     let uri =
       `&data1=${encodeURIComponent(encDst)}` +
