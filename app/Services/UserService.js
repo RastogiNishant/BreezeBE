@@ -121,8 +121,7 @@ class UserService {
     // Manages the outside tenant invitation flow
     if (
       !userData?.source_estate_id &&
-      (userData?.invite_type === OUTSIDE_TENANT_INVITE_TYPE ||
-        userData?.invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE) &&
+      userData?.invite_type === OUTSIDE_TENANT_INVITE_TYPE &&
       userData?.data1 &&
       userData?.data2
     ) {
@@ -136,14 +135,17 @@ class UserService {
 
     let otherInfo = null
     if (
-      userData?.source_estate_id &&
-      userData?.invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE
+      userData?.invite_type === OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE &&
+      userData?.data1 &&
+      userData?.data2
     ) {
-      otherInfo = await require('./MarketPlaceService.js').getInfoFromContactRequests(
-        userData.email,
-        userData.source_estate_id
-      )
+      otherInfo = await require('./MarketPlaceService.js').getInfoFromContactRequests({
+        email: userData.email,
+        data1: userData?.data1,
+        data2: userData?.data2,
+      })
     }
+
     if (otherInfo && !userData?.birthday && otherInfo?.birthday) {
       userData.birthday = otherInfo.birthday
     }
@@ -153,22 +155,25 @@ class UserService {
       try {
         // Create empty tenant and link to user
 
-        const tenant = userData?.signupData
         const tenantData = {
           user_id: user.id,
-          coord: tenant?.address?.coord,
-          dist_type: tenant?.transport,
-          dist_min: tenant?.time,
-          address: tenant?.address?.title,
+          coord: userData?.signupData?.address?.coord,
+          dist_type: userData?.signupData?.transport,
+          dist_min: userData?.signupData?.time,
+          address: userData?.signupData?.address?.title,
         }
+
         if (otherInfo?.pets === true) {
           tenantData.pets = PETS_SMALL
         } else if (otherInfo?.pets === false) {
           tenantData.pets = PETS_NO
         }
+
         tenantData.members_count = otherInfo?.members || null
         tenantData.income = otherInfo?.income || null
-        await Tenant.create(tenantData, trx)
+
+        const tenant = await Tenant.create(tenantData, trx)
+
         const memberInfo = {
           firstname: user?.firstname,
           secondname: user?.secondname,
