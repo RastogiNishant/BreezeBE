@@ -5,12 +5,12 @@ const Schema = use('Schema')
 
 class CreateTenantCertificationSchema extends Schema {
   up() {
-    this.create('tenant_certifications', (table) => {
+    this.create('tenant_certificates', (table) => {
       table.increments()
       table.integer('user_id').unsigned().references('id').inTable('users')
       table.integer('city_id').unsigned().references('id').inTable('cities')
       table.string('income_level')
-      table.date('expired_date')
+      table.date('expired_at')
       table.index('user_id')
       table.index('city_id')
 
@@ -19,7 +19,7 @@ class CreateTenantCertificationSchema extends Schema {
   }
 
   down() {
-    this.drop('tenant_certifications')
+    this.drop('tenant_certificates')
   }
 }
 
