@@ -1352,7 +1352,7 @@ Estates: [ESTATES]
     'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
   },
 
-  SHORTENURL_LENGTH: 9,
+  SHORTENURL_LENGTH: 10,
   EXPIRED_FINAL_CONFIRM_PERIOD: 2, // hourly based
 
   ROOM_INTERVAL_COUNT: 1,
