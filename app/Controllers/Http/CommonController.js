@@ -12,7 +12,7 @@ const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const ShortenLinkService = use('App/Services/ShortenLinkService')
 const Estate = use('App/Models/Estate')
-
+const Logger = use('Logger')
 const Static = use('Static')
 
 class CommonController {
@@ -146,7 +146,7 @@ class CommonController {
 
   async getOriginalUrl({ request, response }) {
     const { key } = request.all()
-
+    Logger.info(`getOriginalUrl = ${key} ${process.env.SHORT_URL_LEN}`)
     if (key?.length !== (process.env.SHORT_URL_LEN ?? constants.SHORTENURL_LENGTH)) {
       return response.redirect(`https://www.breeze4me.de/404`)
     }
