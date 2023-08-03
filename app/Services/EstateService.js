@@ -1332,7 +1332,10 @@ class EstateService {
       const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
       return budget >= minTenantBudget && budget <= maxTenantBudget
     })
-    Logger.info(`filterEstates after budget ${estates?.length}`)
+
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates after budget ${estates?.length}`)
+    }
 
     //transfer budget
     estates = estates.filter(
@@ -1341,7 +1344,9 @@ class EstateService {
         (estate.transfer_budget >= (tenant.transfer_budget_min ?? 0) &&
           estate.transfer_budget <= (tenant.transfer_budget_max ?? 0))
     )
-    Logger.info(`filterEstates after transfer ${estates?.length}`)
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates after transfer ${estates?.length}`)
+    }
 
     if (tenant.rent_start) {
       estates = estates.filter(
@@ -1351,7 +1356,9 @@ class EstateService {
             moment.utc(tenant.rent_start).format()
       )
     }
-    Logger.info(`filterEstates after rent start ${estates?.length}`)
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates after rent start ${estates?.length}`)
+    }
 
     if (tenant.is_short_term_rent) {
       estates = estates.filter((estate) => {
@@ -1382,7 +1389,9 @@ class EstateService {
         return true
       })
     }
-    Logger.info(`filterEstates after short term ${estates?.length}`)
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates after short term ${estates?.length}`)
+    }
 
     estates = estates.filter(
       (estate) =>
@@ -1390,21 +1399,27 @@ class EstateService {
         (estate.rooms_number >= (tenant.rooms_min || 1) &&
           estate.rooms_number <= (tenant.rooms_max || 1))
     )
-    Logger.info(`filterEstates after rooms ${estates?.length}`)
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates after rooms ${estates?.length}`)
+    }
 
     estates = estates.filter(
       (estate) =>
         !estate.area ||
         (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
     )
-    Logger.info(`filterEstates after area ${estates?.length}`)
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates after area ${estates?.length}`)
+    }
 
     if (tenant.apt_type?.length) {
       estates = estates.filter(
         (estate) => !estate.apt_type || tenant.apt_type.includes(estate.apt_type)
       )
     }
-    Logger.info(`filterEstates apt type after ${estates?.length}`)
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates apt type after ${estates?.length}`)
+    }
 
     //tenant.house_type.every((el) => (estate?.house_type || []).includes(el))
     if (tenant.house_type?.length) {
@@ -1412,7 +1427,9 @@ class EstateService {
         (estate) => !estate.house_type || tenant.house_type.includes(estate.house_type)
       )
     }
-    Logger.info(`filterEstates after house type ${estates?.length}`)
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates after house type ${estates?.length}`)
+    }
 
     if (tenant.options?.length) {
       const options = await require('../Services/OptionService').getOptions()
@@ -1427,7 +1444,9 @@ class EstateService {
         }
         return tenant.options.every((op) => amenities.includes(op))
       })
-      Logger.info(`filterEstates after amenity ${estates.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after amenity ${estates.length}`)
+      }
     }
 
     return estates
