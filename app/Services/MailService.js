@@ -971,6 +971,10 @@ class MailService {
       publisher = publisher ? l.get(publisher) : ''
       const templateId = PROSPECT_EMAIL_TEMPLATE
 
+      const subject = l
+        .get('prospect.no_reply_email_from_listing_updated.subject.message', lang)
+        .replace('{{partner_name}}', publisher)
+
       let prospectName = l.get('prospect.settings.menu.txt_prospect.message', lang)
       if (contact?.contact_info?.firstName || contact?.contact_info?.lastName) {
         prospectName = `${contact?.contact_info?.firstName || ''} ${
@@ -1006,7 +1010,7 @@ class MailService {
         },
         templateId: templateId,
         dynamic_template_data: {
-          subject: l.get('prospect.no_reply_email_from_listing.subject.message', lang),
+          subject,
           salutation: salutation,
           intro: introLayout,
           CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
