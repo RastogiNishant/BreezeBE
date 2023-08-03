@@ -10,7 +10,7 @@ const {
   STATUS_EXPIRE,
 } = require('../constants')
 
-const { isEmpty } = require('lodash')
+const { isEmpty, groupBy } = require('lodash')
 const Database = use('Database')
 const ThirdPartyMatch = use('App/Models/ThirdPartyMatch')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
@@ -40,9 +40,18 @@ class ThirdPartyMatchService {
     const MatchService = require('./MatchService')
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
 
+    const options = await require('../Services/OptionService').getOptions()
+    const hashOptions = groupBy(options, 'title')
+    const OhneMakler = require('../Classes/OhneMakler')
     while (idx < estates.length) {
       let estate = estates[idx]
-      estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+      let amenities = OhneMakler.getOptionIds(estate.amenities, hashOptions)
+      estate = {
+        ...estate,
+        options: amenities,
+        ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+      }
+      console.log({ estate })
       const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
         tenant,
         estate
@@ -112,11 +121,17 @@ class ThirdPartyMatchService {
     // Calculate matches for tenants to current estate
     let passedEstates = []
     let idx = 0
-
+    const options = await require('../Services/OptionService').getOptions()
+    const hashOptions = groupBy(options, 'title')
+    const OhneMakler = require('../Classes/OhneMakler')
+    const amenities = OhneMakler.getOptionIds(estate.amenities, hashOptions)
+    estate = {
+      ...estate,
+      options: amenities,
+      ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+    }
     while (idx < tenants.length) {
       const tenant = tenants[idx]
-
-      estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
       const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
         tenant,
         estate
