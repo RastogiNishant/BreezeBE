@@ -147,7 +147,7 @@ class CommonController {
   async getOriginalUrl({ request, response }) {
     const { key } = request.all()
 
-    if (key?.length !== (process.env.SHORTENURL_LENGTH ?? constants.SHORTENURL_LENGTH)) {
+    if (key?.length !== (process.env.SHORT_URL_LEN ?? constants.SHORTENURL_LENGTH)) {
       return response.redirect(`https://www.breeze4me.de/404`)
     }
 
