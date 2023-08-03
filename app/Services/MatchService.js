@@ -120,9 +120,9 @@ const inRange = (value, start, end) => {
 }
 
 const log = (data) => {
-  return false
+  //return false
   //Logger.info('LOG', data)
-  //console.log(data)
+  console.log(data)
 }
 
 class MatchService {
@@ -186,9 +186,9 @@ class MatchService {
       }
     }
 
-    const scoreLPer = MatchService.calculateLandlordScore(prospect, estate)
-    const scoreTPer = MatchService.calculateProspectScore(prospect, estate)
-    const percent = ((scoreTPer + scoreLPer) / 2) * 100
+    const scoreLPer = MatchService.calculateLandlordScore(prospect, estate) * 100
+    const scoreTPer = MatchService.calculateProspectScore(prospect, estate) * 100
+    const percent = (scoreTPer + scoreLPer) / 2
     return {
       landlord_score: scoreLPer.toFixed(2),
       prospect_score: scoreTPer.toFixed(2),
@@ -286,14 +286,11 @@ class MatchService {
     if (!estate.rent_arrears && prospect.rent_arrears === NO_UNPAID_RENTAL) {
       rentArrearsScore = 1
     }
-    if (!rentArrearsScore > 0) {
-      return 0
-    }
-    scoreL += rentArrearsWeight * rentArrearsScore
     log({
       estateRentArrears: estate.rent_arrears,
       prospectUnpaidRental: prospect.rent_arrears,
     })
+    scoreL += rentArrearsWeight * rentArrearsScore
 
     // Age In Range Score
     const LESSER_THAN_MIN_AGE_FACTOR = 5.1
@@ -579,9 +576,6 @@ class MatchService {
     // Apartment type is equal
     if ((prospect.apt_type || []).includes(estate.apt_type)) {
       aptTypeScore = 1
-    } else {
-      //filtered out...
-      return 0
     }
     log({ prospectAptType: prospect.apt_type, estateAptType: estate.apt_type })
     scoreT += aptTypeScore * aptTypeWeight
@@ -589,8 +583,6 @@ class MatchService {
     // House type is equal
     if ((prospect.house_type || []).includes(estate.house_type)) {
       houseTypeScore = 1
-    } else {
-      return 0
     }
     log({ prospectHouseType: prospect.house_type, estateHouseType: estate.house_type })
     scoreT += houseTypeScore * houseTypeWeight
@@ -858,7 +850,9 @@ class MatchService {
     )
 
     queries += ` ON CONFLICT ( user_id, estate_id ) 
-                  DO UPDATE SET percent = EXCLUDED.percent`
+                  DO UPDATE SET percent = EXCLUDED.percent, landlord_score = EXCLUDED.landlord_score,
+                  prospect_score = EXCLUDED.prospect_score
+                `
 
     await Database.raw(queries).transacting(trx)
 
@@ -2403,7 +2397,7 @@ class MatchService {
 
     const query = Estate.query()
       .select('estates.*')
-      .select('_m.percent as match')
+      .select('_m.prospect_score as match')
       .select('_m.updated_at', '_m.status_at')
       .withCount('notifications', function (n) {
         n.where('user_id', userId)
@@ -2430,7 +2424,7 @@ class MatchService {
         .select('estates.*')
         .select('_m.updated_at', '_m.status_at')
         .select(Database.raw('"_l"."updated_at" as "action_at"'))
-        .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+        .select(Database.raw('COALESCE(_m.prospect_score, 0) as match'))
         .innerJoin({ _l: 'likes' }, function () {
           this.on('_l.estate_id', 'estates.id').on('_l.user_id', userId)
         })
@@ -2447,7 +2441,7 @@ class MatchService {
         .select('estates.*')
         .select('_m.updated_at', '_m.status_at')
         .select(Database.raw('_d.created_at as action_at'))
-        .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+        .select(Database.raw('COALESCE(_m.prospect_score, 0) as match'))
         .innerJoin({ _d: 'dislikes' }, function () {
           this.on('_d.estate_id', 'estates.id').on('_d.user_id', userId)
         })
@@ -2590,7 +2584,7 @@ class MatchService {
     const now = moment.utc().format(DATE_FORMAT)
     const query = Estate.query()
       .select('estates.*')
-      .select('_m.percent as match')
+      .select('_m.prospect_score as match')
       .select('_m.updated_at', '_m.status_at')
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -2909,7 +2903,7 @@ class MatchService {
   static searchForTenant(userId, params = {}) {
     const query = Estate.query()
       .select('estates.*')
-      .select('_m.percent as match')
+      .select('_m.prospect_score as match')
       .select('_m.updated_at', '_m.status_at')
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -3252,7 +3246,7 @@ class MatchService {
       ])
       .select(
         '_m.updated_at',
-        '_m.percent as percent',
+        '_m.landlord_score as percent',
         '_m.share',
         '_m.inviteIn',
         '_m.status_at',
