@@ -62,7 +62,7 @@ class ThirdPartyMatchService {
         landlord_score: i.landlord_score,
         prospect_score: i.prospect_score,
       })) || []
-
+    console.log({ matches })
     const oldMatches = await this.getOldMatches(tenant.user_id)
     Logger.info(
       `ThirdPartyOfferService createNewMatches after getOldMatches ${new Date().toISOString()}`
@@ -150,21 +150,25 @@ class ThirdPartyMatchService {
     }
 
     let queries = `INSERT INTO third_party_matches 
-                  ( user_id, estate_id, percent, status, landlord_score, prospect_score )    
+                  ( user_id, estate_id, percent, status, landlord_score, prospect_score, created_at, updated_at )    
                   VALUES 
                 `
 
     queries = (matches || []).reduce(
       (q, current, index) =>
         `${q}\n ${index ? ',' : ''} 
-        ( ${current.user_id}, ${current.estate_id}, '${current.percent}', ${
-          current.status
-        }, '${landlord_score}', '${prospect_score}' ) `,
+        ( ${current.user_id}, ${current.estate_id}, '${current.percent}', ${current.status}, '${
+          current.landlord_score
+        }', '${current.prospect_score}', NOW(), NOW() ) `,
       queries
     )
 
     queries += ` ON CONFLICT ( user_id, estate_id ) 
-                  DO UPDATE SET percent = EXCLUDED.percent`
+                  DO UPDATE SET percent = EXCLUDED.percent,
+                    landlord_score=EXCLUDED.landlord_score,
+                    prospect_score=EXCLUDED.prospect_score,
+                    updated_at=NOW()
+                  `
 
     await Database.raw(queries).transacting(trx)
 
