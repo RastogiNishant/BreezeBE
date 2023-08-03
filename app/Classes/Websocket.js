@@ -50,6 +50,7 @@ class WebSocket {
   }
 
   static publishToTenant({ event, userId, data }) {
+    Logger.info(`websocket publish ${userId} ${event} ${moment.utc(new Date()).toISOString()}`)
     WebSocket.publish({
       topic: `${WEBSOCKET_TENANT_REDIS_KEY}:${userId}`,
       channel: 'tenant:*',
@@ -79,7 +80,7 @@ class WebSocket {
 
 WebSocket.redisSubscriber.on('message', (channel, message) => {
   try {
-    Logger.info(`websocket subscribe ${channel} ${message} ${moment.utc(new Date()).toISOString()}`)
+    Logger.info(`websocket subscribe ${channel} ${moment.utc(new Date()).toISOString()}`)
     const object = JSON.parse(message)
     if (!object?.event || !object?.data) {
       return true
