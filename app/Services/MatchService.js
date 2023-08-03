@@ -138,7 +138,11 @@ class MatchService {
       // if it's inside property
       if (!estate.source_id) {
         if (!vacant_date || !rent_end_at) {
-          return 0
+          return {
+            percent: 0,
+            landlord_score: 0,
+            prospect_score: 0,
+          }
         }
 
         const rent_duration = moment(rent_end_at).format('x') - moment(vacant_date).format('x')
@@ -146,24 +150,40 @@ class MatchService {
           rent_duration < prospect.residency_duration_min * 24 * 60 * 60 * 1000 ||
           rent_duration > prospect.residency_duration_max * 24 * 60 * 60 * 1000
         ) {
-          return 0
+          return {
+            percent: 0,
+            landlord_score: 0,
+            prospect_score: 0,
+          }
         }
       } else {
         if (estate.property_type !== PROPERTY_TYPE_SHORT_TERM) {
-          return 0
+          return {
+            percent: 0,
+            landlord_score: 0,
+            prospect_score: 0,
+          }
         }
       }
     }
     const incomes =
       prospect.incomes ?? (await require('./MemberService').getIncomes(prospect.user_id))
     if (!incomes?.length) {
-      return 0
+      return {
+        percent: 0,
+        landlord_score: 0,
+        prospect_score: 0,
+      }
     }
 
     const income_types = incomes.map((ic) => ic.income_type)
     const isExistIncomeSource = estate.income_sources.some((ic) => income_types.includes(ic))
     if (!isExistIncomeSource) {
-      return 0
+      return {
+        percent: 0,
+        landlord_score: 0,
+        prospect_score: 0,
+      }
     }
 
     const scoreLPer = MatchService.calculateLandlordScore(prospect, estate)
