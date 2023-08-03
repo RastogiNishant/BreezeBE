@@ -1398,7 +1398,6 @@ class EstateService {
         (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
     )
     Logger.info(`filterEstates after area ${estates?.length}`)
-
     if (tenant.apt_type?.length) {
       estates = estates.filter(
         (estate) => !estate.apt_type || tenant.apt_type.includes(estate.apt_type)
@@ -1414,22 +1413,22 @@ class EstateService {
     }
     Logger.info(`filterEstates after house type ${estates?.length}`)
 
-    if (tenant.options?.length) {
-      const options = await require('../Services/OptionService').getOptions()
-      const hashOptions = groupBy(options, 'title')
-      const OhneMaker = require('../Classes/OhneMakler')
-      estates = estates.filter((estate) => {
-        let amenities = estate.amenities || []
-        if (estate.source_id) {
-          amenities = OhneMaker.getOptionIds(amenities, hashOptions)
-        } else {
-          amenities = amenities.map((amenity) => amenity.option_id)
-        }
-        return tenant.options.every((op) => amenities.includes(op))
-      })
-      Logger.info(`filterEstates after amenity ${estates.length}`)
-    }
-
+    // As per Andrey -- we don't filter amenities
+    //  if (tenant.options?.length) {
+    //   const options = await require('../Services/OptionService').getOptions()
+    //   const hashOptions = groupBy(options, 'title')
+    //   const OhneMaker = require('../Classes/OhneMakler')
+    //   estates = estates.filter((estate) => {
+    //     let amenities = estate.amenities || []
+    //     if (estate.source_id) {
+    //       amenities = OhneMaker.getOptionIds(amenities, hashOptions)
+    //     } else {
+    //       amenities = amenities.map((amenity) => amenity.option_id)
+    //     }
+    //     return tenant.options.every((op) => amenities.includes(op))
+    //   })
+    //   Logger.info(`filterEstates after amenity ${estates.length}`)
+    // }
     return estates
   }
 
