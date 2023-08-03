@@ -1238,6 +1238,16 @@ class EstateService {
         this.orWhereNull('_m.id')
         this.orWhere('_m.status', MATCH_STATUS_NEW)
       })
+      .whereNotIn('_e.id', function () {
+        // Remove already liked/disliked
+        this.select('estate_id')
+          .from('likes')
+          .where('user_id', tenant.user_id)
+          .union(function () {
+            this.select('estate_id').from('dislikes').where('user_id', tenant.user_id)
+          })
+      })
+
       .where('_e.status', STATUS_ACTIVE)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
 
