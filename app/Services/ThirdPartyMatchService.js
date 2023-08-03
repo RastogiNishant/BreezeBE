@@ -43,8 +43,11 @@ class ThirdPartyMatchService {
     while (idx < estates.length) {
       let estate = estates[idx]
       estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-      const percent = await MatchService.calculateMatchPercent(tenant, estate)
-      passedEstates.push({ estate_id: estate.id, percent })
+      const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
+        tenant,
+        estate
+      )
+      passedEstates.push({ estate_id: estate.id, percent, landlord_score, prospect_score })
       idx++
     }
     Logger.info(
@@ -56,6 +59,8 @@ class ThirdPartyMatchService {
         estate_id: i.estate_id,
         percent: i.percent,
         status: MATCH_STATUS_NEW,
+        landlord_score: i.landlord_score,
+        prospect_score: i.prospect_score,
       })) || []
 
     const oldMatches = await this.getOldMatches(tenant.user_id)
@@ -112,8 +117,17 @@ class ThirdPartyMatchService {
       const tenant = tenants[idx]
 
       estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-      const percent = await MatchService.calculateMatchPercent(tenant, estate)
-      passedEstates.push({ user_id: tenant.user_id, estate_id: estate.id, percent })
+      const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
+        tenant,
+        estate
+      )
+      passedEstates.push({
+        user_id: tenant.user_id,
+        estate_id: estate.id,
+        percent,
+        landlord_score,
+        prospect_score,
+      })
       idx++
     }
 
@@ -123,6 +137,8 @@ class ThirdPartyMatchService {
         estate_id: i.estate_id,
         percent: i.percent,
         status: MATCH_STATUS_NEW,
+        landlord_score: i.landlord_score,
+        prospect_score: i.prospect_score,
       })) || []
 
     await this.updateMatches({ matches, has_notification_sent }, trx)
@@ -134,14 +150,16 @@ class ThirdPartyMatchService {
     }
 
     let queries = `INSERT INTO third_party_matches 
-                  ( user_id, estate_id, percent, status )    
+                  ( user_id, estate_id, percent, status, landlord_score, prospect_score )    
                   VALUES 
                 `
 
     queries = (matches || []).reduce(
       (q, current, index) =>
         `${q}\n ${index ? ',' : ''} 
-        ( ${current.user_id}, ${current.estate_id}, ${current.percent}, ${current.status} ) `,
+        ( ${current.user_id}, ${current.estate_id}, '${current.percent}', ${
+          current.status
+        }, '${landlord_score}', '${prospect_score}' ) `,
       queries
     )
 
