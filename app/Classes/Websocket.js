@@ -79,6 +79,7 @@ class WebSocket {
 
 WebSocket.redisSubscriber.on('message', (channel, message) => {
   try {
+    Logger.info(`websocket subscribe ${channel} ${message} ${moment.utc(new Date()).toISOString()}`)
     const object = JSON.parse(message)
     if (!object?.event || !object?.data) {
       return true
