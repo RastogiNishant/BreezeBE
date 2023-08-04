@@ -448,7 +448,7 @@ Route.group(() => {
   Route.post('/import/last-activity', 'EstateController.postImportLastActivity').middleware([
     'valid:PostImportLastActivity',
   ])
-  Route.get('/export/:lang', 'EstateController.export')
+  Route.get('/export/:lang', 'EstateController.export').middleware(['valid:ExportExcel'])
   Route.get('/export', 'EstateController.export')
   Route.get('/verifyPropertyId', 'EstateController.verifyPropertyId').middleware([
     'valid:PropertyId',
