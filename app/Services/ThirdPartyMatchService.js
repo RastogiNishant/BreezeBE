@@ -9,7 +9,7 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
 } = require('../constants')
-
+const moment = require('moment')
 const { isEmpty, groupBy } = require('lodash')
 const Database = use('Database')
 const ThirdPartyMatch = use('App/Models/ThirdPartyMatch')
@@ -166,13 +166,13 @@ class ThirdPartyMatchService {
                   ( user_id, estate_id, percent, status, landlord_score, prospect_score, created_at, updated_at )    
                   VALUES 
                 `
-
+    const dateTime = moment.utc(new Date()).toISOString()
     queries = (matches || []).reduce(
       (q, current, index) =>
         `${q}\n ${index ? ',' : ''} 
         ( ${current.user_id}, ${current.estate_id}, '${current.percent}', ${current.status}, '${
           current.landlord_score
-        }', '${current.prospect_score}', NOW(), NOW() ) `,
+        }', '${current.prospect_score}', '${dateTime}', '${dateTime}' ) `,
       queries
     )
 
@@ -180,7 +180,7 @@ class ThirdPartyMatchService {
                   DO UPDATE SET percent = EXCLUDED.percent,
                     landlord_score=EXCLUDED.landlord_score,
                     prospect_score=EXCLUDED.prospect_score,
-                    updated_at=NOW()
+                    updated_at='${dateTime}'
                   `
 
     await Database.raw(queries).transacting(trx)
