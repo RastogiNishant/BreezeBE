@@ -51,7 +51,6 @@ class ThirdPartyMatchService {
         options: amenities,
         ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
       }
-      console.log({ estate })
       const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
         tenant,
         estate
