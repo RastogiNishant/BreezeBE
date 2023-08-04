@@ -137,22 +137,22 @@ class TenantController {
       }
       Logger.info(`Before QueueService ${auth.user.id} ${moment.utc(new Date()).toISOString()}`)
 
-      let filterCountResult = {}
+      let filterResult = {}
 
       if (!shouldDeactivateTenant.length && data.only_count) {
-        filterCountResult = await MatchService.matchByUser({
+        filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
           has_notification_sent: false,
           only_count: true,
         })
-      } else {
-        QueueService.getTenantMatchProperties({
+      } else if (!shouldDeactivateTenant.length) {
+        filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
           has_notification_sent: false,
         })
       }
 
-      response.res({ tenant: await Tenant.find(tenant.id), filter: filterCountResult })
+      response.res({ tenant: await Tenant.find(tenant.id), filter: filterResult })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)
