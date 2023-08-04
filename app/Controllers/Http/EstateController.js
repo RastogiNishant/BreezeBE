@@ -1017,13 +1017,19 @@ class EstateController {
   }
 
   async export({ request, auth, response }) {
-    const { lang } = request.params
-    let result = await EstateService.getEstates([auth.user.id])
+    const { lang, exclude_online } = request.all()
+
+    let query = EstateService.getEstates([auth.user.id])
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
       .with('files')
-      .fetch()
+
+    if (exclude_online) {
+      query.whereNot('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
+    }
+
+    let result = await query.fetch()
     let rows = []
 
     if (lang) {
