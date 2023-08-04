@@ -1361,6 +1361,8 @@ Estates: [ESTATES]
   MAX_SPACE_COUNT: 500,
   RENT_INTERVAL_COUNT: 100,
   MAX_RENT_COUNT: 5000,
+
+  FURNISHED_GERMAN_NAME: 'Möbliert',
 }
 
 module.exports = constants

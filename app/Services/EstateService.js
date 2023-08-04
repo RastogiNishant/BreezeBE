@@ -117,6 +117,7 @@ const {
   ROOM_INTERVAL_COUNT,
   RENT_INTERVAL_COUNT,
   MAX_RENT_COUNT,
+  FURNISHED_GERMAN_NAME,
 } = require('../constants')
 
 const {
@@ -1415,6 +1416,15 @@ class EstateService {
 
     estates = estates.filter(
       (estate) =>
+        estate.floor === null ||
+        (estate.floor >= (tenant.floor_min || 0) && estate.rooms_number <= (tenant.floor_max || 20))
+    )
+    if (process.env.DEV === 'true') {
+      Logger.info(`filterEstates after floors ${estates?.length}`)
+    }
+
+    estates = estates.filter(
+      (estate) =>
         !estate.area ||
         (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
     )
@@ -1431,7 +1441,6 @@ class EstateService {
       Logger.info(`filterEstates apt type after ${estates?.length}`)
     }
 
-    //tenant.house_type.every((el) => (estate?.house_type || []).includes(el))
     if (tenant.house_type?.length) {
       estates = estates.filter(
         (estate) => !estate.house_type || tenant.house_type.includes(estate.house_type)
@@ -1448,6 +1457,10 @@ class EstateService {
       estates = estates.filter((estate) => {
         let amenities = estate.amenities || []
         if (estate.source_id) {
+          amenities =
+            estate.property_type === PROPERTY_TYPE_SHORT_TERM
+              ? [...amenities, FURNISHED_GERMAN_NAME]
+              : amenities
           amenities = OhneMaker.getOptionIds(amenities, hashOptions)
         } else {
           amenities = amenities.map((amenity) => amenity.option_id)
