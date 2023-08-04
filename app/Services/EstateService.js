@@ -1441,24 +1441,23 @@ class EstateService {
       Logger.info(`filterEstates after house type ${estates?.length}`)
     }
 
-    // As per Andrey -- we don't filter amenities
-    // if (tenant.options?.length) {
-    //   const options = await require('../Services/OptionService').getOptions()
-    //   const hashOptions = groupBy(options, 'title')
-    //   const OhneMaker = require('../Classes/OhneMakler')
-    //   estates = estates.filter((estate) => {
-    //     let amenities = estate.amenities || []
-    //     if (estate.source_id) {
-    //       amenities = OhneMaker.getOptionIds(amenities, hashOptions)
-    //     } else {
-    //       amenities = amenities.map((amenity) => amenity.option_id)
-    //     }
-    //     return tenant.options.every((op) => amenities.includes(op))
-    //   })
-    //   if (process.env.DEV === 'true') {
-    //     Logger.info(`filterEstates after amenity ${estates.length}`)
-    //   }
-    // }
+    if (tenant.options?.length) {
+      const options = await require('../Services/OptionService').getOptions()
+      const hashOptions = groupBy(options, 'title')
+      const OhneMaker = require('../Classes/OhneMakler')
+      estates = estates.filter((estate) => {
+        let amenities = estate.amenities || []
+        if (estate.source_id) {
+          amenities = OhneMaker.getOptionIds(amenities, hashOptions)
+        } else {
+          amenities = amenities.map((amenity) => amenity.option_id)
+        }
+        return tenant.options.every((op) => amenities.includes(op))
+      })
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after amenity ${estates.length}`)
+      }
+    }
 
     return estates
   }
