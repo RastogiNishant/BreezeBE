@@ -814,7 +814,7 @@ class MatchService {
         .whereNot({ buddy: true })
         .fetch()
     ).toJSON()
-    console.log('calculateMatchPercent 3=')
+
     const deleteMatchesIds = oldMatches
       .filter((om) => !matches.find((m) => m.estate_id === om.estate_id))
       .map((m) => m.id)
@@ -822,7 +822,7 @@ class MatchService {
     if (deleteMatchesIds?.length) {
       await Match.query().whereIn('id', deleteMatchesIds).delete().transacting(trx)
     }
-    console.log('calculateMatchPercent 10=')
+
     if (isEmpty(matches)) {
       return {
         count: 0,
