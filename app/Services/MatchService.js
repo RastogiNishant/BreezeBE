@@ -697,8 +697,9 @@ class MatchService {
         }
         await trx.commit()
 
+        let matches = []
         if (!only_count) {
-          const matches = await EstateService.getTenantEstates({
+          matches = await EstateService.getTenantEstates({
             user_id: userId,
             page: 1,
             limit: 20,
@@ -707,22 +708,23 @@ class MatchService {
             `matchByUser after fetching matches ${userId} ${moment.utc(new Date()).toISOString()}`
           )
           totalCount = matches?.count || 0
-          WebSocket.publishToTenant({
-            event: WEBSOCKET_EVENT_MATCH_CREATED,
-            userId,
-            data: {
-              count: totalCount,
-              matches,
-              success,
-              message,
-            },
-          })
+          // WebSocket.publishToTenant({
+          //   event: WEBSOCKET_EVENT_MATCH_CREATED,
+          //   userId,
+          //   data: {
+          //     count: totalCount,
+          //     matches,
+          //     success,
+          //     message,
+          //   },
+          // })
         }
         Logger.info(`matchByUser finish success${userId} ${moment.utc(new Date()).toISOString()}`)
 
         return {
           success: true,
           count: totalCount,
+          matches,
           categories_count: totalCategoryCounts,
         }
       } catch (e) {
@@ -738,23 +740,24 @@ class MatchService {
       success = false
       message = e.message
 
-      if (!only_count) {
-        WebSocket.publishToTenant({
-          event: WEBSOCKET_EVENT_MATCH_CREATED,
-          userId,
-          data: {
-            count: 0,
-            matches: [],
-            success: false,
-            message: e?.message,
-          },
-        })
-      }
+      // if (!only_count) {
+      //   WebSocket.publishToTenant({
+      //     event: WEBSOCKET_EVENT_MATCH_CREATED,
+      //     userId,
+      //     data: {
+      //       count: 0,
+      //       matches: [],
+      //       success: false,
+      //       message: e?.message,
+      //     },
+      //   })
+      // }
       Logger.info(`matchByUser finish failure${userId} ${moment.utc(new Date()).toISOString()}`)
       return {
         count: totalCount,
         categories_count: totalCategoryCounts,
         success: false,
+        matches: [],
         message: e?.message,
       }
     }
@@ -798,8 +801,8 @@ class MatchService {
         user_id: tenant.user_id,
         estate_id: i.estate_id,
         percent: i.percent,
-        prospect_score,
-        landlord_score,
+        prospect_score: i.prospect_score,
+        landlord_score: i.landlord_score,
         status: MATCH_STATUS_NEW,
       })) || []
 

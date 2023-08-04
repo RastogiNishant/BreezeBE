@@ -227,13 +227,18 @@ class OhneMakler {
   }
 
   static amenities = {
-    apt_balcony: 'Balkon',
-    apt_wainscoting: 'Terrasse',
+    furnished: 'Möbliert',
     fitted_kitchen: 'Einbauküche',
-    apt_low_barrier_cut: 'Barrierefrei',
+    apt_balcony: 'Balkon',
+    'apartment.amenities.Apartment.Barrier-free': 'Barrierefrei',
+    elevator: 'Fahrstuhl',
     cellar: 'Keller',
+    parking_space: 'Parkplatz/Garage',
+    bathtub: 'Duschbad',
+    apt_wainscoting: 'Terrasse',
     garden: 'Garten',
     apt_fireplace: 'Kamin',
+    room_winter_roof_garden: 'Dachterrasse',
   }
 
   map = {
