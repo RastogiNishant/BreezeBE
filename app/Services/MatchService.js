@@ -686,30 +686,8 @@ class MatchService {
           })
         }
         await trx.commit()
-      } catch (e) {
-        console.log('matchByUser error', e.message)
-        await trx.rollback()
-        success = false
-        message = e.message
-      }
-    } catch (e) {
-      console.log('matchByUser Exception=', e.message)
-      success = false
-      message = e.message
-    } finally {
-      try {
-        if (only_count) {
-          WebSocket.publishToTenant({
-            event: WEBSOCKET_EVENT_MATCH_COUNT,
-            userId,
-            data: {
-              count: totalCount,
-              categories_count: totalCategoryCounts,
-              success,
-              message,
-            },
-          })
-        } else {
+
+        if (!only_count) {
           const matches = await EstateService.getTenantEstates({
             user_id: userId,
             page: 1,
@@ -730,32 +708,45 @@ class MatchService {
             },
           })
         }
-      } catch (e) {
-        console.log('match by user error', e.message)
-        if (only_count) {
-          WebSocket.publishToTenant({
-            event: WEBSOCKET_EVENT_MATCH_COUNT,
-            userId,
-            data: {
-              count: totalCount,
-              success: false,
-              message: e?.message,
-            },
-          })
-        } else {
-          WebSocket.publishToTenant({
-            event: WEBSOCKET_EVENT_MATCH_CREATED,
-            userId,
-            data: {
-              count: 0,
-              matches: [],
-              success: false,
-              message: e?.message,
-            },
-          })
+        Logger.info(`matchByUser finish success${userId} ${moment.utc(new Date()).toISOString()}`)
+
+        return {
+          success: true,
+          count: totalCount,
+          categories_count: totalCategoryCounts,
         }
+      } catch (e) {
+        console.log('matchByUser error', e.message)
+        await trx.rollback()
+        success = false
+        message = e.message
       }
-      Logger.info(`matchByUser finish ${userId} ${moment.utc(new Date()).toISOString()}`)
+    } catch (e) {
+      Logger.info(
+        `matchByUser exception ${userId} ${e.message} ${moment.utc(new Date()).toISOString()}`
+      )
+      success = false
+      message = e.message
+
+      if (!only_count) {
+        WebSocket.publishToTenant({
+          event: WEBSOCKET_EVENT_MATCH_CREATED,
+          userId,
+          data: {
+            count: 0,
+            matches: [],
+            success: false,
+            message: e?.message,
+          },
+        })
+      }
+      Logger.info(`matchByUser finish failure${userId} ${moment.utc(new Date()).toISOString()}`)
+      return {
+        count: totalCount,
+        categories_count: totalCategoryCounts,
+        success: false,
+        message: e?.message,
+      }
     }
   }
 
