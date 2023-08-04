@@ -346,7 +346,7 @@ class MemberService {
         member.owner_user_id || member.user_id,
       ])
       const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
-      const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
+      const txt = l.get('sms.tenant.phone_verification', lang).replace('{code}', code)
 
       await SMSService.send({ to: phone, txt })
     } catch (e) {

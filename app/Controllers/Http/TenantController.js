@@ -10,7 +10,7 @@ const Tenant = use('App/Models/Tenant')
 const Database = use('Database')
 const { without, omit } = require('lodash')
 const Logger = use('Logger')
-
+const moment = require('moment')
 const {
   ROLE_USER,
   ROLE_LANDLORD,
@@ -135,14 +135,24 @@ class TenantController {
       if (shouldDeactivateTenant) {
         Event.fire('tenant::update', auth.user.id)
       }
-      Logger.info(`Before QueueService ${auth.user.id} ${new Date().toISOString()}`)
-      QueueService.getTenantMatchProperties({
-        userId: auth.user.id,
-        has_notification_sent: false,
-        only_count: data.only_count,
-      })
+      Logger.info(`Before QueueService ${auth.user.id} ${moment.utc(new Date()).toISOString()}`)
 
-      response.res(await Tenant.find(tenant.id))
+      let filterCountResult = {}
+
+      if (!shouldDeactivateTenant.length && data.only_count) {
+        filterCountResult = await MatchService.matchByUser({
+          userId: auth.user.id,
+          has_notification_sent: false,
+          only_count: true,
+        })
+      } else {
+        QueueService.getTenantMatchProperties({
+          userId: auth.user.id,
+          has_notification_sent: false,
+        })
+      }
+
+      response.res({ tenant: await Tenant.find(tenant.id), filter: filterCountResult })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)

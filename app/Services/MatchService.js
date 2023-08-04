@@ -617,13 +617,13 @@ class MatchService {
     let success = true
     let message = ''
     try {
-      Logger.info(`matchByUser start ${userId} ${new Date().toISOString()}`)
+      Logger.info(`matchByUser start ${userId} ${moment.utc(new Date()).toISOString()}`)
       const tenant = await MatchService.getProspectForScoringQuery()
         .select('_p.data as polygon')
         .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
         .where({ 'tenants.user_id': userId })
         .first()
-      Logger.info(`matchByUser get tenant ${userId} ${new Date().toISOString()}`)
+      Logger.info(`matchByUser get tenant ${userId} ${moment.utc(new Date()).toISOString()}`)
       const polygon = get(tenant, 'polygon.data.0.0')
       if (!tenant || !polygon) {
         if (ignoreNullFields) {
@@ -648,7 +648,9 @@ class MatchService {
       const trx = await Database.beginTransaction()
       try {
         Logger.info(
-          `matchByUser before getting inner matches ${userId} ${new Date().toISOString()}`
+          `matchByUser before getting inner matches ${userId} ${moment
+            .utc(new Date())
+            .toISOString()}`
         )
         const insideMatchResult = await this.createNewMatches(
           { tenant, has_notification_sent, only_count },
@@ -656,7 +658,11 @@ class MatchService {
         )
         totalCount += insideMatchResult?.count ?? 0
 
-        Logger.info(`matchByUser after getting inner matches ${userId} ${new Date().toISOString()}`)
+        Logger.info(
+          `matchByUser after getting inner matches ${userId} ${moment
+            .utc(new Date())
+            .toISOString()}`
+        )
         const outsideMatchesResult = await ThirdPartyMatchService.createNewMatches(
           {
             tenant,
@@ -668,7 +674,9 @@ class MatchService {
 
         totalCount += outsideMatchesResult?.count ?? 0
         Logger.info(
-          `matchByUser after getting outside matches ${userId} ${new Date().toISOString()}`
+          `matchByUser after getting outside matches ${userId} ${moment
+            .utc(new Date())
+            .toISOString()}`
         )
 
         if (only_count) {
@@ -678,36 +686,16 @@ class MatchService {
           })
         }
         await trx.commit()
-      } catch (e) {
-        console.log('matchByUser error', e.message)
-        await trx.rollback()
-        success = false
-        message = e.message
-      }
-    } catch (e) {
-      console.log('matchByUser Exception=', e.message)
-      success = false
-      message = e.message
-    } finally {
-      try {
-        if (only_count) {
-          WebSocket.publishToTenant({
-            event: WEBSOCKET_EVENT_MATCH_COUNT,
-            userId,
-            data: {
-              count: totalCount,
-              categories_count: totalCategoryCounts,
-              success,
-              message,
-            },
-          })
-        } else {
+
+        if (!only_count) {
           const matches = await EstateService.getTenantEstates({
             user_id: userId,
             page: 1,
             limit: 20,
           })
-          Logger.info(`matchByUser after fetching matches ${userId} ${new Date().toISOString()}`)
+          Logger.info(
+            `matchByUser after fetching matches ${userId} ${moment.utc(new Date()).toISOString()}`
+          )
           totalCount = matches?.count || 0
           WebSocket.publishToTenant({
             event: WEBSOCKET_EVENT_MATCH_CREATED,
@@ -720,32 +708,45 @@ class MatchService {
             },
           })
         }
-      } catch (e) {
-        console.log('match by user error', e.message)
-        if (only_count) {
-          WebSocket.publishToTenant({
-            event: WEBSOCKET_EVENT_MATCH_COUNT,
-            userId,
-            data: {
-              count: totalCount,
-              success: false,
-              message: e?.message,
-            },
-          })
-        } else {
-          WebSocket.publishToTenant({
-            event: WEBSOCKET_EVENT_MATCH_CREATED,
-            userId,
-            data: {
-              count: 0,
-              matches: [],
-              success: false,
-              message: e?.message,
-            },
-          })
+        Logger.info(`matchByUser finish success${userId} ${moment.utc(new Date()).toISOString()}`)
+
+        return {
+          success: true,
+          count: totalCount,
+          categories_count: totalCategoryCounts,
         }
+      } catch (e) {
+        console.log('matchByUser error', e.message)
+        await trx.rollback()
+        success = false
+        message = e.message
       }
-      Logger.info(`matchByUser finish ${userId} ${new Date().toISOString()}`)
+    } catch (e) {
+      Logger.info(
+        `matchByUser exception ${userId} ${e.message} ${moment.utc(new Date()).toISOString()}`
+      )
+      success = false
+      message = e.message
+
+      if (!only_count) {
+        WebSocket.publishToTenant({
+          event: WEBSOCKET_EVENT_MATCH_CREATED,
+          userId,
+          data: {
+            count: 0,
+            matches: [],
+            success: false,
+            message: e?.message,
+          },
+        })
+      }
+      Logger.info(`matchByUser finish failure${userId} ${moment.utc(new Date()).toISOString()}`)
+      return {
+        count: totalCount,
+        categories_count: totalCategoryCounts,
+        success: false,
+        message: e?.message,
+      }
     }
   }
 
