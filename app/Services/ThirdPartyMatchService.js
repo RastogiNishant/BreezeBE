@@ -9,8 +9,8 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
 } = require('../constants')
-
-const { isEmpty } = require('lodash')
+const moment = require('moment')
+const { isEmpty, groupBy } = require('lodash')
 const Database = use('Database')
 const ThirdPartyMatch = use('App/Models/ThirdPartyMatch')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
@@ -40,11 +40,22 @@ class ThirdPartyMatchService {
     const MatchService = require('./MatchService')
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
 
+    const options = await require('../Services/OptionService').getOptions()
+    const hashOptions = groupBy(options, 'title')
+    const OhneMakler = require('../Classes/OhneMakler')
     while (idx < estates.length) {
       let estate = estates[idx]
-      estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-      const percent = await MatchService.calculateMatchPercent(tenant, estate)
-      passedEstates.push({ estate_id: estate.id, percent })
+      let amenities = OhneMakler.getOptionIds(estate.amenities, hashOptions)
+      estate = {
+        ...estate,
+        options: amenities,
+        ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+      }
+      const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
+        tenant,
+        estate
+      )
+      passedEstates.push({ estate_id: estate.id, percent, landlord_score, prospect_score })
       idx++
     }
     Logger.info(
@@ -56,8 +67,9 @@ class ThirdPartyMatchService {
         estate_id: i.estate_id,
         percent: i.percent,
         status: MATCH_STATUS_NEW,
+        landlord_score: i.landlord_score,
+        prospect_score: i.prospect_score,
       })) || []
-
     const oldMatches = await this.getOldMatches(tenant.user_id)
     Logger.info(
       `ThirdPartyOfferService createNewMatches after getOldMatches ${new Date().toISOString()}`
@@ -107,13 +119,28 @@ class ThirdPartyMatchService {
     // Calculate matches for tenants to current estate
     let passedEstates = []
     let idx = 0
-
+    const options = await require('../Services/OptionService').getOptions()
+    const hashOptions = groupBy(options, 'title')
+    const OhneMakler = require('../Classes/OhneMakler')
+    const amenities = OhneMakler.getOptionIds(estate.amenities, hashOptions)
+    estate = {
+      ...estate,
+      options: amenities,
+      ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+    }
     while (idx < tenants.length) {
       const tenant = tenants[idx]
-
-      estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-      const percent = await MatchService.calculateMatchPercent(tenant, estate)
-      passedEstates.push({ user_id: tenant.user_id, estate_id: estate.id, percent })
+      const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
+        tenant,
+        estate
+      )
+      passedEstates.push({
+        user_id: tenant.user_id,
+        estate_id: estate.id,
+        percent,
+        landlord_score,
+        prospect_score,
+      })
       idx++
     }
 
@@ -123,6 +150,8 @@ class ThirdPartyMatchService {
         estate_id: i.estate_id,
         percent: i.percent,
         status: MATCH_STATUS_NEW,
+        landlord_score: i.landlord_score,
+        prospect_score: i.prospect_score,
       })) || []
 
     await this.updateMatches({ matches, has_notification_sent }, trx)
@@ -134,19 +163,25 @@ class ThirdPartyMatchService {
     }
 
     let queries = `INSERT INTO third_party_matches 
-                  ( user_id, estate_id, percent, status )    
+                  ( user_id, estate_id, percent, status, landlord_score, prospect_score, created_at, updated_at )    
                   VALUES 
                 `
-
+    const dateTime = moment.utc(new Date()).toISOString()
     queries = (matches || []).reduce(
       (q, current, index) =>
         `${q}\n ${index ? ',' : ''} 
-        ( ${current.user_id}, ${current.estate_id}, ${current.percent}, ${current.status} ) `,
+        ( ${current.user_id}, ${current.estate_id}, '${current.percent}', ${current.status}, '${
+          current.landlord_score
+        }', '${current.prospect_score}', '${dateTime}', '${dateTime}' ) `,
       queries
     )
 
     queries += ` ON CONFLICT ( user_id, estate_id ) 
-                  DO UPDATE SET percent = EXCLUDED.percent`
+                  DO UPDATE SET percent = EXCLUDED.percent,
+                    landlord_score=EXCLUDED.landlord_score,
+                    prospect_score=EXCLUDED.prospect_score,
+                    updated_at='${dateTime}'
+                  `
 
     await Database.raw(queries).transacting(trx)
 

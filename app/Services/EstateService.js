@@ -1591,7 +1591,7 @@ class EstateService {
     return query
       .select('estates.*')
       .withCount('knocked')
-      .select(Database.raw(`_m.percent AS match`))
+      .select(Database.raw(`_m.prospect_score AS match`))
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
           .onIn('_m.user_id', [userId])
@@ -1621,7 +1621,7 @@ class EstateService {
           })
         })
       })
-      .orderBy('_m.percent', 'DESC')
+      .orderBy('_m.prospect_score', 'DESC')
   }
   /**
    * If tenant not active get points by zone/point+dist/range zone
