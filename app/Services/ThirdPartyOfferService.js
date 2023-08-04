@@ -333,8 +333,8 @@ class ThirdPartyOfferService {
     estates = await Promise.all(
       estates.map(async (estate) => {
         estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-        const score = await MatchService.calculateMatchPercent(tenant, estate)
-        estate.match = score
+        const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
+        estate.match = prospect_score
         estate.isoline = await EstateService.getIsolines(estate)
         estate['__meta__'] = {
           knocked_count: estate.knocked_count,
@@ -429,12 +429,12 @@ class ThirdPartyOfferService {
       await this.getActiveMatchesQuery(userId)
         .select('third_party_offers.*')
         .select('third_party_offers.status as estate_status')
-        .select(Database.raw(`_m.percent AS match`))
+        .select(Database.raw(`_m.prospect_score AS match`))
         .select(Database.raw(`NULL as rooms`))
         .withCount('likes')
         .withCount('dislikes')
         .withCount('knocks')
-        .orderBy('_m.percent', 'DESC')
+        .orderBy('_m.prospect_score', 'DESC')
         .offset(from)
         .limit(limit)
         .fetch()
@@ -604,8 +604,8 @@ class ThirdPartyOfferService {
       estates = await Promise.all(
         estates.map(async (estate) => {
           estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-          const score = await MatchService.calculateMatchPercent(tenant, estate)
-          estate.match = score
+          const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
+          estate.match = prospect_score
           estate.rooms = null
           return estate
         })
