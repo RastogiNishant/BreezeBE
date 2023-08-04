@@ -70,7 +70,6 @@ class ThirdPartyMatchService {
         landlord_score: i.landlord_score,
         prospect_score: i.prospect_score,
       })) || []
-    console.log({ matches })
     const oldMatches = await this.getOldMatches(tenant.user_id)
     Logger.info(
       `ThirdPartyOfferService createNewMatches after getOldMatches ${new Date().toISOString()}`
