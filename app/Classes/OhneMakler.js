@@ -234,6 +234,7 @@ class OhneMakler {
     cellar: 'Keller',
     garden: 'Garten',
     apt_fireplace: 'Kamin',
+    room_winter_roof_garden: 'Dachterrasse',
   }
 
   map = {
