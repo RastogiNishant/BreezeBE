@@ -6,11 +6,11 @@ const Env = use('Env')
 const l = use('Localize')
 
 class SMS {
-  static async send({ to, txt, from = '' }) {
+  static async send({ to, txt }) {
     try {
       await Twilio.messages.create({
         body: txt,
-        from: from !== '' ? from : Env.get('TWILIO_FROM', ''),
+        from: Env.get('TWILIO_FROM', ''),
         to: to,
       })
     } catch (e) {

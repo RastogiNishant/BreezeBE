@@ -240,10 +240,6 @@ class MarketPlaceService {
 
       const shortLink = `${DOMAIN}/${contact.hash}`
 
-      const from =
-        process.env.NODE_ENV === 'production'
-          ? l.get('sms.prospect.marketplace_title', lang).replace('{{partner_name}}', publisher)
-          : ''
       const txt = l
         .get('sms.prospect.marketplace_request', lang)
         .replace('{{url}}', shortLink)
@@ -252,7 +248,7 @@ class MarketPlaceService {
         .replace('{{partner_name}}', `${publisher ?? ''}`)
         .replace('{{site_url}}', DOMAIN)
 
-      await SMSService.send({ to: phone_number, txt, from })
+      await SMSService.send({ to: phone_number, txt })
     } catch (e) {
       console.log('sending sms error', e.message)
     }
