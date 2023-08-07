@@ -11,6 +11,7 @@ const { MAX_ROOM_TYPES_TO_IMPORT } = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
 const schema = require('../Validators/ImportEstate').schema()
+const buildSchema = require('../Validators/CreateBuilding').schema()
 const Logger = use('Logger')
 
 class EstateImportReader {
@@ -74,7 +75,7 @@ class EstateImportReader {
     'pets_allowed',
   ]
   validateBuildingHeaders = [
-    'build_id',
+    'building_id',
     'street',
     'house_number',
     'extra_address',
@@ -88,6 +89,8 @@ class EstateImportReader {
   errors = []
   warnings = []
   data = []
+  buildingData = []
+  buildingColumns = []
 
   constructor() {
     return this
@@ -120,6 +123,7 @@ class EstateImportReader {
       this.dataMapping = this.reverseTranslator.getMap()
 
       this.setValidColumns(get(unitSheet, `data.${this.rowForColumnKeys}`) || [])
+
       if (!this.validateColumns(this.validColumns)) {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
@@ -151,16 +155,40 @@ class EstateImportReader {
   }
 
   validateBuildingColumns() {
-    const buildingSheet = this.sheet?.[1] || {}
-    if (!Object.keys(buildingSheet)?.length) {
-      return true
-    }
+    try {
+      const buildingSheet = this.sheet?.[1] || {}
+      if (!Object.keys(buildingSheet)?.length) {
+        return true
+      }
 
-    let columns = get(buildingSheet, `data.${this.rowForColumnKeys}`) || []
-    columns = columns.filter((column) => this.validateBuildingHeaders.find((vbc) => vbc === column))
+      this.buildingColumns = []
 
-    if (columns.length < this.validateBuildingHeaders.length) {
-      throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+      let columns = get(buildingSheet, `data.${this.rowForColumnKeys}`) || []
+
+      columns = columns.reduce((columns, current, index) => {
+        if (this.validateBuildingHeaders.includes(current)) {
+          columns = [
+            ...columns,
+            {
+              name: current,
+              index,
+            },
+          ]
+        } else {
+          this.warnings.push(
+            getExceptionMessage('', IMPORT_ESTATE_INVALID_VARIABLE_WARNING, current)
+          )
+        }
+        return columns
+      }, [])
+
+      this.buildingColumns = columns
+
+      if (this.buildingColumns.length < this.validateBuildingHeaders.length) {
+        throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+      }
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400)
     }
   }
 
@@ -172,31 +200,44 @@ class EstateImportReader {
     return true
   }
 
-  async setData(data) {
+  async setData(data, isUnit = true) {
+    const sheetData = []
     for (let k = this.dataStart; k < data.length; k++) {
-      if (data[k].length > 0) {
-        let row = {}
-        //we only work with valid columns and disregard the rest
+      if (!data?.[k].length) {
+        continue
+      }
+
+      let row = {}
+      //we only work with valid columns and disregard the rest
+
+      if (isUnit) {
         this.validColumns.map((column) => {
           const value = get(data[k], `${column.index}`)
           if (value) {
             row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
           }
         })
-
-        if (
-          Object.keys(omit(row, ['six_char_code'])) &&
-          Object.keys(omit(row, ['six_char_code'])).length
-        ) {
-          row = await this.processRow(row, k)
-          if (row) {
-            this.data.push(row)
+      } else {
+        this.buildingColumns.map((column) => {
+          const value = get(data[k], `${column.index}`)
+          if (value) {
+            row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
           }
+        })
+      }
+
+      if (
+        Object.keys(omit(row, ['six_char_code'])) &&
+        Object.keys(omit(row, ['six_char_code'])).length
+      ) {
+        row = await this.processRow({ row, rowCount: k, isUnit })
+        if (row) {
+          sheetData.push(row)
         }
       }
     }
 
-    return this.data
+    return sheetData
   }
 
   escapeStr(v) {
@@ -226,7 +267,7 @@ class EstateImportReader {
     }
   }
 
-  async processRow(row, rowCount, validateRow = true) {
+  async processRow({ row, rowCount, validateRow = true, isUnit = true }) {
     try {
       //deposit
       row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
@@ -267,8 +308,13 @@ class EstateImportReader {
       if (get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)) {
         row.salutation_int = get(this.dataMapping, `salutation.${this.escapeStr(salutation)}`)
       }
+
       if (validateRow) {
-        row = await this.validateRow(row, rowCount)
+        if (isUnit) {
+          row = await this.validateRow(row, rowCount)
+        } else {
+          row = await this.validateBuildRow(row, rowCount)
+        }
       }
       return row
     } catch (e) {
@@ -277,6 +323,27 @@ class EstateImportReader {
     }
   }
 
+  async validateBuildRow(row, rowCount) {
+    try {
+      const data = await buildSchema.validate(row)
+      return {
+        line: rowCount,
+        data,
+      }
+    } catch (e) {
+      console.log('validateBuildRow=', e.message)
+      const ret = {
+        line: rowCount + 1,
+        error: e.errors,
+        build_id: row ? row.build_id : `no build id in ${this.sheetName[1]} sheet`,
+        street: row ? row.street : `no street code in ${this.sheetName[1]}`,
+        postcode: row ? row.zip : `no zip code in ${this.sheetName[1]}`,
+        city: row ? row.city : `no city code in ${this.sheetName[1]}`,
+        country: row ? row.country : `no country code in ${this.sheetName[1]}`,
+      }
+      this.errors.push(ret)
+    }
+  }
   async validateRow(row, rowCount) {
     try {
       const data = await schema.validate(row)
@@ -299,11 +366,12 @@ class EstateImportReader {
   }
 
   async process() {
-    await this.setData(get(this.sheet, 'data') || [])
+    const unitData = await this.setData(get(this.sheet[0], 'data') || [])
+    const buildingData = await this.setData(get(this.sheet[1], 'data') || [], false)
     return {
       errors: this.errors,
       warnings: this.warnings,
-      data: this.data,
+      data: { unit: unitData, building: buildingData },
     }
   }
 }
