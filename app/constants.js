@@ -502,6 +502,7 @@ const constants = {
   NOTICE_TYPE_ADMIN_APPROVES_PUBLISH: 'notification_landlord_admin_approves_publish',
   NOTICE_TYPE_PROSPECT_GREEN_MATCH: 'notification_prospect_green_match',
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP: 'notification_prospect_fill_up_profile',
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED: 'notification_final_match_request_expired',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -560,6 +561,7 @@ const constants = {
   NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID: 61,
   NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID: 62,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID: 63,
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID: 64,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -845,6 +847,7 @@ const constants = {
     'rooms_number',
     'number_floors',
     'city',
+    'zip',
     'cover',
     'coord_raw',
     'property_id',
@@ -980,6 +983,7 @@ const constants = {
   WEBSOCKET_EVENT_USER_ACTIVATE: 'landlord:activatedAccount',
   WEBSOCKET_EVENT_TENANT_CONNECTED: 'landlord:tenantConnected',
   WEBSOCKET_EVENT_MATCH_CREATED: 'tenant:createMatchCompleted',
+  WEBSOCKET_EVENT_MATCH_COUNT: 'tenant:matchCount',
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT: 'landlord:landlordInvitedFromTenant',
   WEBSOCKET_EVENT_TASK_CREATED: 'taskCreated',
   WEBSOCKET_EVENT_TASK_UPDATED: 'taskUpdated',
@@ -1328,6 +1332,14 @@ Estates: [ESTATES]
     production: 'https://app.breeze4me.de',
   },
 
+  COUNTRIES: [
+    { country: 'Germany', other_name: 'Deutschland', country_code: 'de' },
+    { country: 'Austria', other_name: 'Österreich', country_code: 'at' },
+    { country: 'Switzerland', other_name: 'Schweiz', country_code: 'ch' },
+  ],
+
+  RENT_DURATION_LONG: 'long',
+  RENT_DURATION_SHORT: 'short',
   QUEUE_JOB_URGENT: 100,
 
   CITIES_AUTOCOMPLETE_MAX_COUNT: 10,
@@ -1342,6 +1354,16 @@ Estates: [ESTATES]
   },
 
   SHORTENURL_LENGTH: 10,
+  EXPIRED_FINAL_CONFIRM_PERIOD: 2, // hourly based
+
+  ROOM_INTERVAL_COUNT: 1,
+  MAX_ROOM_COUNT: 10,
+  SPACE_INTERVAL_COUNT: 7.5,
+  MAX_SPACE_COUNT: 500,
+  RENT_INTERVAL_COUNT: 100,
+  MAX_RENT_COUNT: 5000,
+
+  FURNISHED_GERMAN_NAME: 'Möbliert',
 }
 
 module.exports = constants

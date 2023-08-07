@@ -8,8 +8,9 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
+  WEBSOCKET_TASK_REDIS_KEY,
 } = require('../../constants')
-
+const WebSocket = use('App/Classes/Websocket')
 const {
   exceptions: { MESSAGE_NOT_SAVED },
 } = require('../../exceptions')
@@ -17,10 +18,10 @@ const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
 const TaskService = use('App/Services/TaskService')
-const Task = use('App/Models/Task')
 const { isBoolean } = require('lodash')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
+const moment = require('moment')
 
 class TaskController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -29,6 +30,17 @@ class TaskController extends BaseController {
     this.estateId = request.estate_id
     this.tenant_user_id = request.tenant_user_id
     this.estate_user_id = request.estate_user_id
+
+    this.subscribe({
+      channel: WEBSOCKET_TASK_REDIS_KEY,
+      estateId: this.estateId,
+      taskId: this.taskId,
+    })
+    this.unsubscribe({
+      channel: WEBSOCKET_TASK_REDIS_KEY,
+      estateId: this.estateId,
+      taskId: this.taskId,
+    })
   }
 
   async onGetPreviousMessages(data) {
@@ -70,15 +82,19 @@ class TaskController extends BaseController {
       }
       await ChatService.updateChatMessage({ id, message, attachments })
       attachments = await this.getAbsoluteUrl(attachments)
-      if (this.topic) {
-        this.topic.broadcast('messageEdited', {
+
+      WebSocket.publichToTask({
+        event: 'messageEdited',
+        taskId: this.taskId,
+        estateId: this.estateId,
+        data: {
           id,
-          message: message,
-          attachments: attachments,
+          message,
+          attachments,
           edit_status: CHAT_EDIT_STATUS_EDITED,
           topic: this.socket.topic,
-        })
-      }
+        },
+      })
     } catch (err) {
       this.emitError(err.message)
     }
@@ -95,9 +111,16 @@ class TaskController extends BaseController {
         throw new AppException('Chat message not editable anymore.')
       }
       await ChatService.removeChatMessage(id)
-      if (this.topic) {
-        this.topic.broadcast('messageRemoved', { id, socket: this.socket.topic })
-      }
+
+      WebSocket.publichToTask({
+        event: 'messageRemoved',
+        taskId: this.taskId,
+        estateId: this.estateId,
+        data: {
+          id,
+          socket: this.socket.topic,
+        },
+      })
     } catch (err) {
       this.emitError(err.message)
     }
@@ -107,13 +130,18 @@ class TaskController extends BaseController {
     try {
       const lastChat = await super._markLastRead(this.taskId)
       if (lastChat) {
-        this.broadcastToTopic(this.socket.topic, WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ, {
-          topic: this.socket.topic,
-          chat: {
-            id: lastChat.id,
-            type: data?.type,
-            user: lastChat.sender_id,
-            created_at: lastChat.created_at,
+        WebSocket.publichToTask({
+          event: WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
+          taskId: this.taskId,
+          estateId: this.estateId,
+          data: {
+            topic: this.socket.topic,
+            chat: {
+              id: lastChat.id,
+              type: data?.type,
+              user: lastChat.sender_id,
+              created_at: lastChat.created_at,
+            },
           },
         })
       } else {
@@ -129,16 +157,30 @@ class TaskController extends BaseController {
     //FIXME: make slim controller
     try {
       const chat = await this._saveToChats(message, this.taskId)
-      message.id = chat.id
-      message.message = chat.text
-      message.attachments = await this.getAbsoluteUrl(chat.attachments)
-      message.sender = {
-        id: this.user.id,
-        firstname: this.user.firstname,
-        secondname: this.user.secondname,
-        avatar: this.user.avatar,
+
+      const data = {
+        message: {
+          id: chat.id,
+          message: chat.text,
+          attachments: await this.getAbsoluteUrl(chat.attachments),
+          topic: this.socket.topic,
+          dateTime: message.dateTime ? message.dateTime : moment.utc(new Date()).format(),
+          sender: {
+            id: this.user.id,
+            firstname: this.user.firstname,
+            secondname: this.user.secondname,
+            avatar: this.user.avatar,
+          },
+        },
+        sender: {
+          userId: this.user.id,
+          firstname: this.user.firstname,
+          secondname: this.user.secondname,
+          avatar: this.user.avatar,
+        },
+        topic: this.socket.topic,
       }
-      message.topic = this.socket.topic
+
       const recipientTopic =
         this.user.role === ROLE_LANDLORD
           ? `tenant:${this.tenant_user_id}`
@@ -147,15 +189,42 @@ class TaskController extends BaseController {
       const task = await TaskService.get(this.taskId)
       //broadcast taskMessageReceived event to either tenant or landlord
       //taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
-      this.broadcastToTopic(recipientTopic, 'taskMessageReceived', {
+
+      const messageReceivedData = {
         topic: this.socket.topic,
         urgency: task?.urgency,
         estate_id: this.estateId,
         user_id: this.user.id,
-      })
+      }
+
+      if (this.user.role === ROLE_LANDLORD) {
+        WebSocket.publishToTenant({
+          event: 'taskMessageReceived',
+          userId: this.tenant_user_id,
+          data: messageReceivedData,
+        })
+      } else {
+        WebSocket.publishToLandlord({
+          event: 'taskMessageReceived',
+          userId: this.estate_user_id,
+          data: messageReceivedData,
+        })
+      }
+
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
-      super.onMessage(message)
+
+      WebSocket.publichToTask({
+        event: 'message',
+        taskId: this.taskId,
+        estateId: this.estateId,
+        data: {
+          ...data,
+          broadcast_all: true,
+        },
+      })
+
+      console.log('instance here=', this instanceof BaseController)
     } catch (e) {
       Logger.error('onMessage error=', e.message)
       this.emitError(e.message || MESSAGE_NOT_SAVED)

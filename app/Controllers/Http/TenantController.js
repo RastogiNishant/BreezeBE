@@ -8,9 +8,9 @@ const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
 const Tenant = use('App/Models/Tenant')
 const Database = use('Database')
-const { without } = require('lodash')
+const { without, omit } = require('lodash')
 const Logger = use('Logger')
-
+const moment = require('moment')
 const {
   ROLE_USER,
   ROLE_LANDLORD,
@@ -112,7 +112,10 @@ class TenantController {
         data.residency_duration_max = null
       }
       // Deactivate tenant on personal data change
-      const shouldDeactivateTenant = without(Object.keys(data), ...Tenant.updateIgnoreFields).length
+      const shouldDeactivateTenant = without(
+        Object.keys(omit(data, ['only_count'])),
+        ...Tenant.updateIgnoreFields
+      ).length
 
       if (shouldDeactivateTenant) {
         tenant.notify_sent = [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID]
@@ -120,26 +123,37 @@ class TenantController {
       } else {
       }
 
-      await tenant.updateItemWithTrx(data, trx)
+      await tenant.updateItemWithTrx(omit(data, ['only_count']), trx)
 
       await trx.commit()
 
       // Add tenant anchor zone processing
       const { lat, lon } = tenant.getLatLon()
       if (lat !== undefined && lat !== null && lon !== undefined && lon !== null) {
-        await TenantService.updateTenantIsoline(tenant.id)
+        await TenantService.updateTenantIsoline({ tenantId: tenant.id })
       }
 
       if (shouldDeactivateTenant) {
         Event.fire('tenant::update', auth.user.id)
       }
-      Logger.info(`Before QueueService ${auth.user.id} ${new Date().toISOString()}`)
-      QueueService.getTenantMatchProperties({
-        userId: auth.user.id,
-        has_notification_sent: false,
-      })
+      Logger.info(`Before QueueService ${auth.user.id} ${moment.utc(new Date()).toISOString()}`)
 
-      response.res(await Tenant.find(tenant.id))
+      let filterResult = {}
+
+      if (!shouldDeactivateTenant.length && data.only_count) {
+        filterResult = await MatchService.matchByUser({
+          userId: auth.user.id,
+          has_notification_sent: false,
+          only_count: true,
+        })
+      } else if (!shouldDeactivateTenant.length) {
+        filterResult = await MatchService.matchByUser({
+          userId: auth.user.id,
+          has_notification_sent: false,
+        })
+      }
+
+      response.res({ tenant: await Tenant.find(tenant.id), filter: filterResult })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)

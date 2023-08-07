@@ -240,10 +240,6 @@ class MarketPlaceService {
 
       const shortLink = `${DOMAIN}/${contact.hash}`
 
-      const from =
-        process.env.NODE_ENV === 'production'
-          ? l.get('sms.prospect.marketplace_title', lang).replace('{{partner_name}}', publisher)
-          : ''
       const txt = l
         .get('sms.prospect.marketplace_request', lang)
         .replace('{{url}}', shortLink)

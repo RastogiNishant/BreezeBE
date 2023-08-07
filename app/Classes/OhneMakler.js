@@ -49,7 +49,7 @@ const {
   FIRING_GAS,
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
 } = require('../constants')
-const { isEmpty } = require('lodash')
+const { isEmpty, groupBy } = require('lodash')
 const moment = require('moment')
 
 class OhneMakler {
@@ -226,6 +226,21 @@ class OhneMakler {
     },
   }
 
+  static amenities = {
+    furnished: 'Möbliert',
+    fitted_kitchen: 'Einbauküche',
+    apt_balcony: 'Balkon',
+    'apartment.amenities.Apartment.Barrier-free': 'Barrierefrei',
+    elevator: 'Fahrstuhl',
+    cellar: 'Keller',
+    parking_space: 'Parkplatz/Garage',
+    bathtub: 'Duschbad',
+    apt_wainscoting: 'Terrasse',
+    garden: 'Garten',
+    apt_fireplace: 'Kamin',
+    room_winter_roof_garden: 'Dachterrasse',
+  }
+
   map = {
     id: 'source_id',
     title: 'description',
@@ -273,6 +288,20 @@ class OhneMakler {
       return null
     }
     return this[type][key]
+  }
+
+  static getOptionIds(amenities, hashOptions) {
+    if (!amenities?.length) {
+      return []
+    }
+
+    const amenityKeys = amenities.map((amenity) => {
+      return (
+        Object.keys(OhneMakler.amenities).find((key) => OhneMakler.amenities[key] === amenity) ?? ''
+      )
+    })
+
+    return amenityKeys.map((key) => hashOptions?.[key]?.[0].id ?? 0)
   }
 
   parseHouseAndApartmentTypes(estate, newEstate) {

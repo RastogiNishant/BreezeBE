@@ -5,14 +5,17 @@ const {
   URGENCY_SUPER_LABEL,
   NOT_CONNECTED_BREEZE_TEANT_LABEL,
   PENDING_BREEZE_TEANT_LABEL,
+  WEBSOCKET_LANDLORD_REDIS_KEY,
 } = require('../../constants')
 const BaseController = require('./BaseController')
-const ChatService = use('App/Services/ChatService')
 const EstateService = use('App/Services/EstateService')
 const Logger = use('Logger')
+
 class LandlordController extends BaseController {
   constructor({ socket, request, auth }) {
     super({ socket, request, auth })
+    this.subscribe({ channel: WEBSOCKET_LANDLORD_REDIS_KEY })
+    this.unsubscribe({ channel: WEBSOCKET_LANDLORD_REDIS_KEY })
   }
 
   async onGetTaskInProgressCount() {

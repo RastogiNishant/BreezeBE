@@ -6,6 +6,7 @@ const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const DataStorage = use('DataStorage')
 const Database = use('Database')
 const File = use('App/Classes/File')
+const Logger = use('Logger')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Promise = require('bluebird')
 const uuid = require('uuid')
@@ -332,8 +333,8 @@ class ThirdPartyOfferService {
     estates = await Promise.all(
       estates.map(async (estate) => {
         estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-        const score = await MatchService.calculateMatchPercent(tenant, estate)
-        estate.match = score
+        const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
+        estate.match = prospect_score
         estate.isoline = await EstateService.getIsolines(estate)
         estate['__meta__'] = {
           knocked_count: estate.knocked_count,
@@ -360,7 +361,17 @@ class ThirdPartyOfferService {
         '_e.street',
         '_e.city',
         '_e.country',
-        '_e.address'
+        '_e.zip',
+        '_e.address',
+        '_e.floor',
+        '_e.rooms_number',
+        '_e.number_floors',
+        '_e.property_id',
+        '_e.area',
+        '_e.net_rent',
+        '_e.extra_costs',
+        '_e.available_end_at',
+        Database.raw(`images->0->'picture'->'picture_url' as cover`)
       )
       .from({ _e: 'third_party_offers' })
       .innerJoin({ _p: 'points' }, function () {
@@ -371,8 +382,9 @@ class ThirdPartyOfferService {
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
   }
 
-  static searchTenantEstatesQuery(tenant) {
-    return Database.select(Database.raw(`FALSE as inside`))
+  static async searchTenantEstatesQuery(tenant) {
+    Logger.info(`\n----start ThirdPartyOfferService--- ${tenant.user_id}`)
+    let estates = await Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')
       .select(Database.raw(`NULL as rooms`))
       .from({ _t: 'tenants' })
@@ -385,6 +397,13 @@ class ThirdPartyOfferService {
       .whereNull('tpoi.id')
       .where('_t.user_id', tenant.user_id)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+
+    const categoryCounts = EstateService.calculateInsideCategoryCounts(estates, tenant)
+    const filteredEstates = await EstateService.filterEstates(tenant, estates)
+    return {
+      estates: filteredEstates,
+      categoryCounts,
+    }
   }
 
   static getActiveMatchesQuery(userId) {
@@ -410,39 +429,44 @@ class ThirdPartyOfferService {
       await this.getActiveMatchesQuery(userId)
         .select('third_party_offers.*')
         .select('third_party_offers.status as estate_status')
-        .select(Database.raw(`_m.percent AS match`))
+        .select(Database.raw(`_m.prospect_score AS match`))
         .select(Database.raw(`NULL as rooms`))
         .withCount('likes')
         .withCount('dislikes')
         .withCount('knocks')
-        .orderBy('_m.percent', 'DESC')
+        .orderBy('_m.prospect_score', 'DESC')
         .offset(from)
         .limit(limit)
         .fetch()
     ).toJSON()
   }
 
-  static async getEstate(userId, id) {
+  static async getEstate({ userId, id }) {
+    console.log('getEstate here=', userId)
     /* estate coord intersects with polygon of tenant */
-    return await ThirdPartyOffer.query()
+    let query = ThirdPartyOffer.query()
       .select('third_party_offers.*')
       .select('third_party_offers.status as estate_status')
-      .select(Database.raw(`COALESCE(_m.percent, 0) as match`))
       .select(Database.raw(`NULL as rooms`))
-      .withCount('likes')
-      .withCount('dislikes')
-      .withCount('knocks')
       .with('point')
-      .leftJoin({ _m: 'third_party_matches' }, function () {
-        this.on('_m.estate_id', 'third_party_offers.id').onIn('_m.user_id', [userId])
-      })
-      .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
-        this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
-      })
+
+    if (userId) {
+      query
+        .select(Database.raw(`COALESCE(_m.percent, 0) as match`))
+        .withCount('likes')
+        .withCount('dislikes')
+        .withCount('knocks')
+        .leftJoin({ _m: 'third_party_matches' }, function () {
+          this.on('_m.estate_id', 'third_party_offers.id').onIn('_m.user_id', [userId])
+        })
+        .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
+          this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
+        })
       //remove the check on intersecting with polygon because user may have changed
       //his location and he won't be intersected here...
-      .where('third_party_offers.id', id)
-      .first()
+    }
+
+    return await query.where('third_party_offers.id', id).first()
   }
 
   static async postAction(userId, id, action, comment = '', message = '') {
@@ -580,8 +604,8 @@ class ThirdPartyOfferService {
       estates = await Promise.all(
         estates.map(async (estate) => {
           estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
-          const score = await MatchService.calculateMatchPercent(tenant, estate)
-          estate.match = score
+          const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
+          estate.match = prospect_score
           estate.rooms = null
           return estate
         })

@@ -107,6 +107,12 @@ const exceptions = {
   NO_MATCH_EXIST: 'No match exists',
   ERROR_PREMIUM_MEMBER_PLAN_SELECT: 'Please upgrade your plan',
   ERROR_PLAN_SELECT: 'Your trial has been ended',
+  ERROR_WRONG_ROLE: 'You have wrong role',
+  ERROR_NO_AUTHENTICATE: 'You have no permission',
+  ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE:
+    'Your property is already published, to manipulate that property, please unpublish it first',
+  ERROR_MATCH_COMMIT_DOUBLE:
+    'You have already requests final match, please cancel that one first to proceed',
 }
 
 const exceptionCodes = {
@@ -115,8 +121,10 @@ const exceptionCodes = {
   UPLOAD_EXCEL_PROGRESS_ERROR_CODE: 2000100,
   WRONG_PROSPECT_CODE_ERROR_CODE: 3000100,
   NO_TIME_SLOT_ERROR_CODE: 4000100,
+  ERROR_MATCH_COMMIT_DOUBLE_CODE: 5000800,
   NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE: 6000100,
   ERROR_OUTSIDE_PROSPECT_KNOCK_INVALID: 7000100,
+  ERROR_MARKET_PLACE_CONTACT_EXIST_CODE: 7000300,
   WARNING_UNSECURE_PROFILE_SHARE: 8000100,
   ERROR_SUBSCRIPTION_NOT_CREATED_CODE: 9000100,
   ERROR_PRICE_PLAN_CONFIGURATION_CODE: 9000200,
