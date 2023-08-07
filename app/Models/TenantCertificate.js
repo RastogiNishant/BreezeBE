@@ -3,7 +3,16 @@
 const Model = require('./BaseModel')
 class TenantCertificateModel extends Model {
   static get columns() {
-    return ['id', 'user_id', 'city_id', 'income_level', 'expired_at', 'created_at', 'updated_at']
+    return [
+      'id',
+      'user_id',
+      'city_id',
+      'income_level',
+      'certificate',
+      'expired_at',
+      'created_at',
+      'updated_at',
+    ]
   }
 }
 
