@@ -73,7 +73,7 @@ class EstateImportReader {
     'minors',
     'pets_allowed',
   ]
-  sheetName = 'Import_Data'
+  sheetName = ['Unit', 'Building']
   rowForColumnKeys = 4
   dataStart = 5
   errors = []
@@ -99,7 +99,7 @@ class EstateImportReader {
       if (overrides?.validHeaderVars) {
         this.validHeaderVars = overrides.validHeaderVars
       }
-      const sheet = data.find((i) => i.name === this.sheetName)
+      const sheet = data.find((i) => i.name === this.sheetName[0])
       this.sheet = sheet
       //sheet where the estates to import are found...
       if (!sheet || !sheet.data) {
