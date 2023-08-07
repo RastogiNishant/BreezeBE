@@ -10,7 +10,7 @@ const TenantPremiumPlanService = use('App/Services/TenantPremiumPlanService')
 const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const { pick } = require('lodash')
-
+const QueueService = use('App/Services/QueueService')
 const {
   exceptions: {
     USER_NOT_EXIST,
@@ -32,6 +32,7 @@ const {
   LOG_TYPE_OPEN_APP,
   FRONTEND_USED_WEB,
   FRONTEND_USED_MOBILE,
+  ROLE_USER,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -60,6 +61,14 @@ class AccountController {
         role: user.role,
         email: user.email,
       })
+
+      if (user.role === ROLE_USER) {
+        QueueService.getTenantMatchProperties({
+          userId: user.id,
+          has_notification_sent: false,
+        })
+      }
+
       response.res(user)
     } catch (e) {
       await trx.rollback()

@@ -95,6 +95,7 @@ class ImageController {
       throw new HttpException(err.message, e.status || 500)
     }
   }
+
   async checkFormat({ request, response }) {
     try {
       const image = request.file('file', {

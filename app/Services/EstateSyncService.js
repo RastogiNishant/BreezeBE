@@ -25,13 +25,11 @@ const EstateService = use('App/Services/EstateService')
 const EstateSyncCredential = use('App/Models/EstateSyncCredential')
 const EstateSyncTarget = use('App/Models/EstateSyncTarget')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
-const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
-const User = use('App/Models/User')
 const Estate = use('App/Models/Estate')
-const Ws = use('Ws')
 const Database = use('Database')
 const Promise = require('bluebird')
 const Logger = use('Logger')
+const WebSocket = use('App/Classes/Websocket')
 class EstateSyncService {
   static async getBreezeEstateSyncCredential() {
     const credential = await EstateSyncCredential.query()
@@ -244,8 +242,34 @@ class EstateSyncService {
     }
   }
 
+  static async propertyProcessingFailed(payload) {
+    try {
+      if (!payload?.id) {
+        return
+      }
+      const propertyId = payload.id
+      let listings = await EstateSyncListing.query()
+        .where('estate_sync_property_id', propertyId)
+        .whereNull('estate_sync_listing_id')
+        .fetch()
+      if (!listings?.rows?.length) {
+        return
+      }
+      await EstateSyncListing.query().where('estate_sync_property_id', propertyId).update({
+        posting_error: true,
+        posting_error_message: payload.failureMessage,
+        status: ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
+      })
+    } catch (err) {
+      console.log('propertyProcessingFailed error', err.message)
+    }
+  }
+
   static async propertyProcessingSucceeded(payload) {
     try {
+      if (!payload?.id) {
+        return
+      }
       const propertyId = payload.id
       let listings = await EstateSyncListing.query()
         .where('estate_sync_property_id', propertyId)
@@ -487,13 +511,7 @@ class EstateSyncService {
   }
 
   static async emitWebsocketEventToLandlord({ event, user_id, data }) {
-    const channel = `landlord:*`
-    const topicName = `landlord:${user_id}`
-    const topic = Ws?.getChannel(channel)?.topic(topicName)
-
-    if (topic) {
-      topic.broadcast(event, data)
-    }
+    WebSocket.publishToLandlord({ event, userId: user_id, data })
   }
 
   /* this is called by QueueService */

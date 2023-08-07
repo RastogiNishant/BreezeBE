@@ -22,7 +22,7 @@ const User = use('App/Models/User')
 const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedEmail = use('App/Models/EstateViewInvitedEmail')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
-const EstateSyncListing = use('App/Models/EstateSyncListing')
+
 const Database = use('Database')
 const Promise = require('bluebird')
 const randomstring = require('randomstring')
@@ -73,6 +73,7 @@ const {
   PUBLISH_PROPERTY,
   UNPUBLISH_PROPERTY,
   PUBLISH_OFFLINE_PROPERTY,
+  DEFAULT_LANG,
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const { isEmpty, isFunction, isNumber, pick, trim, sum, omit } = require('lodash')
@@ -103,7 +104,6 @@ const {
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
-const EstateSyncService = require('../../Services/EstateSyncService')
 
 class EstateController {
   /**
@@ -135,6 +135,8 @@ class EstateController {
 
         MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
+      // Run task to separate get coords and point of estate
+      QueueService.getEstateCoords(estate.id)
 
       response.res(estate)
     } catch (e) {
@@ -160,6 +162,8 @@ class EstateController {
         page: 1,
         params: { id },
       })
+
+      QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -333,18 +337,19 @@ class EstateController {
     }
   }
 
-  /**
-   *
-   */
-  async deactivateEstate({ request, auth, response }) {
-    const { estate_id } = request.all()
-    const estate = await EstateService.getQuery()
-      .where('id', estate_id)
-      .where('user_id', auth.user.id)
-      .whereNot('status', STATUS_DELETE)
-      .update({ status: STATUS_DELETE })
-    response.res(estate)
-  }
+  // /**
+  //  *
+  //  */
+  // async deactivateEstate({ request, auth, response }) {
+  //   const { estate_id } = request.all()
+  //   const estate = await EstateService.getQuery()
+  //     .where('id', estate_id)
+  //     .where('user_id', auth.user.id)
+  //     .whereNot('status', STATUS_DELETE)
+  //     .update({ status: STATUS_DELETE })
+
+  //   response.res(estate)
+  // }
 
   async importEstate({ request, auth, response }) {
     try {
@@ -389,6 +394,7 @@ class EstateController {
           user_id: auth.user.id,
           template: 'xls',
           import_id: importItem.id,
+          lang: auth.user.lang ?? DEFAULT_LANG,
         })
         response.res(importItem)
       } else {
@@ -612,7 +618,7 @@ class EstateController {
         )
         await EstateService.updateCover({ estate_id: estate.id, addImage: result[0] }, trx)
         await trx.commit()
-        Event.fire('estate::update', estate_id)
+        //Event.fire('estate::update', estate_id)
         return response.res(result)
       } catch (e) {
         await trx.rollback()
@@ -740,7 +746,7 @@ class EstateController {
 
   async getThirdPartyOfferEstate({ request, auth, response }) {
     const { id } = request.all()
-    let estate = await ThirdPartyOfferService.getEstate(auth.user.id, id)
+    let estate = await ThirdPartyOfferService.getEstate({ userId: auth?.user?.id, id })
     if (!estate) {
       throw new HttpException('Estate not found.', 404)
     }
@@ -1011,13 +1017,19 @@ class EstateController {
   }
 
   async export({ request, auth, response }) {
-    const { lang } = request.params
-    let result = await EstateService.getEstates([auth.user.id])
+    const { lang, exclude_online } = request.all()
+
+    let query = EstateService.getEstates([auth.user.id])
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
       .with('files')
-      .fetch()
+
+    if (exclude_online) {
+      query.whereNot('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
+    }
+
+    let result = await query.fetch()
     let rows = []
 
     if (lang) {
@@ -1202,12 +1214,10 @@ class EstateController {
       }
       const insideEstates = await EstateService.searchEstateByPoint(point.id)
       const outsideEstates = await ThirdPartyOfferService.searchTenantEstatesByPoint(point.id)
-      // response.res({
-      //   isoline: point?.data?.data,
-      //   estates: [...insideEstates, ...outsideEstates],
-      // })
-      const estates = [...insideEstates, ...outsideEstates]
-      response.res(estates)
+      response.res({
+        isoline: point?.data?.data,
+        estates: [...insideEstates, ...outsideEstates],
+      })
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }

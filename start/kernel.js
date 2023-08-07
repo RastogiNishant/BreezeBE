@@ -55,6 +55,7 @@ const namedMiddleware = {
   LandlordOwnsThisEstate: 'App/Middleware/LandlordOwnsThisEstate',
   RoomBelongsToEstate: 'App/Middleware/RoomBelongsToEstate',
   ValidOpenImmoImport: 'App/Middleware/ValidOpenImmoImport',
+  EstateCanEdit: 'App/Middleware/EstateCanEdit',
 }
 
 /*
