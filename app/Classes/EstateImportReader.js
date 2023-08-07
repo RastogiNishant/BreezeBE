@@ -1,7 +1,7 @@
 'use_strict'
 const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
-const { get, has, isString, isFunction, unset, omit } = require('lodash')
+const { get, has, isString, isFunction, unset, omit, keys } = require('lodash')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
   exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
@@ -73,6 +73,15 @@ class EstateImportReader {
     'minors',
     'pets_allowed',
   ]
+  validateBuildingHeaders = [
+    'build_id',
+    'street',
+    'house_number',
+    'extra_address',
+    'zip',
+    'city',
+    'country',
+  ]
   sheetName = ['Unit', 'Building']
   rowForColumnKeys = 4
   dataStart = 5
@@ -99,18 +108,23 @@ class EstateImportReader {
       if (overrides?.validHeaderVars) {
         this.validHeaderVars = overrides.validHeaderVars
       }
-      const sheet = data.find((i) => i.name === this.sheetName[0])
-      this.sheet = sheet
+      const unitSheet = data.find((i) => i.name === this.sheetName[0])
+      const buildingSheet = data.find((i) => i.name === this.sheetName[1]) || {}
+
+      this.sheet = [unitSheet, buildingSheet]
       //sheet where the estates to import are found...
-      if (!sheet || !sheet.data) {
+      if (!unitSheet || !unitSheet.data) {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
       this.reverseTranslator = new EstateAttributeTranslations()
       this.dataMapping = this.reverseTranslator.getMap()
-      this.setValidColumns(get(sheet, `data.${this.rowForColumnKeys}`) || [])
+
+      this.setValidColumns(get(unitSheet, `data.${this.rowForColumnKeys}`) || [])
       if (!this.validateColumns(this.validColumns)) {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
+
+      this.validateBuildingColumns()
     } catch (e) {
       Logger.error('Excel parse error', e.message)
       throw new HttpException('Excel parse failed. please try again', 400)
@@ -134,6 +148,20 @@ class EstateImportReader {
     }, [])
     this.validColumns = columns
     return columns
+  }
+
+  validateBuildingColumns() {
+    const buildingSheet = this.sheet?.[1] || {}
+    if (!Object.keys(buildingSheet)?.length) {
+      return true
+    }
+
+    let columns = get(buildingSheet, `data.${this.rowForColumnKeys}`) || []
+    columns = columns.filter((column) => this.validateBuildingHeaders.find((vbc) => vbc === column))
+
+    if (columns.length < this.validateBuildingHeaders.length) {
+      throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+    }
   }
 
   validateColumns(columns) {
