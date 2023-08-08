@@ -688,6 +688,15 @@ Route.group(() => {
   .prefix('/api/v1/estates')
   .middleware(['auth:jwt'])
 
+Route.group(() => {
+  Route.get('/', 'BuildingController.getAll')
+  Route.get('/:id', 'BuildingController.get').middleware(['valid:Id'])
+  Route.post('/', 'BuildingController.create').middleware(['valid:CreateBuilding'])
+  Route.delete('/:id', 'BuildingController.delete').middleware(['valid:Id'])
+})
+  .prefix('/api/v1/building')
+  .middleware(['auth:jwtLandlord'])
+
 // Admin user edit part
 Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware(['guest', 'valid:SignIn'])
 
