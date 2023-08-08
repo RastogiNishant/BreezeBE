@@ -27,6 +27,8 @@ class EstateImportReader {
     'property_type',
     'letting',
     'use_type',
+    'building_id',
+    'cert_category',
     'occupancy',
     'ownership_type',
     'marketing_type',

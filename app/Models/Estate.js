@@ -177,7 +177,8 @@ class Estate extends Model {
       'publish_type',
       'notify_on_green_matches',
       'notify_sent',
-      'building_id',
+      'build_id',
+      'cert_category',
     ]
   }
 

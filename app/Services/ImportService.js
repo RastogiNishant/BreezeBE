@@ -1,5 +1,5 @@
 const Promise = require('bluebird')
-const { has, omit, isEmpty, trim } = require('lodash')
+const { has, omit, isEmpty, trim, property } = require('lodash')
 const moment = require('moment')
 const EstateImportReader = use('App/Classes/EstateImportReader')
 const Database = use('Database')
@@ -41,6 +41,7 @@ const {
 const {
   exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE },
 } = require('../exceptions')
+const BuildingService = require('./BuildingService')
 const WebSocket = use('App/Classes/Websocket')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -58,7 +59,17 @@ class ImportService {
    *
    */
 
-  static async createSingleEstate({ data, line, six_char_code }, userId, lang) {
+  static async createSingleEstate({ property, building, userId, lang }) {
+    let data = property.data
+    let line = property.line
+    let six_char_code = property.six_char_code
+
+    const build_id = data.building_id
+      ? building.filter((b) => b.building_id === data.building_id)[0]?.id
+      : null
+
+    data.build_id = build_id
+
     let estate
     line += 1
     const warnings = []
@@ -231,12 +242,16 @@ class ImportService {
 
       fsPromise.unlink(localPath)
 
+      //add/update building
+      await BuildingService.bulkUpsert(user_id, data.building)
+      const buildings = await BuildingService.getAll(user_id)
+
       result = await Promise.map(
-        data,
+        data?.unit || [],
         async (i, index) => {
           if (i) {
             const { estateResult, singleWarnings, singleErrors } =
-              await ImportService.createSingleEstate(i, user_id, lang)
+              await ImportService.createSingleEstate({ property: i, buildings, user_id, lang })
 
             if (singleErrors) {
               createErrors = createErrors.concat(singleErrors)

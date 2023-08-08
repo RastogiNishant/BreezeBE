@@ -4,7 +4,7 @@ const BuildingService = use('App/Services/BuildingService')
 class BuildingController {
   async create({ request, auth, response }) {
     const data = request.all()
-    response.res(await BuildingService.create({ user_id: auth.user.id, data }))
+    response.res(await BuildingService.upsert({ user_id: auth.user.id, data }))
   }
 
   async delete({ request, auth, response }) {
