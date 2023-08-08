@@ -104,6 +104,7 @@ const {
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
+const BuildingService = require('../../Services/BuildingService')
 
 class EstateController {
   /**
@@ -1089,7 +1090,11 @@ class EstateController {
         })
       )
     }
-    return response.res(rows)
+
+    return response.res({
+      estates: rows,
+      buildings: await BuildingService.getAll(auth.user.id),
+    })
   }
 
   async importLastActivity({ auth, request, response }) {
