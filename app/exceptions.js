@@ -113,6 +113,7 @@ const exceptions = {
     'Your property is already published, to manipulate that property, please unpublish it first',
   ERROR_MATCH_COMMIT_DOUBLE:
     'You have already requests final match, please cancel that one first to proceed',
+  NO_BUILDING_ID_EXIST: 'NO BUILDING ID EXIST',
 }
 
 const exceptionCodes = {
