@@ -49,7 +49,7 @@ class BuildingService {
     await Promise.map(
       data || [],
       async (building) => {
-        await BuildingService.upsert({ user_id, building })
+        await BuildingService.upsert({ user_id, data: building })
       },
       { concurrency: 1 }
     )

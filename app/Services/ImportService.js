@@ -59,13 +59,13 @@ class ImportService {
    *
    */
 
-  static async createSingleEstate({ property, building, userId, lang }) {
+  static async createSingleEstate({ property, buildings, userId, lang }) {
     let data = property.data
     let line = property.line
     let six_char_code = property.six_char_code
 
     const build_id = data.building_id
-      ? building.filter((b) => b.building_id === data.building_id)[0]?.id
+      ? (buildings || []).filter((b) => b.building_id === data.building_id)[0]?.id
       : null
 
     data.build_id = build_id
@@ -243,7 +243,9 @@ class ImportService {
       fsPromise.unlink(localPath)
 
       //add/update building
-      await BuildingService.bulkUpsert(user_id, data.building)
+      const buildingsData = (data.building || []).map((building) => building.data)
+
+      await BuildingService.bulkUpsert(user_id, buildingsData)
       const buildings = await BuildingService.getAll(user_id)
 
       result = await Promise.map(
@@ -251,7 +253,12 @@ class ImportService {
         async (i, index) => {
           if (i) {
             const { estateResult, singleWarnings, singleErrors } =
-              await ImportService.createSingleEstate({ property: i, buildings, user_id, lang })
+              await ImportService.createSingleEstate({
+                property: i,
+                buildings,
+                userId: user_id,
+                lang,
+              })
 
             if (singleErrors) {
               createErrors = createErrors.concat(singleErrors)

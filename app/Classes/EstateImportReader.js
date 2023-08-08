@@ -232,7 +232,12 @@ class EstateImportReader {
         Object.keys(omit(row, ['six_char_code'])) &&
         Object.keys(omit(row, ['six_char_code'])).length
       ) {
-        row = await this.processRow({ row, rowCount: k, isUnit })
+        if (isUnit) {
+          row = await this.processRow({ row, rowCount: k, isUnit })
+        } else {
+          row = await this.validateBuildRow(row, k)
+        }
+
         if (row) {
           sheetData.push(row)
         }
@@ -269,7 +274,7 @@ class EstateImportReader {
     }
   }
 
-  async processRow({ row, rowCount, validateRow = true, isUnit = true }) {
+  async processRow({ row, rowCount, validateRow = true }) {
     try {
       //deposit
       row.deposit = (parseFloat(row.deposit) || 0) * (parseFloat(row.net_rent) || 0)
@@ -312,11 +317,7 @@ class EstateImportReader {
       }
 
       if (validateRow) {
-        if (isUnit) {
-          row = await this.validateRow(row, rowCount)
-        } else {
-          row = await this.validateBuildRow(row, rowCount)
-        }
+        row = await this.validateRow(row, rowCount)
       }
       return row
     } catch (e) {
@@ -333,10 +334,10 @@ class EstateImportReader {
         data,
       }
     } catch (e) {
-      console.log('validateBuildRow=', e.message)
       const ret = {
         line: rowCount + 1,
         error: e.errors,
+        sheet: this.sheetName[1],
         build_id: row ? row.build_id : `no build id in ${this.sheetName[1]} sheet`,
         street: row ? row.street : `no street code in ${this.sheetName[1]}`,
         postcode: row ? row.zip : `no zip code in ${this.sheetName[1]}`,
@@ -358,6 +359,7 @@ class EstateImportReader {
       const ret = {
         line: rowCount + 1,
         error: e.errors,
+        sheet: this.sheetName[0],
         breeze_id: row.six_char_code || null,
         property_id: row ? row.property_id : `no property id`,
         street: row ? row.street : `no street code`,
