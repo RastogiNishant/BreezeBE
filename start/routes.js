@@ -957,6 +957,7 @@ Route.group(() => {
   Route.post('/:id/dislike', 'EstateController.dislikeEstate').middleware(['valid:Id'])
   Route.delete('/:id/dislike', 'EstateController.removeEstateDislike').middleware(['valid:Id'])
   Route.get('/:id', 'EstateController.getTenantEstate').middleware(['valid:Id'])
+  Route.get('/build/:id', 'EstateController.getTenantBuildingEstate').middleware(['valid:Id'])
   Route.get('/third-party-offers/:id', 'EstateController.getThirdPartyOfferEstate').middleware([
     'valid:Id',
   ])

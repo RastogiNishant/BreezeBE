@@ -1536,8 +1536,8 @@ class EstateService {
    * Get estates according to es
    */
 
-  static getActiveMatchesQuery(userId) {
-    return this.getMachesQuery(Estate.query(), userId)
+  static getActiveMatchesQuery({ userId, build_id }) {
+    return this.getMachesQuery(Estate.query(), { userId, build_id })
   }
 
   static async getTenantTrashEstates(userId) {
@@ -1600,8 +1600,8 @@ class EstateService {
     return trashedEstates
   }
 
-  static getMachesQuery(query, userId) {
-    return query
+  static getMachesQuery(query, { userId, build_id }) {
+    query
       .select('estates.*')
       .withCount('knocked')
       .select(Database.raw(`_m.prospect_score AS match`))
@@ -1634,12 +1634,17 @@ class EstateService {
           })
         })
       })
-      .orderBy('_m.prospect_score', 'DESC')
+
+    if (build_id) {
+      query.where('estates.build_id', build_id)
+    }
+
+    query.orderBy('_m.prospect_score', 'DESC')
   }
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
-  static getNotActiveMatchesQuery(tenant, userId) {
+  static getNotActiveMatchesQuery({ tenant, userId, build_id }) {
     let query = null
     if (!tenant.coord_raw) {
       throw new AppException('Invalid user anchor')
@@ -1662,22 +1667,22 @@ class EstateService {
       throw new AppException('Invalid match query')
     }
 
-    return this.getMachesQuery(query, userId)
+    return this.getMachesQuery(query, { userId, build_id })
   }
 
   /**
    *
    */
-  static async getTenantAllEstates(userId, page = 1, limit = 20) {
+  static async getTenantAllEstates({ userId, build_id, page = 1, limit = 20 }) {
     const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
     if (tenant.isActive()) {
-      query = this.getActiveMatchesQuery(userId)
+      query = this.getActiveMatchesQuery({ userId, build_id })
     } else {
-      query = this.getNotActiveMatchesQuery(tenant, userId)
+      query = this.getNotActiveMatchesQuery({ tenant, userId, build_id })
     }
 
     return query.paginate(page, limit)
@@ -2901,6 +2906,10 @@ class EstateService {
     return estate
   }
 
+  static async getTenantBuildingEstates({ user_id, build_id }) {
+    estates = await EstateService.getTenantAllEstates({ userId: user_id, build_id })
+  }
+
   static async getTenantEstates({ user_id, page, limit }) {
     let estates = []
     let totalCount = 0
@@ -2913,7 +2922,7 @@ class EstateService {
     const offsetCount = insideNewMatchesCount % limit
     const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1
     if ((page - 1) * limit < insideNewMatchesCount) {
-      estates = await EstateService.getTenantAllEstates(user_id, page, limit)
+      estates = await EstateService.getTenantAllEstates({ userId: user_id, page, limit })
       estates = await Promise.all(
         estates.rows.map(async (estate) => {
           estate = estate.toJSON({ isShort: true, role: ROLE_USER })
@@ -3208,7 +3217,6 @@ class EstateService {
   }
 
   static async getTenantEstate({ id, user_id, role }) {
-    console.log(`getTenantEstate= ${user_id} ${role}`)
     let estate = await this.getEstateWithDetails({
       id,
       user_id: user_id ?? null,

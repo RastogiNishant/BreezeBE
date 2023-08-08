@@ -745,6 +745,13 @@ class EstateController {
     response.res(tenantEstate)
   }
 
+  async getTenantBuildingEstate({ request, auth, response }) {
+    const { id } = request.all()
+    response.res(
+      await EstateService.getTenantBuildingEstates({ user_id: auth.user.id, build_id: id })
+    )
+  }
+
   async getThirdPartyOfferEstate({ request, auth, response }) {
     const { id } = request.all()
     let estate = await ThirdPartyOfferService.getEstate({ userId: auth?.user?.id, id })
