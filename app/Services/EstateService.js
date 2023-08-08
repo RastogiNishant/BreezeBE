@@ -1979,8 +1979,12 @@ class EstateService {
       .with('files')
       .with('estateSyncListings')
 
-    if (params && params.id) {
+    if (params?.id) {
       query.where('estates.id', params.id)
+    }
+
+    if (params?.build_id) {
+      query.where('estates.build_id', params.build_id)
     }
 
     let result
@@ -1989,7 +1993,9 @@ class EstateService {
     } else {
       result = await query.paginate(page, limit)
     }
+
     result.data = await this.checkCanChangeLettingStatus(result, { isOwner: true })
+
     result.data = (result.data || []).map((estate) => {
       const outside_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
@@ -2582,6 +2588,7 @@ class EstateService {
 
   static async checkCanChangeLettingStatus(result, option = {}) {
     const resultObject = result.toJSON(option)
+
     if (resultObject.data) {
       result = resultObject.data
     } else if (resultObject) {
@@ -2589,7 +2596,6 @@ class EstateService {
     } else {
       result = []
     }
-
     return result.map((estate) => {
       const isMatchCountValidToChangeLettingType =
         0 + parseInt(estate.__meta__.visits_count) ||

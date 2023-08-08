@@ -276,7 +276,20 @@ class EstateController {
       offline_count: totalEstateCounts.offline_count,
       online_count: totalEstateCounts.online_count,
     }
-    return response.res(result)
+    response.res(result)
+  }
+
+  async getBuildingEstates({ request, auth, response }) {
+    const { id, limit, page, ...params } = request.all()
+    console.log(`getBuildingEstates = ${page} ${limit}`)
+    let result = await EstateService.getEstatesByUserId({
+      user_ids: [auth.user.id],
+      page,
+      limit,
+      params: { ...(params || {}), build_id: id },
+    })
+
+    response.res(result.data)
   }
 
   /**
