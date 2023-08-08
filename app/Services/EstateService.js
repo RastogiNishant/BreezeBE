@@ -1639,7 +1639,7 @@ class EstateService {
       query.where('estates.build_id', build_id)
     }
 
-    query.orderBy('_m.prospect_score', 'DESC')
+    return query.orderBy('_m.prospect_score', 'DESC')
   }
   /**
    * If tenant not active get points by zone/point+dist/range zone
