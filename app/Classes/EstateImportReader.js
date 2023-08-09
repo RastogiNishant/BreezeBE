@@ -7,12 +7,13 @@ const {
   exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
   getExceptionMessage,
 } = require('../exceptions')
-const { MAX_ROOM_TYPES_TO_IMPORT } = require('../constants')
+const { MAX_ROOM_TYPES_TO_IMPORT, DEFAULT_LANG } = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
 const schema = require('../Validators/ImportEstate').schema()
 const buildSchema = require('../Validators/CreateBuilding').schema()
 const Logger = use('Logger')
+const l = use('Localize')
 
 class EstateImportReader {
   validHeaderVars = [
@@ -85,7 +86,10 @@ class EstateImportReader {
     'city',
     'country',
   ]
-  sheetName = ['Unit', 'Building']
+  sheetName = [
+    'landlord.web.my-properties.import.excel_import.txt_units',
+    'landlord.web.my-properties.import.excel_import.txt_buildings',
+  ]
   rowForColumnKeys = 4
   dataStart = 5
   errors = []
@@ -93,34 +97,51 @@ class EstateImportReader {
   data = []
   buildingData = []
   buildingColumns = []
+  lang = DEFAULT_LANG
 
   constructor() {
     return this
   }
 
-  init(filePath, overrides = {}) {
+  init(filePath, overrides = { lang: DEFAULT_LANG }) {
     try {
+      this.lang = overrides.lang
       const data = xlsx.parse(filePath, { cellDates: true })
+
       if (overrides?.sheetName) {
         this.sheetName = overrides.sheetName
       }
+
       if (overrides?.rowForColumnKeys) {
         this.rowForColumnKeys = overrides?.rowForColumnKeys
       }
+
       if (overrides?.dataStart) {
         this.dataStart = overrides.dataStart
       }
+
       if (overrides?.validHeaderVars) {
         this.validHeaderVars = overrides.validHeaderVars
       }
-      const unitSheet = data.find((i) => i.name === this.sheetName[0])
-      const buildingSheet = data.find((i) => i.name === this.sheetName[1]) || {}
+
+      const unitSheet = data.find(
+        (i) =>
+          i.name === l.get(this.sheetName[0], this.lang) ||
+          i.name === l.get(this.sheetName[0], DEFAULT_LANG)
+      )
+      const buildingSheet =
+        data.find(
+          (i) =>
+            i.name === l.get(this.sheetName[1], this.lang) ||
+            i.name === l.get(this.sheetName[1], DEFAULT_LANG)
+        ) || {}
 
       this.sheet = [unitSheet, buildingSheet]
       //sheet where the estates to import are found...
       if (!unitSheet || !unitSheet.data) {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
+
       this.reverseTranslator = new EstateAttributeTranslations()
       this.dataMapping = this.reverseTranslator.getMap()
 
@@ -337,12 +358,14 @@ class EstateImportReader {
       const ret = {
         line: rowCount + 1,
         error: e.errors,
-        sheet: this.sheetName[1],
-        build_id: row ? row.build_id : `no build id in ${this.sheetName[1]} sheet`,
-        street: row ? row.street : `no street code in ${this.sheetName[1]}`,
-        postcode: row ? row.zip : `no zip code in ${this.sheetName[1]}`,
-        city: row ? row.city : `no city code in ${this.sheetName[1]}`,
-        country: row ? row.country : `no country code in ${this.sheetName[1]}`,
+        sheet: l.get(this.sheetName[1], this.lang),
+        build_id: row
+          ? row.build_id
+          : `no build id in ${l.get(this.sheetName[1], this.lang)} sheet`,
+        street: row ? row.street : `no street code in ${l.get(this.sheetName[1], this.lang)}`,
+        postcode: row ? row.zip : `no zip code in ${l.get(this.sheetName[1], this.lang)}`,
+        city: row ? row.city : `no city code in ${l.get(this.sheetName[1], this.lang)}`,
+        country: row ? row.country : `no country code in ${l.get(this.sheetName[1], this.lang)}`,
       }
       this.errors.push(ret)
     }
@@ -359,7 +382,7 @@ class EstateImportReader {
       const ret = {
         line: rowCount + 1,
         error: e.errors,
-        sheet: this.sheetName[0],
+        sheet: l.get(this.sheetName[0], this.lang),
         breeze_id: row.six_char_code || null,
         property_id: row ? row.property_id : `no property id`,
         street: row ? row.street : `no street code`,
