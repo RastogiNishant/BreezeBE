@@ -112,6 +112,13 @@ class TenantCertificateSerivce {
       .whereNot('status', STATUS_DELETE)
       .fetch()
   }
+
+  static async get(id) {
+    return await TenantCertificate.query()
+      .where('id', id)
+      .whereNot('status', STATUS_DELETE)
+      .firstOrFail()
+  }
 }
 
 module.exports = TenantCertificateSerivce

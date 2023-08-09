@@ -2,6 +2,11 @@
 
 const TenantCertificateService = use('App/Services/TenantCertificateService')
 class TenantCertificateController {
+  async get({ request, auth, response }) {
+    const { id } = request.all()
+    response.res(await TenantCertificateService.get(id))
+  }
+
   async getAll({ request, auth, response }) {
     response.res(await TenantCertificateService.getAll(auth.user.id))
   }

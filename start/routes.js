@@ -377,6 +377,7 @@ Route.group(() => {
   Route.delete('/certificate/:id', 'TenantCertificateController.deleteCertificate').middleware([
     'valid:Id',
   ])
+  Route.get('/certificate/:id', 'TenantCertificateController.get').middleware(['valid:Id'])
   Route.put('/certificate/:id', 'TenantCertificateController.updateCertificate').middleware([
     'valid:Id,CreateTenantCertificate',
   ])
