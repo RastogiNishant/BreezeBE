@@ -370,6 +370,9 @@ Route.group(() => {
   Route.post('/buddy/accept', 'TenantController.acceptBuddyInvite')
   Route.get('/map', 'TenantController.getTenantMap')
   Route.get('/all', 'TenantController.getAllTenants')
+  Route.post('/certificate', 'TenantCertificateController.addCertificate').middleware([
+    'valid:CreateTenantCertificate',
+  ])
 })
   .prefix('/api/v1/users/tenant')
   .middleware(['auth:jwt'])

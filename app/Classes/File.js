@@ -140,6 +140,7 @@ class File {
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
+
     if (!isEmpty(allowedTypes)) {
       if (!allowedTypes.includes(mime)) {
         throw new AppException('Invalid file mime type')
@@ -185,6 +186,7 @@ class File {
           )[0].data
         }
       } else if ([this.IMAGE_PDF].includes(mime)) {
+        console.log('image PDF=', file.tmpPath)
         img_data = await this.compressPDF(file.tmpPath)
       } else {
         img_data = await fsPromise.readFile(file.tmpPath)
@@ -292,19 +294,24 @@ class File {
       if (file.hasErrors) {
         throw new HttpException('Image has an error', 400)
       }
-
+      console.log('saveRequestFiles 1=')
       const fileInfo = await Promise.all(
         (file._files || [file]).map(async (f) => {
+          console.log('saveRequestFiles 1.5=', isPublic)
           const { filePathName, thumbnailFilePathName } = await File.saveToDisk(f, mime, isPublic)
           const fileName = f.clientName
           return { filePathName, thumbnailFilePathName, fileName }
         })
       )
+      console.log('saveRequestFiles 2=')
       const filePathName = fileInfo.map((fi) => fi.filePathName)
+      console.log('saveRequestFiles 3=')
       const fileName = fileInfo.map((fi) => fi.fileName)
+      console.log('saveRequestFiles 4=')
       const thumbnailFilePathName = fileInfo.map((fi) => fi.thumbnailFilePathName)
+      console.log('saveRequestFiles 5=')
       const fileFormat = (file._files || [file]).map((fi) => fi.headers['content-type'])
-
+      console.log('saveRequestFiles 6=')
       return { field, filePathName, fileName, thumbnailFilePathName, fileFormat }
     }
 
