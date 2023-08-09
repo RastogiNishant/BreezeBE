@@ -234,7 +234,6 @@ class EstateFilter extends Base {
         })
         .nullable(),
       is_expired_no_match_exclude: yup.boolean(),
-      group_by_building: yup.boolean(),
     })
 }
 
