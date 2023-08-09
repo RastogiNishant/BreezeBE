@@ -19,7 +19,6 @@ class CreateTenantCertificationSchema extends Schema {
       table.integer('status').defaultTo(STATUS_ACTIVE)
       table.index('user_id')
       table.index('city_id')
-      table.index('country_id')
 
       table.timestamps()
     })

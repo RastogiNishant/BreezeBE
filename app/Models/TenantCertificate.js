@@ -18,4 +18,4 @@ class TenantCertificate extends Model {
   }
 }
 
-module.exports = TenantCertificateModel
+module.exports = TenantCertificate
