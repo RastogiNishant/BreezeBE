@@ -140,6 +140,7 @@ class File {
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
+
     if (!isEmpty(allowedTypes)) {
       if (!allowedTypes.includes(mime)) {
         throw new AppException('Invalid file mime type')
@@ -300,11 +301,11 @@ class File {
           return { filePathName, thumbnailFilePathName, fileName }
         })
       )
+
       const filePathName = fileInfo.map((fi) => fi.filePathName)
       const fileName = fileInfo.map((fi) => fi.fileName)
       const thumbnailFilePathName = fileInfo.map((fi) => fi.thumbnailFilePathName)
       const fileFormat = (file._files || [file]).map((fi) => fi.headers['content-type'])
-
       return { field, filePathName, fileName, thumbnailFilePathName, fileFormat }
     }
 

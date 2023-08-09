@@ -370,6 +370,20 @@ Route.group(() => {
   Route.post('/buddy/accept', 'TenantController.acceptBuddyInvite')
   Route.get('/map', 'TenantController.getTenantMap')
   Route.get('/all', 'TenantController.getAllTenants')
+  Route.get('/certificate', 'TenantCertificateController.getAll')
+  Route.post('/certificate', 'TenantCertificateController.addCertificate').middleware([
+    'valid:CreateTenantCertificate',
+  ])
+  Route.delete('/certificate/:id', 'TenantCertificateController.deleteCertificate').middleware([
+    'valid:Id',
+  ])
+  Route.get('/certificate/:id', 'TenantCertificateController.get').middleware(['valid:Id'])
+  Route.put('/certificate/:id', 'TenantCertificateController.updateCertificate').middleware([
+    'valid:Id,CreateTenantCertificate',
+  ])
+  Route.put('/certificate/:id/image', 'TenantCertificateController.updateImage').middleware([
+    'valid:Id,CreateFile',
+  ])
 })
   .prefix('/api/v1/users/tenant')
   .middleware(['auth:jwt'])
