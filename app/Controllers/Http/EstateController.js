@@ -281,7 +281,7 @@ class EstateController {
 
   async getBuildingEstates({ request, auth, response }) {
     const { id, limit, page, ...params } = request.all()
-    console.log(`getBuildingEstates = ${page} ${limit}`)
+
     let result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
       page,
