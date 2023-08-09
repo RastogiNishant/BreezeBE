@@ -186,7 +186,6 @@ class File {
           )[0].data
         }
       } else if ([this.IMAGE_PDF].includes(mime)) {
-        console.log('image PDF=', file.tmpPath)
         img_data = await this.compressPDF(file.tmpPath)
       } else {
         img_data = await fsPromise.readFile(file.tmpPath)
