@@ -200,6 +200,10 @@ class User extends Model {
   feedbacks() {
     return this.hasMany('App/Models/Feedback')
   }
+
+  certificates() {
+    return this.hasMany('App/Models/TenantCertificate')
+  }
 }
 
 module.exports = User
