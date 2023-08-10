@@ -221,6 +221,33 @@ class TenantController {
       income: incomeCounts,
     })
   }
+
+  async requestCertificate({ request, auth, response }) {
+    const { request_certificate_at, request_certificate_city_id } = request.all()
+    await TenantService.requestCertificate({
+      user_id: auth.user.id,
+      request_certificate_at,
+      request_certificate_city_id,
+    })
+
+    //TODO: need to send wbs link from city table. coming soon
+    response.res({
+      request_certificate_at,
+      request_certificate_city_id,
+      wbs_link:
+        'https://service.moenchengladbach.de/suche/-/egov-bis-detail/dienstleistung/740890/show',
+    })
+  }
+
+  async removeRequestCertificate({ request, auth, response }) {
+    response.res(
+      await TenantService.requestCertificate({
+        user_id: auth.user.id,
+        request_certificate_at: null,
+        request_certificate_city_id: null,
+      })
+    )
+  }
 }
 
 module.exports = TenantController
