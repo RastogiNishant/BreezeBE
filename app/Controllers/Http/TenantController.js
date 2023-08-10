@@ -6,6 +6,7 @@ const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
+const TenantCertificateService = use('App/Services/TenantCertificateService')
 const Tenant = use('App/Models/Tenant')
 const Database = use('Database')
 const { without, omit } = require('lodash')
@@ -24,7 +25,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
 } = require('../../constants')
-const QueueService = require('../../Services/QueueService')
+
 const { logEvent } = require('../../Services/TrackingService')
 
 class TenantController {
@@ -240,13 +241,23 @@ class TenantController {
   }
 
   async removeRequestCertificate({ request, auth, response }) {
-    response.res(
-      await TenantService.requestCertificate({
-        user_id: auth.user.id,
-        request_certificate_at: null,
-        request_certificate_city_id: null,
-      })
-    )
+    const trx = await Database.beginTransaction()
+    try {
+      await TenantCertificateService.deleteCertificate({ user_id: auth.user.id }, trx)
+      const deleteCertificateResult = await TenantService.requestCertificate(
+        {
+          user_id: auth.user.id,
+          request_certificate_at: null,
+          request_certificate_city_id: null,
+        },
+        trx
+      )
+      await trx.commit()
+      response.res(deleteCertificateResult)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 }
 

@@ -1,6 +1,7 @@
 'use strict'
 const File = use('App/Classes/File')
 const TenantCertificate = use('App/Models/TenantCertificate')
+const TenantService = use('App/Services/TenantService')
 const HttpException = use('App/Exceptions/HttpException')
 const { STATUS_DELETE } = require('../constants')
 const Database = use('Database')
@@ -10,6 +11,7 @@ const {
 class TenantCertificateSerivce {
   static async addCertificate(request, user_id) {
     const { city_id, income_level, expired_at } = request.all()
+    const trx = await Database.beginTransaction()
     try {
       const imageMimes = [
         File.IMAGE_JPEG,
@@ -35,19 +37,32 @@ class TenantCertificateSerivce {
           uri: path,
           file_name: original_file_names[index],
         }))
+        await TenantService.requestCertificate(
+          {
+            user_id,
+            request_certificate_at: null,
+            request_certificate_city_id: null,
+          },
+          trx
+        )
+        const certificate = await TenantCertificate.createItem(
+          {
+            user_id,
+            city_id,
+            income_level,
+            expired_at,
+            attachments: JSON.stringify(attachments),
+          },
+          trx
+        )
 
-        const certificate = await TenantCertificate.create({
-          user_id,
-          city_id,
-          income_level,
-          expired_at,
-          attachments: JSON.stringify(attachments),
-        })
+        await trx.commit()
         return certificate
       } else {
         throw new HttpException(FAILED_TO_ADD_FILE, 400)
       }
     } catch (e) {
+      await trx.rollback()
       throw new HttpException(e.message, 400)
     }
   }
@@ -77,13 +92,11 @@ class TenantCertificateSerivce {
         : [files.original_file]
       const attachments = [
         ...(tenantCertificate.attachments || []),
-        ...paths.map((path, index) => {
-          return {
-            disk: 's3',
-            uri: path,
-            file_name: original_file_names[index],
-          }
-        }),
+        ...paths.map((path, index) => ({
+          disk: 's3',
+          uri: path,
+          file_name: original_file_names[index],
+        })),
       ]
 
       await TenantCertificate.query()
@@ -106,17 +119,20 @@ class TenantCertificateSerivce {
     return await TenantCertificate.query().where('id', data.id).first()
   }
 
-  static async deleteCertificate({ id, user_id }) {
-    const trx = await Database.beginTransaction()
+  static async deleteCertificate({ id, user_id }, trx) {
     try {
-      //TODO: Remove request certificate
+      const query = TenantCertificate.query()
+      if (id) {
+        query.where('id', id)
+      }
 
-      return await TenantCertificate.query()
-        .where('id', id)
+      return await query
         .where('user_id', user_id)
         .update({ status: STATUS_DELETE })
         .transacting(trx)
-    } catch (e) {}
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 
   static async getAll(user_id) {
