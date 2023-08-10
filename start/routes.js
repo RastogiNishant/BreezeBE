@@ -370,6 +370,10 @@ Route.group(() => {
   Route.post('/buddy/accept', 'TenantController.acceptBuddyInvite')
   Route.get('/map', 'TenantController.getTenantMap')
   Route.get('/all', 'TenantController.getAllTenants')
+  Route.put('/certificate/request', 'TenantController.requestCertificate').middleware([
+    'valid:RequestCertificate',
+  ])
+  Route.delete('/certificate/request', 'TenantController.removeRequestCertificate')
   Route.get('/certificate', 'TenantCertificateController.getAll')
   Route.post('/certificate', 'TenantCertificateController.addCertificate').middleware([
     'valid:CreateTenantCertificate',
