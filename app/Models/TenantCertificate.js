@@ -8,13 +8,15 @@ class TenantCertificate extends Model {
       'user_id',
       'city_id',
       'income_level',
-      'uri',
-      'file_name',
-      'disk',
+      'attachments',
       'expired_at',
       'created_at',
       'updated_at',
     ]
+  }
+
+  static get Serializer() {
+    return 'App/Serializers/TenantCertificateSerializer'
   }
 }
 

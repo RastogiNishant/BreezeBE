@@ -3,6 +3,7 @@ const File = use('App/Classes/File')
 const TenantCertificate = use('App/Models/TenantCertificate')
 const HttpException = use('App/Exceptions/HttpException')
 const { STATUS_DELETE } = require('../constants')
+const Database = use('Database')
 const {
   exceptions: { FAILED_TO_ADD_FILE },
 } = require('../exceptions')
@@ -29,20 +30,20 @@ class TenantCertificateSerivce {
         const original_file_names = Array.isArray(files.original_file)
           ? files.original_file
           : [files.original_file]
-        const data = paths.map((path, index) => {
-          return {
-            user_id,
-            city_id,
-            income_level,
-            expired_at,
-            disk: 's3',
-            uri: path,
-            file_name: original_file_names[index],
-          }
-        })
+        const attachments = paths.map((path, index) => ({
+          disk: 's3',
+          uri: path,
+          file_name: original_file_names[index],
+        }))
 
-        const certificates = await TenantCertificate.createMany(data)
-        return certificates
+        const certificate = await TenantCertificate.create({
+          user_id,
+          city_id,
+          income_level,
+          expired_at,
+          attachments: JSON.stringify(attachments),
+        })
+        return certificate
       } else {
         throw new HttpException(FAILED_TO_ADD_FILE, 400)
       }
@@ -53,6 +54,8 @@ class TenantCertificateSerivce {
 
   static async updateImage(request, user_id) {
     const { id } = request.all()
+    const tenantCertificate = await this.get(id)
+
     const imageMimes = [
       File.IMAGE_JPEG,
       File.IMAGE_PNG,
@@ -72,19 +75,23 @@ class TenantCertificateSerivce {
       const original_file_names = Array.isArray(files.original_file)
         ? files.original_file
         : [files.original_file]
-      const data = paths.map((path, index) => {
-        return {
-          uri: path,
-          file_name: original_file_names[index],
-        }
-      })
+      const attachments = [
+        ...(tenantCertificate.attachments || []),
+        ...paths.map((path, index) => {
+          return {
+            disk: 's3',
+            uri: path,
+            file_name: original_file_names[index],
+          }
+        }),
+      ]
 
       await TenantCertificate.query()
         .where('id', id)
         .where('user_id', user_id)
-        .update({ ...data[0] })
+        .update({ attachments: JSON.stringify(attachments) })
 
-      return await TenantCertificate.query().where('id', id).first()
+      return { ...tenantCertificate.toJSON(), attachments }
     } else {
       throw new HttpException(FAILED_TO_ADD_FILE, 400)
     }
@@ -100,10 +107,16 @@ class TenantCertificateSerivce {
   }
 
   static async deleteCertificate({ id, user_id }) {
-    return await TenantCertificate.query()
-      .where('id', id)
-      .where('user_id', user_id)
-      .update({ status: STATUS_DELETE })
+    const trx = await Database.beginTransaction()
+    try {
+      //TODO: Remove request certificate
+
+      return await TenantCertificate.query()
+        .where('id', id)
+        .where('user_id', user_id)
+        .update({ status: STATUS_DELETE })
+        .transacting(trx)
+    } catch (e) {}
   }
 
   static async getAll(user_id) {
