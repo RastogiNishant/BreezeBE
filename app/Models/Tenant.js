@@ -78,6 +78,9 @@ class Tenant extends Model {
       'transfer_budget_max',
       'residency_duration_min',
       'residency_duration_max',
+
+      'request_certificate_at',
+      'request_certificate_city_id',
     ]
   }
 
@@ -108,6 +111,9 @@ class Tenant extends Model {
       'residency_duration_max',
       'selected_adults_count',
       'notify_sent',
+
+      'request_certificate_at',
+      'request_certificate_city_id',
     ]
   }
 
