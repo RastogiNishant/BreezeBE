@@ -1,4 +1,4 @@
-'use_strict'
+'use strict'
 const xlsx = require('node-xlsx')
 const HttpException = use('App/Exceptions/HttpException')
 const { get, has, isString, isFunction, unset, omit, keys } = require('lodash')

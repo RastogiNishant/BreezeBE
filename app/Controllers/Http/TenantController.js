@@ -7,6 +7,7 @@ const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
 const TenantCertificateService = use('App/Services/TenantCertificateService')
+const CityService = use('App/Services/CityService')
 const Tenant = use('App/Models/Tenant')
 const Database = use('Database')
 const { without, omit } = require('lodash')
@@ -231,12 +232,15 @@ class TenantController {
       request_certificate_city_id,
     })
 
+    let city = null
+    if (request_certificate_city_id) {
+      city = await CityService.get(request_certificate_city_id)
+    }
+
     //TODO: need to send wbs link from city table. coming soon
     response.res({
       request_certificate_at,
-      request_certificate_city_id,
-      wbs_link:
-        'https://service.moenchengladbach.de/suche/-/egov-bis-detail/dienstleistung/740890/show',
+      city,
     })
   }
 
