@@ -507,14 +507,20 @@ class TenantService {
     }
   }
 
-  static async requestCertificate({
-    user_id,
-    request_certificate_at,
-    request_certificate_city_id,
-  }) {
-    await Tenant.query()
-      .where('user_id', user_id)
-      .update({ request_certificate_at, request_certificate_city_id })
+  static async requestCertificate(
+    { user_id, request_certificate_at, request_certificate_city_id },
+    trx = null
+  ) {
+    if (trx) {
+      await Tenant.query()
+        .where('user_id', user_id)
+        .update({ request_certificate_at, request_certificate_city_id })
+        .transacting(trx)
+    } else {
+      await Tenant.query()
+        .where('user_id', user_id)
+        .update({ request_certificate_at, request_certificate_city_id })
+    }
   }
 }
 
