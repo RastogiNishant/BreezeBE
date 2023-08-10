@@ -5,7 +5,7 @@ const Model = require('./BaseModel')
 
 class City extends Model {
   static get columns() {
-    return ['id', 'country', 'other_name', 'alpha2', 'city']
+    return ['id', 'country', 'other_name', 'alpha2', 'city', 'wbs_link']
   }
   static get traits() {
     return ['NoTimestamp']
