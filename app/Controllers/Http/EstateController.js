@@ -217,6 +217,34 @@ class EstateController {
       await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query, letting_type })
     )
   }
+
+  /**
+   *
+   * @param {*} param0
+   * will be used for match screen for web app
+   */
+  async getMatchEstates({ request, auth, response }) {
+    let { limit, page, ...params } = request.all()
+    if (!isEmpty(request.post())) {
+      params = request.post()
+    }
+
+    const noBuildEstateCount = await EstateService.noBuildEstateCount({
+      user_id: auth.user.id,
+      params,
+    })
+    const buildEstateCount = await EstateService.buildEstateCount({ user_id: auth.user.id, params })
+    // let result = await EstateService.getEstatesByUserId({
+    //   user_ids: [auth.user.id],
+    //   limit,
+    //   page,
+    //   params: {
+    //     ...(params || {}),
+    //     build_id: null,
+    //   },
+    // })
+  }
+
   /**
    *
    */

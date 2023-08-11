@@ -1974,7 +1974,7 @@ class EstateService {
       .with('files')
       .with('estateSyncListings')
 
-    if (params && params.id) {
+    if (params?.id) {
       query.where('estates.id', params.id)
     }
 
@@ -1984,7 +1984,7 @@ class EstateService {
     } else {
       result = await query.paginate(page, limit)
     }
-    result.data = await this.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = this.checkCanChangeLettingStatus(result, { isOwner: true })
     result.data = (result.data || []).map((estate) => {
       const outside_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
@@ -2575,7 +2575,7 @@ class EstateService {
     return await query.transacting(trx)
   }
 
-  static async checkCanChangeLettingStatus(result, option = {}) {
+  static checkCanChangeLettingStatus(result, option = {}) {
     const resultObject = result.toJSON(option)
     if (resultObject.data) {
       result = resultObject.data
@@ -3238,6 +3238,28 @@ class EstateService {
 
     estate = await EstateService.assignEstateAmenities(estate)
     return estate
+  }
+
+  static async noBuildEstateCount({ user_id, params }) {
+    let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
+      .where('estates.user_id', user_id)
+      .whereNull('build_id')
+
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
+    return await query.count()
+  }
+  static async buildEstateCount({ user_id, params }) {
+    let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
+      .where('estates.user_id', user_id)
+      .whereNotNull('build_id')
+
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
+    query.groupBy('build_id')
+    return await query.count()
   }
 }
 module.exports = EstateService
