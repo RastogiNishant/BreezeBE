@@ -1964,7 +1964,7 @@ class EstateService {
     }
   }
 
-  static async getEstatesByUserId({ user_ids, to = -1, from = -1, params = {} }) {
+  static async getEstatesByUserId({ user_ids, limit = -1, from = -1, params = {} }) {
     let query = this.getEstates(user_ids, params)
       .whereNot('estates.status', STATUS_DELETE)
       .with('slots')
@@ -1980,10 +1980,10 @@ class EstateService {
     }
 
     let result
-    if (from === -1 || to === -1) {
+    if (from === -1 || limit === -1) {
       result = await query.fetch()
     } else {
-      result = await query.offset(from).limit(to).fetch()
+      result = await query.offset(from).limit(limit).fetch()
     }
     result.data = this.checkCanChangeLettingStatus(result, { isOwner: true })
     result.data = (result.data || []).map((estate) => {
@@ -3292,7 +3292,7 @@ class EstateService {
 
         let result = await EstateService.getEstatesByUserId({
           user_ids: [user_id],
-          to,
+          limit: to,
           from,
           params: {
             ...(params || {}),
