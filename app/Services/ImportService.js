@@ -271,7 +271,7 @@ class ImportService {
               data: {
                 message: PROPERTY_HANDLE_FINISHED,
                 count: errors?.length + index + 1,
-                total: data.length + errors?.length,
+                total: (data?.unit?.length || 0) + (errors?.length || 0),
                 result: estateResult,
                 errors: singleErrors || [],
                 warnings: singleWarnings || [],
