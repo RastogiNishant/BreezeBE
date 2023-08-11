@@ -1,3 +1,4 @@
+const { uniqBy } = require('lodash')
 const {
   COUNTRIES,
   RENT_DURATION_LONG,
@@ -47,6 +48,7 @@ class CommonService {
         .fetch()
       citiesToReturn = [...citiesToReturn, ...additionalCities.toJSON()]
     }
+    citiesToReturn = uniqBy(citiesToReturn, (city) => city.id)
     return citiesToReturn
   }
 
