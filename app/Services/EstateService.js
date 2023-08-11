@@ -1964,7 +1964,7 @@ class EstateService {
     }
   }
 
-  static async getEstatesByUserId({ user_ids, limit = -1, page = -1, params = {} }) {
+  static async getEstatesByUserId({ user_ids, limit = -1, from = -1, params = {} }) {
     let query = this.getEstates(user_ids, params)
       .whereNot('estates.status', STATUS_DELETE)
       .with('slots')
@@ -1974,17 +1974,18 @@ class EstateService {
       .with('files')
       .with('estateSyncListings')
 
-    if (params && params.id) {
-      query.where('estates.id', params.id)
+    if (params?.id) {
+      params.id = Array.isArray(params.id) ? params.id : [params.id]
+      query.whereIn('estates.id', params.id)
     }
 
     let result
-    if (page === -1 || limit === -1) {
+    if (from === -1 || limit === -1) {
       result = await query.fetch()
     } else {
-      result = await query.paginate(page, limit)
+      result = await query.offset(from).limit(limit).fetch()
     }
-    result.data = await this.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = this.checkCanChangeLettingStatus(result, { isOwner: true })
     result.data = (result.data || []).map((estate) => {
       const outside_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
@@ -2575,7 +2576,7 @@ class EstateService {
     return await query.transacting(trx)
   }
 
-  static async checkCanChangeLettingStatus(result, option = {}) {
+  static checkCanChangeLettingStatus(result, option = {}) {
     const resultObject = result.toJSON(option)
     if (resultObject.data) {
       result = resultObject.data
@@ -3176,7 +3177,7 @@ class EstateService {
       await trx.commit()
       const estates = await require('./EstateService').getEstatesByUserId({
         limit: 1,
-        page: 1,
+        from: 0,
         params: { id: newEstate.id },
       })
       return estates.data?.[0]
@@ -3238,6 +3239,89 @@ class EstateService {
 
     estate = await EstateService.assignEstateAmenities(estate)
     return estate
+  }
+
+  static async noBuildEstateCount({ user_id, params }) {
+    let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
+      .where('estates.user_id', user_id)
+      .whereNull('build_id')
+
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
+    return parseInt((await query.count())?.[0]?.count || 0)
+  }
+
+  static async buildEstateCount({ user_id, params }) {
+    let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
+      .where('estates.user_id', user_id)
+      .whereNotNull('build_id')
+
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
+    query.groupBy('build_id')
+    return (await query.count())?.length
+  }
+
+  static async getMatchEstates({ user_id, params, limit, page }) {
+    const buildEstateCount = await EstateService.buildEstateCount({ user_id, params })
+    const noBuildEstateCount = await EstateService.noBuildEstateCount({
+      user_id,
+      params,
+    })
+
+    const total = buildEstateCount + noBuildEstateCount
+    const buildEstatePage = Math.ceil(buildEstateCount / limit) || 1
+
+    const buildEstates = await require('./BuildingService').getMatchBuilding({
+      user_id,
+      limit,
+      from: (page - 1) * limit,
+      params,
+    })
+
+    let estates = buildEstates
+
+    if (page && limit) {
+      if (buildEstateCount < page * limit) {
+        const offsetCount = buildEstateCount % limit
+        let from = (page - buildEstatePage) * limit - offsetCount
+        if (from < 0) from = 0
+        const to = (page - buildEstatePage) * limit - offsetCount < 0 ? limit - offsetCount : limit
+
+        let result = await EstateService.getEstatesByUserId({
+          user_ids: [user_id],
+          limit: to,
+          from,
+          params: {
+            ...(params || {}),
+            is_no_build: true,
+          },
+        })
+        estates = [...estates, ...(result?.data || [])]
+      }
+    } else {
+      let result = await EstateService.getEstatesByUserId({
+        user_ids: [user_id],
+        params: {
+          ...(params || {}),
+          is_no_build: true,
+        },
+      })
+
+      estates = [...estates, ...(result?.data || [])]
+    }
+
+    return {
+      pages: {
+        total,
+        lastPage: Math.ceil(total / limit) || 1,
+        page,
+        perPage: limit,
+      },
+      estates,
+    }
   }
 }
 module.exports = EstateService
