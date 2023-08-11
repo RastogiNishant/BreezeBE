@@ -158,6 +158,11 @@ class CommonController {
 
     response.redirect(shortenLinkData.link)
   }
+
+  async getProtectedUrl({ request, auth, response }) {
+    const { uri } = request.all()
+    response.res(await File.getProtectedUrl(uri))
+  }
 }
 
 module.exports = CommonController

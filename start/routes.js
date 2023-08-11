@@ -804,6 +804,11 @@ Route.group(() => {
   ])
 }).prefix('api/v1/terms')
 
+Route.get('api/v1/url/', 'CommonController.getProtectedUrl').middleware([
+  'auth:jwtLandlord,jwt',
+  'valid:Uri',
+])
+
 // TENANT
 Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware([
   'auth:jwt,jwtLandlord',
