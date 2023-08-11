@@ -160,7 +160,7 @@ class EstateController {
 
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
-        page: 1,
+        from: 0,
         params: { id },
       })
 
@@ -229,20 +229,9 @@ class EstateController {
       params = request.post()
     }
 
-    const noBuildEstateCount = await EstateService.noBuildEstateCount({
-      user_id: auth.user.id,
-      params,
-    })
-    const buildEstateCount = await EstateService.buildEstateCount({ user_id: auth.user.id, params })
-    // let result = await EstateService.getEstatesByUserId({
-    //   user_ids: [auth.user.id],
-    //   limit,
-    //   page,
-    //   params: {
-    //     ...(params || {}),
-    //     build_id: null,
-    //   },
-    // })
+    response.res(
+      await EstateService.getMatchEstates({ user_id: auth.user.id, params, limit, page })
+    )
   }
 
   /**
@@ -258,7 +247,7 @@ class EstateController {
     let result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
       limit,
-      page,
+      from: (page - 1) * limit,
       params,
     })
 

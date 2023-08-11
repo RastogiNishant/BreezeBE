@@ -20,6 +20,10 @@ class Building extends Model {
   static get traits() {
     return ['NoTimestamp']
   }
+
+  estates() {
+    return this.hasMany('App/Models/Estates')
+  }
 }
 
 module.exports = Building
