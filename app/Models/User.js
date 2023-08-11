@@ -202,7 +202,7 @@ class User extends Model {
   }
 
   certificates() {
-    return this.hasMany('App/Models/TenantCertificate')
+    return this.hasMany('App/Models/TenantCertificate').whereNot('status', STATUS_DELETE)
   }
 }
 
