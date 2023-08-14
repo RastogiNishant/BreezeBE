@@ -1,4 +1,5 @@
 'use strict'
+const CityService = require('../../Services/CityService')
 const constants = require('../../constants')
 const { get, map } = require('lodash')
 const File = use('App/Classes/File')
@@ -37,6 +38,7 @@ class CommonController {
       constants,
       options: await OptionService.getOptions(),
       ROOM_TYPE: OptionService.getRoomTypes(),
+      cities: await CityService.getAll(),
     }
     response.res(result)
   }
