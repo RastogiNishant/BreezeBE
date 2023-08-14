@@ -3168,7 +3168,7 @@ class EstateService {
       await this.addManyFiles(newFiles, trx)
 
       const newAmenities = (originalEstateData.amenities || []).map((amenity) => ({
-        ...omit(amenity, ['room_id', 'id']),
+        ...omit(amenity, ['room_id', 'id', 'option']),
         estate_id: newEstate.id,
       }))
 
