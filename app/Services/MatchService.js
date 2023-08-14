@@ -221,6 +221,11 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
+    //WBS certificate score
+    if (estate.wbs_certificate && estate.wbs_certificate !== prospect.wbs_certificate) {
+      return 0
+    }
+
     const estateBudget = estate.budget || 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
@@ -426,6 +431,11 @@ class MatchService {
     const realBudget = estatePrice / userIncome
 
     const prospectBudgetRel = prospectBudget / 100
+
+    //WBS certificate score
+    if (estate.wbs_certificate && estate.wbs_certificate !== prospect.wbs_certificate) {
+      return 0
+    }
 
     //Prospect Budget Points
     const PROSPECT_BUDGET_POINT_FACTOR = 0.1
