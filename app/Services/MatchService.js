@@ -1126,7 +1126,7 @@ class MatchService {
     if (event === WEBSOCKET_EVENT_MATCH) {
       const estates = await require('./EstateService').getEstatesByUserId({
         limit: 1,
-        page: 1,
+        from: 0,
         params: { id: data?.estate_id },
       })
       estate = estates.data?.[0]

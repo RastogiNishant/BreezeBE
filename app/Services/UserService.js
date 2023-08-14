@@ -1283,6 +1283,7 @@ class UserService {
       .with('letter_template')
       .with('tenantPaymentPlan')
       .with('feedbacks')
+      .with('certificates')
       .first()
 
     if (!user) {

@@ -160,7 +160,7 @@ class EstateController {
 
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
-        page: 1,
+        from: 0,
         params: { id },
       })
 
@@ -217,6 +217,23 @@ class EstateController {
       await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query, letting_type })
     )
   }
+
+  /**
+   *
+   * @param {*} param0
+   * will be used for match screen for web app
+   */
+  async getMatchEstates({ request, auth, response }) {
+    let { limit, page, ...params } = request.all()
+    if (!isEmpty(request.post())) {
+      params = request.post()
+    }
+
+    response.res(
+      await EstateService.getMatchEstates({ user_id: auth.user.id, params, limit, page })
+    )
+  }
+
   /**
    *
    */
@@ -230,7 +247,7 @@ class EstateController {
     let result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
       limit,
-      page,
+      from: (page - 1) * limit,
       params,
     })
 
@@ -284,8 +301,8 @@ class EstateController {
 
     let result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
-      page,
-      limit,
+      limit: limit || -1,
+      from: page ? (page - 1) * limit : -1,
       params: { ...(params || {}), build_id: id },
     })
 
@@ -759,9 +776,13 @@ class EstateController {
   }
 
   async getTenantBuildingEstate({ request, auth, response }) {
-    const { id } = request.all()
+    const { id, is_social } = request.all()
     response.res(
-      await EstateService.getTenantBuildingEstates({ user_id: auth.user.id, build_id: id })
+      await EstateService.getTenantBuildingEstates({
+        user_id: auth.user.id,
+        build_id: id,
+        is_social,
+      })
     )
   }
 

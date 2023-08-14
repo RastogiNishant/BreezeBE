@@ -370,6 +370,24 @@ Route.group(() => {
   Route.post('/buddy/accept', 'TenantController.acceptBuddyInvite')
   Route.get('/map', 'TenantController.getTenantMap')
   Route.get('/all', 'TenantController.getAllTenants')
+  Route.put('/certificate/request', 'TenantController.requestCertificate').middleware([
+    'valid:RequestCertificate',
+  ])
+  Route.delete('/certificate/request', 'TenantController.removeRequestCertificate')
+  Route.get('/certificate', 'TenantCertificateController.getAll')
+  Route.post('/certificate', 'TenantCertificateController.addCertificate').middleware([
+    'valid:CreateTenantCertificate',
+  ])
+  Route.delete('/certificate/:id', 'TenantCertificateController.deleteCertificate').middleware([
+    'valid:Id',
+  ])
+  Route.get('/certificate/:id', 'TenantCertificateController.get').middleware(['valid:Id'])
+  Route.put('/certificate/:id', 'TenantCertificateController.updateCertificate').middleware([
+    'valid:Id,CreateTenantCertificate',
+  ])
+  Route.put('/certificate/:id/image', 'TenantCertificateController.updateImage').middleware([
+    'valid:Id,CreateFile',
+  ])
 })
   .prefix('/api/v1/users/tenant')
   .middleware(['auth:jwt'])
@@ -429,6 +447,9 @@ Route.group(() => {
     'valid:Id,EstateFilter,Pagination',
   ])
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
+  Route.get('/match', 'EstateController.getMatchEstates').middleware([
+    'valid:Pagination,EstateFilter',
+  ])
   Route.get('/candidate', 'EstateController.searchEstates').middleware(['valid:EstateFilter'])
   Route.get('/quick_search', 'EstateController.shortSearchEstates').middleware([
     'valid:EstateFilter',
@@ -789,6 +810,11 @@ Route.group(() => {
   ])
 }).prefix('api/v1/terms')
 
+Route.get('api/v1/url/', 'CommonController.getProtectedUrl').middleware([
+  'auth:jwtLandlord,jwt',
+  'valid:Uri',
+])
+
 // TENANT
 Route.get('/api/v1/tenant/file', 'TenantController.getProtectedFile').middleware([
   'auth:jwt,jwtLandlord',
@@ -960,7 +986,9 @@ Route.group(() => {
   Route.post('/:id/dislike', 'EstateController.dislikeEstate').middleware(['valid:Id'])
   Route.delete('/:id/dislike', 'EstateController.removeEstateDislike').middleware(['valid:Id'])
   Route.get('/:id', 'EstateController.getTenantEstate').middleware(['valid:Id'])
-  Route.get('/build/:id', 'EstateController.getTenantBuildingEstate').middleware(['valid:Id'])
+  Route.get('/build/:id', 'EstateController.getTenantBuildingEstate').middleware([
+    'valid:Id,TenantBuildFilter',
+  ])
   Route.get('/third-party-offers/:id', 'EstateController.getThirdPartyOfferEstate').middleware([
     'valid:Id',
   ])

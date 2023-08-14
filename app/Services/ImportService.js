@@ -227,13 +227,13 @@ class ImportService {
         user_id,
       })
 
-      Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name}`)
+      Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name} ${lang}`)
       const url = await FileBucket.getPublicUrl(s3_bucket_file_name)
       Logger.info(`storing excel file to s3 bucket!!! ${url}`)
       const localPath = await FileBucket.saveFileTo({ url: s3_bucket_file_name, ext: 'xlsx' })
       Logger.info(`saved file to path ${localPath}`)
       const reader = new EstateImportReader()
-      reader.init(localPath)
+      reader.init(localPath, { lang })
       Logger.info('processing excel file!!!')
       const excelData = await reader.process()
       errors = excelData.errors
@@ -271,7 +271,7 @@ class ImportService {
               data: {
                 message: PROPERTY_HANDLE_FINISHED,
                 count: errors?.length + index + 1,
-                total: data.length + errors?.length,
+                total: (data?.unit?.length || 0) + (errors?.length || 0),
                 result: estateResult,
                 errors: singleErrors || [],
                 warnings: singleWarnings || [],
