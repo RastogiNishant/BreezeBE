@@ -443,6 +443,9 @@ Route.group(() => {
 // Estate management
 Route.group(() => {
   Route.get('/cities', 'EstateController.getCityList')
+  Route.get('/building/:id', 'EstateController.getBuildingEstates').middleware([
+    'valid:Id,EstateFilter,Pagination',
+  ])
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
   Route.get('/match', 'EstateController.getMatchEstates').middleware([
     'valid:Pagination,EstateFilter',
@@ -983,6 +986,9 @@ Route.group(() => {
   Route.post('/:id/dislike', 'EstateController.dislikeEstate').middleware(['valid:Id'])
   Route.delete('/:id/dislike', 'EstateController.removeEstateDislike').middleware(['valid:Id'])
   Route.get('/:id', 'EstateController.getTenantEstate').middleware(['valid:Id'])
+  Route.get('/build/:id', 'EstateController.getTenantBuildingEstate').middleware([
+    'valid:Id,TenantBuildFilter',
+  ])
   Route.get('/third-party-offers/:id', 'EstateController.getThirdPartyOfferEstate').middleware([
     'valid:Id',
   ])

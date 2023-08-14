@@ -293,7 +293,20 @@ class EstateController {
       offline_count: totalEstateCounts.offline_count,
       online_count: totalEstateCounts.online_count,
     }
-    return response.res(result)
+    response.res(result)
+  }
+
+  async getBuildingEstates({ request, auth, response }) {
+    const { id, limit, page, ...params } = request.all()
+
+    let result = await EstateService.getEstatesByUserId({
+      user_ids: [auth.user.id],
+      limit: limit || -1,
+      from: page ? (page - 1) * limit : -1,
+      params: { ...(params || {}), build_id: id },
+    })
+
+    response.res(result.data)
   }
 
   /**
@@ -760,6 +773,17 @@ class EstateController {
       role: auth?.user?.role,
     })
     response.res(tenantEstate)
+  }
+
+  async getTenantBuildingEstate({ request, auth, response }) {
+    const { id, is_social } = request.all()
+    response.res(
+      await EstateService.getTenantBuildingEstates({
+        user_id: auth.user.id,
+        build_id: id,
+        is_social,
+      })
+    )
   }
 
   async getThirdPartyOfferEstate({ request, auth, response }) {
