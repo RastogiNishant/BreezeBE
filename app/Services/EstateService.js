@@ -1964,9 +1964,18 @@ class EstateService {
     }
   }
 
+  static getQueryEstatesByUserId({ user_ids, params = {} }) {
+    let query = this.getEstates(user_ids, params).whereNot('estates.status', STATUS_DELETE)
+    if (params?.id) {
+      params.id = Array.isArray(params.id) ? params.id : [params.id]
+      query.whereIn('estates.id', params.id)
+    }
+
+    return query
+  }
+
   static async getEstatesByUserId({ user_ids, limit = -1, from = -1, params = {} }) {
-    let query = this.getEstates(user_ids, params)
-      .whereNot('estates.status', STATUS_DELETE)
+    let query = this.getQueryEstatesByUserId({ user_ids, params })
       .with('slots')
       .with('rooms', function (q) {
         q.with('images')
@@ -1974,18 +1983,15 @@ class EstateService {
       .with('files')
       .with('estateSyncListings')
 
-    if (params?.id) {
-      params.id = Array.isArray(params.id) ? params.id : [params.id]
-      query.whereIn('estates.id', params.id)
-    }
-
     let result
     if (from === -1 || limit === -1) {
       result = await query.fetch()
     } else {
       result = await query.offset(from).limit(limit).fetch()
+      // result = await query.paginate(1, 10)
     }
     result.data = this.checkCanChangeLettingStatus(result, { isOwner: true })
+
     result.data = (result.data || []).map((estate) => {
       const outside_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
@@ -2009,6 +2015,26 @@ class EstateService {
     })
     delete result?.rows
 
+    let pages = null
+    if (from !== -1 && limit !== -1) {
+      const count = await this.getQueryEstatesByUserId({ user_ids, params })
+        .clearSelect()
+        .clearOrder()
+        .count()
+
+      pages = {
+        total: parseInt(count?.[0]?.count || 0),
+        page: from / limit + 1,
+        perPage: limit,
+        lastPage:
+          parseInt(parseInt(count?.[0]?.count || 0) / limit) +
+          (parseInt(count?.[0]?.count || 0) % limit > 0 ? 1 : 0),
+      }
+    }
+    result = {
+      ...result,
+      pages,
+    }
     return result
   }
 
