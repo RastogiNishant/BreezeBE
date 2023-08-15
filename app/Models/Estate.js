@@ -201,6 +201,8 @@ class Estate extends Model {
       'address',
       'house_number',
       'country',
+      'build_id',
+      'cert_category',
     ]
   }
 
