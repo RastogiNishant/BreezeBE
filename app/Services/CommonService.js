@@ -1,3 +1,4 @@
+const { uniqBy } = require('lodash')
 const {
   COUNTRIES,
   RENT_DURATION_LONG,
@@ -28,25 +29,26 @@ class CommonService {
 
   static async searchCities(city, country_code) {
     const cities = await City.query()
-      .select('city')
+      .select('id', 'city')
       .where('alpha2', country_code)
       .where('city', 'ilike', `${city}%`)
       .limit(CITIES_AUTOCOMPLETE_MAX_COUNT)
       .orderBy('city', 'asc')
       .fetch()
     // city% should come first than %city%
-    let citiesToReturn = cities.toJSON().map((city) => city.city)
+    let citiesToReturn = cities.toJSON()
     if (citiesToReturn.length < CITIES_AUTOCOMPLETE_MAX_COUNT) {
       const additionalCities = await City.query()
-        .select('city')
+        .select('id', 'city')
         .where('alpha2', country_code)
         .where('city', 'ilike', `%${city}%`)
         .whereNotIn('city', citiesToReturn)
         .limit(CITIES_AUTOCOMPLETE_MAX_COUNT - citiesToReturn.length)
         .orderBy('city', 'asc')
         .fetch()
-      citiesToReturn = [...citiesToReturn, ...additionalCities.toJSON().map((city) => city.city)]
+      citiesToReturn = [...citiesToReturn, ...additionalCities.toJSON()]
     }
+    citiesToReturn = uniqBy(citiesToReturn, (city) => city.id)
     return citiesToReturn
   }
 

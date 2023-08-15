@@ -452,7 +452,7 @@ class ThirdPartyOfferService {
 
     if (userId) {
       query
-        .select(Database.raw(`COALESCE(_m.percent, 0) as match`))
+        .select(Database.raw(`COALESCE(_m.prospect_score, 0) as match`))
         .withCount('likes')
         .withCount('dislikes')
         .withCount('knocks')

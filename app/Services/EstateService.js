@@ -13,6 +13,7 @@ const {
   isArray,
   sum,
   trim,
+  uniq,
 } = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
@@ -1536,8 +1537,8 @@ class EstateService {
    * Get estates according to es
    */
 
-  static getActiveMatchesQuery(userId) {
-    return this.getMachesQuery(Estate.query(), userId)
+  static getActiveMatchesQuery({ userId, build_id }) {
+    return this.getMachesQuery(Estate.query(), { userId, build_id })
   }
 
   static async getTenantTrashEstates(userId) {
@@ -1558,7 +1559,7 @@ class EstateService {
     const trashedEstates = await Estate.query()
       .select('estates.*')
       .select('_m.updated_at', '_m.status_at')
-      .select(Database.raw('COALESCE(_m.percent, 0) as match'))
+      .select(Database.raw('COALESCE(_m.prospect_score, 0) as match'))
       .select('_m.status as match_status')
       .select('_m.user_id as match_user_id')
       .innerJoin({ _m: 'matches' }, function () {
@@ -1600,8 +1601,8 @@ class EstateService {
     return trashedEstates
   }
 
-  static getMachesQuery(query, userId) {
-    return query
+  static getMachesQuery(query, { userId, build_id }) {
+    query
       .select('estates.*')
       .withCount('knocked')
       .select(Database.raw(`_m.prospect_score AS match`))
@@ -1634,12 +1635,17 @@ class EstateService {
           })
         })
       })
-      .orderBy('_m.prospect_score', 'DESC')
+
+    if (build_id) {
+      query.where('estates.build_id', build_id)
+    }
+
+    return query.orderBy('_m.prospect_score', 'DESC')
   }
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
-  static getNotActiveMatchesQuery(tenant, userId) {
+  static getNotActiveMatchesQuery({ tenant, userId, build_id }) {
     let query = null
     if (!tenant.coord_raw) {
       throw new AppException('Invalid user anchor')
@@ -1662,25 +1668,29 @@ class EstateService {
       throw new AppException('Invalid match query')
     }
 
-    return this.getMachesQuery(query, userId)
+    return this.getMachesQuery(query, { userId, build_id })
   }
 
   /**
    *
    */
-  static async getTenantAllEstates(userId, page = 1, limit = 20) {
+  static async getTenantAllEstates({ userId, build_id, page = 1, limit = 20 }) {
     const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
     if (tenant.isActive()) {
-      query = this.getActiveMatchesQuery(userId)
+      query = this.getActiveMatchesQuery({ userId, build_id })
     } else {
-      query = this.getNotActiveMatchesQuery(tenant, userId)
+      query = this.getNotActiveMatchesQuery({ tenant, userId, build_id })
     }
 
-    return query.paginate(page, limit)
+    if (page != -1 && limit != -1) {
+      return query.paginate(page, limit)
+    } else {
+      return query.fetch()
+    }
   }
 
   static async countPublishedPropertyByLandlord(user_id) {
@@ -1964,9 +1974,20 @@ class EstateService {
     }
   }
 
-  static async getEstatesByUserId({ user_ids, limit = -1, page = -1, params = {} }) {
-    let query = this.getEstates(user_ids, params)
-      .whereNot('estates.status', STATUS_DELETE)
+  static getQueryEstatesByUserId({ user_ids, params = {} }) {
+    let query = this.getEstates(user_ids, params).whereNot('estates.status', STATUS_DELETE)
+    if (params?.id) {
+      params.id = Array.isArray(params.id) ? params.id : [params.id]
+      query.whereIn('estates.id', params.id)
+    }
+    if (params?.build_id) {
+      query.where('estates.build_id', params.build_id)
+    }
+    return query
+  }
+
+  static async getEstatesByUserId({ user_ids, limit = -1, from = -1, params = {} }) {
+    let query = this.getQueryEstatesByUserId({ user_ids, params })
       .with('slots')
       .with('rooms', function (q) {
         q.with('images')
@@ -1974,17 +1995,15 @@ class EstateService {
       .with('files')
       .with('estateSyncListings')
 
-    if (params && params.id) {
-      query.where('estates.id', params.id)
-    }
-
     let result
-    if (page === -1 || limit === -1) {
+    if (from === -1 || limit === -1) {
       result = await query.fetch()
     } else {
-      result = await query.paginate(page, limit)
+      result = await query.offset(from).limit(limit).fetch()
+      // result = await query.paginate(1, 10)
     }
-    result.data = await this.checkCanChangeLettingStatus(result, { isOwner: true })
+    result.data = this.checkCanChangeLettingStatus(result, { isOwner: true })
+
     result.data = (result.data || []).map((estate) => {
       const outside_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
@@ -2008,6 +2027,26 @@ class EstateService {
     })
     delete result?.rows
 
+    let pages = null
+    if (from !== -1 && limit !== -1) {
+      const count = await this.getQueryEstatesByUserId({ user_ids, params })
+        .clearSelect()
+        .clearOrder()
+        .count()
+
+      pages = {
+        total: parseInt(count?.[0]?.count || 0),
+        page: from / limit + 1,
+        perPage: limit,
+        lastPage:
+          parseInt(parseInt(count?.[0]?.count || 0) / limit) +
+          (parseInt(count?.[0]?.count || 0) % limit > 0 ? 1 : 0),
+      }
+    }
+    result = {
+      ...result,
+      pages,
+    }
     return result
   }
 
@@ -2575,8 +2614,9 @@ class EstateService {
     return await query.transacting(trx)
   }
 
-  static async checkCanChangeLettingStatus(result, option = {}) {
+  static checkCanChangeLettingStatus(result, option = {}) {
     const resultObject = result.toJSON(option)
+
     if (resultObject.data) {
       result = resultObject.data
     } else if (resultObject) {
@@ -2584,7 +2624,6 @@ class EstateService {
     } else {
       result = []
     }
-
     return result.map((estate) => {
       const isMatchCountValidToChangeLettingType =
         0 + parseInt(estate.__meta__.visits_count) ||
@@ -2901,6 +2940,52 @@ class EstateService {
     return estate
   }
 
+  static getBasicPropertyId(property_id = '') {
+    const property_id_list = property_id?.split('-') || ``
+    if (!isNaN(property_id_list[property_id_list.length - 1])) {
+      property_id_list.splice(property_id_list.length - 1, 1)
+    }
+
+    return property_id_list.join('')
+  }
+
+  static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
+    const estates = (
+      await EstateService.getTenantAllEstates({ userId: user_id, build_id, page: -1, limit: -1 })
+    ).toJSON()
+
+    const categories = uniq(
+      estates.map((estate) => EstateService.getBasicPropertyId(estate.property_id))
+    )
+
+    // const regex = /-\d+/
+
+    const yAxisKey = is_social ? `cert_category` : `floor`
+    const yAxisEstates = is_social
+      ? groupBy(
+          estates.filter((estate) => estate.cert_category),
+          (estate) => estate.cert_category
+        )
+      : groupBy(
+          estates.filter((estate) => estate.floor),
+          (estate) => estate.floor
+        )
+
+    let buildingEstates = {}
+    Object.keys(yAxisEstates).forEach((axis) => {
+      let categoryEstates = {}
+      categories.forEach((category) => {
+        categoryEstates[category] = estates.filter(
+          (estate) =>
+            estate[yAxisKey].toString() === axis.toString() && estate.property_id.includes(category)
+        )
+      })
+      buildingEstates[axis] = categoryEstates
+    })
+
+    return buildingEstates
+  }
+
   static async getTenantEstates({ user_id, page, limit }) {
     let estates = []
     let totalCount = 0
@@ -2913,7 +2998,7 @@ class EstateService {
     const offsetCount = insideNewMatchesCount % limit
     const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1
     if ((page - 1) * limit < insideNewMatchesCount) {
-      estates = await EstateService.getTenantAllEstates(user_id, page, limit)
+      estates = await EstateService.getTenantAllEstates({ userId: user_id, page, limit })
       estates = await Promise.all(
         estates.rows.map(async (estate) => {
           estate = estate.toJSON({ isShort: true, role: ROLE_USER })
@@ -3069,7 +3154,6 @@ class EstateService {
   }
 
   static async countDuplicateProperty(property_id) {
-    console.log('countDuplicateProperty=', property_id)
     const estateCount = await Estate.query()
       .where('property_id', 'ilike', `${property_id}%`)
       .whereNot('status', STATUS_DELETE)
@@ -3098,12 +3182,7 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    const property_id_list = estate?.property_id?.split('-') || ``
-    if (!isNaN(property_id_list[property_id_list.length - 1])) {
-      property_id_list.splice(property_id_list.length - 1, 1)
-    }
-
-    const property_id = property_id_list.join('')
+    const property_id = this.getBasicPropertyId(estate.property_id)
 
     const duplicatedCount = await this.countDuplicateProperty(property_id)
     const trx = await Database.beginTransaction()
@@ -3167,7 +3246,7 @@ class EstateService {
       await this.addManyFiles(newFiles, trx)
 
       const newAmenities = (originalEstateData.amenities || []).map((amenity) => ({
-        ...omit(amenity, ['room_id', 'id']),
+        ...omit(amenity, ['room_id', 'id', 'option']),
         estate_id: newEstate.id,
       }))
 
@@ -3176,7 +3255,7 @@ class EstateService {
       await trx.commit()
       const estates = await require('./EstateService').getEstatesByUserId({
         limit: 1,
-        page: 1,
+        from: 0,
         params: { id: newEstate.id },
       })
       return estates.data?.[0]
@@ -3208,7 +3287,6 @@ class EstateService {
   }
 
   static async getTenantEstate({ id, user_id, role }) {
-    console.log(`getTenantEstate= ${user_id} ${role}`)
     let estate = await this.getEstateWithDetails({
       id,
       user_id: user_id ?? null,
@@ -3238,6 +3316,89 @@ class EstateService {
 
     estate = await EstateService.assignEstateAmenities(estate)
     return estate
+  }
+
+  static async noBuildEstateCount({ user_id, params }) {
+    let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
+      .where('estates.user_id', user_id)
+      .whereNull('build_id')
+
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
+    return parseInt((await query.count())?.[0]?.count || 0)
+  }
+
+  static async buildEstateCount({ user_id, params }) {
+    let query = Estate.query()
+      .whereNot('status', STATUS_DELETE)
+      .where('estates.user_id', user_id)
+      .whereNotNull('build_id')
+
+    const Filter = new EstateFilters(params, query)
+    query = Filter.process()
+    query.groupBy('build_id')
+    return (await query.count())?.length
+  }
+
+  static async getMatchEstates({ user_id, params, limit, page }) {
+    const buildEstateCount = await EstateService.buildEstateCount({ user_id, params })
+    const noBuildEstateCount = await EstateService.noBuildEstateCount({
+      user_id,
+      params,
+    })
+
+    const total = buildEstateCount + noBuildEstateCount
+    const buildEstatePage = Math.ceil(buildEstateCount / limit) || 1
+
+    const buildEstates = await require('./BuildingService').getMatchBuilding({
+      user_id,
+      limit,
+      from: (page - 1) * limit,
+      params,
+    })
+
+    let estates = buildEstates
+
+    if (page && limit) {
+      if (buildEstateCount < page * limit) {
+        const offsetCount = buildEstateCount % limit
+        let from = (page - buildEstatePage) * limit - offsetCount
+        if (from < 0) from = 0
+        const to = (page - buildEstatePage) * limit - offsetCount < 0 ? limit - offsetCount : limit
+
+        let result = await EstateService.getEstatesByUserId({
+          user_ids: [user_id],
+          limit: to,
+          from,
+          params: {
+            ...(params || {}),
+            is_no_build: true,
+          },
+        })
+        estates = [...estates, ...(result?.data || [])]
+      }
+    } else {
+      let result = await EstateService.getEstatesByUserId({
+        user_ids: [user_id],
+        params: {
+          ...(params || {}),
+          is_no_build: true,
+        },
+      })
+
+      estates = [...estates, ...(result?.data || [])]
+    }
+
+    return {
+      pages: {
+        total,
+        lastPage: Math.ceil(total / limit) || 1,
+        page,
+        perPage: limit,
+      },
+      estates,
+    }
   }
 }
 module.exports = EstateService

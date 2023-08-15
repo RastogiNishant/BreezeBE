@@ -177,6 +177,8 @@ class Estate extends Model {
       'publish_type',
       'notify_on_green_matches',
       'notify_sent',
+      'build_id',
+      'cert_category',
     ]
   }
 
@@ -523,6 +525,10 @@ class Estate extends Model {
 
   notifications() {
     return this.hasOne('App/Models/Notice')
+  }
+
+  building() {
+    return this.hasOne('App/Models/Building')
   }
 
   /**

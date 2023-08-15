@@ -197,6 +197,16 @@ class EstateFilters extends Filter {
         )
       }
     }
+
+    if (params?.is_no_build) {
+      query.whereNull('estates.build_id')
+    } else if (params?.is_no_build === false) {
+      query.whereNotNull('estates.build_id')
+    }
+
+    if (params?.build_id) {
+      params.build_id = Array.isArray(params.build_id) ? params.build_id : [params.build_id]
+    }
   }
 
   static parseLetting(letting) {
