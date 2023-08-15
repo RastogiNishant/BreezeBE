@@ -3785,7 +3785,8 @@ class MatchService {
         'rooms_min',
         'rooms_max',
         'house_type', //array
-        'apt_type' //array
+        'apt_type', //array
+        '_tc.wbs_certificate'
       )
       .leftJoin(
         //members...
@@ -3809,6 +3810,18 @@ class MatchService {
               `( _m.user_id = tenants.user_id and _m.owner_user_id is null ) or ( _m.owner_user_id = tenants.user_id and _m.owner_user_id is not null )`
             )
           )
+        }
+      )
+      .leftJoin(
+        Database.raw(`
+        (select
+          user_id,
+          status, 
+          json_build_object('city_id', city_id, 'income_level', income_level)
+            as wbs_certificate from tenant_certificates) as _tc
+        `),
+        function () {
+          this.on(Database.raw(`(tenants.user_id=_tc.user_id)`)).on(`_tc.status`, STATUS_ACTIVE)
         }
       )
       .leftJoin(
