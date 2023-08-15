@@ -80,6 +80,9 @@ class BuildingService {
       buildings = (await query.fetch()).toJSON()
     }
 
+    if (!buildings?.length) {
+      return []
+    }
     const build_id = (buildings || []).map((building) => building.id)
     const estates = await require('./EstateService').getEstatesByUserId({
       user_ids: [user_id],

@@ -1981,7 +1981,8 @@ class EstateService {
       query.whereIn('estates.id', params.id)
     }
     if (params?.build_id) {
-      query.where('estates.build_id', params.build_id)
+      params.build_id = Array.isArray(params.build_id) ? params.build_id : [params.build_id]
+      query.whereIn('estates.build_id', params.build_id)
     }
     return query
   }
