@@ -1407,3 +1407,11 @@ Route.group(() => {
 Route.get('/api/v1/cities', 'CommonController.searchCities').middleware(['valid:SearchCity'])
 Route.get('/api/v1/countries', 'CommonController.getAvailableCountries')
 Route.get('/api/v1/offers', 'CommonController.getOffers').middleware(['valid:GetOffers'])
+
+Route.get('/api/v1/testing', async ({ request, response }) => {
+  const MatchService = require('../app/Services/MatchService')
+  const prospect = await MatchService.getProspectForScoringQuery()
+    .where('tenants.user_id', 465)
+    .fetch()
+  return response.res(prospect)
+})
