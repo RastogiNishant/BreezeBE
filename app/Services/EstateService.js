@@ -13,6 +13,7 @@ const {
   isArray,
   sum,
   trim,
+  uniq,
 } = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
@@ -1536,8 +1537,8 @@ class EstateService {
    * Get estates according to es
    */
 
-  static getActiveMatchesQuery(userId) {
-    return this.getMachesQuery(Estate.query(), userId)
+  static getActiveMatchesQuery({ userId, build_id }) {
+    return this.getMachesQuery(Estate.query(), { userId, build_id })
   }
 
   static async getTenantTrashEstates(userId) {
@@ -1600,8 +1601,8 @@ class EstateService {
     return trashedEstates
   }
 
-  static getMachesQuery(query, userId) {
-    return query
+  static getMachesQuery(query, { userId, build_id }) {
+    query
       .select('estates.*')
       .withCount('knocked')
       .select(Database.raw(`_m.prospect_score AS match`))
@@ -1634,12 +1635,17 @@ class EstateService {
           })
         })
       })
-      .orderBy('_m.prospect_score', 'DESC')
+
+    if (build_id) {
+      query.where('estates.build_id', build_id)
+    }
+
+    return query.orderBy('_m.prospect_score', 'DESC')
   }
   /**
    * If tenant not active get points by zone/point+dist/range zone
    */
-  static getNotActiveMatchesQuery(tenant, userId) {
+  static getNotActiveMatchesQuery({ tenant, userId, build_id }) {
     let query = null
     if (!tenant.coord_raw) {
       throw new AppException('Invalid user anchor')
@@ -1662,25 +1668,29 @@ class EstateService {
       throw new AppException('Invalid match query')
     }
 
-    return this.getMachesQuery(query, userId)
+    return this.getMachesQuery(query, { userId, build_id })
   }
 
   /**
    *
    */
-  static async getTenantAllEstates(userId, page = 1, limit = 20) {
+  static async getTenantAllEstates({ userId, build_id, page = 1, limit = 20 }) {
     const tenant = await require('./TenantService').getTenantWithGeo(userId)
     if (!tenant) {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
     if (tenant.isActive()) {
-      query = this.getActiveMatchesQuery(userId)
+      query = this.getActiveMatchesQuery({ userId, build_id })
     } else {
-      query = this.getNotActiveMatchesQuery(tenant, userId)
+      query = this.getNotActiveMatchesQuery({ tenant, userId, build_id })
     }
 
-    return query.paginate(page, limit)
+    if (page != -1 && limit != -1) {
+      return query.paginate(page, limit)
+    } else {
+      return query.fetch()
+    }
   }
 
   static async countPublishedPropertyByLandlord(user_id) {
@@ -1964,9 +1974,20 @@ class EstateService {
     }
   }
 
+  static getQueryEstatesByUserId({ user_ids, params = {} }) {
+    let query = this.getEstates(user_ids, params).whereNot('estates.status', STATUS_DELETE)
+    if (params?.id) {
+      params.id = Array.isArray(params.id) ? params.id : [params.id]
+      query.whereIn('estates.id', params.id)
+    }
+    if (params?.build_id) {
+      query.where('estates.build_id', params.build_id)
+    }
+    return query
+  }
+
   static async getEstatesByUserId({ user_ids, limit = -1, from = -1, params = {} }) {
-    let query = this.getEstates(user_ids, params)
-      .whereNot('estates.status', STATUS_DELETE)
+    let query = this.getQueryEstatesByUserId({ user_ids, params })
       .with('slots')
       .with('rooms', function (q) {
         q.with('images')
@@ -1974,18 +1995,15 @@ class EstateService {
       .with('files')
       .with('estateSyncListings')
 
-    if (params?.id) {
-      params.id = Array.isArray(params.id) ? params.id : [params.id]
-      query.whereIn('estates.id', params.id)
-    }
-
     let result
     if (from === -1 || limit === -1) {
       result = await query.fetch()
     } else {
       result = await query.offset(from).limit(limit).fetch()
+      // result = await query.paginate(1, 10)
     }
     result.data = this.checkCanChangeLettingStatus(result, { isOwner: true })
+
     result.data = (result.data || []).map((estate) => {
       const outside_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
@@ -2009,6 +2027,26 @@ class EstateService {
     })
     delete result?.rows
 
+    let pages = null
+    if (from !== -1 && limit !== -1) {
+      const count = await this.getQueryEstatesByUserId({ user_ids, params })
+        .clearSelect()
+        .clearOrder()
+        .count()
+
+      pages = {
+        total: parseInt(count?.[0]?.count || 0),
+        page: from / limit + 1,
+        perPage: limit,
+        lastPage:
+          parseInt(parseInt(count?.[0]?.count || 0) / limit) +
+          (parseInt(count?.[0]?.count || 0) % limit > 0 ? 1 : 0),
+      }
+    }
+    result = {
+      ...result,
+      pages,
+    }
     return result
   }
 
@@ -2578,6 +2616,7 @@ class EstateService {
 
   static checkCanChangeLettingStatus(result, option = {}) {
     const resultObject = result.toJSON(option)
+
     if (resultObject.data) {
       result = resultObject.data
     } else if (resultObject) {
@@ -2585,7 +2624,6 @@ class EstateService {
     } else {
       result = []
     }
-
     return result.map((estate) => {
       const isMatchCountValidToChangeLettingType =
         0 + parseInt(estate.__meta__.visits_count) ||
@@ -2902,6 +2940,52 @@ class EstateService {
     return estate
   }
 
+  static getBasicPropertyId(property_id = '') {
+    const property_id_list = property_id?.split('-') || ``
+    if (!isNaN(property_id_list[property_id_list.length - 1])) {
+      property_id_list.splice(property_id_list.length - 1, 1)
+    }
+
+    return property_id_list.join('')
+  }
+
+  static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
+    const estates = (
+      await EstateService.getTenantAllEstates({ userId: user_id, build_id, page: -1, limit: -1 })
+    ).toJSON()
+
+    const categories = uniq(
+      estates.map((estate) => EstateService.getBasicPropertyId(estate.property_id))
+    )
+
+    // const regex = /-\d+/
+
+    const yAxisKey = is_social ? `cert_category` : `floor`
+    const yAxisEstates = is_social
+      ? groupBy(
+          estates.filter((estate) => estate.cert_category),
+          (estate) => estate.cert_category
+        )
+      : groupBy(
+          estates.filter((estate) => estate.floor),
+          (estate) => estate.floor
+        )
+
+    let buildingEstates = {}
+    Object.keys(yAxisEstates).forEach((axis) => {
+      let categoryEstates = {}
+      categories.forEach((category) => {
+        categoryEstates[category] = estates.filter(
+          (estate) =>
+            estate[yAxisKey].toString() === axis.toString() && estate.property_id.includes(category)
+        )
+      })
+      buildingEstates[axis] = categoryEstates
+    })
+
+    return buildingEstates
+  }
+
   static async getTenantEstates({ user_id, page, limit }) {
     let estates = []
     let totalCount = 0
@@ -2914,7 +2998,7 @@ class EstateService {
     const offsetCount = insideNewMatchesCount % limit
     const insidePage = Math.ceil(insideNewMatchesCount / limit) || 1
     if ((page - 1) * limit < insideNewMatchesCount) {
-      estates = await EstateService.getTenantAllEstates(user_id, page, limit)
+      estates = await EstateService.getTenantAllEstates({ userId: user_id, page, limit })
       estates = await Promise.all(
         estates.rows.map(async (estate) => {
           estate = estate.toJSON({ isShort: true, role: ROLE_USER })
@@ -3070,7 +3154,6 @@ class EstateService {
   }
 
   static async countDuplicateProperty(property_id) {
-    console.log('countDuplicateProperty=', property_id)
     const estateCount = await Estate.query()
       .where('property_id', 'ilike', `${property_id}%`)
       .whereNot('status', STATUS_DELETE)
@@ -3099,12 +3182,7 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    const property_id_list = estate?.property_id?.split('-') || ``
-    if (!isNaN(property_id_list[property_id_list.length - 1])) {
-      property_id_list.splice(property_id_list.length - 1, 1)
-    }
-
-    const property_id = property_id_list.join('')
+    const property_id = this.getBasicPropertyId(estate.property_id)
 
     const duplicatedCount = await this.countDuplicateProperty(property_id)
     const trx = await Database.beginTransaction()
@@ -3209,7 +3287,6 @@ class EstateService {
   }
 
   static async getTenantEstate({ id, user_id, role }) {
-    console.log(`getTenantEstate= ${user_id} ${role}`)
     let estate = await this.getEstateWithDetails({
       id,
       user_id: user_id ?? null,
