@@ -3744,7 +3744,13 @@ class MatchService {
         'amenities.options',
         'area',
         'apt_type',
-        'income_sources'
+        'income_sources',
+        'wbs_certificate'
+      )
+      .leftJoin(
+        Database.raw(`
+        (select from )
+        `)
       )
       .leftJoin(
         Database.raw(`
