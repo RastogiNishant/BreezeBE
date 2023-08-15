@@ -73,6 +73,8 @@ class PropertyController {
         'estates.property_id',
         'estates.available_start_at',
         'estates.available_end_at',
+        'estates.vacant_date',
+        'estates.rent_end_at',
         'estates.updated_at'
       )
       .select(Database.raw('_u.user'))
