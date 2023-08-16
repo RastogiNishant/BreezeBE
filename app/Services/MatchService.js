@@ -3745,12 +3745,17 @@ class MatchService {
         'area',
         'apt_type',
         'income_sources',
-        'wbs_certificate'
+        '_ec.wbs_certificate'
       )
       .leftJoin(
         Database.raw(`
-        (select from )
-        `)
+        (select estates.id as estate_id, 
+          json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
+          as wbs_certificate from estates left join cities on cities.city=estates.city)
+        as _ec`),
+        function () {
+          this.on('_ec.estate_id', 'estates.id')
+        }
       )
       .leftJoin(
         Database.raw(`
