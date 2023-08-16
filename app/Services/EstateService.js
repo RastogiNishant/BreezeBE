@@ -1364,8 +1364,7 @@ class EstateService {
       estates = estates.filter(
         (estate) =>
           !estate.vacant_date ||
-          moment.utc(estate.vacant_date).add(-1, 'day').format() <=
-            moment.utc(tenant.rent_start).format()
+          moment.utc(estate.vacant_date).format() >= moment.utc(tenant.rent_start).format()
       )
     }
     if (process.env.DEV === 'true') {
@@ -1981,7 +1980,8 @@ class EstateService {
       query.whereIn('estates.id', params.id)
     }
     if (params?.build_id) {
-      query.where('estates.build_id', params.build_id)
+      params.build_id = Array.isArray(params.build_id) ? params.build_id : [params.build_id]
+      query.whereIn('estates.build_id', params.build_id)
     }
     return query
   }
@@ -3001,7 +3001,7 @@ class EstateService {
       estates = await EstateService.getTenantAllEstates({ userId: user_id, page, limit })
       estates = await Promise.all(
         estates.rows.map(async (estate) => {
-          estate = estate.toJSON({ isShort: true, role: ROLE_USER })
+          estate = estate.toJSON({ isShort: false, role: ROLE_USER })
           estate.isoline = await EstateService.getIsolines(estate)
           return estate
         })

@@ -1,8 +1,10 @@
 'use strict'
+const { toLower, isNull } = require('lodash')
 const Building = use('App/Models/Building')
 const Promise = require('bluebird')
 const HttpException = require('../Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
+const Filter = require('../Classes/Filter')
 const Database = use('Database')
 const {
   exceptions: { NO_BUILDING_ID_EXIST },
@@ -46,6 +48,50 @@ class BuildingService {
     return (await Building.query().where('user_id', user_id).fetch()).toJSON()
   }
 
+  static async getAllHasUnit(user_id) {
+    return (
+      await Building.query()
+        .select(Database.raw(`DISTINCT(buildings.id)`))
+        .select('buildings.*')
+        .innerJoin({ _e: 'estates' }, function () {
+          this.on('_e.build_id', 'buildings.id')
+        })
+        .where('buildings.user_id', user_id)
+        .whereNotNull('_e.build_id')
+        .fetch()
+    ).toJSON()
+  }
+
+  static buildingIdQuery(params) {
+    const param = 'building_id'
+    let where = null
+    if (params[param]) {
+      if (params[param].operator && params[param].constraints.length > 0) {
+        if (toLower(params[param].operator) === 'or') {
+          params[param].constraints.map((constraint) => {
+            if (!isNull(constraint.value)) {
+              where = where ? ` OR ` : ''
+              where += Filter.parseMatchMode(param, constraint.value, constraint.matchMode)
+            }
+          })
+        } else if (toLower(params[param].operator) === 'and') {
+          params[param].constraints.map((constraint) => {
+            if (!isNull(constraint.value)) {
+              where = where ? ` AND ` : ''
+              where += Filter.parseMatchMode(param, constraint.value, constraint.matchMode)
+            }
+          })
+        }
+      }
+    }
+
+    let query
+    if (where) {
+      query = ` SELECT id from buildings where ${where}`
+    }
+    return query
+  }
+
   static async bulkUpsert(user_id, data) {
     await Promise.map(
       data || [],
@@ -80,6 +126,9 @@ class BuildingService {
       buildings = (await query.fetch()).toJSON()
     }
 
+    if (!buildings?.length) {
+      return []
+    }
     const build_id = (buildings || []).map((building) => building.id)
     const estates = await require('./EstateService').getEstatesByUserId({
       user_ids: [user_id],

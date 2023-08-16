@@ -82,6 +82,7 @@ class EstateFilters extends Filter {
       return
     }
     this.processGlobals()
+
     Filter.paramToField = {
       customArea: 'area',
       customFloor: 'floor',
@@ -206,6 +207,18 @@ class EstateFilters extends Filter {
 
     if (params?.build_id) {
       params.build_id = Array.isArray(params.build_id) ? params.build_id : [params.build_id]
+    }
+
+    EstateFilters.filterWithBuildingId(query, params)
+  }
+
+  static filterWithBuildingId(query, params) {
+    const param = 'building_id'
+    if (params[param]) {
+      const buildingQuery = require('../Services/BuildingService').buildingIdQuery(params)
+      if (buildingQuery) {
+        query.where(Database.raw(`build_id in ( ${buildingQuery} )`))
+      }
     }
   }
 
