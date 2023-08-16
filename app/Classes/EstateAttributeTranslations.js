@@ -1018,7 +1018,7 @@ class EstateAttributeTranslations {
           ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
         ],
       },
-      floor_direction: {
+      cert_category: {
         keys: [
           CERT_CATEGORY_A,
           CERT_CATEGORY_B,

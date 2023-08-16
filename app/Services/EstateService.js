@@ -1449,7 +1449,6 @@ class EstateService {
     if (process.env.DEV === 'true') {
       Logger.info(`filterEstates after house type ${estates?.length}`)
     }
-
     if (tenant.income_level?.length) {
       estates = estates.filter(
         (estate) => !estate.cert_category || tenant.income_level.includes(estate.cert_category)

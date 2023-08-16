@@ -3775,7 +3775,8 @@ class MatchService {
         'rooms_min',
         'rooms_max',
         'house_type', //array
-        'apt_type' //array
+        'apt_type', //array
+        'tenants.income_level'
       )
       .leftJoin(
         //members...
