@@ -1823,8 +1823,6 @@ class EstateService {
           textMessage += ` - ${publisher}\r\n`
         })
 
-        // Run match estate
-        Event.fire('match::estate', estate.id)
         await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
 
         if (isNull(performed_by)) {
@@ -1843,6 +1841,9 @@ class EstateService {
       }
 
       await trx.commit()
+      // Run match estate
+      Event.fire('match::estate', estate.id)
+
       return status
     } catch (e) {
       console.log(`publish estate error estate id is ${estate.id} ${e.message} `)
