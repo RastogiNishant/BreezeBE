@@ -38,6 +38,19 @@ const {
   //Minor
   MAX_MINOR_COUNT,
   MAX_ROOM_COUNT,
+  CERT_CATEGORY_A,
+  CERT_CATEGORY_B,
+  CERT_CATEGORY_C,
+  CERT_CATEGORY_NOT,
+  CERT_CATEGORY_I,
+  CERT_CATEGORY_II,
+  CERT_CATEGORY_III,
+  CERT_CATEGORY_IV,
+  CERT_CATEGORY_100,
+  CERT_CATEGORY_140,
+  CERT_CATEGORY_160,
+  CERT_CATEGORY_180,
+  CERT_CATEGORY_220,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -152,6 +165,29 @@ class UpdateTenant extends Base {
         })
         .nullable(),
       selected_adults_count: yup.number().integer(),
+      income_level: yup
+        .array()
+        .of(
+          yup
+            .string()
+            .oneOf([
+              CERT_CATEGORY_A,
+              CERT_CATEGORY_B,
+              CERT_CATEGORY_C,
+              CERT_CATEGORY_I,
+              CERT_CATEGORY_II,
+              CERT_CATEGORY_III,
+              CERT_CATEGORY_IV,
+              CERT_CATEGORY_100,
+              CERT_CATEGORY_140,
+              CERT_CATEGORY_160,
+              CERT_CATEGORY_180,
+              CERT_CATEGORY_220,
+              CERT_CATEGORY_NOT,
+            ])
+        )
+        .nullable(),
+
       only_count: yup.boolean(),
     })
 }

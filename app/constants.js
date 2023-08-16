@@ -1364,6 +1364,20 @@ Estates: [ESTATES]
   MAX_RENT_COUNT: 5000,
 
   FURNISHED_GERMAN_NAME: 'Möbliert',
+
+  CERT_CATEGORY_A: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryA',
+  CERT_CATEGORY_B: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryB',
+  CERT_CATEGORY_C: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryC',
+  CERT_CATEGORY_I: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryI',
+  CERT_CATEGORY_II: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryII',
+  CERT_CATEGORY_III: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryIII',
+  CERT_CATEGORY_IV: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryIV',
+  CERT_CATEGORY_100: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory100',
+  CERT_CATEGORY_140: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory140',
+  CERT_CATEGORY_160: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory160',
+  CERT_CATEGORY_180: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory180',
+  CERT_CATEGORY_220: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory220',
+  CERT_CATEGORY_NOT: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryBWB',
 }
 
 module.exports = constants

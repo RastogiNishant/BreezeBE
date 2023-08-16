@@ -45,6 +45,9 @@ class Tenant extends Model {
       'selected_adults_count',
       'is_short_term_rent',
       'notify_sent',
+      'request_certificate_at',
+      'request_certificate_city_id',
+      'income_level',
     ]
   }
 
@@ -81,6 +84,7 @@ class Tenant extends Model {
 
       'request_certificate_at',
       'request_certificate_city_id',
+      'income_level',
     ]
   }
 
@@ -114,6 +118,7 @@ class Tenant extends Model {
 
       'request_certificate_at',
       'request_certificate_city_id',
+      'income_level',
     ]
   }
 
