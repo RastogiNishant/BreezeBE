@@ -1264,7 +1264,7 @@ class EstateService {
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
     const categoryCounts = this.calculateInsideCategoryCounts(estates, tenant)
-    const filteredEstates = await this.filterEstates(tenant, estates)
+    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
     return {
       estates: filteredEstates,
       categoryCounts,
@@ -1333,7 +1333,7 @@ class EstateService {
     return counts
   }
 
-  static async filterEstates(tenant, estates) {
+  static async filterEstates({ tenant, estates, inside_property = false }) {
     Logger.info(`before filterEstates count ${estates?.length}`)
 
     const minTenantBudget = tenant?.budget_min || 0
@@ -1359,7 +1359,7 @@ class EstateService {
       Logger.info(`filterEstates after transfer ${estates?.length}`)
     }
 
-    if (tenant.rent_start) {
+    if (tenant.rent_start && inside_property) {
       estates = estates.filter(
         (estate) =>
           !estate.vacant_date ||
