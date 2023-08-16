@@ -3001,7 +3001,7 @@ class EstateService {
       estates = await EstateService.getTenantAllEstates({ userId: user_id, page, limit })
       estates = await Promise.all(
         estates.rows.map(async (estate) => {
-          estate = estate.toJSON({ isShort: true, role: ROLE_USER })
+          estate = estate.toJSON({ isShort: false, role: ROLE_USER })
           estate.isoline = await EstateService.getIsolines(estate)
           return estate
         })
