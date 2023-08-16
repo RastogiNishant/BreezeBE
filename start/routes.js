@@ -443,13 +443,13 @@ Route.group(() => {
 // Estate management
 Route.group(() => {
   Route.get('/cities', 'EstateController.getCityList')
+  Route.get('/building/match', 'EstateController.getMatchEstates').middleware([
+    'valid:Pagination,EstateFilter',
+  ])
   Route.get('/building/:id', 'EstateController.getBuildingEstates').middleware([
     'valid:Id,EstateFilter,Pagination',
   ])
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
-  Route.get('/match', 'EstateController.getMatchEstates').middleware([
-    'valid:Pagination,EstateFilter',
-  ])
   Route.get('/candidate', 'EstateController.searchEstates').middleware(['valid:EstateFilter'])
   Route.get('/quick_search', 'EstateController.shortSearchEstates').middleware([
     'valid:EstateFilter',
