@@ -1716,10 +1716,17 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
+    estate.available_end_at = estate.is_duration_later ? null : estate.available_end_at
     if (
       !estate.available_start_at ||
       (!estate.is_duration_later && !estate.available_end_at) ||
-      (estate.is_duration_later && !estate.min_invite_count)
+      (estate.is_duration_later && !estate.min_invite_count) ||
+      (estate.available_end_at &&
+        moment.utc(estate.available_end_at).format() <= moment.utc(new Date()).format()) ||
+      (estate.available_start_at &&
+        estate.available_end_at &&
+        moment.utc(estate.available_start_at).format() <=
+          moment.utc(estate.available_end_at).format())
     ) {
       throw new HttpException(
         ERROR_PROPERTY_AVAILABLE_DURATION,
