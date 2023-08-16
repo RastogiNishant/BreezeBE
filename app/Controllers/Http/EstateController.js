@@ -244,6 +244,8 @@ class EstateController {
       params = request.post()
     }
 
+    let buildings = await BuildingService.getAllHasUnit(auth.user.id)
+
     let result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
       limit,
@@ -289,10 +291,12 @@ class EstateController {
     }
     result = {
       ...result,
+      buildings,
       total_estate_count: totalEstateCounts.all_count,
       offline_count: totalEstateCounts.offline_count,
       online_count: totalEstateCounts.online_count,
     }
+
     response.res(result)
   }
 
