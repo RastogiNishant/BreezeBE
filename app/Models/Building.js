@@ -24,6 +24,10 @@ class Building extends Model {
   estates() {
     return this.hasMany('App/Models/Estates')
   }
+
+  static get Serializer() {
+    return 'App/Serializers/BuildingSerializer'
+  }
 }
 
 module.exports = Building
