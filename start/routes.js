@@ -198,6 +198,12 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:InitializeEstateSync',
   ])
+
+  Route.get('/prospects', 'Admin/UserController.getProspects').middleware(['auth:jwtAdministrator'])
+  Route.get('/prospects/:id', 'Admin/UserController.getProspect').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
