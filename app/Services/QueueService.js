@@ -218,7 +218,10 @@ class QueueService {
   static async performEvery1HourJob() {
     const MatchService = require('./MatchService')
 
-    return Promise.all([wrapException(MatchService.moveExpiredFinalConfirmToTop)])
+    return Promise.all([
+      wrapException(MatchService.moveExpiredFinalConfirmToTop),
+      wrapException(require('./EstateService').updateVacantDate),
+    ])
   }
 
   static async pullGewobag() {
