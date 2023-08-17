@@ -1584,7 +1584,7 @@ class EstateService {
           })
         })
         this.orWhere(function () {
-          this.whereIn('_m.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
+          this.whereIn('_m.status', [MATCH_STATUS_SHARE, MATCH_STATUS_COMMIT])
             .where('_m.user_id', userId)
             .where('_m.share', false)
         })
