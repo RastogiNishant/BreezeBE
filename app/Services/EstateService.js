@@ -1706,7 +1706,7 @@ class EstateService {
         moment.utc(estate.available_end_at).format() <= moment.utc(new Date()).format()) ||
       (estate.available_start_at &&
         estate.available_end_at &&
-        moment.utc(estate.available_start_at).format() <=
+        moment.utc(estate.available_start_at).format() >=
           moment.utc(estate.available_end_at).format())
     ) {
       throw new HttpException(
