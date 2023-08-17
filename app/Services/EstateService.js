@@ -3417,5 +3417,22 @@ class EstateService {
       estates,
     }
   }
+
+  static async publishBuild({ user_id, action, publishers, build_id, estate_ids }) {
+    const estates = await this.getEstatesByUserId({
+      user_ids: [user_id],
+      params: { ...(params || {}), build_id, id: estate_ids },
+    })
+
+    const categories = uniq(estates.map((estate) => this.getBasicPropertyId(estate.property_id)))
+    let categoryEstates = {}
+
+    categories.forEach((category) => {
+      categoryEstates[category] = estates.filter((estate) => estate.property_id.includes(category))
+    })
+
+    //TODO: need to check if there are enough valid units equal to category to publish to marketplaces.
+    Object.keys(categories).forEach((category) => {})
+  }
 }
 module.exports = EstateService
