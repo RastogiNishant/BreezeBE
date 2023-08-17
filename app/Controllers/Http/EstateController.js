@@ -484,6 +484,14 @@ class EstateController {
     )
   }
 
+  async publishBuild({ request, auth, response }) {
+    const { id, action, publishers, estate_ids } = request.all()
+    let result = await EstateService.getEstatesByUserId({
+      user_ids: [auth.user.id],
+      params: { ...(params || {}), build_id: id, id: estate_ids },
+    })
+  }
+
   async makeEstateOffline({ request, auth, response }) {
     const { id } = request.all()
     try {
