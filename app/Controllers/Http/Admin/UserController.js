@@ -30,6 +30,7 @@ const {
   WEBSOCKET_EVENT_USER_DEACTIVATE,
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_STATUS_INIT,
+  ROLE_USER,
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD },
@@ -403,6 +404,84 @@ class UserController {
 
       throw new HttpException('Error found while adding user.')
     }
+  }
+
+  prospectQuery(single = false) {
+    const query = User.query()
+      .select(
+        'users.id',
+        'users.email',
+        'users.firstname',
+        'users.secondname',
+        'tenants.address',
+        'users.status',
+        'tenants.members_count',
+        'tenants.credit_score',
+        'tenants.income'
+      )
+      .leftJoin('tenants', 'tenants.user_id', 'users.id')
+
+    if (single) {
+      query.select('_m.member_info').leftJoin(
+        Database.raw(`
+          (select
+            members.user_id,
+            array_agg(
+              json_build_object(
+                'member_id', members.id,
+                'firstname', members.firstname,
+                'secondname', members.secondname,
+                'rent_arrears', members.rent_arrears_doc,
+                'credit_score', members.credit_score,
+                'debt_proof', members.debt_proof,
+                'files', mf.files
+              )
+            ) as member_info
+          from
+            members
+          left join
+            (select
+              member_id,
+              array_agg(json_build_object('type', "type", 'file', file)) as files from
+            member_files
+            group by member_id
+            ) mf
+          on mf.member_id=members.id
+          group by
+            members.user_id
+          ) as _m`),
+        '_m.user_id',
+        'users.id'
+      )
+    }
+    return query
+  }
+
+  async getProspects({ request, response }) {
+    let { page, limit = 20 } = request.all()
+    if (!page || page < 1) {
+      page = 1
+    }
+    const prospects = await this.prospectQuery(false)
+      .whereNot('users.status', STATUS_DELETE)
+      .where('role', ROLE_USER)
+      .orderBy('updated_at', 'desc')
+      .paginate(page, limit)
+    return response.res(prospects)
+  }
+
+  async getProspect({ request, response }) {
+    const { id } = request.all()
+    const prospect = await this.prospectQuery(true)
+      .where('users.id', id)
+      .whereNot('users.status', STATUS_DELETE)
+      .where('role', ROLE_USER)
+      .first()
+
+    if (!prospect) {
+      throw new HttpException('User Not Found!', 400)
+    }
+    return response.res(prospect)
   }
 }
 
