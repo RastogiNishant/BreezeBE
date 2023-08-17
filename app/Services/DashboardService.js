@@ -23,6 +23,8 @@ class DashboardService {
       .whereNot('status', STATUS_DELETE)
       .count()
 
+    const variousStatusEstatesCounts = await EstateService.getFilteredCounts(user_id, {})
+
     const connectCount = await Estate.query()
       .where('letting_type', LETTING_TYPE_LET)
       .where('user_id', user_id)
@@ -40,6 +42,7 @@ class DashboardService {
 
     return {
       estate: estateCount[0].count,
+      offline_count: variousStatusEstatesCounts.offline_count,
       connect: connectCount[0].count,
       match: buildEstateCount + noBuildEstateCount,
     }
