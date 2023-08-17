@@ -2958,12 +2958,13 @@ class EstateService {
   }
 
   static getBasicPropertyId(property_id = '') {
-    const property_id_list = property_id?.split('-') || ``
-    if (!isNaN(property_id_list[property_id_list.length - 1])) {
-      property_id_list.splice(property_id_list.length - 1, 1)
-    }
+    const property_id_list = property_id?.split('-') || [property_id]
+    return property_id_list[0]
+    // if (!isNaN(property_id_list[property_id_list.length - 1])) {
+    //   property_id_list.splice(property_id_list.length - 1, 1)
+    // }
 
-    return property_id_list.join('')
+    // return property_id_list.join('')
   }
 
   static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
@@ -3172,7 +3173,7 @@ class EstateService {
 
   static async countDuplicateProperty(property_id) {
     const estateCount = await Estate.query()
-      .where('property_id', 'ilike', `${property_id}%`)
+      .where('property_id', 'ilike', `${property_id}-%`)
       .whereNot('status', STATUS_DELETE)
       .count('*')
     if (estateCount?.length) {
@@ -3200,7 +3201,6 @@ class EstateService {
     }
 
     const property_id = this.getBasicPropertyId(estate.property_id)
-
     const duplicatedCount = await this.countDuplicateProperty(property_id)
     const trx = await Database.beginTransaction()
     try {
@@ -3218,7 +3218,7 @@ class EstateService {
           'created_at',
           'updated_at',
         ]),
-        property_id: `${property_id}-${duplicatedCount}`,
+        property_id: `${property_id}-${duplicatedCount + 1}`,
         available_start_at: null,
         available_end_at: null,
         status: STATUS_DRAFT,
