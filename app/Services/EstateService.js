@@ -3237,5 +3237,13 @@ class EstateService {
     estate = await EstateService.assignEstateAmenities(estate)
     return estate
   }
+
+  static async updateVacantDate() {
+    await Estate.query()
+      .where('status', STATUS_ACTIVE)
+      .where('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
+      .where('vacant_date', '<=', moment.utc(new Date()).format(DAY_FORMAT))
+      .update({ vacant_date: moment.utc(new Date()).format(DAY_FORMAT) })
+  }
 }
 module.exports = EstateService
