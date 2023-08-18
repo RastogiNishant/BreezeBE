@@ -10,6 +10,7 @@ const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const MailService = use('App/Services/MailService')
+const File = use('App/Classes/File')
 
 const moment = require('moment')
 const { isArray, isEmpty, includes } = require('lodash')
@@ -434,7 +435,8 @@ class UserController {
                 'rent_arrears', members.rent_arrears_doc,
                 'credit_score', members.credit_score,
                 'debt_proof', members.debt_proof,
-                'files', mf.files
+                'files', mf.files,
+                'incomes', mi.member_incomes
               )
             ) as member_info
           from
@@ -447,6 +449,14 @@ class UserController {
             group by member_id
             ) mf
           on mf.member_id=members.id
+          left join
+          (select
+            member_id,
+            array_agg(json_build_object('employment_type', incomes.employment_type, 'profession', incomes.profession, 'position', incomes.position, 'income', incomes.income, 'company', incomes.company)) as member_incomes
+            from incomes
+            group by member_id
+            ) mi
+          on mi.member_id=members.id    
           group by
             members.user_id
           ) as _m`),
@@ -481,6 +491,20 @@ class UserController {
     if (!prospect) {
       throw new HttpException('User Not Found!', 400)
     }
+    prospect.member_info = await Promise.map(prospect.member_info, async (member) => {
+      member.rent_arrears = member.rent_arrears
+        ? await File.getProtectedUrl(member.rent_arrears)
+        : null
+      member.debt_proof = member.debt_proof ? await File.getProtectedUrl(member.debt_proof) : null
+      if (Array.isArray(member.files)) {
+        member.files = await Promise.map(member.files, async (file) => {
+          file.file = file.file ? await File.getProtectedUrl(file.file) : null
+          return file
+        })
+      }
+      return member
+    })
+
     return response.res(prospect)
   }
 }
