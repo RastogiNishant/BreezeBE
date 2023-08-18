@@ -72,7 +72,8 @@ class UserController {
     const query = User.query()
       .select(
         Database.raw(
-          `users.*, users.created_at::timestamp at time zone 'UTC' as created_at, concat(users.firstname, ' ', users.secondname) as fullname`
+          `users.*, users.created_at::timestamp at time zone 'UTC' as created_at,
+          concat(users.firstname, ' ', users.secondname) as fullname`
         )
       )
       .where('role', role)
@@ -310,7 +311,8 @@ class UserController {
       )
       .leftJoin(
         Database.raw(
-          `(select user_id, count(id) as document_count from estates where energy_proof is not null group by user_id) as _dc`
+          `(select user_id, count(id) as document_count from estates
+          where energy_proof is not null group by user_id) as _dc`
         ),
         '_dc.user_id',
         'users.id'
@@ -415,12 +417,31 @@ class UserController {
         'users.firstname',
         'users.secondname',
         'tenants.address',
+        'ect.current_estates',
         'users.status',
         'tenants.members_count',
         'tenants.credit_score',
         'tenants.income'
       )
       .leftJoin('tenants', 'tenants.user_id', 'users.id')
+      .leftJoin(
+        Database.raw(`(select
+          estate_current_tenants.user_id,
+          array_agg(
+            json_build_object(
+              'estate_id', estates.id,
+              'property_id', estates.property_id,
+              'address', estates.address
+            )
+          ) as current_estates
+        from estate_current_tenants
+        left join estates
+        on estates.id=estate_current_tenants.estate_id
+        group by estate_current_tenants.user_id
+        ) ect`),
+        'ect.user_id',
+        'users.id'
+      )
 
     if (single) {
       query.select('_m.member_info').leftJoin(
@@ -444,7 +465,12 @@ class UserController {
           left join
             (select
               member_id,
-              array_agg(json_build_object('type', "type", 'file', file)) as files from
+              array_agg(
+                json_build_object(
+                  'type', "type",
+                  'file', file
+                )
+              ) as files from
             member_files
             group by member_id
             ) mf
@@ -452,7 +478,13 @@ class UserController {
           left join
           (select
             member_id,
-            array_agg(json_build_object('employment_type', incomes.employment_type, 'profession', incomes.profession, 'position', incomes.position, 'income', incomes.income, 'company', incomes.company)) as member_incomes
+            array_agg(json_build_object(
+              'employment_type', incomes.employment_type,
+              'profession', incomes.profession,
+              'position', incomes.position,
+              'income', incomes.income,
+              'company', incomes.company)
+            ) as member_incomes
             from incomes
             group by member_id
             ) mi
