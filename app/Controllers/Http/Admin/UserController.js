@@ -416,7 +416,8 @@ class UserController {
         'users.email',
         'users.firstname',
         'users.secondname',
-        'users.last_login',
+        Database.raw(`to_char(users.last_login, '${ISO_DATE_FORMAT}') as last_login`),
+        Database.raw(`to_char(users.updated_at, '${ISO_DATE_FORMAT}') as updated_at`),
         'tenants.address',
         'ect.current_estates',
         'users.status',
@@ -514,7 +515,7 @@ class UserController {
       .where('role', ROLE_USER)
       .orderBy('updated_at', 'desc')
       .paginate(page, limit)
-    return response.res(prospects)
+    return response.res(prospects.toJSON({ publicOnly: false }))
   }
 
   async getProspect({ request, response }) {
@@ -542,7 +543,7 @@ class UserController {
       return member
     })
 
-    return response.res(prospect)
+    return response.res(prospect.toJSON({ publicOnly: false }))
   }
 }
 
