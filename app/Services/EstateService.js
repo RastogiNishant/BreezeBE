@@ -3316,7 +3316,7 @@ class EstateService {
 
     estate = {
       ...estate,
-      match: match?.percent,
+      match: match?.prospect_score,
     }
 
     estate = await EstateService.assignEstateAmenities(estate)
