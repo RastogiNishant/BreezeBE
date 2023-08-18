@@ -155,15 +155,15 @@ class EstateController {
       if (estate.user_id !== auth.user.id) {
         throw new HttpException('Not allow', 403)
       }
-
+      console.log('updateEstate 1')
       await EstateService.updateEstate({ request, user_id: auth.user.id })
-
+      console.log('updateEstate 2')
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
         from: 0,
         params: { id },
       })
-
+      console.log('updateEstate 3')
       QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
     } catch (e) {
@@ -484,6 +484,29 @@ class EstateController {
     )
   }
 
+  async publishBuild({ request, auth, response }) {
+    const { id, action, publishers, estate_ids } = request.all()
+    if (action === PUBLISH_PROPERTY) {
+      await EstateService.publishBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+        publishers,
+        estate_ids,
+      })
+    } else if (action === UNPUBLISH_PROPERTY) {
+      await EstateService.unpublishBuilding({ user_id: auth.user.id, build_id: id })
+    } else if (action === DEACTIVATE_PROPERTY) {
+      await EstateService.deactivateBuilding({ user_id: auth.user.id, build_id: id })
+    }
+
+    let result = await EstateService.getEstatesByUserId({
+      user_ids: [auth.user.id],
+      params: { build_id: id },
+    })
+
+    response.res(result.data)
+  }
+
   async makeEstateOffline({ request, auth, response }) {
     const { id } = request.all()
     try {
@@ -647,7 +670,7 @@ class EstateController {
       try {
         const result = await EstateService.addManyFiles(data, trx)
 
-        await EstateService.updatePercent(
+        await EstateService.updatePercentAndIsPublished(
           { estate_id: data[0].estate_id, files: [result[0].toJSON()] },
           trx
         )

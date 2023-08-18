@@ -179,6 +179,7 @@ class Estate extends Model {
       'notify_sent',
       'build_id',
       'cert_category',
+      'can_publish',
     ]
   }
 

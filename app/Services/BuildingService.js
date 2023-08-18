@@ -29,6 +29,17 @@ class BuildingService {
       .update({ ...data })
   }
 
+  static async updatePublishedMarketPlaceEstateIds(
+    { id, user_id, published, marketplace_estate_ids },
+    trx
+  ) {
+    await Building.query()
+      .where('user_id', user_id)
+      .where('id', id)
+      .update({ marketplace_estate_ids, published })
+      .transacting(trx)
+  }
+
   static async delete({ id, user_id }) {
     return await Building.query().where('id', id).where('user_id', user_id).delete()
   }

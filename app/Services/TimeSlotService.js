@@ -47,7 +47,7 @@ class TimeSlotService {
         },
         trx
       )
-      await require('./EstateService').updatePercent(
+      await require('./EstateService').updatePercentAndIsPublished(
         { estate_id: estate.id, slots: [slot.toJSON()] },
         trx
       )
@@ -326,7 +326,7 @@ class TimeSlotService {
           idx++
         }
       }
-      await require('./EstateService').updatePercent(
+      await require('./EstateService').updatePercentAndIsPublished(
         {
           estate_id: slot.estate_id,
           deleted_slots_ids: [slot_id],
