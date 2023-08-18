@@ -155,15 +155,15 @@ class EstateController {
       if (estate.user_id !== auth.user.id) {
         throw new HttpException('Not allow', 403)
       }
-
+      console.log('updateEstate 1')
       await EstateService.updateEstate({ request, user_id: auth.user.id })
-
+      console.log('updateEstate 2')
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
         from: 0,
         params: { id },
       })
-
+      console.log('updateEstate 3')
       QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
     } catch (e) {
@@ -652,7 +652,7 @@ class EstateController {
       try {
         const result = await EstateService.addManyFiles(data, trx)
 
-        await EstateService.updatePercent(
+        await EstateService.updatePercentAndIsPublished(
           { estate_id: data[0].estate_id, files: [result[0].toJSON()] },
           trx
         )

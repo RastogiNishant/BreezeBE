@@ -40,7 +40,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
 const GeoAPI = use('GeoAPI')
-const { capitalize } = require('../Libs/utils')
+const { capitalize, checkIfIsValid } = require('../Libs/utils')
 
 const {
   STATUS_DRAFT,
@@ -649,7 +649,14 @@ class EstateService {
   static async updateEstate({ request, data, user_id }, trx = null) {
     data = request ? request.all() : data
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type', 'cover_thumb']),
+      ...omit(data, [
+        'delete_energy_proof',
+        'rooms',
+        'letting_type',
+        'cover_thumb',
+        'can_publish',
+        'status',
+      ]),
       status: STATUS_DRAFT,
     }
 
@@ -659,8 +666,16 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    let insideTrx = !trx ? true : false
+    updateData = {
+      ...estate.toJSON({
+        extraFields: ['verified_address', 'cover_thumb'],
+      }),
+      ...updateData,
+    }
 
+    const { verified_address, construction_year, cover_thumb, ...omittedData } = updateData
+
+    let insideTrx = !trx ? true : false
     trx = insideTrx ? await Database.beginTransaction() : trx
     try {
       if (data.delete_energy_proof) {
@@ -671,10 +686,11 @@ class EstateService {
           energy_proof: null,
           energy_proof_original_file: null,
           percent: this.calculatePercent({
-            ...estate.toJSON({
-              extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-            }),
-            ...updateData,
+            ...omittedData,
+            energy_proof: null,
+          }),
+          can_publish: this.isAllInfoAvailable({
+            ...omittedData,
             energy_proof: null,
           }),
         }
@@ -683,35 +699,31 @@ class EstateService {
         if (files && files.energy_proof) {
           updateData = {
             ...updateData,
+            percent: this.calculatePercent({
+              ...omittedData,
+            }),
+            can_publish: this.isAllInfoAvailable({
+              ...omittedData,
+            }),
+
             energy_proof: files.energy_proof,
             energy_proof_original_file: files.original_energy_proof,
-            percent: this.calculatePercent({
-              ...estate.toJSON({
-                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-              }),
-              ...updateData,
-              energy_proof: files.energy_proof,
-            }),
           }
         } else {
           updateData = {
             ...updateData,
             percent: this.calculatePercent({
-              ...estate.toJSON({
-                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-              }),
-              ...updateData,
+              ...omittedData,
+            }),
+            can_publish: this.isAllInfoAvailable({
+              ...omittedData,
             }),
           }
         }
       }
-      updateData = {
-        ...estate.toJSON({
-          extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-        }),
-        ...updateData,
-      }
+      console.log('updateItemWithTrx=', updateData)
       await estate.updateItemWithTrx(updateData, trx)
+      console.log('updateItemWithTrx after=')
       await this.deleteMatchInfo({ estate_id: estate.id }, trx)
 
       QueueService.estateSyncUnpublishEstates([estate.id], true)
@@ -888,7 +900,7 @@ class EstateService {
         },
         trx
       )
-      await this.updatePercent({ estate_id: estate.id, files: [file.toJSON()] }, trx)
+      await this.updatePercentAndIsPublished({ estate_id: estate.id, files: [file.toJSON()] }, trx)
       await trx.commit()
       return file
     } catch (e) {
@@ -945,7 +957,7 @@ class EstateService {
 
       ids = files.map((file) => file.id)
       await File.query().delete().whereIn('id', ids).transacting(trx)
-      await this.updatePercent({ estate_id, deleted_files_ids: ids }, trx)
+      await this.updatePercentAndIsPublished({ estate_id, deleted_files_ids: ids }, trx)
       await this.updateCover({ estate_id, removeImages: files }, trx)
       await trx.commit()
     } catch (e) {
@@ -2777,6 +2789,9 @@ class EstateService {
   }
 
   static calculatePercent(estate) {
+    delete estate.verified_address
+    delete estate.construction_year
+    delete estate.cover_thumb
     let percent = 0
     const is_let = estate.letting_type === LETTING_TYPE_LET ? true : false
     const let_type = is_let ? LETTING_TYPE_LET : LETTING_TYPE_VOID
@@ -2886,7 +2901,7 @@ class EstateService {
     return Math.ceil(percent)
   }
 
-  static async updatePercent(
+  static async updatePercentAndIsPublished(
     {
       estate,
       estate_id,
@@ -2909,6 +2924,9 @@ class EstateService {
     if (!estate) {
       return
     }
+    delete estate.verified_address
+    delete estate.construction_year
+    delete estate.cover_thumb
 
     let percentData = {
       ...estate.toJSON({ extraFields: ['verified_address', 'construction_year', 'cover_thumb'] }),
@@ -2937,15 +2955,17 @@ class EstateService {
       )
     }
 
+    const isAvailablePublish = this.isAllInfoAvailable(estate)
+
     if (trx) {
       await Estate.query()
         .where('id', estate.id)
-        .update({ percent: this.calculatePercent(percentData) })
+        .update({ percent: this.calculatePercent(percentData), can_publish: isAvailablePublish })
         .transacting(trx)
     } else {
       await Estate.query()
         .where('id', estate.id)
-        .update({ percent: this.calculatePercent(percentData) })
+        .update({ percent: this.calculatePercent(percentData), can_publish: isAvailablePublish })
     }
     if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
       QueueService.sendEmailToSupportForLandlordUpdate({
@@ -3416,6 +3436,114 @@ class EstateService {
       },
       estates,
     }
+  }
+
+  static isDocumentsUploaded(estateDetails) {
+    const { files, rooms } = estateDetails ?? {}
+
+    // const floorPlans = files?.filter(({ type }) => type === DOCUMENT_VIEW_TYPES.PLAN)
+    const externalView = files?.filter(({ type }) => type === FILE_TYPE_EXTERNAL)
+    const insideView = rooms?.filter(({ images }) => images?.length || false)
+    console.log('isDocumentsUpload=', externalView?.length && insideView.length)
+    return externalView?.length && insideView.length
+  }
+
+  static isTenantPreferenceUpdated(estateDetails) {
+    const { rent_arrears, budget, credit_score, min_age, max_age, family_size_max } =
+      estateDetails ?? {}
+    const tenantPreferenceObject = {
+      budget,
+      min_age,
+      max_age,
+      credit_score,
+      rent_arrears,
+      family_size_max,
+    }
+    console.log('isTenantPreferenceUpdated=', checkIfIsValid(tenantPreferenceObject))
+    return checkIfIsValid(tenantPreferenceObject)
+  }
+
+  static isLocationRentUnitUpdated(estateDetails) {
+    const {
+      zip,
+      city,
+      area,
+      floor,
+      coord,
+      coord_raw,
+      street,
+      firing,
+      country,
+      deposit,
+      apt_type,
+      net_rent,
+      house_type,
+      rent_end_at,
+      house_number,
+      // extra_costs, // Optional for publishing
+      rooms_number,
+      heating_type,
+      number_floors,
+      property_type,
+      building_status,
+      construction_year,
+      energy_efficiency,
+      deposit_multiplier,
+    } = estateDetails ?? {}
+
+    let locationObject
+    const depositCheck = deposit_multiplier || Math.round(+deposit / +net_rent)
+    if (!rent_end_at) {
+      // when no contract end, below things are mandatory to publish
+      locationObject = {
+        zip,
+        city,
+        area,
+        floor,
+        coord: coord || coord_raw,
+        street,
+        firing,
+        country,
+        apt_type,
+        net_rent,
+        house_type,
+        house_number,
+        rooms_number,
+        depositCheck,
+        heating_type,
+        number_floors,
+        property_type,
+        building_status,
+        construction_year,
+        energy_efficiency,
+      }
+    } else {
+      // when contract end is added, below things are mandatory to publish
+      locationObject = {
+        zip,
+        city,
+        area,
+        floor,
+        coord: coord || coord_raw,
+        street,
+        country,
+        net_rent,
+        house_number,
+        depositCheck,
+        rooms_number,
+        property_type,
+      }
+    }
+    console.log('isLocationRentUnitUpdated=', locationObject)
+    return checkIfIsValid(locationObject)
+  }
+
+  static isAllInfoAvailable(estate) {
+    return (
+      this.isDocumentsUploaded(estate) &&
+      this.isLocationRentUnitUpdated(estate) &&
+      this.isTenantPreferenceUpdated(estate)
+    )
   }
 
   static async publishBuild({ user_id, action, publishers, build_id, estate_ids }) {

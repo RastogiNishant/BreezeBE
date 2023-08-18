@@ -179,6 +179,7 @@ class Estate extends Model {
       'notify_sent',
       'build_id',
       'cert_category',
+      'can_publish',
     ]
   }
 
@@ -186,7 +187,16 @@ class Estate extends Model {
    *
    */
   static get readonly() {
-    return ['id', 'status', 'user_id', 'point_id', 'hash', 'six_char_code', 'share_link']
+    return [
+      'id',
+      'status',
+      'user_id',
+      'point_id',
+      'hash',
+      'six_char_code',
+      'share_link',
+      'can_publish',
+    ]
   }
 
   static shortColumns() {

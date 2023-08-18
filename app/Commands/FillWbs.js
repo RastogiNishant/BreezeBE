@@ -10,6 +10,7 @@ const Promise = require('bluebird')
 
 class FillWbs extends Command {
   static get signature() {
+    //npx adonis app:fillwbs
     return 'app:fillwbs'
   }
 
