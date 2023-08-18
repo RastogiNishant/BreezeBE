@@ -15,6 +15,8 @@ class Building extends Model {
       'city',
       'country',
       'extra_address',
+      'marketplace_estate_ids',
+      'published',
     ]
   }
   static get traits() {

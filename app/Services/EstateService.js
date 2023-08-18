@@ -132,6 +132,7 @@ const {
     ERROR_PROPERTY_UNDER_REVIEW,
     ERROR_PROPERTY_INVALID_STATUS,
     ERROR_PROPERTY_NOT_PUBLISHED,
+    ERROR_PUBLISH_BUILDING,
   },
   exceptionCodes: {
     ERROR_PROPERTY_AREADY_PUBLISHED_CODE,
@@ -139,12 +140,14 @@ const {
     ERROR_PROPERTY_UNDER_REVIEW_CODE,
     ERROR_PROPERTY_INVALID_STATUS_CODE,
     ERROR_PROPERTY_NOT_PUBLISHED_CODE,
+    ERROR_PUBLISH_BUILDING_CODE,
   },
 } = require('../../app/exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
 const internal = require('stream')
+const BuildingService = require('./BuildingService')
 
 const MAX_DIST = 10000
 
@@ -1721,7 +1724,7 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate({ estate, publishers, performed_by = null }, is_queue = false) {
+  static async publishEstate({ estate, publishers, performed_by = null, is_queue = false }, trx) {
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
@@ -1777,7 +1780,11 @@ class EstateService {
     }
 
     let status = estate.status
-    const trx = await Database.beginTransaction()
+    let insideTrx = false
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      insideTrx = true
+    }
 
     try {
       if (user.company_id != null) {
@@ -1792,7 +1799,7 @@ class EstateService {
           moment(estate.available_end_at).format(DATE_FORMAT) >=
             moment.utc(new Date()).format(DATE_FORMAT))
       ) {
-        if (publishers?.length) {
+        if (publishers?.length && (!estate.build_id || (estate.build_id && estate.to_market))) {
           await require('./EstateSyncService.js').saveMarketPlacesInfo(
             {
               estate_id: estate.id,
@@ -1851,14 +1858,20 @@ class EstateService {
         }
       }
 
-      await trx.commit()
+      if (insideTrx) {
+        await trx.commit()
+      }
+
       // Run match estate
       Event.fire('match::estate', estate.id)
 
       return status
     } catch (e) {
       console.log(`publish estate error estate id is ${estate.id} ${e.message} `)
-      await trx.rollback()
+      if (insideTrx) {
+        await trx.rollback()
+      }
+
       throw new HttpException(e.message, e.status || 500)
     }
   }
@@ -1878,7 +1891,7 @@ class EstateService {
 
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
-      await this.handleOffline({ estate, event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
+      await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -1938,16 +1951,15 @@ class EstateService {
       true
     )
 
-    await this.handleOffline({ estate, event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
+    await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
   }
 
-  static async handleOffline({ estate, event }) {
+  static async handleOffline({ build_id, estates, event }, trx) {
     const data = {
       success: true,
-      estate_id: estate.id,
-      statu: estate.status,
-      property_id: estate.property_id,
-      publish_status: estate.publish_status,
+      build_id,
+      status: estates?.[0]?.status,
+      publish_status: estates?.[0]?.publish_status,
     }
 
     const EstateSyncService = require('./EstateSyncService')
@@ -1956,9 +1968,13 @@ class EstateService {
       user_id: estate.user_id,
       data,
     })
-    await EstateSyncService.markListingsForDelete(estate.id)
-    //unpublish estate from estate_sync
-    QueueService.estateSyncUnpublishEstates([estate.id], false)
+
+    if (estates?.length) {
+      const ids = estates.map((estate) => estate.id)
+      await EstateSyncService.markListingsForDelete(ids, trx)
+      //unpublish estate from estate_sync
+      QueueService.estateSyncUnpublishEstates(ids, false)
+    }
   }
 
   static async extendEstate({
@@ -3538,13 +3554,6 @@ class EstateService {
   }
 
   static isAllInfoAvailable(estate) {
-    console.log(
-      'isAllInfoAvailable here=',
-      this.isDocumentsUploaded(estate) &&
-        this.isLocationRentUnitUpdated(estate) &&
-        this.isTenantPreferenceUpdated(estate)
-    )
-
     return (
       this.isDocumentsUploaded(estate) &&
       this.isLocationRentUnitUpdated(estate) &&
@@ -3552,7 +3561,7 @@ class EstateService {
     )
   }
 
-  static async publishBuild({ user_id, action, publishers, build_id, estate_ids }) {
+  static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
     const estates = await this.getEstatesByUserId({
       user_ids: [user_id],
       params: { ...(params || {}), build_id, id: estate_ids },
@@ -3565,8 +3574,98 @@ class EstateService {
       categoryEstates[category] = estates.filter((estate) => estate.property_id.includes(category))
     })
 
-    //TODO: need to check if there are enough valid units equal to category to publish to marketplaces.
-    Object.keys(categories).forEach((category) => {})
+    let notAvailableCategories = []
+    let availableCategories = []
+
+    if (publishers?.length) {
+      Object.keys(categories).forEach((category) => {
+        if (categoryEstates[category]?.length) {
+          const estate = categoryEstates[category].find((e) => e.can_publish)
+          if (!estate) {
+            notAvailableCategories.push(category)
+          } else {
+            estate.to_market = true
+            availableCategories.push(estate.id)
+          }
+        }
+      })
+
+      if (notAvailableCategories.length) {
+        Logger.error(`Publish building failed due to missing info at ${notAvailableCategories}`)
+        throw new HttpException(ERROR_PUBLISH_BUILDING, 400, ERROR_PUBLISH_BUILDING_CODE)
+      }
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await BuildingService.updatePublishedMarketPlaceEstateIds(
+        {
+          id: build_id,
+          user_id: auth.user.id,
+          published: PUBLISH_STATUS_BY_LANDLORD,
+          marketplace_estate_ids: availableCategories,
+        },
+        trx
+      )
+
+      await Promise.map(estates, async (estate) => {
+        await EstateService.publishEstate(
+          {
+            estate,
+            publishers,
+            performed_by: auth.user.id,
+          },
+          trx
+        )
+      })
+
+      await trx.commit()
+    } catch (e) {
+      Logger.error(`Publish building failed ${e.message}`)
+      await trx.rollback()
+      throw new HttpException(e.message, 400, e.code || 0)
+    }
+
+    //TODO: publish estates here
+  }
+
+  static async unpublishBuilding({ user_id, build_id }) {
+    const trx = await Database.beginTransaction()
+    try {
+      const estates = (
+        await Estate.query().where('user_id', user_id).where('build_id', build_id).fetch()
+      ).toJSON()
+
+      await BuildingService.updatePublishedMarketPlaceEstateIds(
+        {
+          id: build_id,
+          user_id: auth.user.id,
+          published: PUBLISH_STATUS_INIT,
+          marketplace_estate_ids: null,
+        },
+        trx
+      )
+
+      await Estate.query()
+        .where('build_id', build_id)
+        .update({
+          status: STATUS_EXPIRE,
+          publish_status: PUBLISH_STATUS_INIT,
+        })
+        .transacting(trx)
+
+      if (estates?.length) {
+        await this.handleOffline(
+          { build_id, estates, event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED },
+          trx
+        )
+      }
+
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400, e.code || 0)
+    }
   }
 }
 module.exports = EstateService

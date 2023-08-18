@@ -541,12 +541,17 @@ class EstateSyncService {
     }
   }
 
-  static async markListingsForDelete(estateId) {
+  static async markListingsForDelete(estateId, trx) {
     try {
-      await EstateSyncListing.query()
+      let query = EstateSyncListing.query()
         .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
         .whereIn('estate_id', Array.isArray(estateId) ? estateId : [estateId])
         .update({ status: ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE })
+
+      if (trx) {
+        query.transacting(trx)
+      }
+      return query
     } catch (e) {
       Logger.use(`markListingsForDeletion error ${e.message}`)
     }
