@@ -721,9 +721,8 @@ class EstateService {
           }
         }
       }
-      console.log('updateItemWithTrx=', updateData)
+
       await estate.updateItemWithTrx(updateData, trx)
-      console.log('updateItemWithTrx after=')
       await this.deleteMatchInfo({ estate_id: estate.id }, trx)
 
       QueueService.estateSyncUnpublishEstates([estate.id], true)
@@ -3539,6 +3538,13 @@ class EstateService {
   }
 
   static isAllInfoAvailable(estate) {
+    console.log(
+      'isAllInfoAvailable here=',
+      this.isDocumentsUploaded(estate) &&
+        this.isLocationRentUnitUpdated(estate) &&
+        this.isTenantPreferenceUpdated(estate)
+    )
+
     return (
       this.isDocumentsUploaded(estate) &&
       this.isLocationRentUnitUpdated(estate) &&
