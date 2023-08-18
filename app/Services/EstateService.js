@@ -3202,7 +3202,6 @@ class EstateService {
   }
 
   static async getTenantEstate({ id, user_id, role }) {
-    console.log(`getTenantEstate= ${user_id} ${role}`)
     let estate = await this.getEstateWithDetails({
       id,
       user_id: user_id ?? null,
@@ -3227,7 +3226,7 @@ class EstateService {
 
     estate = {
       ...estate,
-      match: match?.percent,
+      match: match?.prospect_score,
     }
 
     estate = await EstateService.assignEstateAmenities(estate)
