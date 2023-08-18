@@ -416,6 +416,7 @@ class UserController {
         'users.email',
         'users.firstname',
         'users.secondname',
+        'users.last_login',
         'tenants.address',
         'ect.current_estates',
         'users.status',
@@ -437,6 +438,8 @@ class UserController {
         from estate_current_tenants
         left join estates
         on estates.id=estate_current_tenants.estate_id
+        where
+          estate_current_tenants.status='${STATUS_ACTIVE}'
         group by estate_current_tenants.user_id
         ) ect`),
         'ect.user_id',
@@ -472,6 +475,7 @@ class UserController {
                 )
               ) as files from
             member_files
+            where member_files.status not in (${STATUS_DELETE})
             group by member_id
             ) mf
           on mf.member_id=members.id
@@ -486,6 +490,7 @@ class UserController {
               'company', incomes.company)
             ) as member_incomes
             from incomes
+            where incomes.status not in (${STATUS_DELETE})
             group by member_id
             ) mi
           on mi.member_id=members.id    
