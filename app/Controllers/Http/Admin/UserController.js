@@ -10,6 +10,7 @@ const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const MailService = use('App/Services/MailService')
+const File = use('App/Classes/File')
 
 const moment = require('moment')
 const { isArray, isEmpty, includes } = require('lodash')
@@ -30,6 +31,7 @@ const {
   WEBSOCKET_EVENT_USER_DEACTIVATE,
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_STATUS_INIT,
+  ROLE_USER,
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD },
@@ -70,7 +72,8 @@ class UserController {
     const query = User.query()
       .select(
         Database.raw(
-          `users.*, users.created_at::timestamp at time zone 'UTC' as created_at, concat(users.firstname, ' ', users.secondname) as fullname`
+          `users.*, users.created_at::timestamp at time zone 'UTC' as created_at,
+          concat(users.firstname, ' ', users.secondname) as fullname`
         )
       )
       .where('role', role)
@@ -308,7 +311,8 @@ class UserController {
       )
       .leftJoin(
         Database.raw(
-          `(select user_id, count(id) as document_count from estates where energy_proof is not null group by user_id) as _dc`
+          `(select user_id, count(id) as document_count from estates
+          where energy_proof is not null group by user_id) as _dc`
         ),
         '_dc.user_id',
         'users.id'
@@ -403,6 +407,143 @@ class UserController {
 
       throw new HttpException('Error found while adding user.')
     }
+  }
+
+  prospectQuery(single = false) {
+    const query = User.query()
+      .select(
+        'users.id',
+        'users.email',
+        'users.firstname',
+        'users.secondname',
+        Database.raw(`to_char(users.last_login, '${ISO_DATE_FORMAT}') as last_login`),
+        Database.raw(`to_char(users.updated_at, '${ISO_DATE_FORMAT}') as updated_at`),
+        'tenants.address',
+        'ect.current_estates',
+        'users.status',
+        'tenants.members_count',
+        'tenants.credit_score',
+        'tenants.income'
+      )
+      .leftJoin('tenants', 'tenants.user_id', 'users.id')
+      .leftJoin(
+        Database.raw(`(select
+          estate_current_tenants.user_id,
+          array_agg(
+            json_build_object(
+              'estate_id', estates.id,
+              'property_id', estates.property_id,
+              'address', estates.address
+            )
+          ) as current_estates
+        from estate_current_tenants
+        left join estates
+        on estates.id=estate_current_tenants.estate_id
+        where
+          estate_current_tenants.status='${STATUS_ACTIVE}'
+        group by estate_current_tenants.user_id
+        ) ect`),
+        'ect.user_id',
+        'users.id'
+      )
+
+    if (single) {
+      query.select('_m.member_info').leftJoin(
+        Database.raw(`
+          (select
+            members.user_id,
+            array_agg(
+              json_build_object(
+                'member_id', members.id,
+                'firstname', members.firstname,
+                'secondname', members.secondname,
+                'rent_arrears', members.rent_arrears_doc,
+                'credit_score', members.credit_score,
+                'debt_proof', members.debt_proof,
+                'files', mf.files,
+                'incomes', mi.member_incomes
+              )
+            ) as member_info
+          from
+            members
+          left join
+            (select
+              member_id,
+              array_agg(
+                json_build_object(
+                  'type', "type",
+                  'file', file
+                )
+              ) as files from
+            member_files
+            where member_files.status not in (${STATUS_DELETE})
+            group by member_id
+            ) mf
+          on mf.member_id=members.id
+          left join
+          (select
+            member_id,
+            array_agg(json_build_object(
+              'employment_type', incomes.employment_type,
+              'profession', incomes.profession,
+              'position', incomes.position,
+              'income', incomes.income,
+              'company', incomes.company)
+            ) as member_incomes
+            from incomes
+            where incomes.status not in (${STATUS_DELETE})
+            group by member_id
+            ) mi
+          on mi.member_id=members.id    
+          group by
+            members.user_id
+          ) as _m`),
+        '_m.user_id',
+        'users.id'
+      )
+    }
+    return query
+  }
+
+  async getProspects({ request, response }) {
+    let { page, limit = 20 } = request.all()
+    if (!page || page < 1) {
+      page = 1
+    }
+    const prospects = await this.prospectQuery(false)
+      .whereNot('users.status', STATUS_DELETE)
+      .where('role', ROLE_USER)
+      .orderBy('updated_at', 'desc')
+      .paginate(page, limit)
+    return response.res(prospects.toJSON({ publicOnly: false }))
+  }
+
+  async getProspect({ request, response }) {
+    const { id } = request.all()
+    const prospect = await this.prospectQuery(true)
+      .where('users.id', id)
+      .whereNot('users.status', STATUS_DELETE)
+      .where('role', ROLE_USER)
+      .first()
+
+    if (!prospect) {
+      throw new HttpException('User Not Found!', 400)
+    }
+    prospect.member_info = await Promise.map(prospect.member_info, async (member) => {
+      member.rent_arrears = member.rent_arrears
+        ? await File.getProtectedUrl(member.rent_arrears)
+        : null
+      member.debt_proof = member.debt_proof ? await File.getProtectedUrl(member.debt_proof) : null
+      if (Array.isArray(member.files)) {
+        member.files = await Promise.map(member.files, async (file) => {
+          file.file = file.file ? await File.getProtectedUrl(file.file) : null
+          return file
+        })
+      }
+      return member
+    })
+
+    return response.res(prospect.toJSON({ publicOnly: false }))
   }
 }
 
