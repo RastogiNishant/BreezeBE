@@ -22,8 +22,8 @@ class PublishEstate extends Base {
           PUBLISH_OFFLINE_PROPERTY,
         ])
         .required(),
-      publishers: yup.array().of(yup.string().oneOf(THIRD_PARTY_PUBLISHERS)),
-      estate_ids: yup.array.of(yup.number().positive()),
+      publishers: yup.array().of(yup.string().oneOf(THIRD_PARTY_PUBLISHERS)).nullable(),
+      estate_ids: yup.array().of(yup.number().positive()).nullable(),
     })
 }
 

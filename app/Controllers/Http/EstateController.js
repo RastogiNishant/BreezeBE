@@ -487,10 +487,24 @@ class EstateController {
   async publishBuild({ request, auth, response }) {
     const { id, action, publishers, estate_ids } = request.all()
     if (action === PUBLISH_PROPERTY) {
-      await EstateService.publishBuilding({ user_id, build_id: id, publishers, estate_ids })
+      await EstateService.publishBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+        publishers,
+        estate_ids,
+      })
     } else if (action === UNPUBLISH_PROPERTY) {
-      await EstateService.unpublishBuilding({ user_id, build_id: id })
+      await EstateService.unpublishBuilding({ user_id: auth.user.id, build_id: id })
+    } else if (action === DEACTIVATE_PROPERTY) {
+      await EstateService.deactivateBuilding({ user_id: auth.user.id, build_id: id })
     }
+
+    let result = await EstateService.getEstatesByUserId({
+      user_ids: [auth.user.id],
+      params: { build_id: id },
+    })
+
+    response.res(result.data)
   }
 
   async makeEstateOffline({ request, auth, response }) {
