@@ -40,7 +40,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const OpenImmoReader = use('App/Classes/OpenImmoReader')
 const Ws = use('Ws')
 const GeoAPI = use('GeoAPI')
-const { capitalize } = require('../Libs/utils')
+const { capitalize, checkIfIsValid } = require('../Libs/utils')
 
 const {
   STATUS_DRAFT,
@@ -119,6 +119,8 @@ const {
   RENT_INTERVAL_COUNT,
   MAX_RENT_COUNT,
   FURNISHED_GERMAN_NAME,
+  PUBLISH_TYPE_ONLINE_MARKET,
+  MAXIMUM_EXPIRE_PERIOD,
 } = require('../constants')
 
 const {
@@ -132,6 +134,7 @@ const {
     ERROR_PROPERTY_UNDER_REVIEW,
     ERROR_PROPERTY_INVALID_STATUS,
     ERROR_PROPERTY_NOT_PUBLISHED,
+    ERROR_PUBLISH_BUILDING,
   },
   exceptionCodes: {
     ERROR_PROPERTY_AREADY_PUBLISHED_CODE,
@@ -139,12 +142,14 @@ const {
     ERROR_PROPERTY_UNDER_REVIEW_CODE,
     ERROR_PROPERTY_INVALID_STATUS_CODE,
     ERROR_PROPERTY_NOT_PUBLISHED_CODE,
+    ERROR_PUBLISH_BUILDING_CODE,
   },
 } = require('../../app/exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
 const internal = require('stream')
+const BuildingService = require('./BuildingService')
 
 const MAX_DIST = 10000
 
@@ -649,7 +654,14 @@ class EstateService {
   static async updateEstate({ request, data, user_id }, trx = null) {
     data = request ? request.all() : data
     let updateData = {
-      ...omit(data, ['delete_energy_proof', 'rooms', 'letting_type', 'cover_thumb']),
+      ...omit(data, [
+        'delete_energy_proof',
+        'rooms',
+        'letting_type',
+        'cover_thumb',
+        'can_publish',
+        'status',
+      ]),
       status: STATUS_DRAFT,
     }
 
@@ -659,8 +671,16 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    let insideTrx = !trx ? true : false
+    updateData = {
+      ...estate.toJSON({
+        extraFields: ['verified_address', 'cover_thumb'],
+      }),
+      ...updateData,
+    }
 
+    const { verified_address, construction_year, cover_thumb, ...omittedData } = updateData
+
+    let insideTrx = !trx ? true : false
     trx = insideTrx ? await Database.beginTransaction() : trx
     try {
       if (data.delete_energy_proof) {
@@ -671,10 +691,11 @@ class EstateService {
           energy_proof: null,
           energy_proof_original_file: null,
           percent: this.calculatePercent({
-            ...estate.toJSON({
-              extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-            }),
-            ...updateData,
+            ...omittedData,
+            energy_proof: null,
+          }),
+          can_publish: this.isAllInfoAvailable({
+            ...omittedData,
             energy_proof: null,
           }),
         }
@@ -683,34 +704,29 @@ class EstateService {
         if (files && files.energy_proof) {
           updateData = {
             ...updateData,
+            percent: this.calculatePercent({
+              ...omittedData,
+            }),
+            can_publish: this.isAllInfoAvailable({
+              ...omittedData,
+            }),
+
             energy_proof: files.energy_proof,
             energy_proof_original_file: files.original_energy_proof,
-            percent: this.calculatePercent({
-              ...estate.toJSON({
-                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-              }),
-              ...updateData,
-              energy_proof: files.energy_proof,
-            }),
           }
         } else {
           updateData = {
             ...updateData,
             percent: this.calculatePercent({
-              ...estate.toJSON({
-                extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-              }),
-              ...updateData,
+              ...omittedData,
+            }),
+            can_publish: this.isAllInfoAvailable({
+              ...omittedData,
             }),
           }
         }
       }
-      updateData = {
-        ...estate.toJSON({
-          extraFields: ['verified_address', 'construction_year', 'cover_thumb'],
-        }),
-        ...updateData,
-      }
+
       await estate.updateItemWithTrx(updateData, trx)
       await this.deleteMatchInfo({ estate_id: estate.id }, trx)
 
@@ -888,7 +904,7 @@ class EstateService {
         },
         trx
       )
-      await this.updatePercent({ estate_id: estate.id, files: [file.toJSON()] }, trx)
+      await this.updatePercentAndIsPublished({ estate_id: estate.id, files: [file.toJSON()] }, trx)
       await trx.commit()
       return file
     } catch (e) {
@@ -945,7 +961,7 @@ class EstateService {
 
       ids = files.map((file) => file.id)
       await File.query().delete().whereIn('id', ids).transacting(trx)
-      await this.updatePercent({ estate_id, deleted_files_ids: ids }, trx)
+      await this.updatePercentAndIsPublished({ estate_id, deleted_files_ids: ids }, trx)
       await this.updateCover({ estate_id, removeImages: files }, trx)
       await trx.commit()
     } catch (e) {
@@ -1265,7 +1281,7 @@ class EstateService {
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
     const categoryCounts = this.calculateInsideCategoryCounts(estates, tenant)
-    const filteredEstates = await this.filterEstates(tenant, estates)
+    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
     return {
       estates: filteredEstates,
       categoryCounts,
@@ -1334,7 +1350,7 @@ class EstateService {
     return counts
   }
 
-  static async filterEstates(tenant, estates) {
+  static async filterEstates({ tenant, estates, inside_property = false }) {
     Logger.info(`before filterEstates count ${estates?.length}`)
 
     const minTenantBudget = tenant?.budget_min || 0
@@ -1360,15 +1376,15 @@ class EstateService {
       Logger.info(`filterEstates after transfer ${estates?.length}`)
     }
 
-    if (tenant.rent_start) {
+    if (tenant.rent_start && inside_property) {
       estates = estates.filter(
         (estate) =>
           !estate.vacant_date ||
           moment.utc(estate.vacant_date).format() >= moment.utc(tenant.rent_start).format()
       )
-    }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after rent start ${estates?.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after rent start ${estates?.length}`)
+      }
     }
 
     if (tenant.is_short_term_rent) {
@@ -1436,18 +1452,41 @@ class EstateService {
       estates = estates.filter(
         (estate) => !estate.apt_type || tenant.apt_type.includes(estate.apt_type)
       )
-    }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates apt type after ${estates?.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates apt type after ${estates?.length}`)
+      }
     }
 
     if (tenant.house_type?.length) {
       estates = estates.filter(
         (estate) => !estate.house_type || tenant.house_type.includes(estate.house_type)
       )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after house type ${estates?.length}`)
+      }
     }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after house type ${estates?.length}`)
+
+    if (tenant.is_public_certificate) {
+      //estate.cert_category : inside estates
+      //estate.wbs: outside estates
+      if (inside_property) {
+        estates = estates.filter((estate) => estate.cert_category)
+      } else {
+        estates = estates.filter((estate) => estate.wbs)
+      }
+
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after public certificate ${estates?.length}`)
+      }
+    }
+
+    if (tenant.income_level?.length && inside_property) {
+      estates = estates.filter(
+        (estate) => !estate.cert_category || tenant.income_level.includes(estate.cert_category)
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after income level ${estates?.length}`)
+      }
     }
 
     if (tenant.options?.length) {
@@ -1578,6 +1617,7 @@ class EstateService {
           this.whereIn('_m.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
             .where('_m.user_id', userId)
             .where('_m.share', false)
+            .where('estates.is_not_show', false)
         })
         this.orWhere(function () {
           this.where('_m.status', MATCH_STATUS_INVITE)
@@ -1701,16 +1741,23 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate({ estate, publishers, performed_by = null }, is_queue = false) {
+  static async publishEstate({ estate, publishers, performed_by = null, is_queue = false }, trx) {
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
+    estate.available_end_at = estate.is_duration_later ? null : estate.available_end_at
     if (
       !estate.available_start_at ||
       (!estate.is_duration_later && !estate.available_end_at) ||
-      (estate.is_duration_later && !estate.min_invite_count)
+      (estate.is_duration_later && !estate.min_invite_count) ||
+      (estate.available_end_at &&
+        moment.utc(estate.available_end_at).format() <= moment.utc(new Date()).format()) ||
+      (estate.available_start_at &&
+        estate.available_end_at &&
+        moment.utc(estate.available_start_at).format() >=
+          moment.utc(estate.available_end_at).format())
     ) {
       throw new HttpException(
         ERROR_PROPERTY_AVAILABLE_DURATION,
@@ -1750,87 +1797,99 @@ class EstateService {
     }
 
     let status = estate.status
-    const trx = await Database.beginTransaction()
+    let insideTrx = false
+    if (!trx) {
+      trx = await Database.beginTransaction()
+      insideTrx = true
+    }
 
     try {
       if (user.company_id != null) {
         await CompanyService.validateUserContacts(estate.user_id)
       }
 
-      if (
-        estate.available_start_at &&
-        moment(estate.available_start_at).format(DATE_FORMAT) <=
-          moment.utc(new Date()).format(DATE_FORMAT) &&
-        (!estate.available_end_at ||
-          moment(estate.available_end_at).format(DATE_FORMAT) >=
-            moment.utc(new Date()).format(DATE_FORMAT))
-      ) {
-        if (publishers?.length) {
-          await require('./EstateSyncService.js').saveMarketPlacesInfo(
-            {
-              estate_id: estate.id,
-              estate_sync_property_id: null,
-              performed_by,
-              publishers,
-            },
-            trx
-          )
-        }
-
-        await props({
-          delMatches: Database.table('matches')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
-          delLikes: Database.table('likes')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
-          delDislikes: Database.table('dislikes')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
-        })
-
-        const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
-        const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` //fixme: make a deeplink
-        let textMessage =
-          `Landlord: ${user.firstname} ${user.secondname}\r\n` +
-          `Landlord Email: ${user.email}\r\n` +
-          `Estate Address: ${capitalize(estate.address)}\r\n` +
-          `Scheduled to be available on: ${moment(new Date(estate.available_start_at)).format(
-            GERMAN_DATE_FORMAT
-          )}\r\n` +
-          `Url: ${link}\r\n` +
-          `Marketplace Publishers:\r\n`
-        publishers?.map((publisher) => {
-          textMessage += ` - ${publisher}\r\n`
-        })
-
-        // Run match estate
-        Event.fire('match::estate', estate.id)
-        await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
-
-        if (isNull(performed_by)) {
-          //comes from admin so we can publish to market place
-          await QueueService.estateSyncPublishEstate({ estate_id: estate.id })
-        }
-        if (!is_queue) {
-          //send email to support for landlord update...
-          QueueService.sendEmailToSupportForLandlordUpdate({
-            type: PUBLISH_ESTATE,
-            landlordId: estate.user_id,
-            estateIds: [estate.id],
-          })
-          Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
-        }
+      if (publishers?.length && (!estate.build_id || (estate.build_id && estate.to_market))) {
+        await require('./EstateSyncService.js').saveMarketPlacesInfo(
+          {
+            estate_id: estate.id,
+            estate_sync_property_id: null,
+            performed_by,
+            publishers,
+          },
+          trx
+        )
       }
 
-      await trx.commit()
+      await props({
+        delMatches: Database.table('matches')
+          .where({ estate_id: estate.id })
+          .delete()
+          .transacting(trx),
+        delLikes: Database.table('likes').where({ estate_id: estate.id }).delete().transacting(trx),
+        delDislikes: Database.table('dislikes')
+          .where({ estate_id: estate.id })
+          .delete()
+          .transacting(trx),
+      })
+
+      const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
+      const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` //fixme: make a deeplink
+      let textMessage =
+        `Landlord: ${user.firstname} ${user.secondname}\r\n` +
+        `Landlord Email: ${user.email}\r\n` +
+        `Estate Address: ${capitalize(estate.address)}\r\n` +
+        `Scheduled to be available on: ${moment(new Date(estate.available_start_at)).format(
+          GERMAN_DATE_FORMAT
+        )}\r\n` +
+        `Url: ${link}\r\n` +
+        `Marketplace Publishers:\r\n`
+      publishers?.map((publisher) => {
+        textMessage += ` - ${publisher}\r\n`
+      })
+
+      await Estate.query()
+        .where('id', estate.id)
+        .update({
+          status: performed_by ? estate.status : STATUS_ACTIVE,
+          publish_type: PUBLISH_TYPE_ONLINE_MARKET,
+          publish_status: performed_by
+            ? PUBLISH_STATUS_BY_LANDLORD
+            : PUBLISH_STATUS_APPROVED_BY_ADMIN,
+          available_end_at:
+            this.available_end_at ||
+            moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
+          notify_sent: null,
+        })
+        .transacting(trx)
+
+      if (isNull(performed_by)) {
+        //comes from admin so we can publish to market place
+        await QueueService.estateSyncPublishEstate({ estate_id: estate.id })
+      }
+      if (!is_queue) {
+        //send email to support for landlord update...
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: PUBLISH_ESTATE,
+          landlordId: estate.user_id,
+          estateIds: [estate.id],
+        })
+        Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
+      }
+
+      if (insideTrx) {
+        await trx.commit()
+      }
+
+      // Run match estate
+      Event.fire('match::estate', estate.id)
+
       return status
     } catch (e) {
       console.log(`publish estate error estate id is ${estate.id} ${e.message} `)
-      await trx.rollback()
+      if (insideTrx) {
+        await trx.rollback()
+      }
+
       throw new HttpException(e.message, e.status || 500)
     }
   }
@@ -1850,7 +1909,7 @@ class EstateService {
 
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
-      await this.handleOffline({ estate, event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
+      await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -1910,27 +1969,30 @@ class EstateService {
       true
     )
 
-    await this.handleOffline({ estate, event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
+    await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
   }
 
-  static async handleOffline({ estate, event }) {
+  static async handleOffline({ build_id, estates, event }, trx) {
     const data = {
       success: true,
-      estate_id: estate.id,
-      statu: estate.status,
-      property_id: estate.property_id,
-      publish_status: estate.publish_status,
+      build_id,
+      status: estates?.[0]?.status,
+      publish_status: estates?.[0]?.publish_status,
     }
 
     const EstateSyncService = require('./EstateSyncService')
     await EstateSyncService.emitWebsocketEventToLandlord({
       event,
-      user_id: estate.user_id,
+      user_id: estates?.[0].user_id,
       data,
     })
-    await EstateSyncService.markListingsForDelete(estate.id)
-    //unpublish estate from estate_sync
-    QueueService.estateSyncUnpublishEstates([estate.id], false)
+
+    if (estates?.length) {
+      const ids = estates.map((estate) => estate.id)
+      await EstateSyncService.markListingsForDelete(ids, trx)
+      //unpublish estate from estate_sync
+      QueueService.estateSyncUnpublishEstates(ids, false)
+    }
   }
 
   static async extendEstate({
@@ -1948,25 +2010,26 @@ class EstateService {
   }
 
   static async deleteMatchInfo({ estate_id, is_notification = true }, trx) {
+    estate_id = Array.isArray(estate_id) ? estate_id : [estate_id]
     const matches = await Estate.query()
       .select('estates.*')
-      .where('estates.id', estate_id)
+      .whereIn('estates.id', estate_id)
       .innerJoin({ _m: 'matches' }, function () {
-        this.on('_m.estate_id', estate_id)
+        this.onIn('_m.estate_id', estate_id)
       })
       .select('_m.user_id as prospect_id')
       .whereNotIn('_m.status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
       .fetch()
 
     await Match.query()
-      .where('estate_id', estate_id)
+      .whereIn('estate_id', estate_id)
       .whereNotIn('status', [MATCH_STATUS_FINISH])
       .delete()
       .transacting(trx)
 
-    await Visit.query().where('estate_id', estate_id).delete().transacting(trx)
-    await Database.table('likes').where({ estate_id: estate_id }).delete().transacting(trx)
-    await Database.table('dislikes').where({ estate_id: estate_id }).delete().transacting(trx)
+    await Visit.query().whereIn('estate_id', estate_id).delete().transacting(trx)
+    await Database.table('likes').whereIn('estate_id', estate_id).delete().transacting(trx)
+    await Database.table('dislikes').whereIn('estate_id', estate_id).delete().transacting(trx)
 
     if (is_notification) {
       NoticeService.prospectPropertDeactivated(matches.rows)
@@ -2760,6 +2823,9 @@ class EstateService {
   }
 
   static calculatePercent(estate) {
+    delete estate.verified_address
+    delete estate.construction_year
+    delete estate.cover_thumb
     let percent = 0
     const is_let = estate.letting_type === LETTING_TYPE_LET ? true : false
     const let_type = is_let ? LETTING_TYPE_LET : LETTING_TYPE_VOID
@@ -2869,7 +2935,7 @@ class EstateService {
     return Math.ceil(percent)
   }
 
-  static async updatePercent(
+  static async updatePercentAndIsPublished(
     {
       estate,
       estate_id,
@@ -2892,6 +2958,9 @@ class EstateService {
     if (!estate) {
       return
     }
+    delete estate.verified_address
+    delete estate.construction_year
+    delete estate.cover_thumb
 
     let percentData = {
       ...estate.toJSON({ extraFields: ['verified_address', 'construction_year', 'cover_thumb'] }),
@@ -2920,15 +2989,17 @@ class EstateService {
       )
     }
 
+    const isAvailablePublish = this.isAllInfoAvailable(estate)
+
     if (trx) {
       await Estate.query()
         .where('id', estate.id)
-        .update({ percent: this.calculatePercent(percentData) })
+        .update({ percent: this.calculatePercent(percentData), can_publish: isAvailablePublish })
         .transacting(trx)
     } else {
       await Estate.query()
         .where('id', estate.id)
-        .update({ percent: this.calculatePercent(percentData) })
+        .update({ percent: this.calculatePercent(percentData), can_publish: isAvailablePublish })
     }
     if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
       QueueService.sendEmailToSupportForLandlordUpdate({
@@ -2941,12 +3012,13 @@ class EstateService {
   }
 
   static getBasicPropertyId(property_id = '') {
-    const property_id_list = property_id?.split('-') || ``
-    if (!isNaN(property_id_list[property_id_list.length - 1])) {
-      property_id_list.splice(property_id_list.length - 1, 1)
-    }
+    const property_id_list = property_id?.split('-') || [property_id]
+    return property_id_list[0]
+    // if (!isNaN(property_id_list[property_id_list.length - 1])) {
+    //   property_id_list.splice(property_id_list.length - 1, 1)
+    // }
 
-    return property_id_list.join('')
+    // return property_id_list.join('')
   }
 
   static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
@@ -3155,7 +3227,7 @@ class EstateService {
 
   static async countDuplicateProperty(property_id) {
     const estateCount = await Estate.query()
-      .where('property_id', 'ilike', `${property_id}%`)
+      .where('property_id', 'ilike', `${property_id}-%`)
       .whereNot('status', STATUS_DELETE)
       .count('*')
     if (estateCount?.length) {
@@ -3183,7 +3255,6 @@ class EstateService {
     }
 
     const property_id = this.getBasicPropertyId(estate.property_id)
-
     const duplicatedCount = await this.countDuplicateProperty(property_id)
     const trx = await Database.beginTransaction()
     try {
@@ -3201,7 +3272,7 @@ class EstateService {
           'created_at',
           'updated_at',
         ]),
-        property_id: `${property_id}-${duplicatedCount}`,
+        property_id: `${property_id}-${duplicatedCount + 1}`,
         available_start_at: null,
         available_end_at: null,
         status: STATUS_DRAFT,
@@ -3311,7 +3382,7 @@ class EstateService {
 
     estate = {
       ...estate,
-      match: match?.percent,
+      match: match?.prospect_score,
     }
 
     estate = await EstateService.assignEstateAmenities(estate)
@@ -3399,6 +3470,266 @@ class EstateService {
       },
       estates,
     }
+  }
+
+  static isDocumentsUploaded(estateDetails) {
+    const { files, rooms } = estateDetails ?? {}
+
+    // const floorPlans = files?.filter(({ type }) => type === DOCUMENT_VIEW_TYPES.PLAN)
+    const externalView = files?.filter(({ type }) => type === FILE_TYPE_EXTERNAL)
+    const insideView = rooms?.filter(({ images }) => images?.length || false)
+    console.log('isDocumentsUpload=', externalView?.length && insideView.length)
+    return externalView?.length && insideView.length
+  }
+
+  static isTenantPreferenceUpdated(estateDetails) {
+    const { rent_arrears, budget, credit_score, min_age, max_age, family_size_max } =
+      estateDetails ?? {}
+    const tenantPreferenceObject = {
+      budget,
+      min_age,
+      max_age,
+      credit_score,
+      rent_arrears,
+      family_size_max,
+    }
+    console.log('isTenantPreferenceUpdated=', checkIfIsValid(tenantPreferenceObject))
+    return checkIfIsValid(tenantPreferenceObject)
+  }
+
+  static isLocationRentUnitUpdated(estateDetails) {
+    const {
+      zip,
+      city,
+      area,
+      floor,
+      coord,
+      coord_raw,
+      street,
+      firing,
+      country,
+      deposit,
+      apt_type,
+      net_rent,
+      house_type,
+      rent_end_at,
+      house_number,
+      // extra_costs, // Optional for publishing
+      rooms_number,
+      heating_type,
+      number_floors,
+      property_type,
+      building_status,
+      construction_year,
+      energy_efficiency,
+      deposit_multiplier,
+    } = estateDetails ?? {}
+
+    let locationObject
+    const depositCheck = deposit_multiplier || Math.round(+deposit / +net_rent)
+    if (!rent_end_at) {
+      // when no contract end, below things are mandatory to publish
+      locationObject = {
+        zip,
+        city,
+        area,
+        floor,
+        coord: coord || coord_raw,
+        street,
+        firing,
+        country,
+        apt_type,
+        net_rent,
+        house_type,
+        house_number,
+        rooms_number,
+        depositCheck,
+        heating_type,
+        number_floors,
+        property_type,
+        building_status,
+        construction_year,
+        energy_efficiency,
+      }
+    } else {
+      // when contract end is added, below things are mandatory to publish
+      locationObject = {
+        zip,
+        city,
+        area,
+        floor,
+        coord: coord || coord_raw,
+        street,
+        country,
+        net_rent,
+        house_number,
+        depositCheck,
+        rooms_number,
+        property_type,
+      }
+    }
+    console.log('isLocationRentUnitUpdated=', locationObject)
+    return checkIfIsValid(locationObject)
+  }
+
+  static isAllInfoAvailable(estate) {
+    return (
+      this.isDocumentsUploaded(estate) &&
+      this.isLocationRentUnitUpdated(estate) &&
+      this.isTenantPreferenceUpdated(estate)
+    )
+  }
+
+  static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
+    const estates = await this.getEstatesByBuilding({ user_id, build_id })
+
+    const categories =
+      uniq(estates.map((estate) => this.getBasicPropertyId(estate.property_id))) || []
+    let categoryEstates = {}
+
+    categories.forEach((category) => {
+      categoryEstates[category] = estates.filter((estate) =>
+        (estate.property_id ?? '').includes(category)
+      )
+    })
+
+    let notAvailableCategories = []
+    let availableCategories = []
+
+    if (publishers?.length) {
+      categories.forEach((category) => {
+        if (categoryEstates[category]?.length) {
+          const estate = categoryEstates[category].find((e) => e.can_publish)
+          if (!estate) {
+            notAvailableCategories.push(category)
+          } else {
+            estate.to_market = true
+            availableCategories.push(estate.id)
+          }
+        }
+      })
+
+      if (notAvailableCategories.length) {
+        Logger.error(`Publish building failed due to missing info at ${notAvailableCategories}`)
+        throw new HttpException(ERROR_PUBLISH_BUILDING, 400, ERROR_PUBLISH_BUILDING_CODE)
+      }
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await BuildingService.updatePublishedMarketPlaceEstateIds(
+        {
+          id: build_id,
+          user_id,
+          published: PUBLISH_STATUS_BY_LANDLORD,
+          marketplace_estate_ids: availableCategories,
+        },
+        trx
+      )
+
+      await Promise.map(estates, async (estate) => {
+        await EstateService.publishEstate(
+          {
+            estate,
+            publishers,
+            performed_by: user_id,
+          },
+          trx
+        )
+      })
+
+      await trx.commit()
+    } catch (e) {
+      Logger.error(`Publish building failed ${e.message}`)
+      await trx.rollback()
+      throw new HttpException(e.message, 400, e.code || 0)
+    }
+
+    //TODO: publish estates here
+  }
+
+  static async getEstatesByBuilding({ user_id, build_id }) {
+    return (
+      await Estate.query().where('user_id', user_id).where('build_id', build_id).fetch()
+    ).toJSON()
+  }
+
+  static async unpublishBuilding({ user_id, build_id }) {
+    const estates = await this.getEstatesByBuilding({ user_id, build_id })
+
+    if (!estates?.length) {
+      return true
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await BuildingService.updatePublishedMarketPlaceEstateIds(
+        {
+          id: build_id,
+          user_id,
+          published: PUBLISH_STATUS_INIT,
+          marketplace_estate_ids: null,
+        },
+        trx
+      )
+
+      await Estate.query()
+        .where('build_id', build_id)
+        .update({
+          status: STATUS_EXPIRE,
+          publish_status: PUBLISH_STATUS_INIT,
+        })
+        .transacting(trx)
+      if (estates?.length) {
+        await this.handleOffline(
+          { build_id, estates, event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED },
+          trx
+        )
+      }
+
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400, e.code || 0)
+    }
+  }
+
+  static async deactivateBuilding({ user_id, build_id }) {
+    const estates = await this.getEstatesByBuilding({ user_id, build_id })
+    if (!estates?.length) {
+      return true
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await Estate.query()
+        .where('user_id', user_id)
+        .where('build_id', build_id)
+        .update({
+          status: STATUS_DRAFT,
+          publish_status: PUBLISH_STATUS_INIT,
+        })
+        .transacting(trx)
+
+      //TODO: need to confirm....
+      await this.deleteMatchInfo({ estate_id: estates.map((e) => e.id) }, trx)
+      await this.handleOffline(
+        { build_id, estates, event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED },
+        trx
+      )
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  static async updateVacantDate() {
+    await Estate.query()
+      .where('status', STATUS_ACTIVE)
+      .where('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
+      .where('vacant_date', '<=', moment.utc(new Date()).format(DAY_FORMAT))
+      .update({ vacant_date: moment.utc(new Date()).format(DAY_FORMAT) })
   }
 }
 module.exports = EstateService

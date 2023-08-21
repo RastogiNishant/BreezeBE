@@ -198,6 +198,12 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:InitializeEstateSync',
   ])
+
+  Route.get('/prospects', 'Admin/UserController.getProspects').middleware(['auth:jwtAdministrator'])
+  Route.get('/prospects/:id', 'Admin/UserController.getProspect').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -443,13 +449,13 @@ Route.group(() => {
 // Estate management
 Route.group(() => {
   Route.get('/cities', 'EstateController.getCityList')
+  Route.get('/building/match', 'EstateController.getMatchEstates').middleware([
+    'valid:Pagination,EstateFilter',
+  ])
   Route.get('/building/:id', 'EstateController.getBuildingEstates').middleware([
     'valid:Id,EstateFilter,Pagination',
   ])
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
-  Route.get('/match', 'EstateController.getMatchEstates').middleware([
-    'valid:Pagination,EstateFilter',
-  ])
   Route.get('/candidate', 'EstateController.searchEstates').middleware(['valid:EstateFilter'])
   Route.get('/quick_search', 'EstateController.shortSearchEstates').middleware([
     'valid:EstateFilter',
@@ -534,6 +540,9 @@ Route.group(() => {
     'EstateCanEdit',
   ])
 
+  Route.put('/building/:id/publish', 'EstateController.publishBuild').middleware([
+    'valid:Id,PublishEstate',
+  ])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.put('/:id/offline', 'EstateController.makeEstateOffline').middleware(['valid:Id'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])

@@ -123,7 +123,6 @@ class TenantController {
         tenant.status = STATUS_DRAFT
       } else {
       }
-
       await tenant.updateItemWithTrx(omit(data, ['only_count']), trx)
 
       await trx.commit()

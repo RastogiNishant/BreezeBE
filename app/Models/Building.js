@@ -15,6 +15,8 @@ class Building extends Model {
       'city',
       'country',
       'extra_address',
+      'marketplace_estate_ids',
+      'published',
     ]
   }
   static get traits() {
@@ -23,6 +25,10 @@ class Building extends Model {
 
   estates() {
     return this.hasMany('App/Models/Estates')
+  }
+
+  static get Serializer() {
+    return 'App/Serializers/BuildingSerializer'
   }
 }
 
