@@ -3723,5 +3723,13 @@ class EstateService {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
+
+  static async updateVacantDate() {
+    await Estate.query()
+      .where('status', STATUS_ACTIVE)
+      .where('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
+      .where('vacant_date', '<=', moment.utc(new Date()).format(DAY_FORMAT))
+      .update({ vacant_date: moment.utc(new Date()).format(DAY_FORMAT) })
+  }
 }
 module.exports = EstateService
