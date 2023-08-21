@@ -568,21 +568,23 @@ class UserController {
     if (!prospect) {
       throw new HttpException('User Not Found!', 400)
     }
-    prospect.member_info = await Promise.map(prospect.member_info, async (member) => {
+    prospect.member_info = await Promise.map(prospect.member_info || [], async (member) => {
       member.rent_arrears = member.rent_arrears
         ? await File.getProtectedUrl(member.rent_arrears)
         : null
       member.debt_proof = member.debt_proof ? await File.getProtectedUrl(member.debt_proof) : null
-      if (Array.isArray(member.files)) {
+
+      if (member.files && Array.isArray(member.files)) {
         member.files = await Promise.map(member.files, async (file) => {
           file.file = file.file ? await File.getProtectedUrl(file.file) : null
           return file
         })
       }
-      if (Array.isArray(member.incomes)) {
+
+      if (member.incomes && Array.isArray(member.incomes)) {
         for (let incomeCount = 0; incomeCount < member.incomes.length; incomeCount++) {
           let income = member.incomes[incomeCount]
-          income.income_proof = await Promise.map(income.income_proof, async (proof) => {
+          income.income_proof = await Promise.map(income.income_proof || [], async (proof) => {
             proof.file = proof.file ? await File.getProtectedUrl(proof.file) : null
             return proof
           })
