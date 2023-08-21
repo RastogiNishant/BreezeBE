@@ -187,8 +187,8 @@ class UpdateTenant extends Base {
             ])
         )
         .nullable(),
-
-      only_count: yup.boolean(),
+      is_public_certificate: yup.boolean().nullable(),
+      only_count: yup.boolean().nullable(),
     })
 }
 

@@ -1382,9 +1382,9 @@ class EstateService {
           !estate.vacant_date ||
           moment.utc(estate.vacant_date).format() >= moment.utc(tenant.rent_start).format()
       )
-    }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after rent start ${estates?.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after rent start ${estates?.length}`)
+      }
     }
 
     if (tenant.is_short_term_rent) {
@@ -1452,27 +1452,41 @@ class EstateService {
       estates = estates.filter(
         (estate) => !estate.apt_type || tenant.apt_type.includes(estate.apt_type)
       )
-    }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates apt type after ${estates?.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates apt type after ${estates?.length}`)
+      }
     }
 
     if (tenant.house_type?.length) {
       estates = estates.filter(
         (estate) => !estate.house_type || tenant.house_type.includes(estate.house_type)
       )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after house type ${estates?.length}`)
+      }
     }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after house type ${estates?.length}`)
+
+    if (tenant.is_public_certificate) {
+      //estate.cert_category : inside estates
+      //estate.wbs: outside estates
+      if (inside_property) {
+        estates = estates.filter((estate) => estate.cert_category)
+      } else {
+        estates = estates.filter((estate) => estate.wbs)
+      }
+
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after public certificate ${estates?.length}`)
+      }
     }
+
     if (tenant.income_level?.length && inside_property) {
       estates = estates.filter(
         (estate) => !estate.cert_category || tenant.income_level.includes(estate.cert_category)
       )
-    }
-
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after income level ${estates?.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after income level ${estates?.length}`)
+      }
     }
 
     if (tenant.options?.length) {
