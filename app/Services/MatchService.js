@@ -4085,7 +4085,9 @@ class MatchService {
         '_m.members_age',
         '_me.income_sources',
         '_me.work_exp',
+        '_me.income_contract_end',
         '_me.total_work_exp',
+        '_me.income_proofs',
         '_me.income_proofs'
       )
       .leftJoin({ _u: 'users' }, function () {
@@ -4124,6 +4126,7 @@ class MatchService {
             coalesce(bool_and(_mi.incomes_has_all_proofs), false) as income_proofs,
             json_agg(_mi.income_type) as income_sources,
             json_agg(work_exp) as work_exp,
+            json_agg(income_contract_end) as income_contract_end,
             sum(work_exp) as total_work_exp
           from
             members
@@ -4132,6 +4135,7 @@ class MatchService {
             -- whether or not member has all proofs, get also member's total income
             select
               incomes.member_id,
+              incomes.income_contract_end,
               sum(_mip.income) as member_total_income,
               incomes.income_type,
               coalesce(incomes.work_exp, 0) as work_exp,
