@@ -422,6 +422,7 @@ class UserController {
         'ect.current_estates',
         'users.status',
         'tenants.members_count',
+        'tenants.minors_count',
         'tenants.credit_score',
         'tenants.income',
         'tenants.pets',
