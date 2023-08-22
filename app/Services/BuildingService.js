@@ -29,6 +29,13 @@ class BuildingService {
       .update({ ...data })
   }
 
+  static async updateById({ id, user_id, data }) {
+    return await Building.query()
+      .where('user_id', user_id)
+      .where('id', id)
+      .update({ ...data })
+  }
+
   static async updatePublishedMarketPlaceEstateIds(
     { id, user_id, published, marketplace_estate_ids },
     trx
@@ -166,7 +173,7 @@ class BuildingService {
     await Building.query()
       .where('user_id', user_id)
       .where('id', build_id)
-      .update({ can_publish })
+      .update({ can_publish, published: false })
       .transacting(trx)
   }
 }

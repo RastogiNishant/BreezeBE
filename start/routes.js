@@ -500,6 +500,10 @@ Route.group(() => {
   Route.put('/building/:id/extend', 'EstateController.extendBuilding').middleware([
     'valid:ExtendEstate,Id',
   ])
+  Route.put('/building/:id', 'EstateController.updateBuilding').middleware([
+    'valid:PublishInfo',
+    'BuildCanEdit',
+  ])
   //Route.get('/deactivate', 'EstateController.deactivateEstate')
 
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')

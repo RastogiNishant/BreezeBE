@@ -155,17 +155,53 @@ class EstateController {
       if (estate.user_id !== auth.user.id) {
         throw new HttpException('Not allow', 403)
       }
-      console.log('updateEstate 1')
+
       await EstateService.updateEstate({ request, user_id: auth.user.id })
-      console.log('updateEstate 2')
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
         from: 0,
         params: { id },
       })
-      console.log('updateEstate 3')
+
       QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  async updateBuilding({ request, auth, response }) {
+    const {
+      id,
+      available_start_at,
+      notify_on_green_matches,
+      available_end_at,
+      is_duration_later,
+      min_invite_count,
+    } = request.all()
+
+    try {
+      const estates = await EstateService.getEstatesByBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+      })
+
+      const estate_ids = estates.map((estate) => estate.id)
+      await EstateService.updatEstatesePublishInfo({
+        user_id: auth.user.id,
+        estate_id: estate_ids,
+        available_start_at,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+        notify_on_green_matches,
+      })
+      const building = await BuildingService.getByBuildingId({
+        user_id: auth.user.id,
+        building_id: id,
+      })
+
+      response.res(building)
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }

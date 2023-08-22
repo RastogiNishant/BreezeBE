@@ -2011,6 +2011,29 @@ class EstateService {
       .update({ available_end_at, is_duration_later, min_invite_count, status: STATUS_ACTIVE })
   }
 
+  static async updatEstatesePublishInfo({
+    user_id,
+    estate_id,
+    available_start_at,
+    available_end_at,
+    is_duration_later,
+    min_invite_count,
+    notify_on_green_matches,
+  }) {
+    estate_id = Array.isArray(estate_id) ? estate_id : [estate_id]
+    return await EstateService.getQuery()
+      .whereIn('id', estate_id)
+      .where('user_id', user_id)
+      .update({
+        available_start_at,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+        notify_on_green_matches,
+        status: STATUS_DRAFT,
+      })
+  }
+
   static async deleteMatchInfo({ estate_id, is_notification = true }, trx) {
     estate_id = Array.isArray(estate_id) ? estate_id : [estate_id]
     const matches = await Estate.query()
