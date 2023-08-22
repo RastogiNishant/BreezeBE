@@ -27,6 +27,12 @@ const {
   ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
   ISO_DATE_FORMAT,
   STATUS_OFFLINE_ACTIVE,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_NEW,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_FINISH,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -34,6 +40,8 @@ const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
+const Match = use('App/Models/Match')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
 const MailService = use('App/Services/MailService')
@@ -101,6 +109,7 @@ class PropertyController {
       .with('final')
       .withCount('inviteBuddies')
       .withCount('knocked')
+      .withCount('contact_requests')
       .orderBy('estates.updated_at', 'desc')
     if (id) {
       query.where('id', id)
@@ -111,12 +120,61 @@ class PropertyController {
       estate = estate.toJSON()
       estate.invite_count =
         parseInt(estate['__meta__'].knocked_count) +
-        parseInt(estate['__meta__'].inviteBuddies_count)
+        parseInt(estate['__meta__'].inviteBuddies_count) +
+        parseInt(estate['__meta__'].contact_requests_count)
       estate.visit_count = parseInt(estate['__meta__'].visits_count)
       estate.final_match_count = parseInt(estate['__meta__'].final_count)
       return estate
     })
     return response.res({ estates, pages })
+  }
+
+  async getProspectsForStage({ request, response }) {
+    const { id, stage } = request.all()
+    const query = Match.query()
+      .select(
+        'matches.user_id',
+        'users.email',
+        'users.firstname',
+        'users.secondname',
+        Database.raw(`'match' as type`)
+      )
+      .leftJoin('users', 'users.id', 'matches.user_id')
+      .where('matches.estate_id', id)
+    switch (stage) {
+      case 'invites':
+        query.where(function (q) {
+          q.whereIn('matches.status', [MATCH_STATUS_KNOCK])
+          q.orWhere(function (r) {
+            r.where('matches.status', MATCH_STATUS_NEW).where('matches.buddy', true)
+          })
+        })
+        break
+      case 'visits':
+        query.whereIn('matches.status', [
+          MATCH_STATUS_INVITE,
+          MATCH_STATUS_VISIT,
+          MATCH_STATUS_SHARE,
+        ])
+        break
+      case 'final':
+        query.whereIn('matches.status', [MATCH_STATUS_FINISH])
+    }
+    let prospects = await query.fetch()
+    if (stage === 'invites') {
+      const contactRequests = await EstateSyncContactRequest.query()
+        .select(
+          Database.raw(`null as user_id`),
+          'estate_sync_contact_requests.email',
+          Database.raw(`estate_sync_contact_requests.contact_info->>'firstName' as firstname`),
+          Database.raw(`estate_sync_contact_requests.contact_info->>'lastName' as secondname`),
+          Database.raw(`estate_sync_contact_requests.publisher as type`)
+        )
+        .where('estate_id', id)
+        .fetch()
+      prospects = [...prospects.toJSON(), ...contactRequests.toJSON()]
+    }
+    response.res(prospects)
   }
 
   async getSingle({ request, response }) {
