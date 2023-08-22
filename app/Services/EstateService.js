@@ -3601,6 +3601,9 @@ class EstateService {
     // return true
   }
 
+  //TODO: need to fill out room images/floor plan for the units in the same category
+  static async fillOutUnit() {}
+
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
     const estates = await this.getEstatesByBuilding({ user_id, build_id })
 
