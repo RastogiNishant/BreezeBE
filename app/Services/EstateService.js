@@ -3293,15 +3293,11 @@ class EstateService {
           'updated_at',
         ]),
         property_id: `${property_id}-${duplicatedCount + 1}`,
-        available_start_at: null,
-        available_end_at: null,
         status: STATUS_DRAFT,
         publish_status: PUBLISH_STATUS_INIT,
-        vacant_date: null,
         hash: null,
         shared_link: null,
         six_char_code: null,
-        rent_end_at: null,
         repair_needed: false,
         construction_year: originalEstateData?.construction_year
           ? `${originalEstateData?.construction_year}-01-01`
