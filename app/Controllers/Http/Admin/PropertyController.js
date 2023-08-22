@@ -97,10 +97,10 @@ class PropertyController {
         '_u.user_id'
       )
       .with('estateSyncListings')
-      .withCount('visits')
+      .with('visits')
       .with('final')
-      .withCount('inviteBuddies')
-      .withCount('knocked')
+      .with('inviteBuddies')
+      .with('knocked')
       .orderBy('estates.updated_at', 'desc')
     if (id) {
       query.where('id', id)
@@ -109,11 +109,9 @@ class PropertyController {
     let pages = estates.pages
     estates = estates.rows.map((estate) => {
       estate = estate.toJSON()
-      estate.invite_count =
-        parseInt(estate['__meta__'].knocked_count) +
-        parseInt(estate['__meta__'].inviteBuddies_count)
-      estate.visit_count = parseInt(estate['__meta__'].visits_count)
-      estate.final_match_count = parseInt(estate['__meta__'].final_count)
+      estate.invite_count = estate.inviteBuddies.length + estate.knocked.length
+      estate.visit_count = estate.visits.length
+      estate.final_match_count = estate.final.length
       return estate
     })
     return response.res({ estates, pages })
