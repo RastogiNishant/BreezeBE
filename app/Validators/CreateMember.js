@@ -57,6 +57,7 @@ class CreateMember extends Base {
       execution: yup.number().positive().oneOf([1, 2, 3]),
       external_duties: yup.array().of(yup.number().oneOf([1, 2, 3])),
       duties_amount: yup.number().min(0).max(1000000),
+      birth_place: yup.string().max('255'),
     })
   }
 }
