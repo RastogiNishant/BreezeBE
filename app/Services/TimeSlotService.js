@@ -54,6 +54,7 @@ class TimeSlotService {
       await trx.commit()
       return slot
     } catch (e) {
+      console.log('timeslot here error', e.message)
       await trx.rollback()
       throw new HttpException(FAILED_CREATE_TIME_SLOT, 400)
     }
