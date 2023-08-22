@@ -497,6 +497,9 @@ Route.group(() => {
 
   // Extend or deactivate Estate
   Route.put('/extend', 'EstateController.extendEstate').middleware(['valid:ExtendEstate,EstateId'])
+  Route.put('/building/:id/extend', 'EstateController.extendBuilding').middleware([
+    'valid:ExtendEstate,Id',
+  ])
   //Route.get('/deactivate', 'EstateController.deactivateEstate')
 
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')

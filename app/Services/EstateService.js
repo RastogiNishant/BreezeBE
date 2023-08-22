@@ -1988,8 +1988,9 @@ class EstateService {
     is_duration_later,
     min_invite_count,
   }) {
+    estate_id = Array.isArray(estate_id) ? estate_id : [estate_id]
     return await EstateService.getQuery()
-      .where('id', estate_id)
+      .whereIn('id', estate_id)
       .where('user_id', user_id)
       .whereIn('status', [STATUS_EXPIRE, STATUS_ACTIVE])
       .update({ available_end_at, is_duration_later, min_invite_count, status: STATUS_ACTIVE })
@@ -3566,6 +3567,40 @@ class EstateService {
     )
   }
 
+  static async canPublishBuilding({ user_id, build_id }) {
+    const estates = await this.getEstatesByBuilding({ user_id, build_id })
+    return (estates || []).every((estate) => estate.can_publish)
+    // const categories =
+    //   uniq(estates.map((estate) => this.getBasicPropertyId(estate.property_id))) || []
+    // let categoryEstates = {}
+
+    // categories.forEach((category) => {
+    //   categoryEstates[category] = estates.filter((estate) =>
+    //     (estate.property_id ?? '').includes(category)
+    //   )
+    // })
+
+    // let notAvailableCategories = []
+    // let availableCategories = []
+
+    // categories.forEach((category) => {
+    //   if (categoryEstates[category]?.length) {
+    //     const estate = categoryEstates[category].find((e) => e.can_publish)
+    //     if (!estate) {
+    //       notAvailableCategories.push(category)
+    //     } else {
+    //       estate.to_market = true
+    //       availableCategories.push(estate.id)
+    //     }
+    //   }
+    // })
+
+    // if (notAvailableCategories.length) {
+    //   return false
+    // }
+    // return true
+  }
+
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
     const estates = await this.getEstatesByBuilding({ user_id, build_id })
 
@@ -3636,7 +3671,11 @@ class EstateService {
 
   static async getEstatesByBuilding({ user_id, build_id }) {
     return (
-      await Estate.query().where('user_id', user_id).where('build_id', build_id).fetch()
+      await Estate.query()
+        .where('user_id', user_id)
+        .where('build_id', build_id)
+        .whereNot('status', STATUS_DELETE)
+        .fetch()
     ).toJSON()
   }
 

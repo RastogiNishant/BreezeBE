@@ -372,6 +372,34 @@ class EstateController {
     }
   }
 
+  async extendBuilding({ request, auth, response }) {
+    const { id, available_end_at, is_duration_later, min_invite_count } = request.all()
+
+    try {
+      const building = await BuildingService.getByBuildingId({
+        user_id: auth.user.id,
+        building_id: id,
+      })
+
+      const estates = await EstateService.getEstatesByBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+      })
+      const estate_ids = estates.map((estate) => estate.id)
+      await EstateService.extendEstate({
+        user_id: auth.user.id,
+        estate_id: estate_ids,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
+
+      response.res({ ...building.toJSON(), available_end_at, is_duration_later, min_invite_count })
+    } catch (e) {
+      throw new HttpException(FAILED_EXTEND_ESTATE, 400)
+    }
+  }
+
   // /**
   //  *
   //  */
