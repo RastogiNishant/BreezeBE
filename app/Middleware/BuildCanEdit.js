@@ -12,6 +12,7 @@ const {
     ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE,
   },
 } = require('../exceptions')
+const BuildingService = use('App/Services/BuildingService')
 class BuildCanEdit {
   async handle({ auth, request }, next) {
     // Skip anonymous routes and admin routes check
@@ -34,7 +35,8 @@ class BuildCanEdit {
       user_id: auth.user.id,
       build_id: id,
     })
-    if (estates?.length) {
+
+    if (!estates?.length) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 

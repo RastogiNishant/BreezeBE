@@ -3517,7 +3517,7 @@ class EstateService {
     // const floorPlans = files?.filter(({ type }) => type === DOCUMENT_VIEW_TYPES.PLAN)
     const externalView = files?.filter(({ type }) => type === FILE_TYPE_EXTERNAL)
     const insideView = rooms?.filter(({ images }) => images?.length || false)
-    console.log('isDocumentsUpload=', externalView?.length && insideView.length)
+    Logger.info(`isDocumentsUpload= ${externalView?.length && insideView.length}`)
     return externalView?.length && insideView.length
   }
 
@@ -3532,7 +3532,7 @@ class EstateService {
       rent_arrears,
       family_size_max,
     }
-    console.log('isTenantPreferenceUpdated=', checkIfIsValid(tenantPreferenceObject))
+    Logger.info(`isTenantPreferenceUpdated= ${checkIfIsValid(tenantPreferenceObject)}`)
     return checkIfIsValid(tenantPreferenceObject)
   }
 
@@ -3607,7 +3607,7 @@ class EstateService {
         property_type,
       }
     }
-    console.log('isLocationRentUnitUpdated=', locationObject)
+    Logger.info(`isLocationRentUnitUpdated= ${checkIfIsValid(locationObject)}`)
     return checkIfIsValid(locationObject)
   }
 

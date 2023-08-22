@@ -186,6 +186,14 @@ class EstateController {
         build_id: id,
       })
 
+      if (!estates?.length) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+
+      if (estates[0].publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+        throw new HttpException(ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE, 400)
+      }
+
       const estate_ids = estates.map((estate) => estate.id)
       await EstateService.updatEstatesePublishInfo({
         user_id: auth.user.id,
@@ -196,12 +204,18 @@ class EstateController {
         min_invite_count,
         notify_on_green_matches,
       })
-      const building = await BuildingService.getByBuildingId({
-        user_id: auth.user.id,
-        building_id: id,
-      })
 
-      response.res(building)
+      const building = await BuildingService.get({ user_id: auth.user.id, id })
+
+      response.res({
+        ...building.toJSON(),
+        estates: (
+          await EstateService.getEstatesByUserId({
+            user_ids: [auth.user.id],
+            params: { build_id: id },
+          })
+        )?.data,
+      })
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }

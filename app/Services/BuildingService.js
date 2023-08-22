@@ -9,6 +9,7 @@ const Database = use('Database')
 const {
   exceptions: { NO_BUILDING_ID_EXIST },
 } = require('../exceptions')
+const { PUBLISH_STATUS_INIT } = require('../constants')
 class BuildingService {
   static async upsert({ user_id, data }) {
     if (!data.building_id) {
@@ -173,7 +174,7 @@ class BuildingService {
     await Building.query()
       .where('user_id', user_id)
       .where('id', build_id)
-      .update({ can_publish, published: false })
+      .update({ can_publish, published: PUBLISH_STATUS_INIT })
       .transacting(trx)
   }
 }
