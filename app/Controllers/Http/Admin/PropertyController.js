@@ -27,6 +27,7 @@ const {
   ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
   ISO_DATE_FORMAT,
   STATUS_OFFLINE_ACTIVE,
+  PUBLISH_STATUS_BY_LANDLORD,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -74,8 +75,32 @@ class PropertyController {
         'estates.available_start_at',
         'estates.available_end_at',
         'estates.vacant_date',
+        'estates.letting_type',
+        'estates.is_duration_later',
+        'estates.min_invite_count',
         'estates.rent_end_at',
-        'estates.updated_at'
+        'estates.updated_at',
+        Database.raw(
+          `case when status='${STATUS_ACTIVE}' 
+          then true else false end
+          as "unpublishable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+            publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
+            available_end_at > NOW() and
+            available_start_at < NOW() and
+            letting_type <> '${LETTING_TYPE_LET}'
+            then true else false end
+            as "approvable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+            publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}', '${PUBLISH}
+
+            as "publishable"
+          `
+        )
       )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
