@@ -9,6 +9,7 @@ const Database = use('Database')
 const {
   exceptions: { NO_BUILDING_ID_EXIST },
 } = require('../exceptions')
+const { PUBLISH_STATUS_INIT } = require('../constants')
 class BuildingService {
   static async upsert({ user_id, data }) {
     if (!data.building_id) {
@@ -26,6 +27,13 @@ class BuildingService {
     return await Building.query()
       .where('user_id', user_id)
       .where('building_id', data.building_id)
+      .update({ ...data })
+  }
+
+  static async updateById({ id, user_id, data }) {
+    return await Building.query()
+      .where('user_id', user_id)
+      .where('id', id)
       .update({ ...data })
   }
 
@@ -151,6 +159,23 @@ class BuildingService {
       estates: (estates?.data || []).filter((estate) => estate.build_id === building.id),
     }))
     return buildings
+  }
+
+  static async updateCanPublish({ user_id, build_id, estate = null }, trx) {
+    const estates = await require('./EstateService').getEstatesByBuilding({ user_id, build_id })
+    if (estate) {
+      const index = estates.findIndex((e) => e.id === estate.id)
+      if (index !== -1) {
+        estates[index] = { ...estates[index], ...estate }
+      }
+    }
+    const can_publish = (estates || []).every((estate) => estate.can_publish)
+
+    await Building.query()
+      .where('user_id', user_id)
+      .where('id', build_id)
+      .update({ can_publish, published: PUBLISH_STATUS_INIT })
+      .transacting(trx)
   }
 }
 
