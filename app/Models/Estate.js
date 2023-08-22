@@ -325,6 +325,10 @@ class Estate extends Model {
         instance.heating_costs = 0
       }
 
+      if (instance.construction_year?.length === 4) {
+        instance.construction_year = `${instance.construction_year}-01-01`
+      }
+
       delete instance.is_coord_changed
     })
 
