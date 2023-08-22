@@ -1378,6 +1378,9 @@ Estates: [ESTATES]
   CERT_CATEGORY_180: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory180',
   CERT_CATEGORY_220: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory220',
   CERT_CATEGORY_NOT: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryBWB',
+
+  INCOME_CONTRACT_DURATION_UNLIMITED: 1,
+  INCOME_CONTRACT_DURATION_LIMITED: 2,
 }
 
 module.exports = constants
