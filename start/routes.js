@@ -167,6 +167,10 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+  Route.get('/estates/:id/:stage', 'Admin/PropertyController.getProspectsForStage').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id,Stage',
+  ])
   Route.get('/estates/:id', 'Admin/PropertyController.getSingle').middleware([
     'auth:jwtAdministrator',
     'valid:Id',
