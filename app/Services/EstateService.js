@@ -148,7 +148,6 @@ const {
 
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
-const internal = require('stream')
 const BuildingService = require('./BuildingService')
 
 const MAX_DIST = 10000
@@ -729,6 +728,22 @@ class EstateService {
 
       await estate.updateItemWithTrx(updateData, trx)
       await this.deleteMatchInfo({ estate_id: estate.id }, trx)
+
+      if (estate.build_id) {
+        await BuildingService.updateCanPublish(
+          {
+            user_id: estate.user_id,
+            build_id: estate.build_id,
+            estate: {
+              ...estate.toJSON(),
+              can_publish: this.isAllInfoAvailable({
+                ...omittedData,
+              }),
+            },
+          },
+          trx
+        )
+      }
 
       QueueService.estateSyncUnpublishEstates([estate.id], true)
 
@@ -2978,15 +2993,16 @@ class EstateService {
 
     const isAvailablePublish = this.isAllInfoAvailable(estate)
 
+    const percent = this.calculatePercent(percentData)
     if (trx) {
       await Estate.query()
         .where('id', estate.id)
-        .update({ percent: this.calculatePercent(percentData), can_publish: isAvailablePublish })
+        .update({ percent, can_publish: isAvailablePublish })
         .transacting(trx)
     } else {
       await Estate.query()
         .where('id', estate.id)
-        .update({ percent: this.calculatePercent(percentData), can_publish: isAvailablePublish })
+        .update({ percent, can_publish: isAvailablePublish })
     }
     if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
       QueueService.sendEmailToSupportForLandlordUpdate({
@@ -2995,6 +3011,23 @@ class EstateService {
         estateIds: [estate.id],
       })
     }
+
+    estate = {
+      ...estate,
+      percent,
+      can_publish: isAvailablePublish,
+    }
+    if (estate?.build_id) {
+      await BuildingService.updateCanPublish(
+        {
+          user_id: estate.user_id,
+          build_id: estate.build_id,
+          estate,
+        },
+        trx
+      )
+    }
+
     return estate
   }
 
@@ -3567,40 +3600,6 @@ class EstateService {
     )
   }
 
-  static async canPublishBuilding({ user_id, build_id }) {
-    const estates = await this.getEstatesByBuilding({ user_id, build_id })
-    return (estates || []).every((estate) => estate.can_publish)
-    // const categories =
-    //   uniq(estates.map((estate) => this.getBasicPropertyId(estate.property_id))) || []
-    // let categoryEstates = {}
-
-    // categories.forEach((category) => {
-    //   categoryEstates[category] = estates.filter((estate) =>
-    //     (estate.property_id ?? '').includes(category)
-    //   )
-    // })
-
-    // let notAvailableCategories = []
-    // let availableCategories = []
-
-    // categories.forEach((category) => {
-    //   if (categoryEstates[category]?.length) {
-    //     const estate = categoryEstates[category].find((e) => e.can_publish)
-    //     if (!estate) {
-    //       notAvailableCategories.push(category)
-    //     } else {
-    //       estate.to_market = true
-    //       availableCategories.push(estate.id)
-    //     }
-    //   }
-    // })
-
-    // if (notAvailableCategories.length) {
-    //   return false
-    // }
-    // return true
-  }
-
   //TODO: need to fill out room images/floor plan for the units in the same category
   static async fillOutUnit() {}
 
@@ -3609,7 +3608,6 @@ class EstateService {
 
     const can_publish = estates.every((estate) => estate.can_publish)
     if (!can_publish) {
-      Logger.error(`Publish building failed due to missing info at ${notAvailableCategories}`)
       throw new HttpException(ERROR_PUBLISH_BUILDING, 400, ERROR_PUBLISH_BUILDING_CODE)
     }
 

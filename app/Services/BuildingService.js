@@ -152,6 +152,23 @@ class BuildingService {
     }))
     return buildings
   }
+
+  static async updateCanPublish({ user_id, build_id, estate = null }, trx) {
+    const estates = await require('./EstateService').getEstatesByBuilding({ user_id, build_id })
+    if (estate) {
+      const index = estates.findIndex((e) => e.id === estate.id)
+      if (index !== -1) {
+        estates[index] = { ...estates[index], ...estate }
+      }
+    }
+    const can_publish = (estates || []).every((estate) => estate.can_publish)
+
+    await Building.query()
+      .where('user_id', user_id)
+      .where('id', build_id)
+      .update({ can_publish })
+      .transacting(trx)
+  }
 }
 
 module.exports = BuildingService

@@ -4,15 +4,17 @@
 const Schema = use('Schema')
 
 class AddCanPublishToBuildingSchema extends Schema {
-  up () {
-    this.table('add_can_publish_to_buildings', (table) => {
+  up() {
+    this.table('buildings', (table) => {
       // alter table
+      table.boolean('can_publish').defaultTo(false)
     })
   }
 
-  down () {
-    this.table('add_can_publish_to_buildings', (table) => {
+  down() {
+    this.table('buildings', (table) => {
       // reverse alternations
+      table.dropColumn('can_publish')
     })
   }
 }
