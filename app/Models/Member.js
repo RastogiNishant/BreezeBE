@@ -45,6 +45,7 @@ class Member extends Model {
       'owner_id',
       'owner_user_id',
       'phone_verified',
+      'birth_place',
     ]
   }
 
@@ -70,7 +71,7 @@ class Member extends Model {
   }
 
   final_incomes() {
-    return this.hasMany('App/Models/Income').where('is_final', true)    
+    return this.hasMany('App/Models/Income').where('is_final', true)
   }
 
   passports() {
@@ -114,6 +115,7 @@ class Member extends Model {
       'owner_id',
       'owner_user_id',
       'phone_verified',
+      'birth_place',
     ]
   }
 }
