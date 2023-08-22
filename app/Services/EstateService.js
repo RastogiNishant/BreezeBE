@@ -3607,6 +3607,12 @@ class EstateService {
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
     const estates = await this.getEstatesByBuilding({ user_id, build_id })
 
+    const can_publish = estates.every((estate) => estate.can_publish)
+    if (!can_publish) {
+      Logger.error(`Publish building failed due to missing info at ${notAvailableCategories}`)
+      throw new HttpException(ERROR_PUBLISH_BUILDING, 400, ERROR_PUBLISH_BUILDING_CODE)
+    }
+
     const categories =
       uniq(estates.map((estate) => this.getBasicPropertyId(estate.property_id))) || []
     let categoryEstates = {}
@@ -3623,20 +3629,10 @@ class EstateService {
     if (publishers?.length) {
       categories.forEach((category) => {
         if (categoryEstates[category]?.length) {
-          const estate = categoryEstates[category].find((e) => e.can_publish)
-          if (!estate) {
-            notAvailableCategories.push(category)
-          } else {
-            estate.to_market = true
-            availableCategories.push(estate.id)
-          }
+          const estate = categoryEstates[category][0]
+          estate.to_market = true
         }
       })
-
-      if (notAvailableCategories.length) {
-        Logger.error(`Publish building failed due to missing info at ${notAvailableCategories}`)
-        throw new HttpException(ERROR_PUBLISH_BUILDING, 400, ERROR_PUBLISH_BUILDING_CODE)
-      }
     }
 
     const trx = await Database.beginTransaction()
