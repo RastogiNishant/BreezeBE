@@ -956,7 +956,6 @@ class EstateController {
     if (!estate) {
       throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
-
     try {
       let slot = {}
       if (data.is_not_show !== undefined) {

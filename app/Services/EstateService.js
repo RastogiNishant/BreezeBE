@@ -1395,11 +1395,12 @@ class EstateService {
       estates = estates.filter(
         (estate) =>
           !estate.vacant_date ||
-          moment.utc(estate.vacant_date).format() >= moment.utc(tenant.rent_start).format()
+          moment.utc(estate.vacant_date).format(DAY_FORMAT) >=
+            moment.utc(tenant.rent_start).format(DAY_FORMAT)
       )
-    }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after rent start ${estates?.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after rent start ${estates?.length}`)
+      }
     }
 
     if (tenant.is_short_term_rent) {
@@ -1467,27 +1468,41 @@ class EstateService {
       estates = estates.filter(
         (estate) => !estate.apt_type || tenant.apt_type.includes(estate.apt_type)
       )
-    }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates apt type after ${estates?.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates apt type after ${estates?.length}`)
+      }
     }
 
     if (tenant.house_type?.length) {
       estates = estates.filter(
         (estate) => !estate.house_type || tenant.house_type.includes(estate.house_type)
       )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after house type ${estates?.length}`)
+      }
     }
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after house type ${estates?.length}`)
+
+    if (tenant.is_public_certificate) {
+      //estate.cert_category : inside estates
+      //estate.wbs: outside estates
+      if (inside_property) {
+        estates = estates.filter((estate) => estate.cert_category)
+      } else {
+        estates = estates.filter((estate) => estate.wbs)
+      }
+
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after public certificate ${estates?.length}`)
+      }
     }
+
     if (tenant.income_level?.length && inside_property) {
       estates = estates.filter(
         (estate) => !estate.cert_category || tenant.income_level.includes(estate.cert_category)
       )
-    }
-
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after income level ${estates?.length}`)
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after income level ${estates?.length}`)
+      }
     }
 
     if (tenant.options?.length) {
@@ -3014,7 +3029,7 @@ class EstateService {
       )
     }
 
-    const isAvailablePublish = this.isAllInfoAvailable(estate)
+    const isAvailablePublish = this.isAllInfoAvailable(estate.toJSON())
 
     const percent = this.calculatePercent(percentData)
     if (trx) {
@@ -3513,10 +3528,9 @@ class EstateService {
 
   static isDocumentsUploaded(estateDetails) {
     const { files, rooms } = estateDetails ?? {}
-
     // const floorPlans = files?.filter(({ type }) => type === DOCUMENT_VIEW_TYPES.PLAN)
-    const externalView = files?.filter(({ type }) => type === FILE_TYPE_EXTERNAL)
-    const insideView = rooms?.filter(({ images }) => images?.length || false)
+    const externalView = (files ?? []).filter(({ type }) => type === FILE_TYPE_EXTERNAL)
+    const insideView = (rooms ?? []).filter(({ images }) => images?.length || false)
     Logger.info(`isDocumentsUpload= ${externalView?.length && insideView.length}`)
     return externalView?.length && insideView.length
   }
@@ -3763,6 +3777,14 @@ class EstateService {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
+  }
+
+  static async updateVacantDate() {
+    await Estate.query()
+      .where('status', STATUS_ACTIVE)
+      .where('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
+      .where('vacant_date', '<=', moment.utc(new Date()).format(DAY_FORMAT))
+      .update({ vacant_date: moment.utc(new Date()).format(DAY_FORMAT) })
   }
 }
 module.exports = EstateService

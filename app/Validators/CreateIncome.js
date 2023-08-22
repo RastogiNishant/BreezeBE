@@ -15,6 +15,8 @@ const {
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
+  INCOME_CONTRACT_DURATION_UNLIMITED,
+  INCOME_CONTRACT_DURATION_LIMITED,
 } = require('../constants')
 
 class CreateIncome extends Base {
@@ -40,6 +42,10 @@ class CreateIncome extends Base {
           INCOME_TYPE_TRAINEE,
         ]),
       income: yup.number().min(0).required(),
+      income_contract_end: yup
+        .number()
+        .integer()
+        .oneOf([INCOME_CONTRACT_DURATION_UNLIMITED, INCOME_CONTRACT_DURATION_LIMITED]),
     })
   }
 }

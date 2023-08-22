@@ -422,8 +422,18 @@ class UserController {
         'ect.current_estates',
         'users.status',
         'tenants.members_count',
+        'tenants.minors_count',
         'tenants.credit_score',
-        'tenants.income'
+        'tenants.income',
+        'tenants.pets',
+        'tenants.parking_space',
+        'tenants.private_use',
+        'tenants.rooms_min',
+        'tenants.rooms_max',
+        'tenants.floor_min',
+        'tenants.floor_max',
+        'tenants.space_min',
+        'tenants.space_max'
       )
       .leftJoin('tenants', 'tenants.user_id', 'users.id')
       .leftJoin(
@@ -448,8 +458,19 @@ class UserController {
       )
 
     if (single) {
-      query.select('_m.member_info').leftJoin(
-        Database.raw(`
+      query
+        .select('_m.member_info')
+        .select(
+          Database.raw(
+            `json_build_object(
+            'city', cities.city,
+            'income_level', tenants.income_level)
+              as wbs_certificate`
+          )
+        )
+        .leftJoin('cities', 'tenants.request_certificate_city_id', 'cities.id')
+        .leftJoin(
+          Database.raw(`
           (select
             members.user_id,
             array_agg(
@@ -461,7 +482,12 @@ class UserController {
                 'credit_score', members.credit_score,
                 'debt_proof', members.debt_proof,
                 'files', mf.files,
-                'incomes', mi.member_incomes
+                'incomes', mi.member_incomes,
+                'unpaid_rental', members.unpaid_rental,
+                'insolvency_proceed', members.insolvency_proceed,
+                'arrest_warranty', members.arrest_warranty,
+                'clean_procedure', members.clean_procedure,
+                'income_seizure', members.income_seizure
               )
             ) as member_info
           from
@@ -484,13 +510,26 @@ class UserController {
           (select
             member_id,
             array_agg(json_build_object(
+              'id', incomes.id,
               'employment_type', incomes.employment_type,
               'profession', incomes.profession,
               'position', incomes.position,
               'income', incomes.income,
-              'company', incomes.company)
+              'company', incomes.company,
+              'income_proof', _ip.income_proof)
             ) as member_incomes
             from incomes
+            left join (
+              select income_id,
+              array_agg(json_build_object(
+                'file', income_proofs.file,
+                'type', income_proofs.type,
+                'expiration_date', income_proofs.expire_date
+              )) as income_proof from income_proofs
+              where income_proofs.status='${STATUS_ACTIVE}'
+              group by income_id
+            ) as _ip
+              on _ip.income_id=incomes.id
             where incomes.status not in (${STATUS_DELETE})
             group by member_id
             ) mi
@@ -498,9 +537,9 @@ class UserController {
           group by
             members.user_id
           ) as _m`),
-        '_m.user_id',
-        'users.id'
-      )
+          '_m.user_id',
+          'users.id'
+        )
     }
     return query
   }
@@ -529,16 +568,28 @@ class UserController {
     if (!prospect) {
       throw new HttpException('User Not Found!', 400)
     }
-    prospect.member_info = await Promise.map(prospect.member_info, async (member) => {
+    prospect.member_info = await Promise.map(prospect.member_info || [], async (member) => {
       member.rent_arrears = member.rent_arrears
         ? await File.getProtectedUrl(member.rent_arrears)
         : null
       member.debt_proof = member.debt_proof ? await File.getProtectedUrl(member.debt_proof) : null
-      if (Array.isArray(member.files)) {
+
+      if (member.files && Array.isArray(member.files)) {
         member.files = await Promise.map(member.files, async (file) => {
           file.file = file.file ? await File.getProtectedUrl(file.file) : null
           return file
         })
+      }
+
+      if (member.incomes && Array.isArray(member.incomes)) {
+        for (let incomeCount = 0; incomeCount < member.incomes.length; incomeCount++) {
+          let income = member.incomes[incomeCount]
+          income.income_proof = await Promise.map(income.income_proof || [], async (proof) => {
+            proof.file = proof.file ? await File.getProtectedUrl(proof.file) : null
+            return proof
+          })
+          member.incomes[incomeCount] = income
+        }
       }
       return member
     })

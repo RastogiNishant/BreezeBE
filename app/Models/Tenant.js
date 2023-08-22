@@ -48,6 +48,7 @@ class Tenant extends Model {
       'request_certificate_at',
       'request_certificate_city_id',
       'income_level',
+      'is_public_certificate',
     ]
   }
 
@@ -85,6 +86,7 @@ class Tenant extends Model {
       'request_certificate_at',
       'request_certificate_city_id',
       'income_level',
+      'is_public_certificate',
     ]
   }
 
@@ -119,6 +121,7 @@ class Tenant extends Model {
       'request_certificate_at',
       'request_certificate_city_id',
       'income_level',
+      'is_public_certificate',
     ]
   }
 
