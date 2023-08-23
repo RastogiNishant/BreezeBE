@@ -96,8 +96,16 @@ class PropertyController {
         ),
         Database.raw(
           `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
-            publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}', '${PUBLISH}
-
+            publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
+            then true else false end
+            as "declineable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+            publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}') and
+            available_end_at > NOW() and available_start_at < NOW() and
+            letting_type <> '${LETTING_TYPE_LET}'
+            then true else false end
             as "publishable"
           `
         )
