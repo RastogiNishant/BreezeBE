@@ -902,19 +902,16 @@ class MatchController {
     if (!page) {
       throw new HttpException('Page param is required')
     }
-    const estate =
+
+    const query =
       auth.current.user instanceof Admin
-        ? await EstateService.getQuery({
-            id: estate_id,
-          })
-            .with('slots')
-            .first()
-        : await EstateService.getQuery({
+        ? { id: estate_id }
+        : {
             id: estate_id,
             'estates.user_id': user.id,
-          })
-            .with('slots')
-            .first()
+          }
+
+    const estate = await EstateService.getQuery(query).with('slots').first()
 
     if (!estate) {
       throw new HttpException('Not found', 400)
