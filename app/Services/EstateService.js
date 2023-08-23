@@ -148,7 +148,6 @@ const {
 
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
-const internal = require('stream')
 const BuildingService = require('./BuildingService')
 
 const MAX_DIST = 10000
@@ -729,6 +728,22 @@ class EstateService {
 
       await estate.updateItemWithTrx(updateData, trx)
       await this.deleteMatchInfo({ estate_id: estate.id }, trx)
+
+      if (estate.build_id) {
+        await BuildingService.updateCanPublish(
+          {
+            user_id: estate.user_id,
+            build_id: estate.build_id,
+            estate: {
+              ...estate.toJSON(),
+              can_publish: this.isAllInfoAvailable({
+                ...omittedData,
+              }),
+            },
+          },
+          trx
+        )
+      }
 
       QueueService.estateSyncUnpublishEstates([estate.id], true)
 
@@ -1380,7 +1395,8 @@ class EstateService {
       estates = estates.filter(
         (estate) =>
           !estate.vacant_date ||
-          moment.utc(estate.vacant_date).format() >= moment.utc(tenant.rent_start).format()
+          moment.utc(estate.vacant_date).format(DAY_FORMAT) >=
+            moment.utc(tenant.rent_start).format(DAY_FORMAT)
       )
       if (process.env.DEV === 'true') {
         Logger.info(`filterEstates after rent start ${estates?.length}`)
@@ -2002,11 +2018,35 @@ class EstateService {
     is_duration_later,
     min_invite_count,
   }) {
+    estate_id = Array.isArray(estate_id) ? estate_id : [estate_id]
     return await EstateService.getQuery()
-      .where('id', estate_id)
+      .whereIn('id', estate_id)
       .where('user_id', user_id)
       .whereIn('status', [STATUS_EXPIRE, STATUS_ACTIVE])
       .update({ available_end_at, is_duration_later, min_invite_count, status: STATUS_ACTIVE })
+  }
+
+  static async updatEstatesePublishInfo({
+    user_id,
+    estate_id,
+    available_start_at,
+    available_end_at,
+    is_duration_later,
+    min_invite_count,
+    notify_on_green_matches,
+  }) {
+    estate_id = Array.isArray(estate_id) ? estate_id : [estate_id]
+    return await EstateService.getQuery()
+      .whereIn('id', estate_id)
+      .where('user_id', user_id)
+      .update({
+        available_start_at,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+        notify_on_green_matches,
+        status: STATUS_DRAFT,
+      })
   }
 
   static async deleteMatchInfo({ estate_id, is_notification = true }, trx) {
@@ -2989,17 +3029,18 @@ class EstateService {
       )
     }
 
-    const isAvailablePublish = this.isAllInfoAvailable(estate)
+    const isAvailablePublish = this.isAllInfoAvailable(estate.toJSON())
 
+    const percent = this.calculatePercent(percentData)
     if (trx) {
       await Estate.query()
         .where('id', estate.id)
-        .update({ percent: this.calculatePercent(percentData), can_publish: isAvailablePublish })
+        .update({ percent, can_publish: isAvailablePublish })
         .transacting(trx)
     } else {
       await Estate.query()
         .where('id', estate.id)
-        .update({ percent: this.calculatePercent(percentData), can_publish: isAvailablePublish })
+        .update({ percent, can_publish: isAvailablePublish })
     }
     if (this.calculatePercent(percentData) >= ESTATE_COMPLETENESS_BREAKPOINT) {
       QueueService.sendEmailToSupportForLandlordUpdate({
@@ -3008,6 +3049,23 @@ class EstateService {
         estateIds: [estate.id],
       })
     }
+
+    estate = {
+      ...estate,
+      percent,
+      can_publish: isAvailablePublish,
+    }
+    if (estate?.build_id) {
+      await BuildingService.updateCanPublish(
+        {
+          user_id: estate.user_id,
+          build_id: estate.build_id,
+          estate,
+        },
+        trx
+      )
+    }
+
     return estate
   }
 
@@ -3273,15 +3331,11 @@ class EstateService {
           'updated_at',
         ]),
         property_id: `${property_id}-${duplicatedCount + 1}`,
-        available_start_at: null,
-        available_end_at: null,
         status: STATUS_DRAFT,
         publish_status: PUBLISH_STATUS_INIT,
-        vacant_date: null,
         hash: null,
         shared_link: null,
         six_char_code: null,
-        rent_end_at: null,
         repair_needed: false,
         construction_year: originalEstateData?.construction_year
           ? `${originalEstateData?.construction_year}-01-01`
@@ -3474,11 +3528,10 @@ class EstateService {
 
   static isDocumentsUploaded(estateDetails) {
     const { files, rooms } = estateDetails ?? {}
-
     // const floorPlans = files?.filter(({ type }) => type === DOCUMENT_VIEW_TYPES.PLAN)
-    const externalView = files?.filter(({ type }) => type === FILE_TYPE_EXTERNAL)
-    const insideView = rooms?.filter(({ images }) => images?.length || false)
-    console.log('isDocumentsUpload=', externalView?.length && insideView.length)
+    const externalView = (files ?? []).filter(({ type }) => type === FILE_TYPE_EXTERNAL)
+    const insideView = (rooms ?? []).filter(({ images }) => images?.length || false)
+    Logger.info(`isDocumentsUpload= ${externalView?.length && insideView.length}`)
     return externalView?.length && insideView.length
   }
 
@@ -3493,7 +3546,7 @@ class EstateService {
       rent_arrears,
       family_size_max,
     }
-    console.log('isTenantPreferenceUpdated=', checkIfIsValid(tenantPreferenceObject))
+    Logger.info(`isTenantPreferenceUpdated= ${checkIfIsValid(tenantPreferenceObject)}`)
     return checkIfIsValid(tenantPreferenceObject)
   }
 
@@ -3568,7 +3621,7 @@ class EstateService {
         property_type,
       }
     }
-    console.log('isLocationRentUnitUpdated=', locationObject)
+    Logger.info(`isLocationRentUnitUpdated= ${checkIfIsValid(locationObject)}`)
     return checkIfIsValid(locationObject)
   }
 
@@ -3580,8 +3633,16 @@ class EstateService {
     )
   }
 
+  //TODO: need to fill out room images/floor plan for the units in the same category
+  static async fillOutUnit() {}
+
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
     const estates = await this.getEstatesByBuilding({ user_id, build_id })
+
+    const can_publish = estates.every((estate) => estate.can_publish)
+    if (!can_publish) {
+      throw new HttpException(ERROR_PUBLISH_BUILDING, 400, ERROR_PUBLISH_BUILDING_CODE)
+    }
 
     const categories =
       uniq(estates.map((estate) => this.getBasicPropertyId(estate.property_id))) || []
@@ -3599,20 +3660,10 @@ class EstateService {
     if (publishers?.length) {
       categories.forEach((category) => {
         if (categoryEstates[category]?.length) {
-          const estate = categoryEstates[category].find((e) => e.can_publish)
-          if (!estate) {
-            notAvailableCategories.push(category)
-          } else {
-            estate.to_market = true
-            availableCategories.push(estate.id)
-          }
+          const estate = categoryEstates[category][0]
+          estate.to_market = true
         }
       })
-
-      if (notAvailableCategories.length) {
-        Logger.error(`Publish building failed due to missing info at ${notAvailableCategories}`)
-        throw new HttpException(ERROR_PUBLISH_BUILDING, 400, ERROR_PUBLISH_BUILDING_CODE)
-      }
     }
 
     const trx = await Database.beginTransaction()
@@ -3650,7 +3701,11 @@ class EstateService {
 
   static async getEstatesByBuilding({ user_id, build_id }) {
     return (
-      await Estate.query().where('user_id', user_id).where('build_id', build_id).fetch()
+      await Estate.query()
+        .where('user_id', user_id)
+        .where('build_id', build_id)
+        .whereNot('status', STATUS_DELETE)
+        .fetch()
     ).toJSON()
   }
 
