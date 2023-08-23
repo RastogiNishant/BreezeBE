@@ -42,6 +42,7 @@ const Estate = use('App/Models/Estate')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const Match = use('App/Models/Match')
+const MatchService = use('App/Services/MatchService')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
 const MailService = use('App/Services/MailService')
@@ -130,49 +131,64 @@ class PropertyController {
   }
 
   async getProspectsForStage({ request, response }) {
-    const { id, stage } = request.all()
-    const query = Match.query()
-      .select(
-        'matches.user_id',
-        'users.email',
-        'users.firstname',
-        'users.secondname',
-        Database.raw(`'match' as type`)
-      )
-      .leftJoin('users', 'users.id', 'matches.user_id')
-      .where('matches.estate_id', id)
+    const { id, stage, page = 1, limit = 9999 } = request.all()
+    let filters = {}
+    let params = {}
+    const estate = await Estate.query().where('id', id).first()
+    let prospects = []
     switch (stage) {
       case 'invites':
-        query.where(function (q) {
-          q.whereIn('matches.status', [MATCH_STATUS_KNOCK])
-          q.orWhere(function (r) {
-            r.where('matches.status', MATCH_STATUS_NEW).where('matches.buddy', true)
-          })
-        })
+        //knocked, buddies, contact_requests
+        let knocked = await MatchService.getLandlordMatchesWithFilterQuery(
+          estate,
+          (filters = { knock: true }),
+          { ...params }
+        ).paginate(page, limit || 10)
+        knocked = knocked.toJSON({ publicOnly: false })
+        knocked = knocked.data || []
+        let buddies = await MatchService.getLandlordMatchesWithFilterQuery(
+          estate,
+          (filters = { buddy: true }),
+          { ...params }
+        ).paginate(page, limit || 10)
+        buddies = buddies.toJSON({ publicOnly: false })
+        buddies = buddies.data || []
+        let contactRequests = await EstateSyncContactRequest.query()
+          .select(
+            Database.raw(`null as user_id`),
+            'estate_sync_contact_requests.email',
+            Database.raw(`estate_sync_contact_requests.contact_info->>'firstName' as firstname`),
+            Database.raw(`estate_sync_contact_requests.contact_info->>'lastName' as secondname`),
+            Database.raw(`estate_sync_contact_requests.publisher as type`)
+          )
+          .where('estate_id', id)
+          .paginate(page, limit || 10)
+        contactRequests = contactRequests.toJSON()
+        contactRequests = contactRequests.data || []
+        prospects = [...knocked, ...buddies, ...contactRequests]
         break
+
       case 'visits':
-        query.whereIn('matches.status', [
-          MATCH_STATUS_INVITE,
-          MATCH_STATUS_VISIT,
-          MATCH_STATUS_SHARE,
-        ])
+        let visits = await MatchService.getLandlordMatchesWithFilterQuery(
+          estate,
+          (filters = { visit: true }),
+          { ...params }
+        ).paginate(page, limit || 10)
+        visits = visits.toJSON({ publicOnly: false })
+        visits = visits.data || []
+        prospects = [...visits]
         break
+
       case 'final':
-        query.whereIn('matches.status', [MATCH_STATUS_FINISH])
-    }
-    let prospects = await query.fetch()
-    if (stage === 'invites') {
-      const contactRequests = await EstateSyncContactRequest.query()
-        .select(
-          Database.raw(`null as user_id`),
-          'estate_sync_contact_requests.email',
-          Database.raw(`estate_sync_contact_requests.contact_info->>'firstName' as firstname`),
-          Database.raw(`estate_sync_contact_requests.contact_info->>'lastName' as secondname`),
-          Database.raw(`estate_sync_contact_requests.publisher as type`)
-        )
-        .where('estate_id', id)
-        .fetch()
-      prospects = [...prospects.toJSON(), ...contactRequests.toJSON()]
+        let final = await MatchService.getLandlordMatchesWithFilterQuery(
+          estate,
+          (filters = { final: true }),
+          { ...params }
+        ).paginate(page, limit || 10)
+        final = final.toJSON({ publicOnly: false })
+        final = final.data || []
+        prospects = [...final]
+        break
     }
     response.res(prospects)
   }
