@@ -167,10 +167,6 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
-  Route.get('/estates/:id/:stage', 'Admin/PropertyController.getProspectsForStage').middleware([
-    'auth:jwtAdministrator',
-    'valid:Id,Stage,Pagination',
-  ])
   Route.get('/estates/:id', 'Admin/PropertyController.getSingle').middleware([
     'auth:jwtAdministrator',
     'valid:Id',
@@ -1104,7 +1100,7 @@ Route.group(() => {
 Route.get(
   '/api/v1/match/landlord/estate',
   'MatchController.getMatchesSummaryLandlordEstate'
-).middleware(['auth:jwtLandlord', 'valid:MatchListLandlord,Pagination'])
+).middleware(['auth:jwtLandlord,jwtAdministrator', 'valid:MatchListLandlord,Pagination'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord',
