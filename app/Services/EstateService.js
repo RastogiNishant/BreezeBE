@@ -3786,5 +3786,33 @@ class EstateService {
       .where('vacant_date', '<=', moment.utc(new Date()).format(DAY_FORMAT))
       .update({ vacant_date: moment.utc(new Date()).format(DAY_FORMAT) })
   }
+
+  static async getEstatesInSameCategory({ id, estate, status }) {
+    if (!estate && !id) {
+      throw new HttpException('params are wrong', 500)
+    }
+    if (!estate) {
+      estate = await this.getById(id)
+    }
+
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    if (!estate.property_id || trim(estate.property_id) === '' || !estate.build_id) {
+      return [estate.id]
+    }
+    const category = this.getBasicPropertyId(estate.property_id)
+    console.log('getEstatesInSameCategory category=', `${category}`)
+    return (
+      await Estate.query()
+        .select('id')
+        .where('user_id', estate.user_id)
+        .where('property_id', 'ilike', `${category}%`)
+        .where('status', status)
+        .where('build_id', estate.build_id)
+        .fetch()
+    ).toJSON()
+  }
 }
 module.exports = EstateService

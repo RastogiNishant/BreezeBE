@@ -94,14 +94,9 @@ class MatchController {
    */
   async knockEstate({ request, auth, response }) {
     const { estate_id, knock_anyway, share_profile, buddy } = request.all()
-    const estate = await this.getActiveEstate(estate_id, false)
-    if (!estate.is_not_show && estate.status !== STATUS_OFFLINE_ACTIVE && share_profile) {
-      throw new HttpException(UNSECURE_PROFILE_SHARE, 400, WARNING_UNSECURE_PROFILE_SHARE)
-    }
     try {
       const result = await MatchService.knockEstate({
         estate_id: estate_id,
-        landlord_id: estate.user_id,
         user_id: auth.user.id,
         knock_anyway,
         share_profile,
