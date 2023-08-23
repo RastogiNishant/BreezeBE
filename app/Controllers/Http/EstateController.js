@@ -155,17 +155,67 @@ class EstateController {
       if (estate.user_id !== auth.user.id) {
         throw new HttpException('Not allow', 403)
       }
-      console.log('updateEstate 1')
+
       await EstateService.updateEstate({ request, user_id: auth.user.id })
-      console.log('updateEstate 2')
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
         from: 0,
         params: { id },
       })
-      console.log('updateEstate 3')
+
       QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  async updateBuilding({ request, auth, response }) {
+    const {
+      id,
+      available_start_at,
+      notify_on_green_matches,
+      available_end_at,
+      is_duration_later,
+      min_invite_count,
+    } = request.all()
+
+    try {
+      const estates = await EstateService.getEstatesByBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+      })
+
+      if (!estates?.length) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+
+      if (estates[0].publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+        throw new HttpException(ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE, 400)
+      }
+
+      const estate_ids = estates.map((estate) => estate.id)
+      await EstateService.updatEstatesePublishInfo({
+        user_id: auth.user.id,
+        estate_id: estate_ids,
+        available_start_at,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+        notify_on_green_matches,
+      })
+
+      const building = await BuildingService.get({ user_id: auth.user.id, id })
+
+      response.res({
+        ...building.toJSON(),
+        estates: (
+          await EstateService.getEstatesByUserId({
+            user_ids: [auth.user.id],
+            params: { build_id: id },
+          })
+        )?.data,
+      })
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
@@ -367,6 +417,34 @@ class EstateController {
           role: ROLE_LANDLORD,
         })
       )
+    } catch (e) {
+      throw new HttpException(FAILED_EXTEND_ESTATE, 400)
+    }
+  }
+
+  async extendBuilding({ request, auth, response }) {
+    const { id, available_end_at, is_duration_later, min_invite_count } = request.all()
+
+    try {
+      const building = await BuildingService.getByBuildingId({
+        user_id: auth.user.id,
+        building_id: id,
+      })
+
+      const estates = await EstateService.getEstatesByBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+      })
+      const estate_ids = estates.map((estate) => estate.id)
+      await EstateService.extendEstate({
+        user_id: auth.user.id,
+        estate_id: estate_ids,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
+
+      response.res({ ...building.toJSON(), available_end_at, is_duration_later, min_invite_count })
     } catch (e) {
       throw new HttpException(FAILED_EXTEND_ESTATE, 400)
     }
@@ -878,7 +956,6 @@ class EstateController {
     if (!estate) {
       throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
-
     try {
       let slot = {}
       if (data.is_not_show !== undefined) {
