@@ -130,69 +130,6 @@ class PropertyController {
     return response.res({ estates, pages })
   }
 
-  async getProspectsForStage({ request, response }) {
-    const { id, stage, page = 1, limit = 9999 } = request.all()
-    let filters = {}
-    let params = {}
-    const estate = await Estate.query().where('id', id).first()
-    let prospects = []
-    switch (stage) {
-      case 'invites':
-        //knocked, buddies, contact_requests
-        let knocked = await MatchService.getLandlordMatchesWithFilterQuery(
-          estate,
-          (filters = { knock: true }),
-          { ...params }
-        ).paginate(page, limit || 10)
-        knocked = knocked.toJSON({ publicOnly: false })
-        knocked = knocked.data || []
-        let buddies = await MatchService.getLandlordMatchesWithFilterQuery(
-          estate,
-          (filters = { buddy: true }),
-          { ...params }
-        ).paginate(page, limit || 10)
-        buddies = buddies.toJSON({ publicOnly: false })
-        buddies = buddies.data || []
-        let contactRequests = await EstateSyncContactRequest.query()
-          .select(
-            Database.raw(`null as user_id`),
-            'estate_sync_contact_requests.email',
-            Database.raw(`estate_sync_contact_requests.contact_info->>'firstName' as firstname`),
-            Database.raw(`estate_sync_contact_requests.contact_info->>'lastName' as secondname`),
-            Database.raw(`estate_sync_contact_requests.publisher as type`)
-          )
-          .where('estate_id', id)
-          .paginate(page, limit || 10)
-        contactRequests = contactRequests.toJSON()
-        contactRequests = contactRequests.data || []
-        prospects = [...knocked, ...buddies, ...contactRequests]
-        break
-
-      case 'visits':
-        let visits = await MatchService.getLandlordMatchesWithFilterQuery(
-          estate,
-          (filters = { visit: true }),
-          { ...params }
-        ).paginate(page, limit || 10)
-        visits = visits.toJSON({ publicOnly: false })
-        visits = visits.data || []
-        prospects = [...visits]
-        break
-
-      case 'final':
-        let final = await MatchService.getLandlordMatchesWithFilterQuery(
-          estate,
-          (filters = { final: true }),
-          { ...params }
-        ).paginate(page, limit || 10)
-        final = final.toJSON({ publicOnly: false })
-        final = final.data || []
-        prospects = [...final]
-        break
-    }
-    response.res(prospects)
-  }
-
   async getSingle({ request, response }) {
     const { id } = request.all()
     const estate = await Estate.query()
