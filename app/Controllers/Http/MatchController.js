@@ -5,6 +5,7 @@ const Database = use('Database')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
+const Admin = use('App/Models/Admin')
 const Visit = use('App/Models/Visit')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -901,12 +902,17 @@ class MatchController {
     if (!page) {
       throw new HttpException('Page param is required')
     }
-    const estate = await EstateService.getQuery({
-      id: estate_id,
-      'estates.user_id': user.id,
-    })
-      .with('slots')
-      .first()
+
+    const query =
+      auth.current.user instanceof Admin
+        ? { id: estate_id }
+        : {
+            id: estate_id,
+            'estates.user_id': user.id,
+          }
+
+    const estate = await EstateService.getQuery(query).with('slots').first()
+
     if (!estate) {
       throw new HttpException('Not found', 400)
     }
