@@ -34,7 +34,6 @@ const {
 const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
 const { createDynamicLink } = require('../Libs/utils')
-
 class MailService {
   static async sendWelcomeMail(user, { code, role, lang, forgotLink = '' }) {
     const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
@@ -316,6 +315,7 @@ class MailService {
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
+        Logger.info(`Email delivery successfully ${email}`)
       },
       (error) => {
         console.log('Email delivery failed', error)

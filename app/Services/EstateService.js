@@ -1264,7 +1264,7 @@ class EstateService {
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
     const categoryCounts = this.calculateInsideCategoryCounts(estates, tenant)
-    const filteredEstates = await this.filterEstates(tenant, estates)
+    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
     return {
       estates: filteredEstates,
       categoryCounts,
@@ -1333,7 +1333,7 @@ class EstateService {
     return counts
   }
 
-  static async filterEstates(tenant, estates) {
+  static async filterEstates({ tenant, estates, inside_property = false }) {
     Logger.info(`before filterEstates count ${estates?.length}`)
 
     const minTenantBudget = tenant?.budget_min || 0
@@ -1359,12 +1359,11 @@ class EstateService {
       Logger.info(`filterEstates after transfer ${estates?.length}`)
     }
 
-    if (tenant.rent_start) {
+    if (tenant.rent_start && inside_property) {
       estates = estates.filter(
         (estate) =>
           !estate.vacant_date ||
-          moment.utc(estate.vacant_date).add(-1, 'day').format() <=
-            moment.utc(tenant.rent_start).format()
+          moment.utc(estate.vacant_date).format() >= moment.utc(tenant.rent_start).format()
       )
     }
     if (process.env.DEV === 'true') {
@@ -1578,6 +1577,7 @@ class EstateService {
           this.whereIn('_m.status', [MATCH_STATUS_SHARE, MATCH_STATUS_TOP, MATCH_STATUS_COMMIT])
             .where('_m.user_id', userId)
             .where('_m.share', false)
+            .where('estates.is_not_show', false)
         })
         this.orWhere(function () {
           this.where('_m.status', MATCH_STATUS_INVITE)
@@ -1698,10 +1698,17 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
+    estate.available_end_at = estate.is_duration_later ? null : estate.available_end_at
     if (
       !estate.available_start_at ||
       (!estate.is_duration_later && !estate.available_end_at) ||
-      (estate.is_duration_later && !estate.min_invite_count)
+      (estate.is_duration_later && !estate.min_invite_count) ||
+      (estate.available_end_at &&
+        moment.utc(estate.available_end_at).format() <= moment.utc(new Date()).format()) ||
+      (estate.available_start_at &&
+        estate.available_end_at &&
+        moment.utc(estate.available_start_at).format() >=
+          moment.utc(estate.available_end_at).format())
     ) {
       throw new HttpException(
         ERROR_PROPERTY_AVAILABLE_DURATION,
@@ -1748,73 +1755,61 @@ class EstateService {
         await CompanyService.validateUserContacts(estate.user_id)
       }
 
-      if (
-        estate.available_start_at &&
-        moment(estate.available_start_at).format(DATE_FORMAT) <=
-          moment.utc(new Date()).format(DATE_FORMAT) &&
-        (!estate.available_end_at ||
-          moment(estate.available_end_at).format(DATE_FORMAT) >=
-            moment.utc(new Date()).format(DATE_FORMAT))
-      ) {
-        if (publishers?.length) {
-          await require('./EstateSyncService.js').saveMarketPlacesInfo(
-            {
-              estate_id: estate.id,
-              estate_sync_property_id: null,
-              performed_by,
-              publishers,
-            },
-            trx
-          )
-        }
+      if (publishers?.length) {
+        await require('./EstateSyncService.js').saveMarketPlacesInfo(
+          {
+            estate_id: estate.id,
+            estate_sync_property_id: null,
+            performed_by,
+            publishers,
+          },
+          trx
+        )
+      }
 
-        await props({
-          delMatches: Database.table('matches')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
-          delLikes: Database.table('likes')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
-          delDislikes: Database.table('dislikes')
-            .where({ estate_id: estate.id })
-            .delete()
-            .transacting(trx),
+      await props({
+        delMatches: Database.table('matches')
+          .where({ estate_id: estate.id })
+          .delete()
+          .transacting(trx),
+        delLikes: Database.table('likes').where({ estate_id: estate.id }).delete().transacting(trx),
+        delDislikes: Database.table('dislikes')
+          .where({ estate_id: estate.id })
+          .delete()
+          .transacting(trx),
+      })
+
+      const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
+      const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` //fixme: make a deeplink
+      let textMessage =
+        `Landlord: ${user.firstname} ${user.secondname}\r\n` +
+        `Landlord Email: ${user.email}\r\n` +
+        `Estate Address: ${capitalize(estate.address)}\r\n` +
+        `Scheduled to be available on: ${moment(new Date(estate.available_start_at)).format(
+          GERMAN_DATE_FORMAT
+        )}\r\n` +
+        `Url: ${link}\r\n` +
+        `Marketplace Publishers:\r\n`
+      publishers?.map((publisher) => {
+        textMessage += ` - ${publisher}\r\n`
+      })
+      console.log('publishing estate here=', estate.id)
+      // Run match estate
+      Event.fire('match::estate', estate.id)
+      await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
+
+      if (isNull(performed_by)) {
+        //comes from admin so we can publish to market place
+        await QueueService.estateSyncPublishEstate({ estate_id: estate.id })
+      }
+      if (!is_queue) {
+        //send email to support for landlord update...
+        QueueService.sendEmailToSupportForLandlordUpdate({
+          type: PUBLISH_ESTATE,
+          landlordId: estate.user_id,
+          estateIds: [estate.id],
         })
-
-        const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
-        const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` //fixme: make a deeplink
-        let textMessage =
-          `Landlord: ${user.firstname} ${user.secondname}\r\n` +
-          `Landlord Email: ${user.email}\r\n` +
-          `Estate Address: ${capitalize(estate.address)}\r\n` +
-          `Scheduled to be available on: ${moment(new Date(estate.available_start_at)).format(
-            GERMAN_DATE_FORMAT
-          )}\r\n` +
-          `Url: ${link}\r\n` +
-          `Marketplace Publishers:\r\n`
-        publishers?.map((publisher) => {
-          textMessage += ` - ${publisher}\r\n`
-        })
-
-        // Run match estate
-        Event.fire('match::estate', estate.id)
-        await estate.publishEstate(isNull(performed_by) ? STATUS_ACTIVE : status, trx)
-
-        if (isNull(performed_by)) {
-          //comes from admin so we can publish to market place
-          await QueueService.estateSyncPublishEstate({ estate_id: estate.id })
-        }
-        if (!is_queue) {
-          //send email to support for landlord update...
-          QueueService.sendEmailToSupportForLandlordUpdate({
-            type: PUBLISH_ESTATE,
-            landlordId: estate.user_id,
-            estateIds: [estate.id],
-          })
-          Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
-        }
+        Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
       }
 
       await trx.commit()
@@ -3207,7 +3202,6 @@ class EstateService {
   }
 
   static async getTenantEstate({ id, user_id, role }) {
-    console.log(`getTenantEstate= ${user_id} ${role}`)
     let estate = await this.getEstateWithDetails({
       id,
       user_id: user_id ?? null,
@@ -3232,11 +3226,19 @@ class EstateService {
 
     estate = {
       ...estate,
-      match: match?.percent,
+      match: match?.prospect_score,
     }
 
     estate = await EstateService.assignEstateAmenities(estate)
     return estate
+  }
+
+  static async updateVacantDate() {
+    await Estate.query()
+      .where('status', STATUS_ACTIVE)
+      .where('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
+      .where('vacant_date', '<=', moment.utc(new Date()).format(DAY_FORMAT))
+      .update({ vacant_date: moment.utc(new Date()).format(DAY_FORMAT) })
   }
 }
 module.exports = EstateService

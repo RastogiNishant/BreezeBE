@@ -218,7 +218,10 @@ class QueueService {
   static async performEvery1HourJob() {
     const MatchService = require('./MatchService')
 
-    return Promise.all([wrapException(MatchService.moveExpiredFinalConfirmToTop)])
+    return Promise.all([
+      wrapException(MatchService.moveExpiredFinalConfirmToTop),
+      wrapException(require('./EstateService').updateVacantDate),
+    ])
   }
 
   static async pullGewobag() {
@@ -357,6 +360,11 @@ class QueueService {
         case GET_IP_BASED_INFO:
           return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
         case GET_TENANT_MATCH_PROPERTIES:
+          Logger.info(
+            `QueueService GET_TENANT_MATCH_PROPERTIES ${
+              job.data.userId
+            } ${new Date().toISOString()}`
+          )
           return require('./MatchService').matchByUser({
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,

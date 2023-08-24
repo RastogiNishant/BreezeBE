@@ -1198,6 +1198,7 @@ Estates: [ESTATES]
       logo: 'APP_URL/img/gewobag.png',
     },
   },
+
   VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
   GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL: ' wohnungshelden@breeze4me.net',
