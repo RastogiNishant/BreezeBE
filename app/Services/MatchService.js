@@ -941,7 +941,9 @@ class MatchService {
     trx
   ) {
     let estate = await EstateService.getActiveById(estate_id)
-
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
     if (!estate.is_not_show && estate.status !== STATUS_OFFLINE_ACTIVE && share_profile) {
       throw new HttpException(UNSECURE_PROFILE_SHARE, 400, WARNING_UNSECURE_PROFILE_SHARE)
     }
@@ -1294,6 +1296,8 @@ class MatchService {
       )
     }
 
+    await this.removeAutoKnockedMatch({ id: estateId, user_id: userId }, trx)
+
     await NoticeService.userInvite(estateId, userId)
 
     this.emitMatch({
@@ -1306,6 +1310,23 @@ class MatchService {
       role: ROLE_USER,
     })
     MatchService.inviteEmailToProspect({ estateId, userId })
+  }
+
+  static async removeAutoKnockedMatch({ id, user_id }, trx) {
+    const estates = await EstateService.getEstatesInSameCategory({ id, status: STATUS_ACTIVE })
+    const estate_ids = estates.map((e) => e.id).filter((eid) => eid !== id)
+    if (estate_ids?.length) {
+      const query = Match.query()
+        .where('user_id', user_id)
+        .whereIn('estate_id', estate_ids)
+        .where('status', MATCH_STATUS_KNOCK)
+        .delete()
+      if (trx) {
+        query.transacting(trx)
+      }
+
+      await query
+    }
   }
 
   static async sendKnockedReachedNotification() {

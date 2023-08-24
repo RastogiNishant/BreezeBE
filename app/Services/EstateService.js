@@ -3803,7 +3803,7 @@ class EstateService {
       return [estate.id]
     }
     const category = this.getBasicPropertyId(estate.property_id)
-    console.log('getEstatesInSameCategory category=', `${category}`)
+
     return (
       await Estate.query()
         .select('id')
