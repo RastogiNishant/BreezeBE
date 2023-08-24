@@ -95,10 +95,27 @@ class PropertyController {
           as "unpublishable"`
         ),
         Database.raw(
+          /* !estate.available_start_at ||
+      (!estate.is_duration_later && !estate.available_end_at) ||
+      (estate.is_duration_later && !estate.min_invite_count) ||
+      (estate.available_end_at &&
+        moment.utc(estate.available_end_at).format() <= moment.utc(new Date()).format()) ||
+      (estate.available_start_at &&
+        estate.available_end_at &&
+        moment.utc(estate.available_start_at).format() >=
+          moment.utc(estate.available_end_at).format()) */
+
           `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
             publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
-            available_end_at > NOW() and
-            available_start_at < NOW() and
+            not (
+              (available_start_at = null) is true or
+              (is_duration_later is false and (available_end_at = null) is true) or
+              (is_duration_later is true and min_invite_count < 1) or
+              ((available_end_at = null) is true and available_end_at < NOW()) or
+              ((available_end_at <> null) is true and
+                (available_start_at <> null) is true and
+                available_start_at >= available_end_at)
+            ) and
             letting_type <> '${LETTING_TYPE_LET}'
             then true else false end
             as "approvable"`
@@ -112,7 +129,15 @@ class PropertyController {
         Database.raw(
           `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
             publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}') and
-            available_end_at > NOW() and available_start_at < NOW() and
+            not (
+              (available_start_at = null) is true or
+              (is_duration_later is false and (available_end_at = null) is true) or
+              (is_duration_later is true and min_invite_count < 1) or
+              ((available_end_at = null) is true and available_end_at < NOW()) or
+              ((available_end_at <> null) is true and
+                (available_start_at <> null) is true and
+                available_start_at >= available_end_at)
+            ) and
             letting_type <> '${LETTING_TYPE_LET}'
             then true else false end
             as "publishable"

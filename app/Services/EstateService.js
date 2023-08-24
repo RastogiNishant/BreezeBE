@@ -1862,6 +1862,7 @@ class EstateService {
       publishers?.map((publisher) => {
         textMessage += ` - ${publisher}\r\n`
       })
+      //FIXME: textMessage is NOT sent anymore to support@breeze4me.de
 
       await Estate.query()
         .where('id', estate.id)
