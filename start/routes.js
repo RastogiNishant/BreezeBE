@@ -495,8 +495,14 @@ Route.group(() => {
     'valid:EstateId,SlotId',
   ])
 
+  Route.put('/building/publish/:id', 'EstateController.updateBuilding').middleware([
+    'valid:PublishInfo,Id',
+  ])
   // Extend or deactivate Estate
   Route.put('/extend', 'EstateController.extendEstate').middleware(['valid:ExtendEstate,EstateId'])
+  Route.put('/building/:id/extend', 'EstateController.extendBuilding').middleware([
+    'valid:ExtendEstate,Id',
+  ])
   //Route.get('/deactivate', 'EstateController.deactivateEstate')
 
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
@@ -1094,7 +1100,7 @@ Route.group(() => {
 Route.get(
   '/api/v1/match/landlord/estate',
   'MatchController.getMatchesSummaryLandlordEstate'
-).middleware(['auth:jwtLandlord', 'valid:MatchListLandlord,Pagination'])
+).middleware(['auth:jwtLandlord,jwtAdministrator', 'valid:MatchListLandlord,Pagination'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord',

@@ -61,6 +61,7 @@ class UpdateTenant extends Base {
   static schema = () =>
     yup.object().shape({
       private_use: yup.boolean(),
+      mixed_use_type_detail: yup.string().nullable(),
       pets: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, PETS_ANY]).nullable(),
       pets_species: yup.string().max(255).nullable(),
       non_smoker: yup.boolean(),
