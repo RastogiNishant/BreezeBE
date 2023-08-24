@@ -108,12 +108,13 @@ class PropertyController {
           `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
             publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
             not (
-              (available_start_at = null) is true or
-              (is_duration_later is false and (available_end_at = null) is true) or
+              (available_start_at is null) is true or
+              ((is_duration_later is false or is_duration_later is null)
+              	and (available_end_at is null) is true) or
               (is_duration_later is true and min_invite_count < 1) or
-              ((available_end_at = null) is true and available_end_at < NOW()) or
-              ((available_end_at <> null) is true and
-                (available_start_at <> null) is true and
+              ((available_end_at is not null) is true and available_end_at < NOW()) or
+              ((available_end_at is not null) is true and
+                (available_start_at is not null) is true and
                 available_start_at >= available_end_at)
             ) and
             letting_type <> '${LETTING_TYPE_LET}'
@@ -130,12 +131,13 @@ class PropertyController {
           `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
             publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}') and
             not (
-              (available_start_at = null) is true or
-              (is_duration_later is false and (available_end_at = null) is true) or
+              (available_start_at is null) is true or
+              ((is_duration_later is false or is_duration_later is null)
+              	and (available_end_at is null) is true) or
               (is_duration_later is true and min_invite_count < 1) or
-              ((available_end_at = null) is true and available_end_at < NOW()) or
-              ((available_end_at <> null) is true and
-                (available_start_at <> null) is true and
+              ((available_end_at is not null) is true and available_end_at < NOW()) or
+              ((available_end_at is not null) is true and
+                (available_start_at is not null) is true and
                 available_start_at >= available_end_at)
             ) and
             letting_type <> '${LETTING_TYPE_LET}'
