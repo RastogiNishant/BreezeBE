@@ -1267,51 +1267,33 @@ class MatchService {
       .where('user_id', userId)
       .first()
 
-    if (trx) {
-      if (existingMatch) {
-        await Database.table('matches')
-          .update({
-            status: MATCH_STATUS_INVITE,
-            status_at: moment.utc(new Date()).format(DATE_FORMAT),
-          })
-          .where({
-            user_id: userId,
-            estate_id: estateId,
-          })
-          .transacting(trx)
-      } else {
-        await Match.createItem(
-          {
-            user_id: userId,
-            estate_id: estateId,
-            status: MATCH_STATUS_INVITE,
-            percent: 0,
-            status_at: moment.utc(new Date()).format(DATE_FORMAT),
-          },
-          trx
-        )
-      }
-    } else {
-      if (existingMatch) {
-        await Database.table('matches')
-          .update({
-            status: MATCH_STATUS_INVITE,
-            status_at: moment.utc(new Date()).format(DATE_FORMAT),
-          })
-          .where({
-            user_id: userId,
-            estate_id: estateId,
-          })
-      } else {
-        await Match.createItem({
-          user_id: userId,
-          estate_id: estateId,
-          percent: 0,
+    if (existingMatch) {
+      let query = Database.table('matches')
+        .update({
           status: MATCH_STATUS_INVITE,
           status_at: moment.utc(new Date()).format(DATE_FORMAT),
         })
+        .where({
+          user_id: userId,
+          estate_id: estateId,
+        })
+      if (trx) {
+        query.transacting(trx)
       }
+      await query
+    } else {
+      await Match.createItem(
+        {
+          user_id: userId,
+          estate_id: estateId,
+          status: MATCH_STATUS_INVITE,
+          percent: 0,
+          status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        },
+        trx
+      )
     }
+
     await NoticeService.userInvite(estateId, userId)
 
     this.emitMatch({
