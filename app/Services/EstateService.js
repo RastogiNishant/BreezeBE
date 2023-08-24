@@ -1295,7 +1295,12 @@ class EstateService {
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
-    const categoryCounts = this.calculateInsideCategoryCounts(estates, tenant)
+    const groupedEstates = groupBy(estates, (estate) =>
+      estate.build_id ? `g_${estate.build_id}` : estate.id
+    )
+    estates = Object.keys(groupedEstates).map((key) => ({ ...groupedEstates[key][0] }))
+
+    const categoryCounts = this.calculateCategoryCounts(estates, tenant)
     const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
     return {
       estates: filteredEstates,
@@ -1320,7 +1325,7 @@ class EstateService {
     return counts
   }
 
-  static calculateInsideCategoryCounts(estates, tenant) {
+  static calculateCategoryCounts(estates, tenant) {
     const rooms_number = this.calculateCounts({
       estates,
       fieldName: 'rooms_number',
