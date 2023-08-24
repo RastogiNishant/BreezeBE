@@ -144,6 +144,23 @@ class PropertyController {
             then true else false end
             as "publishable"
           `
+        ),
+        Database.raw(
+          `json_build_object(
+            'letting_type_is_let', (letting_type = '${LETTING_TYPE_LET}') is true,
+            'available_start_at_is_null', (available_start_at is null) is true,
+            'is_not_duration_later_but_available_end_at_is_null',
+              ((is_duration_later is false or is_duration_later is null)
+              and (available_end_at is null) is true) is true,
+            'is_duration_later_but_no_min_invite_count', 
+              (is_duration_later is true and min_invite_count < 1) is true,
+            'available_end_at_is_past', 
+              ((available_end_at is not null) is true and available_end_at < NOW()) is true,
+            'available_start_at_is_later_than_available_end_at',
+              ((available_end_at is not null) is true and
+              (available_start_at is not null) is true and
+              available_start_at >= available_end_at) is true
+          ) as unpublish_unapprovable_reasons`
         )
       )
       .select(Database.raw('_u.user'))
