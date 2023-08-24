@@ -435,15 +435,15 @@ class CreateEstate extends Base {
         .nullable()
         .transform((value, origin) => {
           return moment.utc(origin, DATE_FORMAT).toDate()
-        })
-        .when(['vacant_date'], (vacant_date, schema, { value }) => {
-          if (!vacant_date) return schema
-          return value && value <= vacant_date
-            ? yup
-                .date()
-                .min(vacant_date, getExceptionMessage('rent_end_at', SHOULD_BE_AFTER, vacant_date))
-            : schema
         }),
+      // .when(['vacant_date'], (vacant_date, schema, { value }) => {
+      //   if (!vacant_date) return schema
+      //   return value && value <= vacant_date
+      //     ? yup
+      //         .date()
+      //         .min(vacant_date, getExceptionMessage('rent_end_at', SHOULD_BE_AFTER, vacant_date))
+      //     : schema
+      // }),
 
       min_lease_duration: yup.number().integer().min(0),
       max_lease_duration: yup.number().integer().min(0),
