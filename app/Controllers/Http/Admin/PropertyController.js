@@ -96,7 +96,7 @@ class PropertyController {
         ),
         Database.raw(
           `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
-            publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
+            publish_status='${PUBLISH_STATUS_BY_LANDLORD}'
             then true else false end
             as "declineable"`
         ),
