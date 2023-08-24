@@ -28,6 +28,12 @@ const {
   ISO_DATE_FORMAT,
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_STATUS_BY_LANDLORD,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_NEW,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_FINISH,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -35,6 +41,9 @@ const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
+const Match = use('App/Models/Match')
+const MatchService = use('App/Services/MatchService')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
 const MailService = use('App/Services/MailService')
@@ -134,6 +143,7 @@ class PropertyController {
       .with('final')
       .withCount('inviteBuddies')
       .withCount('knocked')
+      .withCount('contact_requests')
       .orderBy('estates.updated_at', 'desc')
     if (id) {
       query.where('id', id)
@@ -144,7 +154,8 @@ class PropertyController {
       estate = estate.toJSON()
       estate.invite_count =
         parseInt(estate['__meta__'].knocked_count) +
-        parseInt(estate['__meta__'].inviteBuddies_count)
+        parseInt(estate['__meta__'].inviteBuddies_count) +
+        parseInt(estate['__meta__'].contact_requests_count)
       estate.visit_count = parseInt(estate['__meta__'].visits_count)
       estate.final_match_count = parseInt(estate['__meta__'].final_count)
       return estate
