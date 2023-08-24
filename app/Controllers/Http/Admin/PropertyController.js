@@ -160,7 +160,7 @@ class PropertyController {
               ((available_end_at is not null) is true and
               (available_start_at is not null) is true and
               available_start_at >= available_end_at) is true
-          ) as unpublish_unapprovable_reasons`
+          ) as non_publishable_approvable_reasons`
         )
       )
       .select(Database.raw('_u.user'))
