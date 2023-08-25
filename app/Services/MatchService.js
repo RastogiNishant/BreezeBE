@@ -3882,7 +3882,7 @@ class MatchService {
         '_m.members_age',
         '_m.members_count', //adult members only
         'pets',
-        'budget_max',
+        Database.raw(`(100*budget_max/_me.total_income) as budget_max`),
         'rent_start',
         'options', //array
         'space_min',
