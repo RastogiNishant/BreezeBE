@@ -460,15 +460,15 @@ class UserController {
     if (single) {
       query
         .select('_m.member_info')
-        .select(
-          Database.raw(
-            `json_build_object(
-            'city', cities.city,
-            'income_level', tenants.income_level)
-              as wbs_certificate`
-          )
-        )
-        .leftJoin('cities', 'tenants.request_certificate_city_id', 'cities.id')
+        // .select(
+        //   Database.raw(
+        //     `json_build_object(
+        //     'city', cities.city,
+        //     'income_level', tenants.income_level)
+        //       as wbs_certificate`
+        //   )
+        // )
+        // .leftJoin('cities', 'tenants.request_certificate_city_id', 'cities.id')
         .leftJoin(
           Database.raw(`
           (select
