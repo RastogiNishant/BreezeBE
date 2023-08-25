@@ -1,6 +1,6 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty, intersection, countBy, groupBy } = require('lodash')
+const { get, isNumber, isEmpty, intersection, countBy, groupBy, uniqBy } = require('lodash')
 const { props } = require('bluebird')
 const Promise = require('bluebird')
 const Database = use('Database')
@@ -793,11 +793,17 @@ class MatchService {
         tenant,
         estates[idx]
       )
-      passedEstates.push({ estate_id: estates[idx].id, percent, landlord_score, prospect_score })
+      passedEstates.push({
+        estate_id: estates[idx].id,
+        percent,
+        landlord_score,
+        prospect_score,
+        build_id: estates[idx].build_id,
+      })
       idx++
     }
 
-    const matches =
+    let matches =
       passedEstates.map((i) => ({
         user_id: tenant.user_id,
         estate_id: i.estate_id,
@@ -834,12 +840,22 @@ class MatchService {
     await this.upsertBulkMatches(matches, trx)
 
     if (has_notification_sent) {
-      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
+      const superMatches = matches.filter(
+        ({ prospect_score }) => prospect_score >= MATCH_SCORE_GOOD_MATCH
+      )
       if (superMatches?.length) {
         await NoticeService.prospectSuperMatch(superMatches)
       }
     }
 
+    const groupedPassEstates = groupBy(passedEstates, (estate) =>
+      estate.build_id ? `g_${estate.build_id}` : estate.id
+    )
+    const uniqueMatchEstateIds = Object.keys(groupedPassEstates).map(
+      (key) => groupedPassEstates[key][0].id
+    )
+
+    matches = matches.filter((m) => uniqueMatchEstateIds.includes(m.estate_id))
     return {
       count: matches?.length,
       matches,
@@ -4248,7 +4264,11 @@ class MatchService {
     return (
       (
         await Estate.query()
-          .count('*')
+          .count(
+            Database.raw(
+              `distinct case when estates.build_id is null then estates.id else estates.build_id end`
+            )
+          )
           .innerJoin({ _m: 'matches' }, function () {
             this.on('_m.estate_id', 'estates.id')
               .onIn('_m.user_id', [userId])

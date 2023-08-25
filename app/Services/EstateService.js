@@ -1662,6 +1662,14 @@ class EstateService {
   }
 
   static getMachesQuery(query, { userId, build_id }) {
+    if (!build_id) {
+      query.select(
+        Database.raw(
+          `distinct on (case when build_id is null then estates.id else estates.build_id end) build_id`
+        )
+      )
+    }
+
     query
       .select('estates.*')
       .withCount('knocked')
@@ -1698,9 +1706,14 @@ class EstateService {
 
     if (build_id) {
       query.where('estates.build_id', build_id)
+      return query.orderBy('_m.prospect_score', 'DESC')
     }
-
-    return query.orderBy('_m.prospect_score', 'DESC')
+    return query
+      .orderBy(
+        Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
+        'DESC'
+      )
+      .orderBy('_m.prospect_score', 'DESC')
   }
   /**
    * If tenant not active get points by zone/point+dist/range zone
@@ -1746,11 +1759,18 @@ class EstateService {
       query = this.getNotActiveMatchesQuery({ tenant, userId, build_id })
     }
 
+    let estates = []
     if (page != -1 && limit != -1) {
-      return query.paginate(page, limit)
+      estates =
+        (await query.paginate(page, limit)).toJSON({
+          isShort: false,
+          role: ROLE_USER,
+        })?.data || []
     } else {
-      return query.fetch()
+      estates = (await query.fetch()).toJSON({ isShort: false, role: ROLE_USER })
     }
+
+    return orderBy(estates, 'match', 'desc')
   }
 
   static async countPublishedPropertyByLandlord(user_id) {
@@ -3085,9 +3105,12 @@ class EstateService {
   }
 
   static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
-    const estates = (
-      await EstateService.getTenantAllEstates({ userId: user_id, build_id, page: -1, limit: -1 })
-    ).toJSON()
+    const estates = await EstateService.getTenantAllEstates({
+      userId: user_id,
+      build_id,
+      page: -1,
+      limit: -1,
+    })
 
     const categories = uniq(
       estates.map((estate) => EstateService.getBasicPropertyId(estate.property_id))
@@ -3118,7 +3141,10 @@ class EstateService {
       buildingEstates[axis] = categoryEstates
     })
 
-    return buildingEstates
+    return {
+      categories: Object.keys(yAxisEstates).sort((a, b) => b - a),
+      estates: buildingEstates,
+    }
   }
 
   static async getTenantEstates({ user_id, page, limit }) {
@@ -3135,8 +3161,7 @@ class EstateService {
     if ((page - 1) * limit < insideNewMatchesCount) {
       estates = await EstateService.getTenantAllEstates({ userId: user_id, page, limit })
       estates = await Promise.all(
-        estates.rows.map(async (estate) => {
-          estate = estate.toJSON({ isShort: false, role: ROLE_USER })
+        estates.map(async (estate) => {
           estate.isoline = await EstateService.getIsolines(estate)
           return estate
         })
