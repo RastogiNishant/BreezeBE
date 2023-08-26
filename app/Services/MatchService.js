@@ -1220,7 +1220,7 @@ class MatchService {
 
     try {
       await Match.query().where({ user_id: userId, estate_id: estateId }).delete().transacting(trx)
-      await EstateService.addDislike(userId, estateId, trx)
+      await EstateService.addDislike({ user_id: userId, estate_id: estateId }, trx)
       await trx.commit()
       this.emitMatch({
         data: {
@@ -1972,7 +1972,7 @@ class MatchService {
         })
         .first()
       if (!dislike) {
-        await EstateService.addDislike(tenantId, estateId)
+        await EstateService.addDislike({ user_id: tenantId, estate_id: estateId })
       }
     }
 
