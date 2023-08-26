@@ -1036,7 +1036,7 @@ class EstateController {
    */
   async unlikeEstate({ request, auth, response }) {
     const { id } = request.all()
-    await EstateService.removeLike(auth.user.id, id)
+    await EstateService.removeLike({ user_id: auth.user.id, estate_id: id })
     response.res(true)
   }
 
@@ -1046,7 +1046,7 @@ class EstateController {
   async dislikeEstate({ request, auth, response }) {
     const { id } = request.all()
     try {
-      await EstateService.addDislike(auth.user.id, id)
+      await EstateService.addDislike({ user_id: auth.user.id, estate_id: id })
     } catch (e) {
       throw new HttpException(e.message)
     }
@@ -1059,8 +1059,15 @@ class EstateController {
    */
   async removeEstateDislike({ request, auth, response }) {
     const { id } = request.all()
-    await EstateService.removeDislike(auth.user.id, id)
-    response.res(true)
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.removeDislike({ user_id: auth.user.id, estate_id: id }, trx)
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

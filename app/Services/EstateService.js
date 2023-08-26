@@ -1192,65 +1192,161 @@ class EstateService {
    *
    */
   static async addLike(userId, estateId) {
-    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
-    if (!estate) {
-      throw new AppException('Invalid estate')
-    }
+    estateId = await this.getEstateIdsInBuilding(estateId)
 
+    const trx = await Database.beginTransaction()
     try {
-      await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
+      estateId = Array.isArray(estateId) ? estateId : [estateId]
+      const likes = estateId.map((id) => ({
+        user_id: userId,
+        estate_id: id,
+      }))
+
+      await this.upsertBulkLikes(likes, trx)
       const delay = LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER * 1000 * 60 * 60 //ms
-      await this.removeDislike(userId, estateId)
+      await this.removeDislike({ user_id: userId, estate_id: estateId }, trx)
+      await trx.commit()
       QueueService.notifyProspectWhoLikedButNotKnocked(estateId, userId, delay)
     } catch (e) {
+      await trx.rollback()
       Logger.error(e)
       throw new AppException('Cant create like')
     }
   }
 
+  static async upsertBulkLikes(likes, trx) {
+    let queries = `INSERT INTO likes 
+                  ( user_id, estate_id )
+                  VALUES 
+                `
+
+    queries = (likes || []).reduce(
+      (q, current, index) =>
+        `${q}\n ${index ? ',' : ''}
+        ( ${current.user_id}, ${current.estate_id} ) `,
+      queries
+    )
+
+    queries += ` ON CONFLICT ( user_id, estate_id ) 
+                  DO NOTHING
+                `
+
+    await Database.raw(queries).transacting(trx)
+  }
+
+  static async getEstateIdsInBuilding(estate_id) {
+    const estate = await this.getActiveEstateQuery()
+      .select('id', 'build_id')
+      .where('id', estate_id)
+      .first()
+
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    if (estate.build_id) {
+      const estates = (
+        await Estate.query()
+          .select('id')
+          .where('build_id', estate.build_id)
+          .whereNot('status', STATUS_DELETE)
+          .fetch()
+      ).toJSON()
+
+      if (!estates?.length) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+
+      estate_id = estates.map((estate) => estate.id)
+    }
+
+    return Array.isArray(estate_id) ? estate_id : [estate_id]
+  }
   /**
    *
    */
-  static async removeLike(userId, estateId, trx) {
-    return Database.table('likes')
-      .where({ user_id: userId, estate_id: estateId })
+  static async removeLike({ user_id, estate_id }, trx) {
+    if (Array.isArray(estate_id) && estate_id?.length) {
+      estate_id = estate_id[0]
+    }
+    estate_id = await this.getEstateIdsInBuilding(estate_id)
+
+    const query = Database.table('likes')
+      .where('user_id', user_id)
+      .whereIn('estate_id', Array.isArray(estate_id) ? estate_id : [estate_id])
       .delete()
-      .transacting(trx)
+    if (trx) {
+      query.transacting(trx)
+    }
+
+    return query
   }
 
   /**
    *
    */
-  static async addDislike(userId, estateId, trx) {
+  static async addDislike({ user_id, estate_id }, trx) {
+    estate_id = await this.getEstateIdsInBuilding(estate_id)
     const shouldTrxProceed = trx
 
     if (!trx) {
       trx = await Database.beginTransaction()
     }
 
-    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
-    if (!estate) {
-      throw new AppException('Invalid estate')
-    }
-
     try {
-      await Database.table('dislikes')
-        .insert({ user_id: userId, estate_id: estateId })
-        .transacting(trx)
-      await this.removeLike(userId, estateId, trx)
+      const dislikes = estate_id.map((id) => ({
+        user_id,
+        estate_id: id,
+      }))
+
+      await this.upsertBulkDislikes(dislikes, trx)
+      await this.removeLike({ user_id, estate_id }, trx)
       if (!shouldTrxProceed) await trx.commit()
     } catch (e) {
       Logger.error(e)
       if (!shouldTrxProceed) await trx.rollback()
-      throw new AppException('Cant create like')
+      throw new AppException('Cant create dislike')
     }
+  }
+
+  static async upsertBulkDislikes(likes, trx) {
+    let queries = `INSERT INTO dislikes 
+                  ( user_id, estate_id )
+                  VALUES 
+                `
+
+    queries = (likes || []).reduce(
+      (q, current, index) =>
+        `${q}\n ${index ? ',' : ''}
+        ( ${current.user_id}, ${current.estate_id} ) `,
+      queries
+    )
+
+    queries += ` ON CONFLICT ( user_id, estate_id ) 
+                  DO NOTHING
+                `
+
+    await Database.raw(queries).transacting(trx)
   }
 
   /**
    *
    */
-  static async removeDislike(userId, estateId) {
-    return Database.table('dislikes').where({ user_id: userId, estate_id: estateId }).delete()
+  static async removeDislike({ user_id, estate_id }, trx) {
+    if (Array.isArray(estate_id) && estate_id?.length) {
+      estate_id = estate_id[0]
+    }
+    estate_id = await this.getEstateIdsInBuilding(estate_id)
+
+    const query = Database.table('dislikes')
+      .where('user_id', user_id)
+      .whereIn('estate_id', Array.isArray(estate_id) ? estate_id : [estate_id])
+      .delete()
+
+    if (trx) {
+      query.transacting(trx)
+    }
+    return query
   }
 
   /**
