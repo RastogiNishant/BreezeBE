@@ -58,6 +58,7 @@ class CreateMember extends Base {
       external_duties: yup.array().of(yup.number().oneOf([1, 2, 3])),
       duties_amount: yup.number().min(0).max(1000000),
       birth_place: yup.string().max('255'),
+      rent_arrears_doc_submit_later: yup.boolean(),
     })
   }
 }

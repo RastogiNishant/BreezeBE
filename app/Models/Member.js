@@ -46,6 +46,7 @@ class Member extends Model {
       'owner_user_id',
       'phone_verified',
       'birth_place',
+      'rent_arrears_doc_submit_later',
     ]
   }
 
@@ -116,6 +117,7 @@ class Member extends Model {
       'owner_user_id',
       'phone_verified',
       'birth_place',
+      'rent_arrears_doc_submit_later',
     ]
   }
 }
