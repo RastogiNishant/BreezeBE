@@ -21,6 +21,7 @@ class Income extends Model {
       'status',
       'is_final',
       'income_contract_end',
+      'is_earlier_employeed',
     ]
   }
 
