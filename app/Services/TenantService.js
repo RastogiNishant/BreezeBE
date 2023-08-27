@@ -192,7 +192,10 @@ class TenantService {
       })
       .where('_m.user_id', userId)
       .whereNot('_m.child', true)
-      .where('_ip.expire_date', '>=', startOf)
+      .where(function () {
+        this.orWhere('_ip.expire_date', '>=', startOf)
+        this.orWhereNull('_ip.expire_date')
+      })
       .groupBy(['_m.id', '_ip.income_id'])
   }
 
