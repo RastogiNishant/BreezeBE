@@ -60,6 +60,7 @@ class CreateMember extends Base {
       birth_place: yup.string().max('255'),
       rent_arrears_doc_submit_later: yup.boolean(),
       rent_proof_not_applicable: yup.boolean(),
+      credit_score_not_applicable: yup.boolean(),
     })
   }
 }

@@ -48,6 +48,7 @@ class Member extends Model {
       'birth_place',
       'rent_arrears_doc_submit_later',
       'rent_proof_not_applicable',
+      'credit_score_not_applicable',
     ]
   }
 
@@ -120,6 +121,7 @@ class Member extends Model {
       'birth_place',
       'rent_arrears_doc_submit_later',
       'rent_proof_not_applicable',
+      'credit_score_not_applicable',
     ]
   }
 }
