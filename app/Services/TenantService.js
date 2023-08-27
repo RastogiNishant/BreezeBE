@@ -237,7 +237,12 @@ class TenantService {
           '_i.income_type',
           '_i.hiring_date',
           '_i.income',
-          '_i.employment_type'
+          '_i.employment_type',
+          '_i.income_contract_end',
+          '_i.is_earlier_employeed',
+          '_i.employeed_address',
+          '_i.employeer_phone_number',
+          '_i.probation_period'
         )
         .leftJoin({ _m: 'members' }, function () {
           this.on('_m.user_id', '_t.user_id').onNotIn('_m.child', [true])
