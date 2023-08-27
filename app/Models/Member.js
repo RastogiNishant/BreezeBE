@@ -47,6 +47,7 @@ class Member extends Model {
       'phone_verified',
       'birth_place',
       'rent_arrears_doc_submit_later',
+      'rent_proof_not_applicable',
     ]
   }
 
@@ -118,6 +119,7 @@ class Member extends Model {
       'phone_verified',
       'birth_place',
       'rent_arrears_doc_submit_later',
+      'rent_proof_not_applicable',
     ]
   }
 }
