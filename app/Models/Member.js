@@ -49,6 +49,8 @@ class Member extends Model {
       'rent_arrears_doc_submit_later',
       'rent_proof_not_applicable',
       'credit_score_not_applicable',
+      'marital_status',
+      'citizen',
     ]
   }
 
@@ -122,6 +124,8 @@ class Member extends Model {
       'rent_arrears_doc_submit_later',
       'rent_proof_not_applicable',
       'credit_score_not_applicable',
+      'marital_status',
+      'citizen',
     ]
   }
 }
