@@ -19,7 +19,7 @@ const {
   INCOME_CONTRACT_DURATION_LIMITED,
   INCOME_TYPE_OTHER_BENEFIT,
 } = require('../constants')
-
+const { phoneSchema } = require('../Libs/schemas.js')
 class CreateIncome extends Base {
   static schema = () => {
     return yup.object().shape({
@@ -49,6 +49,9 @@ class CreateIncome extends Base {
         .integer()
         .oneOf([INCOME_CONTRACT_DURATION_UNLIMITED, INCOME_CONTRACT_DURATION_LIMITED]),
       is_earlier_employeed: yup.boolean().nullable(),
+      employeed_address: yup.string(),
+      employeer_phone_number: phoneSchema.required(),
+      probation_period: yup.date().nullable(),
     })
   }
 }
