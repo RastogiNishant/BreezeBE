@@ -6,7 +6,7 @@ const Schema = use('Schema')
 class AddIsEarlierEmployedToIncomesSchema extends Schema {
   up() {
     this.table('incomes', (table) => {
-      // alter table
+      //  alter table
       table.boolean('is_earlier_employeed').defaultTo(false)
     })
   }
