@@ -25,7 +25,7 @@ class CreateIncome extends Base {
       company: yup.string().max(255),
       profession: yup.string().max(120),
       position: yup.string().max(120),
-      hiring_date: yup.date(),
+      hiring_date: yup.date().nullable(),
       work_exp: yup.number().integer().min(0).max(100),
       employment_type: yup.string().oneOf([HIRING_TYPE_FULL_TIME, HIRING_TYPE_PART_TIME]),
       income_type: yup
@@ -46,6 +46,7 @@ class CreateIncome extends Base {
         .number()
         .integer()
         .oneOf([INCOME_CONTRACT_DURATION_UNLIMITED, INCOME_CONTRACT_DURATION_LIMITED]),
+      is_earlier_employeed: yup.boolean().nullable(),
     })
   }
 }
