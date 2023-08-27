@@ -505,6 +505,14 @@ class MemberService {
    *
    */
   static async addMemberIncomeProof(data, income) {
+    if (
+      income.income_type === INCOME_TYPE_UNEMPLOYED ||
+      income.income_type === INCOME_TYPE_HOUSE_WORK ||
+      income.income_type === INCOME_TYPE_PENSIONER ||
+      income.income_type === INCOME_TYPE_TRAINEE
+    ) {
+      data.expire_date = null
+    }
     return IncomeProof.createItem({
       ...data,
       income_id: income.id,
@@ -777,7 +785,10 @@ class MemberService {
       .format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
-      .where('income_proofs.expire_date', '<=', startOf)
+      .where(function () {
+        this.orWhere('income_proofs.expire_date', '>=', startOf)
+        this.orWhereNull('income_proofs.expire_date')
+      })
       .where('income_proofs.status', STATUS_ACTIVE)
       .innerJoin({ _i: 'incomes' }, function () {
         this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
@@ -933,7 +944,10 @@ class MemberService {
       (
         await IncomeProof.query()
           .select('_i.id', '_i.income_type')
-          .where('income_proofs.expire_date', '>=', startOf)
+          .where(function () {
+            this.orWhere('income_proofs.expire_date', '>=', startOf)
+            this.orWhereNull('income_proofs.expire_date')
+          })
           .innerJoin({ _i: 'incomes' }, function () {
             this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
           })
