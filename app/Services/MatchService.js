@@ -806,7 +806,7 @@ class MatchService {
     const matches =
       passedEstates.map((e) => ({
         user_id: tenant.user_id,
-        estate_id: e.id,
+        estate_id: e.estate_id,
         percent: e.percent,
         prospect_score: e.prospect_score,
         landlord_score: e.landlord_score,
