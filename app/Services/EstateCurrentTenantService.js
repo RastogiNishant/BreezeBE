@@ -551,6 +551,7 @@ class EstateCurrentTenantService extends BaseService {
               failureCount: inviteResult.failureCount,
             },
           }
+          return ret
         } else if (phone) {
           inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
           ret = {
