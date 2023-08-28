@@ -18,6 +18,7 @@ const {
   INCOME_CONTRACT_DURATION_UNLIMITED,
   INCOME_CONTRACT_DURATION_LIMITED,
   INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT,
 } = require('../constants')
 const { phoneSchema } = require('../Libs/schemas.js')
 class CreateIncome extends Base {
@@ -42,6 +43,7 @@ class CreateIncome extends Base {
           INCOME_TYPE_SELF_EMPLOYED,
           INCOME_TYPE_TRAINEE,
           INCOME_TYPE_OTHER_BENEFIT,
+          INCOME_TYPE_CHILD_BENEFIT,
         ]),
       income: yup.number().min(0).required(),
       income_contract_end: yup
