@@ -3927,7 +3927,7 @@ class EstateService {
     }
 
     if (!estate.property_id || trim(estate.property_id) === '' || !estate.build_id) {
-      return [estate.id]
+      return [{ id: estate.id }]
     }
     const category = this.getBasicPropertyId(estate.property_id)
 
