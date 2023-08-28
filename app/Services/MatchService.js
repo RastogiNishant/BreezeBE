@@ -798,12 +798,12 @@ class MatchService {
     }
 
     const matches =
-      passedEstates.map((i) => ({
+      passedEstates.map((e) => ({
         user_id: tenant.user_id,
-        estate_id: i.estate_id,
-        percent: i.percent,
-        prospect_score: i.prospect_score,
-        landlord_score: i.landlord_score,
+        estate_id: e.id,
+        percent: e.percent,
+        prospect_score: e.prospect_score,
+        landlord_score: e.landlord_score,
         status: MATCH_STATUS_NEW,
       })) || []
 
@@ -851,7 +851,6 @@ class MatchService {
                   ( user_id, estate_id, percent, status, landlord_score, prospect_score )    
                   VALUES 
                 `
-
     queries = (matches || []).reduce(
       (q, current, index) =>
         `${q}\n ${index ? ',' : ''}
@@ -862,7 +861,7 @@ class MatchService {
 
     queries += ` ON CONFLICT ( user_id, estate_id ) 
                   DO UPDATE SET percent = EXCLUDED.percent, landlord_score = EXCLUDED.landlord_score,
-                  prospect_score = EXCLUDED.prospect_score
+                  prospect_score = EXCLUDED.prospect_score, status = EXCLUDED.status
                 `
 
     await Database.raw(queries).transacting(trx)
@@ -1015,6 +1014,7 @@ class MatchService {
           status: STATUS_ACTIVE,
         })
         estate_ids = sameCategoryEstates.map((e) => e.id)
+        console.log('sameCategoryEstates=', sameCategoryEstates)
         matches = sameCategoryEstates.map((e) => ({
           user_id,
           estate_id: e.id,
@@ -1048,7 +1048,7 @@ class MatchService {
       if (!matches?.length) {
         throw new HttpException(NO_MATCH_EXIST, 400)
       }
-
+      console.log('upsertBulkMatches=', matches)
       await this.upsertBulkMatches(matches, trx)
 
       if (share_profile) {
