@@ -480,7 +480,6 @@ class EstateAttributeTranslations {
       PETS_SMALL: 2,
     },
     stp_garage: (i) => parseInt(i) || 0,
-    budget: toPercent,
     credit_score: toPercent,
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     number_floors: (i) => parseInt(i) || 1,
