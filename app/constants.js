@@ -355,6 +355,7 @@ const constants = {
   INCOME_TYPE_SELF_EMPLOYED: 'self',
   INCOME_TYPE_TRAINEE: 'trainee',
   INCOME_TYPE_OTHER_BENEFIT: 'other_benefit',
+  INCOME_TYPE_CHILD_BENEFIT: 'child_benefit',
 
   FAMILY_STATUS_SINGLE: 1,
   FAMILY_STATUS_WITH_CHILD: 3,
@@ -1040,6 +1041,7 @@ const constants = {
   INCOME_TYPE_SELF_EMPLOYED_LABEL: 'Self-Employeed',
   INCOME_TYPE_TRAINEE_LABEL: 'Trainee',
   INCOME_TYPE_OTHER_BENEFIT_LABEL: 'Other benefit',
+  INCOME_TYPE_CHILD_BENEFIT_LABEL: 'Child benefit',
 
   DOC_INCOME_PROOF_LABEL: 'Income proof',
   DOC_RENT_ARREARS_LABEL: 'Rent arrears',
