@@ -49,8 +49,8 @@ class CreateIncome extends Base {
         .integer()
         .oneOf([INCOME_CONTRACT_DURATION_UNLIMITED, INCOME_CONTRACT_DURATION_LIMITED]),
       is_earlier_employeed: yup.boolean().nullable(),
-      employeed_address: yup.string(),
-      employeer_phone_number: phoneSchema.required(),
+      employeed_address: yup.string().nullable(),
+      employeer_phone_number: phoneSchema.nullable(),
       probation_period: yup.date().nullable(),
     })
   }
