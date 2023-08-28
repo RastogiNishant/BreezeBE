@@ -2889,7 +2889,7 @@ class MatchService {
     let query = Match.query()
       .select('_e.user_id as estate_user_id')
       .select('matches.user_id as tenant_user_id')
-      .where('matches.status', '>=', MATCH_STATUS_TOP)
+      .where('matches.status', '>=', MATCH_STATUS_KNOCK)
       .where('estate_id', estate_id)
 
     if (role === ROLE_LANDLORD) {
