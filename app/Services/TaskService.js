@@ -763,8 +763,14 @@ class TaskService extends BaseService {
     }
 
     // to check if the user is the tenant for that property.
-    if (role === ROLE_USER && task.tenant_id !== user_id) {
-      throw new HttpException('No permission for task', 400)
+    if (role === ROLE_USER) {
+      if (!task) {
+        if (!(await MatchService.getUserToChat({ user_id, estate_id, role }))) {
+          throw new HttpException('No permission for task', 400)
+        }
+      } else if (task && task.tenant_id !== user_id) {
+        throw new HttpException('No permission for task', 400)
+      }
     }
 
     // if (role === ROLE_USER) {

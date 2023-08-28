@@ -935,7 +935,6 @@ Route.group(() => {
   Route.post('/accept/:id', 'TaskController.acceptTenantInvitation').middleware([
     'valid:Id,EstateId',
   ])
-  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
@@ -953,6 +952,7 @@ Route.group(() => {
   Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
   Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
+  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
   //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')

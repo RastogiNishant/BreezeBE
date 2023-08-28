@@ -2889,7 +2889,14 @@ class MatchService {
     let query = Match.query()
       .select('_e.user_id as estate_user_id')
       .select('matches.user_id as tenant_user_id')
-      .where('matches.status', '>=', MATCH_STATUS_TOP)
+      .where(function () {
+        this.orWhere('matches.status', '>=', MATCH_STATUS_TOP)
+        this.orWhere(function () {
+          this.where('_e.is_not_show', true)
+          this.where('matches.status', '>=', MATCH_STATUS_KNOCK)
+        })
+      })
+
       .where('estate_id', estate_id)
 
     if (role === ROLE_LANDLORD) {
