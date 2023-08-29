@@ -135,6 +135,7 @@ const {
     ERROR_PROPERTY_INVALID_STATUS,
     ERROR_PROPERTY_NOT_PUBLISHED,
     ERROR_PUBLISH_BUILDING,
+    BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY,
   },
   exceptionCodes: {
     ERROR_PROPERTY_AREADY_PUBLISHED_CODE,
@@ -143,6 +144,7 @@ const {
     ERROR_PROPERTY_INVALID_STATUS_CODE,
     ERROR_PROPERTY_NOT_PUBLISHED_CODE,
     ERROR_PUBLISH_BUILDING_CODE,
+    ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE,
   },
 } = require('../../app/exceptions')
 
@@ -1882,6 +1884,14 @@ class EstateService {
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    if (performed_by && estate.build_id) {
+      throw new HttpException(
+        BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY,
+        400,
+        ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE
+      )
     }
 
     estate.available_end_at = estate.is_duration_later ? null : estate.available_end_at
