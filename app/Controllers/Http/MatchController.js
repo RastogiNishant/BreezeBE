@@ -126,6 +126,24 @@ class MatchController {
     }
   }
 
+  async matchToNewInvite({ request, auth, response }) {
+    const landlordId = auth.user.id
+    const { estate_id, user_id, new_estate_id } = request.all()
+
+    try {
+      const estate = await this.getOwnEstate(estate_id, landlordId)
+      await this.getOwnEstate(new_estate_id, landlordId)
+      await MatchService.inviteToNewProperty({
+        estate,
+        userId: user_id,
+        newEstateId: new_estate_id,
+      })
+      return response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
   /**
    * Landlord
    * If use knock (or just buddy) move to invite

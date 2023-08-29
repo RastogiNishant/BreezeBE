@@ -105,8 +105,15 @@ const {
     NO_ESTATE_EXIST,
     NO_MATCH_EXIST,
     UNSECURE_PROFILE_SHARE,
+    ERROR_COMMIT_MATCH_INVITE,
+    ERROR_ALREADY_MATCH_INVITE,
   },
-  exceptionCodes: { WRONG_PROSPECT_CODE_ERROR_CODE, NO_TIME_SLOT_ERROR_CODE },
+  exceptionCodes: {
+    WRONG_PROSPECT_CODE_ERROR_CODE,
+    NO_TIME_SLOT_ERROR_CODE,
+    ERROR_COMMIT_MATCH_INVITE_CODE,
+    ERROR_ALREADY_MATCH_INVITE_CODE,
+  },
 } = require('../exceptions')
 const QueueService = require('./QueueService')
 
@@ -1250,6 +1257,46 @@ class MatchService {
     }
   }
 
+  static async inviteToNewProperty({ estate, userId, newEstateId }, trx = null) {
+    const estateId = estate.id
+    const match = await Database.query()
+      .table('matches')
+      .where({ estate_id: estateId, user_id: userId })
+      .where(function () {
+        this.orWhere('status', '<', MATCH_STATUS_COMMIT)
+        this.orWhere(function () {
+          this.where('status', MATCH_STATUS_NEW)
+          this.where('buddy', true)
+        })
+      })
+      .first()
+
+    if (!match) {
+      throw new AppException(ERROR_COMMIT_MATCH_INVITE, 400, ERROR_COMMIT_MATCH_INVITE_CODE)
+    }
+
+    const newMatch = await Match.query()
+      .where({ estate_id: newEstateId, user_id: userId })
+      .where('status', '>=', MATCH_STATUS_INVITE)
+      .first()
+
+    if (newMatch) {
+      throw new AppException(ERROR_ALREADY_MATCH_INVITE, 400, ERROR_ALREADY_MATCH_INVITE_CODE)
+    }
+    console.log('new Match here????', newEstateId)
+    await this.matchInviteAfter({ userId, estateId: newEstateId }, trx)
+
+    this.emitMatch({
+      data: {
+        estate_id: newEstateId,
+        user_id: userId,
+        old_status: NO_MATCH_STATUS,
+        status: MATCH_STATUS_INVITE,
+      },
+      role: ROLE_USER,
+    })
+  }
+
   /**
    * Invite knocked user
    */
@@ -1275,7 +1322,24 @@ class MatchService {
       }
     }
 
+    await this.matchInviteAfter({ userId, estateId }, trx)
+
+    this.emitMatch({
+      data: {
+        estate_id: estateId,
+        user_id: userId,
+        old_status: MATCH_STATUS_KNOCK,
+        status: MATCH_STATUS_INVITE,
+      },
+      role: ROLE_USER,
+    })
+
+    await this.removeAutoKnockedMatch({ id: estateId, user_id: userId }, trx)
+  }
+
+  static async matchInviteAfter({ userId, estateId }, trx) {
     const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
+    console.log('freeTimeSlots=', freeTimeSlots)
     const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
     if (!timeSlotCount) {
       throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
@@ -1313,19 +1377,7 @@ class MatchService {
       )
     }
 
-    await this.removeAutoKnockedMatch({ id: estateId, user_id: userId }, trx)
-
     await NoticeService.userInvite(estateId, userId)
-
-    this.emitMatch({
-      data: {
-        estate_id: estateId,
-        user_id: userId,
-        old_status: MATCH_STATUS_KNOCK,
-        status: MATCH_STATUS_INVITE,
-      },
-      role: ROLE_USER,
-    })
     MatchService.inviteEmailToProspect({ estateId, userId })
   }
 
