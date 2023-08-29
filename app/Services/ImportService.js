@@ -359,10 +359,7 @@ class ImportService {
 
       //Recalculating address by disconnected connect (no tenants connected) and unpublished match units (no prospects associated)
       //so addrss can only be updated only in the cases above
-      if (
-        (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) ||
-        estate.status === STATUS_ACTIVE
-      ) {
+      if (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) {
         estate_data = omit(estate_data, ['city', 'country', 'zip', 'street', 'house_number'])
         estate_data.is_coord_changed = false
       } else {
