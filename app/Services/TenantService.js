@@ -250,7 +250,7 @@ class TenantService {
     const data = await getRequiredTenantData(tenant.id)
 
     const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
-    console.log('getTenantValidProofsCount=', counts)
+
     if (!data.find((m) => m.rent_proof_not_applicable) && isEmpty(counts)) {
       throw new AppException('Invalid members')
     }
@@ -361,6 +361,7 @@ class TenantService {
     try {
       await yup.array().of(schema).validate(data)
       tenant.status = STATUS_ACTIVE
+
       await tenant.save(trx)
       await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
       await trx.commit()
