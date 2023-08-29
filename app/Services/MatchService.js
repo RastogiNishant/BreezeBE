@@ -222,7 +222,7 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
-    const estateBudget = estate.budget || 0
+    const estateBudget = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
     if (!userIncome) {
