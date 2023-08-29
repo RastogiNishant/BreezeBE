@@ -198,6 +198,12 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:InitializeEstateSync',
   ])
+
+  Route.get('/prospects', 'Admin/UserController.getProspects').middleware(['auth:jwtAdministrator'])
+  Route.get('/prospects/:id', 'Admin/UserController.getProspect').middleware([
+    'auth:jwtAdministrator',
+    'valid:Id',
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -443,13 +449,13 @@ Route.group(() => {
 // Estate management
 Route.group(() => {
   Route.get('/cities', 'EstateController.getCityList')
+  Route.get('/building/match', 'EstateController.getMatchEstates').middleware([
+    'valid:Pagination,EstateFilter',
+  ])
   Route.get('/building/:id', 'EstateController.getBuildingEstates').middleware([
     'valid:Id,EstateFilter,Pagination',
   ])
   Route.get('/', 'EstateController.getEstates').middleware(['valid:Pagination,EstateFilter'])
-  Route.get('/match', 'EstateController.getMatchEstates').middleware([
-    'valid:Pagination,EstateFilter',
-  ])
   Route.get('/candidate', 'EstateController.searchEstates').middleware(['valid:EstateFilter'])
   Route.get('/quick_search', 'EstateController.shortSearchEstates').middleware([
     'valid:EstateFilter',
@@ -489,8 +495,14 @@ Route.group(() => {
     'valid:EstateId,SlotId',
   ])
 
+  Route.put('/building/publish/:id', 'EstateController.updateBuilding').middleware([
+    'valid:PublishInfo,Id',
+  ])
   // Extend or deactivate Estate
   Route.put('/extend', 'EstateController.extendEstate').middleware(['valid:ExtendEstate,EstateId'])
+  Route.put('/building/:id/extend', 'EstateController.extendBuilding').middleware([
+    'valid:ExtendEstate,Id',
+  ])
   //Route.get('/deactivate', 'EstateController.deactivateEstate')
 
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
@@ -534,6 +546,9 @@ Route.group(() => {
     'EstateCanEdit',
   ])
 
+  Route.put('/building/:id/publish', 'EstateController.publishBuild').middleware([
+    'valid:Id,PublishEstate',
+  ])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.put('/:id/offline', 'EstateController.makeEstateOffline').middleware(['valid:Id'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])
@@ -920,7 +935,6 @@ Route.group(() => {
   Route.post('/accept/:id', 'TaskController.acceptTenantInvitation').middleware([
     'valid:Id,EstateId',
   ])
-  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwtLandlord'])
@@ -938,6 +952,7 @@ Route.group(() => {
   Route.get('/unassigned', 'TaskController.getUnassignedTasks').middleware(['valid:Pagination'])
   Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
+  Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
   //Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
@@ -1085,7 +1100,7 @@ Route.group(() => {
 Route.get(
   '/api/v1/match/landlord/estate',
   'MatchController.getMatchesSummaryLandlordEstate'
-).middleware(['auth:jwtLandlord', 'valid:MatchListLandlord,Pagination'])
+).middleware(['auth:jwtLandlord,jwtAdministrator', 'valid:MatchListLandlord,Pagination'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord',

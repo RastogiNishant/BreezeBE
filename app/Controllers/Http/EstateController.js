@@ -157,7 +157,6 @@ class EstateController {
       }
 
       await EstateService.updateEstate({ request, user_id: auth.user.id })
-
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
         from: 0,
@@ -166,6 +165,57 @@ class EstateController {
 
       QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  async updateBuilding({ request, auth, response }) {
+    const {
+      id,
+      available_start_at,
+      notify_on_green_matches,
+      available_end_at,
+      is_duration_later,
+      min_invite_count,
+    } = request.all()
+
+    try {
+      const estates = await EstateService.getEstatesByBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+      })
+
+      if (!estates?.length) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+
+      if (estates[0].publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+        throw new HttpException(ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE, 400)
+      }
+
+      const estate_ids = estates.map((estate) => estate.id)
+      await EstateService.updatEstatesePublishInfo({
+        user_id: auth.user.id,
+        estate_id: estate_ids,
+        available_start_at,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+        notify_on_green_matches,
+      })
+
+      const building = await BuildingService.get({ user_id: auth.user.id, id })
+
+      response.res({
+        ...building.toJSON(),
+        estates: (
+          await EstateService.getEstatesByUserId({
+            user_ids: [auth.user.id],
+            params: { build_id: id },
+          })
+        )?.data,
+      })
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
@@ -244,6 +294,8 @@ class EstateController {
       params = request.post()
     }
 
+    let buildings = await BuildingService.getAllHasUnit(auth.user.id)
+
     let result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
       limit,
@@ -289,10 +341,12 @@ class EstateController {
     }
     result = {
       ...result,
+      buildings,
       total_estate_count: totalEstateCounts.all_count,
       offline_count: totalEstateCounts.offline_count,
       online_count: totalEstateCounts.online_count,
     }
+
     response.res(result)
   }
 
@@ -363,6 +417,34 @@ class EstateController {
           role: ROLE_LANDLORD,
         })
       )
+    } catch (e) {
+      throw new HttpException(FAILED_EXTEND_ESTATE, 400)
+    }
+  }
+
+  async extendBuilding({ request, auth, response }) {
+    const { id, available_end_at, is_duration_later, min_invite_count } = request.all()
+
+    try {
+      const building = await BuildingService.getByBuildingId({
+        user_id: auth.user.id,
+        building_id: id,
+      })
+
+      const estates = await EstateService.getEstatesByBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+      })
+      const estate_ids = estates.map((estate) => estate.id)
+      await EstateService.extendEstate({
+        user_id: auth.user.id,
+        estate_id: estate_ids,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
+
+      response.res({ ...building.toJSON(), available_end_at, is_duration_later, min_invite_count })
     } catch (e) {
       throw new HttpException(FAILED_EXTEND_ESTATE, 400)
     }
@@ -478,6 +560,29 @@ class EstateController {
         })
       )?.data?.[0]
     )
+  }
+
+  async publishBuild({ request, auth, response }) {
+    const { id, action, publishers, estate_ids } = request.all()
+    if (action === PUBLISH_PROPERTY) {
+      await EstateService.publishBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+        publishers,
+        estate_ids,
+      })
+    } else if (action === UNPUBLISH_PROPERTY) {
+      await EstateService.unpublishBuilding({ user_id: auth.user.id, build_id: id })
+    } else if (action === DEACTIVATE_PROPERTY) {
+      await EstateService.deactivateBuilding({ user_id: auth.user.id, build_id: id })
+    }
+
+    let result = await EstateService.getEstatesByUserId({
+      user_ids: [auth.user.id],
+      params: { build_id: id },
+    })
+
+    response.res(result.data)
   }
 
   async makeEstateOffline({ request, auth, response }) {
@@ -643,7 +748,7 @@ class EstateController {
       try {
         const result = await EstateService.addManyFiles(data, trx)
 
-        await EstateService.updatePercent(
+        await EstateService.updatePercentAndIsPublished(
           { estate_id: data[0].estate_id, files: [result[0].toJSON()] },
           trx
         )
@@ -851,7 +956,6 @@ class EstateController {
     if (!estate) {
       throw new HttpException(ESTATE_NOT_EXISTS, 400)
     }
-
     try {
       let slot = {}
       if (data.is_not_show !== undefined) {
@@ -932,7 +1036,7 @@ class EstateController {
    */
   async unlikeEstate({ request, auth, response }) {
     const { id } = request.all()
-    await EstateService.removeLike(auth.user.id, id)
+    await EstateService.removeLike({ user_id: auth.user.id, estate_id: id })
     response.res(true)
   }
 
@@ -942,7 +1046,7 @@ class EstateController {
   async dislikeEstate({ request, auth, response }) {
     const { id } = request.all()
     try {
-      await EstateService.addDislike(auth.user.id, id)
+      await EstateService.addDislike({ user_id: auth.user.id, estate_id: id })
     } catch (e) {
       throw new HttpException(e.message)
     }
@@ -955,8 +1059,15 @@ class EstateController {
    */
   async removeEstateDislike({ request, auth, response }) {
     const { id } = request.all()
-    await EstateService.removeDislike(auth.user.id, id)
-    response.res(true)
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.removeDislike({ user_id: auth.user.id, estate_id: id }, trx)
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

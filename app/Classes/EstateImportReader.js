@@ -238,6 +238,8 @@ class EstateImportReader {
           const value = get(data[k], `${column.index}`)
           if (value) {
             row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
+          } else {
+            row[column.name] = null
           }
         })
       } else {

@@ -47,13 +47,14 @@ class TimeSlotService {
         },
         trx
       )
-      await require('./EstateService').updatePercent(
+      await require('./EstateService').updatePercentAndIsPublished(
         { estate_id: estate.id, slots: [slot.toJSON()] },
         trx
       )
       await trx.commit()
       return slot
     } catch (e) {
+      console.log('timeslot here error', e.message)
       await trx.rollback()
       throw new HttpException(FAILED_CREATE_TIME_SLOT, 400)
     }
@@ -326,7 +327,7 @@ class TimeSlotService {
           idx++
         }
       }
-      await require('./EstateService').updatePercent(
+      await require('./EstateService').updatePercentAndIsPublished(
         {
           estate_id: slot.estate_id,
           deleted_slots_ids: [slot_id],

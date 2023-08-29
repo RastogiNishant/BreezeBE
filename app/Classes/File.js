@@ -150,6 +150,7 @@ class File {
     try {
       // let img_data = Drive.getStream(file.tmpPath)
       let img_data
+      let isCompressed = true
       if ([this.IMAGE_TIFF, this.IMAGE_GIF].includes(mime)) {
         img_data = await this.convertTiffToJPG(file.tmpPath)
         ext = `jpg`
@@ -176,14 +177,23 @@ class File {
             plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })],
           })
         } else {
-          img_data = (
-            await imagemin([file.tmpPath], {
-              plugins: [
-                imageminPngquant({ quality: [0.6, 0.8] }),
-                imageminMozjpeg({ quality: 80 }),
-              ],
-            })
-          )[0].data
+          try {
+            img_data = (
+              await imagemin([file.tmpPath], {
+                plugins: [
+                  imageminPngquant({ quality: [0.6, 0.8] }),
+                  imageminMozjpeg({ quality: 80 }),
+                ],
+              })
+            )?.[0]?.data
+          } catch (e) {
+            try {
+              img_data = Drive.getStream(file.tmpPath)
+              isCompressed = false
+            } catch (e) {
+              throw new HttpException(e.message, 400)
+            }
+          }
         }
       } else if ([this.IMAGE_PDF].includes(mime)) {
         img_data = await this.compressPDF(file.tmpPath)
@@ -200,11 +210,10 @@ class File {
         options.ACL = 'public-read'
       }
       await Drive.disk(disk).put(filePathName, img_data, options)
-
       let thumbnailFilePathName = null
       if ([this.IMAGE_JPEG, this.IMAGE_PNG, this.IMAGE_GIF, this.IMAGE_WEBP].includes(mime)) {
         thumbnailFilePathName = await File.saveThumbnailToDisk({
-          image: img_data,
+          image: isCompressed ? img_data : file.tmpPath,
           fileName: filename,
           dir: dir,
           options: options,
@@ -227,12 +236,10 @@ class File {
       if (isUri) {
         image = { uri: image }
       }
-
       let thumbnail = await File.createThumbnail(image)
       if (thumbnail === false) {
-        thumbnail = originalImage
+        thumbnail = Drive.getStream(originalImage)
       }
-
       const thumbnailFilePathName = `thumbnail/${dir}/thumb_${fileName}`
       await Drive.disk(disk).put(thumbnailFilePathName, thumbnail, options)
       return thumbnailFilePathName

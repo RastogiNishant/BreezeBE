@@ -234,6 +234,18 @@ class EstateFilter extends Base {
         })
         .nullable(),
       is_expired_no_match_exclude: yup.boolean(),
+      building_id: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
     })
 }
 

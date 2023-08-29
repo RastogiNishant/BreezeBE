@@ -171,6 +171,20 @@ const calculateEnergyClassFromEfficiency = (efficiency) => {
   return ENERGY_CLASS_USING_EFFICIENCY[idx].level
 }
 
+const checkIfIsValid = (object) => {
+  let flag = true
+  Object.keys(object).forEach((each) => {
+    if (
+      object[each] === 0 ||
+      object[each] === null ||
+      object[each] === undefined ||
+      Array.isArray(object[each] && object[each].length === 0)
+    )
+      flag = false
+  })
+  return flag
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -186,4 +200,5 @@ module.exports = {
   createDynamicLink,
   encodeURL,
   calculateEnergyClassFromEfficiency,
+  checkIfIsValid,
 }

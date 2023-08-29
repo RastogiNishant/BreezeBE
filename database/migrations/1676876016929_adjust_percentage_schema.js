@@ -13,7 +13,7 @@ class AdjustPercentageSchema extends Schema {
     let i = 0
 
     while (i < estates.length) {
-      await EstateService.updatePercent({ estate_id: estates[i].id })
+      await EstateService.updatePercentAndIsPublished({ estate_id: estates[i].id })
       i++
     }
   }

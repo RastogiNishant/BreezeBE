@@ -27,6 +27,13 @@ const {
   ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
   ISO_DATE_FORMAT,
   STATUS_OFFLINE_ACTIVE,
+  PUBLISH_STATUS_BY_LANDLORD,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_NEW,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_STATUS_FINISH,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -34,6 +41,9 @@ const HttpException = require('../../../Exceptions/HttpException')
 
 const Estate = use('App/Models/Estate')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
+const Match = use('App/Models/Match')
+const MatchService = use('App/Services/MatchService')
 const File = use('App/Models/File')
 const Image = use('App/Models/Image')
 const MailService = use('App/Services/MailService')
@@ -73,7 +83,85 @@ class PropertyController {
         'estates.property_id',
         'estates.available_start_at',
         'estates.available_end_at',
-        'estates.updated_at'
+        'estates.vacant_date',
+        'estates.letting_type',
+        'estates.is_duration_later',
+        'estates.min_invite_count',
+        'estates.rent_end_at',
+        'estates.updated_at',
+        Database.raw(
+          `case when status='${STATUS_ACTIVE}' 
+          then true else false end
+          as "unpublishable"`
+        ),
+        Database.raw(
+          /* !estate.available_start_at ||
+      (!estate.is_duration_later && !estate.available_end_at) ||
+      (estate.is_duration_later && !estate.min_invite_count) ||
+      (estate.available_end_at &&
+        moment.utc(estate.available_end_at).format() <= moment.utc(new Date()).format()) ||
+      (estate.available_start_at &&
+        estate.available_end_at &&
+        moment.utc(estate.available_start_at).format() >=
+          moment.utc(estate.available_end_at).format()) */
+
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+            publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
+            not (
+              (available_start_at is null) is true or
+              ((is_duration_later is false or is_duration_later is null)
+              	and (available_end_at is null) is true) or
+              (is_duration_later is true and min_invite_count < 1) or
+              ((available_end_at is not null) is true and available_end_at < NOW()) or
+              ((available_end_at is not null) is true and
+                (available_start_at is not null) is true and
+                available_start_at >= available_end_at)
+            ) and
+            letting_type <> '${LETTING_TYPE_LET}'
+            then true else false end
+            as "approvable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+            publish_status='${PUBLISH_STATUS_BY_LANDLORD}'
+            then true else false end
+            as "declineable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+            publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}') and
+            not (
+              (available_start_at is null) is true or
+              ((is_duration_later is false or is_duration_later is null)
+              	and (available_end_at is null) is true) or
+              (is_duration_later is true and min_invite_count < 1) or
+              ((available_end_at is not null) is true and available_end_at < NOW()) or
+              ((available_end_at is not null) is true and
+                (available_start_at is not null) is true and
+                available_start_at >= available_end_at)
+            ) and
+            letting_type <> '${LETTING_TYPE_LET}'
+            then true else false end
+            as "publishable"
+          `
+        ),
+        Database.raw(
+          `json_build_object(
+            'letting_type_is_let', (letting_type = '${LETTING_TYPE_LET}') is true,
+            'available_start_at_is_null', (available_start_at is null) is true,
+            'is_not_duration_later_but_available_end_at_is_null',
+              ((is_duration_later is false or is_duration_later is null)
+              and (available_end_at is null) is true) is true,
+            'is_duration_later_but_no_min_invite_count', 
+              (is_duration_later is true and min_invite_count < 1) is true,
+            'available_end_at_is_past', 
+              ((available_end_at is not null) is true and available_end_at < NOW()) is true,
+            'available_start_at_is_later_than_available_end_at',
+              ((available_end_at is not null) is true and
+              (available_start_at is not null) is true and
+              available_start_at >= available_end_at) is true
+          ) as non_publishable_approvable_reasons`
+        )
       )
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
@@ -99,6 +187,7 @@ class PropertyController {
       .with('final')
       .withCount('inviteBuddies')
       .withCount('knocked')
+      .withCount('contact_requests')
       .orderBy('estates.updated_at', 'desc')
     if (id) {
       query.where('id', id)
@@ -109,7 +198,8 @@ class PropertyController {
       estate = estate.toJSON()
       estate.invite_count =
         parseInt(estate['__meta__'].knocked_count) +
-        parseInt(estate['__meta__'].inviteBuddies_count)
+        parseInt(estate['__meta__'].inviteBuddies_count) +
+        parseInt(estate['__meta__'].contact_requests_count)
       estate.visit_count = parseInt(estate['__meta__'].visits_count)
       estate.final_match_count = parseInt(estate['__meta__'].final_count)
       return estate
