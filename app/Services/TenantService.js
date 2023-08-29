@@ -60,6 +60,9 @@ const {
   MATCH_STATUS_KNOCK,
   DATE_FORMAT,
   STATUS_EXPIRE,
+  INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT,
+  HIRING_TYPE_FULL_TIME,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 const HttpException = require('../Exceptions/HttpException')
@@ -184,6 +187,7 @@ class TenantService {
 
     return Database.table({ _m: 'members' })
       .select(Database.raw(`COUNT(_ip.id) as income_proofs_count`))
+      .select('_i.income_type')
       .leftJoin({ _i: 'incomes' }, function () {
         this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
       })
@@ -196,23 +200,13 @@ class TenantService {
         this.orWhere('_ip.expire_date', '>=', startOf)
         this.orWhereNull('_ip.expire_date')
       })
-      .groupBy(['_m.id', '_ip.income_id'])
+      .groupBy(['_m.id', '_ip.income_id', '_i.income_type'])
   }
 
   /**
    *
    */
   static async activateTenant(tenant) {
-    const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
-    if (isEmpty(counts)) {
-      throw new AppException('Invalid members')
-    }
-    // Check is user has income proofs for last 3 month
-    const hasUnconfirmedProofs = !!counts.find((i) => parseInt(i.income_proofs_count) < 3)
-    if (hasUnconfirmedProofs) {
-      throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
-    }
-
     const getRequiredTenantData = (tenantId) => {
       return Database.table({ _t: 'tenants' })
         .select(
@@ -232,6 +226,7 @@ class TenantService {
           '_m.credit_score',
           '_m.credit_score_submit_later',
           '_m.phone_verified',
+          '_m.birth_place',
           '_i.position',
           '_i.company',
           '_i.income_type',
@@ -253,6 +248,26 @@ class TenantService {
         .where('_t.id', tenantId)
     }
     const data = await getRequiredTenantData(tenant.id)
+
+    const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
+    console.log('getTenantValidProofsCount=', counts)
+    if (!data.find((m) => m.rent_proof_not_applicable) && isEmpty(counts)) {
+      throw new AppException('Invalid members')
+    }
+    // Check is user has income proofs for last 3 month
+    const hasUnconfirmedProofs = !!counts.find(
+      (i) =>
+        ![
+          INCOME_TYPE_TRAINEE,
+          INCOME_TYPE_OTHER_BENEFIT,
+          INCOME_TYPE_CHILD_BENEFIT,
+          INCOME_TYPE_HOUSE_WORK,
+          INCOME_TYPE_UNEMPLOYED,
+        ].includes(i.income_type) && parseInt(i.income_proofs_count) < 3
+    )
+    if (hasUnconfirmedProofs) {
+      throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
+    }
 
     const getConditionRule = (types = []) => {
       return yup.lazy(function (value, { parent }) {
@@ -284,6 +299,7 @@ class TenantService {
         otherwise: yup.string().required(),
       }),
       birthday: yup.date().required(),
+      birth_place: yup.string().required(),
       unpaid_rental: yup
         .number()
         .positive()
@@ -306,7 +322,7 @@ class TenantService {
         .number()
         .oneOf([NO_INCOME_SEIZURE, YES_INCOME_SEIZURE, NO_ANSWER_INCOME_SEIZURE])
         .required(),
-      hiring_date: yup.date().required(),
+      hiring_date: yup.date().nullable(),
       income_type: yup
         .string()
         .oneOf([
@@ -319,6 +335,8 @@ class TenantService {
           INCOME_TYPE_PENSIONER,
           INCOME_TYPE_SELF_EMPLOYED,
           INCOME_TYPE_TRAINEE,
+          INCOME_TYPE_OTHER_BENEFIT,
+          INCOME_TYPE_CHILD_BENEFIT,
         ])
         .required(),
       income: yup.number().min(0).required(),
@@ -336,13 +354,7 @@ class TenantService {
         INCOME_TYPE_HOUSE_WORK,
         INCOME_TYPE_WORKER,
       ]),
-      employment_type: getConditionRule([
-        INCOME_TYPE_EMPLOYEE,
-        INCOME_TYPE_CIVIL_SERVANT,
-        INCOME_TYPE_FREELANCER,
-        INCOME_TYPE_HOUSE_WORK,
-        INCOME_TYPE_WORKER,
-      ]),
+      employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME]),
     })
 
     const trx = await Database.beginTransaction()
