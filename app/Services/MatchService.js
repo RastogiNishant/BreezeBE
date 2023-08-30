@@ -227,6 +227,12 @@ class MatchService {
     const userIncome = parseFloat(prospect.income) || 0
     if (!userIncome) {
       //added to prevent division by zero on calculation for realBudget
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'user income not set',
+        }
+      }
       return 0
     }
     const realBudget = estatePrice / userIncome
@@ -236,6 +242,12 @@ class MatchService {
 
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'rent is bigger than income',
+        }
+      }
       return 0
     }
     let estateBudgetRel = estateBudget / 100
@@ -256,6 +268,18 @@ class MatchService {
     }
     log({ estateBudgetRel, realBudget, landlordBudgetScore })
     if (!landlordBudgetScore > 0) {
+      if (debug) {
+        return {
+          scoreL,
+          landlordBudgetScore,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          reason: 'landlord budget score zero.',
+        }
+      }
       return 0
     }
     scoreL += landlordBudgetScore * landlordBudgetWeight
@@ -279,12 +303,24 @@ class MatchService {
     }
     log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
     if (!creditScorePoints > 0) {
+      if (debug) {
+        return {
+          scoreL,
+          landlordBudgetScore,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          reason: 'credit score zero.',
+        }
+      }
       return 0
     }
     scoreL += creditScorePoints * creditScoreWeight
 
     // Get rent arrears score
-    if (!estate.rent_arrears && prospect.rent_arrears === NO_UNPAID_RENTAL) {
+    if (estate.rent_arrears || !prospect.rent_arrears) {
       rentArrearsScore = 1
     }
     log({
@@ -322,6 +358,18 @@ class MatchService {
       }
     }
     if (!ageInRangeScore > 0) {
+      if (debug) {
+        return {
+          scoreL,
+          landlordBudgetScore,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          reason: 'age in range zero.',
+        }
+      }
       return 0
     }
     scoreL += ageInRangeScore * ageInRangeWeight
@@ -360,6 +408,18 @@ class MatchService {
     }
     log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax, householdSizeScore })
     if (!householdSizeScore > 0) {
+      if (debug) {
+        return {
+          scoreL,
+          landlordBudgetScore,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          reason: 'household size score zero.',
+        }
+      }
       return 0
     }
     scoreL += householdSizeScore * householdSizeWeight
@@ -446,6 +506,20 @@ class MatchService {
     }
     log({ userIncome, prospectBudgetScore, realBudget, prospectBudget: prospectBudget / 100 })
     if (!prospectBudgetScore > 0) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'prospect budget score zero',
+        }
+      }
       return 0
     }
     scoreT = prospectBudgetScore * prospectBudgetWeight
@@ -481,6 +555,20 @@ class MatchService {
       roomsScore,
     })
     if (roomsScore <= 0) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'rooms score zero',
+        }
+      }
       return 0
     }
     scoreT += roomsScore * roomsWeight
@@ -516,6 +604,20 @@ class MatchService {
       spaceScore,
     })
     if (spaceScore <= 0) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'space score zero',
+        }
+      }
       return 0
     }
     scoreT += spaceScore * areaWeight
@@ -570,6 +672,20 @@ class MatchService {
     }
     log({ vacantFrom, now, nextSixMonths, nextYear, rentStartScore })
     if (rentStartScore <= 0) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'rent start score zero',
+        }
+      }
       return 0
     }
     scoreT += rentStartScore * rentStartWeight

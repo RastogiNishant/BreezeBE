@@ -204,6 +204,11 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+
+  Route.get(
+    '/utilities/matchscore/:id/:estate_id',
+    'Admin/AppController.calculateMatchScore'
+  ).middleware(['auth:jwtAdministrator', 'valid:Id,EstateId'])
 }).prefix('api/v1/administration')
 
 /** End administration */
