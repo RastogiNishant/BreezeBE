@@ -504,7 +504,7 @@ class MatchService {
 
     let scoreT = 0
 
-    const prospectBudget = prospect.budget_max || 0
+    const prospectBudget = prospect.budget_max_scale || 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
     const realBudget = estatePrice / userIncome
@@ -3502,7 +3502,7 @@ class MatchService {
         }
       )
 
-    if (parseInt(params?.budget_min || 0) !== 0 || parseInt(params?.budget_max || 100) !== 100) {
+    if (parseInt(params?.budget_min || 0) !== 0) {
       if (params && params.budget_min > 0 && params.budget_max > 0) {
         query.where(function () {
           this.orWhere(function () {
@@ -4140,7 +4140,11 @@ class MatchService {
         '_m.members_age',
         '_m.members_count', //adult members only
         'pets',
-        Database.raw(`(100*budget_max/_me.total_income) as budget_max`),
+        'budget_min',
+        'budget_max',
+        'transfer_budget_min',
+        'transfer_budget_max',
+        Database.raw(`(100*budget_max/_me.total_income) as budget_max_scale`),
         'rent_start',
         'options', //array
         'space_min',
