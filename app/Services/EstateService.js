@@ -1484,7 +1484,6 @@ class EstateService {
 
     const minTenantBudget = tenant?.budget_min || 0
     const maxTenantBudget = tenant?.budget_max || 0
-
     estates = estates.filter((estate) => {
       const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
       return budget >= minTenantBudget && budget <= maxTenantBudget
@@ -1495,14 +1494,16 @@ class EstateService {
     }
 
     //transfer budget
-    estates = estates.filter(
-      (estate) =>
-        !estate.transfer_budget ||
-        (estate.transfer_budget >= (tenant.transfer_budget_min ?? 0) &&
-          estate.transfer_budget <= (tenant.transfer_budget_max ?? 0))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after transfer ${estates?.length}`)
+    if (tenant.transfer_budget_min && tenant.transfer_budget_max) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.transfer_budget ||
+          (estate.transfer_budget >= (tenant.transfer_budget_min ?? 0) &&
+            estate.transfer_budget <= (tenant.transfer_budget_max ?? 0))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after transfer ${estates?.length}`)
+      }
     }
 
     if (tenant.rent_start && inside_property) {
