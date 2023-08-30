@@ -236,8 +236,7 @@ class MatchService {
     if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
       return 0
     }
-
-    const estateBudget = estate.budget || 0
+    const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
     if (!userIncome) {
@@ -253,7 +252,6 @@ class MatchService {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
       return 0
     }
-    let estateBudgetRel = estateBudget / 100
 
     //Landlord Budget Points...
     const LANDLORD_BUDGET_POINT_FACTOR = 0.1
@@ -3997,7 +3995,8 @@ class MatchService {
     if (!isEmpty(matchScores)) {
       const insertQuery = Database.query().into('matches').insert(matchScores).toString()
       await Database.raw(
-        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
+        `${insertQuery} ON CONFLICT (user_id, estate_id) 
+          DO UPDATE SET "percent" = EXCLUDED.percent, "landlord_score" = EXCLUDED.landlord_score, "prospect_score" = EXCLUDED.prospect_score`
       ).transacting(trx)
     }
   }
