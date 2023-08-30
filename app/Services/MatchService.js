@@ -268,6 +268,18 @@ class MatchService {
     }
     log({ estateBudgetRel, realBudget, landlordBudgetScore })
     if (!landlordBudgetScore > 0) {
+      if (debug) {
+        return {
+          scoreL,
+          landlordBudgetScore,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          reason: 'landlord budget score zero.',
+        }
+      }
       return 0
     }
     scoreL += landlordBudgetScore * landlordBudgetWeight
@@ -291,6 +303,18 @@ class MatchService {
     }
     log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
     if (!creditScorePoints > 0) {
+      if (debug) {
+        return {
+          scoreL,
+          landlordBudgetScore,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          reason: 'credit score zero.',
+        }
+      }
       return 0
     }
     scoreL += creditScorePoints * creditScoreWeight
@@ -334,6 +358,18 @@ class MatchService {
       }
     }
     if (!ageInRangeScore > 0) {
+      if (debug) {
+        return {
+          scoreL,
+          landlordBudgetScore,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          reason: 'age in range zero.',
+        }
+      }
       return 0
     }
     scoreL += ageInRangeScore * ageInRangeWeight
@@ -372,6 +408,18 @@ class MatchService {
     }
     log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax, householdSizeScore })
     if (!householdSizeScore > 0) {
+      if (debug) {
+        return {
+          scoreL,
+          landlordBudgetScore,
+          creditScorePoints,
+          rentArrearsScore,
+          ageInRangeScore,
+          householdSizeScore,
+          petsScore,
+          reason: 'household size score zero.',
+        }
+      }
       return 0
     }
     scoreL += householdSizeScore * householdSizeWeight
@@ -458,6 +506,20 @@ class MatchService {
     }
     log({ userIncome, prospectBudgetScore, realBudget, prospectBudget: prospectBudget / 100 })
     if (!prospectBudgetScore > 0) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'prospect budget score zero',
+        }
+      }
       return 0
     }
     scoreT = prospectBudgetScore * prospectBudgetWeight
@@ -493,6 +555,20 @@ class MatchService {
       roomsScore,
     })
     if (roomsScore <= 0) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'rooms score zero',
+        }
+      }
       return 0
     }
     scoreT += roomsScore * roomsWeight
@@ -528,6 +604,20 @@ class MatchService {
       spaceScore,
     })
     if (spaceScore <= 0) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'space score zero',
+        }
+      }
       return 0
     }
     scoreT += spaceScore * areaWeight
