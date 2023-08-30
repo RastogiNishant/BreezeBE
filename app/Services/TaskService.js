@@ -24,6 +24,7 @@ const {
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_URGENCY,
   WEBSOCKET_EVENT_TASK_UPDATED,
+  MATCH_STATUS_INVITE,
 } = require('../constants')
 
 const WebSocket = use('App/Classes/Websocket')
@@ -434,7 +435,23 @@ class TaskService extends BaseService {
       .first()
 
     if (!task) {
-      return null
+      // if it is system task but not exists, we need to create one automatically
+      if (estate_id) {
+        const estate = await EstateService.getById(estate_id)
+        const match = await require('./MatchService').getMatches(prospect_id || user.id, estate_id)
+        if (estate && match && (match.status >= MATCH_STATUS_INVITE || estate.is_not_show)) {
+          task = await this.createGlobalTask({
+            tenantId: prospect_id || user.id,
+            landlordId: estate.user_id,
+            estateId: estate_id,
+          })
+          console.log('task here=', task)
+        } else {
+          return null
+        }
+      } else {
+        return null
+      }
     }
 
     if (user.role === ROLE_LANDLORD) {
