@@ -1,6 +1,15 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty, intersection, countBy, groupBy, uniqBy } = require('lodash')
+const {
+  get,
+  isNumber,
+  isEmpty,
+  intersection,
+  countBy,
+  groupBy,
+  uniqBy,
+  isEqual,
+} = require('lodash')
 const { props } = require('bluebird')
 const Promise = require('bluebird')
 const Database = use('Database')
@@ -224,7 +233,7 @@ class MatchService {
       petsWeight
 
     //WBS certificate score
-    if (estate.wbs_certificate && estate.wbs_certificate !== prospect.wbs_certificate) {
+    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
       return 0
     }
 
@@ -435,7 +444,7 @@ class MatchService {
     const prospectBudgetRel = prospectBudget / 100
 
     //WBS certificate score
-    if (estate.wbs_certificate && estate.wbs_certificate !== prospect.wbs_certificate) {
+    if (estate.wbs_certificate && isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
       return 0
     }
 
@@ -3802,8 +3811,11 @@ class MatchService {
       )
       .leftJoin(
         Database.raw(`
-        (select estates.id as estate_id, 
-          json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
+        (select estates.id as estate_id,
+          case when estates.cert_category is null or estates.cert_category='' then
+            null else 
+            json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
+            end
           as wbs_certificate from estates left join cities on cities.city=estates.city)
         as _ec`),
         function () {
@@ -3883,7 +3895,10 @@ class MatchService {
         (select
           user_id,
           status, 
-          json_build_object('city_id', city_id, 'income_level', income_level)
+          case when income_level is null or income_level='' then
+            null else
+            json_build_object('city_id', city_id, 'income_level', income_level)
+            end
             as wbs_certificate from tenant_certificates) as _tc
         `),
         function () {
