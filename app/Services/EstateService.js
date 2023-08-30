@@ -2331,7 +2331,7 @@ class EstateService {
       .select(Database.raw(`count(*) filter(where status='${STATUS_ACTIVE}') as online_count`))
   }
 
-  static async getShortEstatesByQuery({ user_id, query, letting_type }) {
+  static async getShortEstatesByQuery({ user_id, query, letting_type, status }) {
     let estateQuery = this.getActiveEstateQuery()
       .select(
         'estates.id',
@@ -2378,13 +2378,17 @@ class EstateService {
       })
     }
 
-    if (letting_type.includes(LETTING_TYPE_LET)) {
+    if (letting_type?.includes(LETTING_TYPE_LET)) {
       estateQuery.where('estates.letting_type', LETTING_TYPE_LET)
       estateQuery.innerJoin({ _ect: 'estate_current_tenants' }, function () {
         this.on('_ect.estate_id', 'estates.id')
           .on(Database.raw(`_ect.user_id IS NOT NULL`))
           .on('_ect.status', STATUS_ACTIVE)
       })
+    }
+
+    if (status) {
+      estateQuery.whereIn('estates.status', Array.isArray(status) ? status : [status])
     }
 
     return await estateQuery.fetch()
