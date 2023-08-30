@@ -128,6 +128,7 @@ class MemberService {
   static async getMembers(householdId, includes_absolute_url = false) {
     const query = Member.query()
       .select('members.*')
+      .select(Database.raw(`date_part('year', age(birthday)) as age`))
       .where('members.user_id', householdId)
       .with('incomes', function (b) {
         b.with('proofs')
