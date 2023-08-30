@@ -22,7 +22,7 @@ class MatchListLandlord extends Base {
     yup.object().shape({
       estate_id: id.required(),
       budget_min: yup.number().integer().min(0).max(100),
-      budget_max: yup.number().integer().min(0).max(100),
+      budget_max: yup.number().integer().min(0),
       credit_score_min: yup.number().min(0).max(100),
       credit_score_max: yup.number().min(0).max(100),
       income_type: yup
