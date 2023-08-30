@@ -131,9 +131,9 @@ const inRange = (value, start, end) => {
 }
 
 const log = (data) => {
-  return false
+  //return false
   //Logger.info('LOG', data)
-  //console.log(data)
+  console.log(data)
 }
 
 class MatchService {
@@ -444,7 +444,7 @@ class MatchService {
     const prospectBudgetRel = prospectBudget / 100
 
     //WBS certificate score
-    if (estate.wbs_certificate && isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
       return 0
     }
 
@@ -466,6 +466,20 @@ class MatchService {
     }
     log({ userIncome, prospectBudgetScore, realBudget, prospectBudget: prospectBudget / 100 })
     if (!prospectBudgetScore > 0) {
+      if (debug) {
+        return {
+          scoreT: 0,
+          scoreTPer: 0,
+          prospectBudgetScore: 0,
+          roomsScore: 0,
+          spaceScore: 0,
+          floorScore: 0,
+          rentStartScore: 0,
+          aptTypeScore: 0,
+          houseTypeScore: 0,
+          amenitiesScore: 0,
+        }
+      }
       return 0
     }
     scoreT = prospectBudgetScore * prospectBudgetWeight
@@ -501,6 +515,20 @@ class MatchService {
       roomsScore,
     })
     if (roomsScore <= 0) {
+      if (debug) {
+        return {
+          scoreT,
+          scoreTPer: 0,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore: 0,
+          floorScore: 0,
+          rentStartScore: 0,
+          aptTypeScore: 0,
+          houseTypeScore: 0,
+          amenitiesScore: 0,
+        }
+      }
       return 0
     }
     scoreT += roomsScore * roomsWeight
@@ -536,6 +564,20 @@ class MatchService {
       spaceScore,
     })
     if (spaceScore <= 0) {
+      if (debug) {
+        return {
+          scoreT,
+          scoreTPer: 0,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore: 0,
+          rentStartScore: 0,
+          aptTypeScore: 0,
+          houseTypeScore: 0,
+          amenitiesScore: 0,
+        }
+      }
       return 0
     }
     scoreT += spaceScore * areaWeight
@@ -590,6 +632,20 @@ class MatchService {
     }
     log({ vacantFrom, now, nextSixMonths, nextYear, rentStartScore })
     if (rentStartScore <= 0) {
+      if (debug) {
+        return {
+          scoreT: 0,
+          scoreTPer: 0,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore: 0,
+          houseTypeScore: 0,
+          amenitiesScore: 0,
+        }
+      }
       return 0
     }
     scoreT += rentStartScore * rentStartWeight
@@ -3899,7 +3955,10 @@ class MatchService {
             null else
             json_build_object('city_id', city_id, 'income_level', income_level)
             end
-            as wbs_certificate from tenant_certificates) as _tc
+            as wbs_certificate
+          from tenant_certificates
+          where expired_at > NOW()
+          ) as _tc
         `),
         function () {
           this.on(Database.raw(`(tenants.user_id=_tc.user_id)`)).on(`_tc.status`, STATUS_ACTIVE)
