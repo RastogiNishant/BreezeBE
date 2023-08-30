@@ -65,21 +65,6 @@ class MatchController {
   /**
    *
    */
-  async getOwnEstate(estateId, userId) {
-    const estate = await Estate.query()
-      .where({ id: estateId, user_id: userId })
-      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-      .first()
-    if (!estate) {
-      throw new HttpException('Estate not found', 404)
-    }
-
-    return estate
-  }
-
-  /**
-   *
-   */
   async getActiveEstate(estateId, withExpired = true) {
     const estate = await EstateService.getActiveById(estateId)
     if (!estate) {
@@ -126,14 +111,14 @@ class MatchController {
     }
   }
 
-  async matchToNewInvite({ request, auth, response }) {
+  async matchMoveToNewEstate({ request, auth, response }) {
     const landlordId = auth.user.id
     const { estate_id, user_id, new_estate_id } = request.all()
 
     try {
-      const estate = await this.getOwnEstate(estate_id, landlordId)
-      await this.getOwnEstate(new_estate_id, landlordId)
-      await MatchService.inviteToNewProperty({
+      const estate = await EstateService.getPublishedEstate(estate_id, landlordId)
+      await EstateService.getPublishedEstate(new_estate_id, landlordId)
+      await MatchService.matchMoveToNewEstate({
         estate,
         userId: user_id,
         newEstateId: new_estate_id,
@@ -152,7 +137,7 @@ class MatchController {
     const landlordId = auth.user.id
     const { estate_id, user_id } = request.all()
     // Check is estate owner
-    const estate = await this.getOwnEstate(estate_id, landlordId)
+    const estate = await EstateService.getPublishedEstate(estate_id, landlordId)
     try {
       await MatchService.inviteKnockedUser({ estate, userId: user_id })
       logEvent(
@@ -183,7 +168,7 @@ class MatchController {
    */
   async removeInvite({ request, auth, response }) {
     const { estate_id, user_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
+    await EstateService.getPublishedEstate(estate_id, auth.user.id)
 
     try {
       await MatchService.cancelInvite(estate_id, user_id, auth.user.role)
@@ -348,7 +333,7 @@ class MatchController {
    */
   async updateVisitTimeslotLandlord({ request, auth, response }) {
     const { estate_id, status, delay = null, user_id } = request.all()
-    const estate = await this.getOwnEstate(estate_id, auth.user.id)
+    const estate = await EstateService.getPublishedEstate(estate_id, auth.user.id)
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
@@ -406,7 +391,7 @@ class MatchController {
   async shareTenantData({ request, auth, response }) {
     const { estate_id, code } = request.all()
     const userId = auth.user.id
-    await this.getOwnEstate(estate_id, userId)
+    await EstateService.getPublishedEstate(estate_id, userId)
 
     try {
       const { tenantId } = await MatchService.share({
@@ -453,19 +438,25 @@ class MatchController {
    */
   async moveUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
+    const trx = await Database.beginTransaction()
     try {
-      await this.getOwnEstate(estate_id, auth.user.id)
-      const success = await MatchService.toTop({
-        estateId: estate_id,
-        tenantId: user_id,
-        landlordId: auth.user.id,
-      })
+      await EstateService.getPublishedEstate(estate_id, auth.user.id)
+      const success = await MatchService.toTop(
+        {
+          estateId: estate_id,
+          tenantId: user_id,
+          landlordId: auth.user.id,
+        },
+        trx
+      )
       if (!success) {
         throw new HttpException('Cant move to top', 400)
       }
+      await trx.commit()
       NoticeService.landlordMovedProspectToTop(estate_id, user_id)
       response.res(true)
     } catch (e) {
+      await trx.rollback()
       console.log('moveUserToTop', e.message)
       throw new HttpException(e.message, e.status || 400)
     }
@@ -488,7 +479,7 @@ class MatchController {
    */
   async discardUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
+    await EstateService.getPublishedEstate(estate_id, auth.user.id)
     try {
       await MatchService.removeFromTop(estate_id, user_id)
     } catch (e) {
@@ -508,7 +499,7 @@ class MatchController {
    */
   async requestUserCommit({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
+    await EstateService.getPublishedEstate(estate_id, auth.user.id)
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (finalMatch) {
@@ -520,17 +511,24 @@ class MatchController {
     }
 
     const isValidMatch = await MatchService.checkMatchIsValidForFinalRequest(estate_id, user_id)
+    const trx = await Database.beginTransaction()
     if (isValidMatch) {
-      await MatchService.requestFinalConfirm(estate_id, user_id)
-      logEvent(
-        request,
-        LOG_TYPE_FINAL_MATCH_REQUEST,
-        auth.user.id,
-        { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
-        false
-      )
-      Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
-      response.res(true)
+      try {
+        await MatchService.requestFinalConfirm({ estate_id, tenantId: user_id }, trx)
+        logEvent(
+          request,
+          LOG_TYPE_FINAL_MATCH_REQUEST,
+          auth.user.id,
+          { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
+          false
+        )
+        await trx.commit()
+        Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
+        response.res(true)
+      } catch (e) {
+        await trx.rollback()
+        throw HttpException(e.message, 400)
+      }
     } else {
       throw new HttpException(
         'This prospect has not shared the data. Match is not valid for final match request',
@@ -1163,7 +1161,7 @@ class MatchController {
    */
   async inviteToCome({ request, auth, response }) {
     const { estate_id, user_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
+    await EstateService.getPublishedEstate(estate_id, auth.user.id)
     await MatchService.inviteUserToCome(estate_id, user_id)
 
     response.res(true)

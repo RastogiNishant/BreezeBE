@@ -1143,9 +1143,9 @@ Route.group(() => {
     'auth:jwtLandlord',
     'valid:MatchInvite',
   ])
-  Route.post('/new_invite', 'MatchController.matchToNewInvite').middleware([
+  Route.post('/move', 'MatchController.matchMoveToNewEstate').middleware([
     'auth:jwtLandlord',
-    'valid:MatchInviteToNewEstate',
+    'valid:MatchMoveToNewEstate',
   ])
   Route.delete('/invite', 'MatchController.removeInvite').middleware([
     'auth:jwtLandlord',

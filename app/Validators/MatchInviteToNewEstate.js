@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const { id } = require('../Libs/schemas.js')
 
-class MatchInviteToNewEstate extends Base {
+class MatchMoveToNewEstate extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: id.required(),
@@ -13,4 +13,4 @@ class MatchInviteToNewEstate extends Base {
     })
 }
 
-module.exports = MatchInviteToNewEstate
+module.exports = MatchMoveToNewEstate

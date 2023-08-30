@@ -107,12 +107,15 @@ const {
     UNSECURE_PROFILE_SHARE,
     ERROR_COMMIT_MATCH_INVITE,
     ERROR_ALREADY_MATCH_INVITE,
+    ERROR_MATCH_COMMIT_DOUBLE,
+    USER_NOT_EXIST,
   },
   exceptionCodes: {
     WRONG_PROSPECT_CODE_ERROR_CODE,
     NO_TIME_SLOT_ERROR_CODE,
     ERROR_COMMIT_MATCH_INVITE_CODE,
     ERROR_ALREADY_MATCH_INVITE_CODE,
+    ERROR_MATCH_COMMIT_DOUBLE_CODE,
   },
 } = require('../exceptions')
 const QueueService = require('./QueueService')
@@ -1037,8 +1040,8 @@ class MatchService {
           estate,
           status: STATUS_ACTIVE,
         })
+
         estate_ids = sameCategoryEstates.map((e) => e.id)
-        console.log('sameCategoryEstates=', sameCategoryEstates)
         matches = sameCategoryEstates.map((e) => ({
           user_id,
           estate_id: e.id,
@@ -1072,7 +1075,6 @@ class MatchService {
       if (!matches?.length) {
         throw new HttpException(NO_MATCH_EXIST, 400)
       }
-      console.log('upsertBulkMatches=', matches)
       await this.upsertBulkMatches(matches, trx)
 
       if (share_profile) {
@@ -1104,6 +1106,39 @@ class MatchService {
       throw new HttpException(e.message, 400)
     }
     return matches
+  }
+
+  static async calculationMatchScoreByUserId({ userId, estateId }) {
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .select('_p.data as polygon')
+      .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+      .where({ 'tenants.user_id': userId })
+      .first()
+
+    if (!tenant) {
+      throw new HttpException(USER_NOT_EXIST, 400)
+    }
+
+    tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
+    const estate =
+      (
+        await MatchService.getEstateForScoringQuery().where('estates.id', estateId).first()
+      ).toJSON() || []
+
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
+      tenant,
+      estate
+    )
+
+    return {
+      percent,
+      landlord_score,
+      prospect_score,
+    }
   }
 
   static async sendMatchKnockWebsocket({ estate_id, user_id, share_profile = false }) {
@@ -1257,13 +1292,13 @@ class MatchService {
     }
   }
 
-  static async inviteToNewProperty({ estate, userId, newEstateId }, trx = null) {
+  static async matchMoveToNewEstate({ estate, userId, newEstateId }) {
     const estateId = estate.id
     const match = await Database.query()
       .table('matches')
       .where({ estate_id: estateId, user_id: userId })
       .where(function () {
-        this.orWhere('status', '<', MATCH_STATUS_COMMIT)
+        this.orWhere('status', '<=', MATCH_STATUS_COMMIT)
         this.orWhere(function () {
           this.where('status', MATCH_STATUS_NEW)
           this.where('buddy', true)
@@ -1275,26 +1310,110 @@ class MatchService {
       throw new AppException(ERROR_COMMIT_MATCH_INVITE, 400, ERROR_COMMIT_MATCH_INVITE_CODE)
     }
 
-    const newMatch = await Match.query()
-      .where({ estate_id: newEstateId, user_id: userId })
-      .where('status', '>=', MATCH_STATUS_INVITE)
-      .first()
+    const newMatch = await Match.query().where({ estate_id: newEstateId, user_id: userId }).first()
 
-    if (newMatch) {
+    if (newMatch?.status >= match.status) {
       throw new AppException(ERROR_ALREADY_MATCH_INVITE, 400, ERROR_ALREADY_MATCH_INVITE_CODE)
     }
-    console.log('new Match here????', newEstateId)
-    await this.matchInviteAfter({ userId, estateId: newEstateId }, trx)
 
-    this.emitMatch({
-      data: {
-        estate_id: newEstateId,
-        user_id: userId,
-        old_status: NO_MATCH_STATUS,
-        status: MATCH_STATUS_INVITE,
-      },
-      role: ROLE_USER,
+    const { percent, prospect_score, landlord_score } = await this.calculationMatchScoreByUserId({
+      userId,
+      estateId: newEstateId,
     })
+
+    const trx = await Database.beginTransaction()
+    try {
+      let newStatus = match.status
+      if (match.status === MATCH_STATUS_NEW && match.buddy) {
+        match.status = MATCH_STATUS_KNOCK
+      }
+
+      let isMovedToNewEstate = true
+      const newMatch = {
+        ...match,
+        estate_id: newEstateId,
+        percent,
+        landlord_score,
+        prospect_score,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      }
+
+      switch (match.status) {
+        case MATCH_STATUS_KNOCK:
+        case MATCH_STATUS_INVITE:
+          await this.matchInviteAfter({ userId, estateId: newEstateId }, trx)
+          newStatus = MATCH_STATUS_INVITE
+          break
+        case MATCH_STATUS_VISIT:
+        case MATCH_STATUS_SHARE:
+          await this.upsertBulkMatches([newMatch], trx)
+          break
+        case MATCH_STATUS_TOP:
+          await this.toTop(
+            {
+              estateId: newEstateId,
+              tenantId: userId,
+              landlordId: estate.user_id,
+              match: newMatch,
+            },
+            trx
+          )
+          break
+        case MATCH_STATUS_COMMIT:
+          if (!(await MatchService.canRequestFinalCommit(newEstateId))) {
+            throw new HttpException(ERROR_MATCH_COMMIT_DOUBLE, 400, ERROR_MATCH_COMMIT_DOUBLE_CODE)
+          }
+
+          await MatchService.requestFinalConfirm(
+            {
+              estate_id: newEstateId,
+              tenantId: userId,
+              match: newMatch,
+            },
+            trx
+          )
+          console.log('matchMoveToNewEstate=', MATCH_STATUS_COMMIT)
+          break
+        default:
+          isMovedToNewEstate = false
+          break
+      }
+
+      //remove original estate
+      if (isMovedToNewEstate) {
+        await Match.query()
+          .where('user_id', userId)
+          .where('estate_id', estateId)
+          .delete()
+          .transacting(trx)
+      }
+
+      this.emitMatch({
+        data: {
+          estate_id: newEstateId,
+          user_id: userId,
+          old_status: newMatch?.status || NO_MATCH_STATUS,
+          status: newStatus,
+        },
+        role: ROLE_USER,
+      })
+      await trx.commit()
+
+      if (isMovedToNewEstate) {
+        this.emitMatch({
+          data: {
+            estate_id: estateId,
+            user_id: userId,
+            old_status: match.status,
+            status: NO_MATCH_STATUS,
+          },
+          role: ROLE_USER,
+        })
+      }
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
   }
 
   /**
@@ -1339,7 +1458,6 @@ class MatchService {
 
   static async matchInviteAfter({ userId, estateId }, trx) {
     const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
-    console.log('freeTimeSlots=', freeTimeSlots)
     const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
     if (!timeSlotCount) {
       throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
@@ -1968,37 +2086,41 @@ class MatchService {
   /**
    *
    */
-  static async toTop({ estateId, tenantId, landlordId }) {
-    const trx = await Database.beginTransaction()
+  static async toTop({ estateId, tenantId, landlordId, match }, trx) {
     try {
-      const topMatch = await Match.query()
-        .update({ status: MATCH_STATUS_TOP, status_at: moment.utc(new Date()).format(DATE_FORMAT) })
-        .where('user_id', tenantId)
-        .where('estate_id', estateId)
-        .where('share', true)
-        .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
-        .transacting(trx)
+      let topMatch
+      if (!match) {
+        topMatch = await Match.query()
+          .update({
+            status: MATCH_STATUS_TOP,
+            status_at: moment.utc(new Date()).format(DATE_FORMAT),
+          })
+          .where('user_id', tenantId)
+          .where('estate_id', estateId)
+          .where('share', true)
+          .whereIn('status', [MATCH_STATUS_SHARE, MATCH_STATUS_VISIT])
+          .transacting(trx)
+        if (!topMatch) {
+          throw new HttpException('No record found', 400)
+        }
 
-      if (topMatch) {
-        await require('./TaskService').createGlobalTask({ tenantId, landlordId, estateId }, trx)
+        this.emitMatch({
+          data: {
+            estate_id: estateId,
+            user_id: tenantId,
+            old_status: MATCH_STATUS_SHARE,
+            share: true,
+            status: MATCH_STATUS_TOP,
+          },
+          role: ROLE_USER,
+        })
       } else {
-        throw new HttpException('No record found', 400)
+        topMatch = await this.upsertBulkMatches([match], trx)
       }
+      await require('./TaskService').createGlobalTask({ tenantId, landlordId, estateId }, trx)
 
-      this.emitMatch({
-        data: {
-          estate_id: estateId,
-          user_id: tenantId,
-          old_status: MATCH_STATUS_SHARE,
-          share: true,
-          status: MATCH_STATUS_TOP,
-        },
-        role: ROLE_USER,
-      })
-      await trx.commit()
       return topMatch
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
   }
@@ -2110,36 +2232,37 @@ class MatchService {
     return match
   }
 
-  static async requestFinalConfirm(estateId, tenantId) {
-    const trx = await Database.beginTransaction()
+  static async requestFinalConfirm({ estateId, tenantId, match }, trx) {
     try {
-      await Match.query()
-        .where({
-          user_id: tenantId,
-          estate_id: estateId,
-          status: MATCH_STATUS_TOP,
+      if (!match) {
+        await Match.query()
+          .where({
+            user_id: tenantId,
+            estate_id: estateId,
+            status: MATCH_STATUS_TOP,
+          })
+          .update({
+            status: MATCH_STATUS_COMMIT,
+            status_at: moment.utc(new Date()).format(DATE_FORMAT),
+          })
+          .transacting(trx)
+        await NoticeService.prospectRequestConfirm(estateId, tenantId)
+        this.emitMatch({
+          data: {
+            estate_id: estateId,
+            user_id: tenantId,
+            old_status: MATCH_STATUS_TOP,
+            status: MATCH_STATUS_COMMIT,
+          },
+          role: ROLE_USER,
         })
-        .update({
-          status: MATCH_STATUS_COMMIT,
-          status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        })
-        .transacting(trx)
+      } else {
+        await this.upsertBulkMatches([match], trx)
+        await NoticeService.prospectRequestConfirm(match.estate_id, tenantId)
+      }
 
       await require('./MemberService').setFinalIncome({ user_id: tenantId, is_final: true }, trx)
-      await trx.commit()
-      this.emitMatch({
-        data: {
-          estate_id: estateId,
-          user_id: tenantId,
-          old_status: MATCH_STATUS_TOP,
-          status: MATCH_STATUS_COMMIT,
-        },
-        role: ROLE_USER,
-      })
-
-      await NoticeService.prospectRequestConfirm(estateId, tenantId)
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e.message, e.status || 400)
     }
   }
