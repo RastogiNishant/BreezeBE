@@ -672,6 +672,20 @@ class MatchService {
     }
     log({ vacantFrom, now, nextSixMonths, nextYear, rentStartScore })
     if (rentStartScore <= 0) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'rent start score zero',
+        }
+      }
       return 0
     }
     scoreT += rentStartScore * rentStartWeight
