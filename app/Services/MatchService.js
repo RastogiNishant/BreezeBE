@@ -223,7 +223,7 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
-    const estateBudget = estate.budget || 0
+    const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
     if (!userIncome) {
@@ -239,7 +239,6 @@ class MatchService {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
       return 0
     }
-    let estateBudgetRel = estateBudget / 100
 
     //Landlord Budget Points...
     const LANDLORD_BUDGET_POINT_FACTOR = 0.1
