@@ -228,6 +228,12 @@ class MatchService {
     const userIncome = parseFloat(prospect.income) || 0
     if (!userIncome) {
       //added to prevent division by zero on calculation for realBudget
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'user income not set',
+        }
+      }
       return 0
     }
     const realBudget = estatePrice / userIncome
@@ -237,6 +243,12 @@ class MatchService {
 
     if (realBudget > 1) {
       //This means estatePrice is bigger than prospect's income. Prospect can't afford it
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'rent is bigger than income',
+        }
+      }
       return 0
     }
 
@@ -284,7 +296,7 @@ class MatchService {
     scoreL += creditScorePoints * creditScoreWeight
 
     // Get rent arrears score
-    if (!estate.rent_arrears && prospect.rent_arrears === NO_UNPAID_RENTAL) {
+    if (estate.rent_arrears || !prospect.rent_arrears) {
       rentArrearsScore = 1
     }
     log({
