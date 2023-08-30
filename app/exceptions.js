@@ -117,6 +117,9 @@ const exceptions = {
   ERROR_PUBLISH_BUILDING: 'Some properties are not ready to publish',
   BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY:
     'The unit which belongs to a building can not be published separately',
+  ERROR_WRONG_MATCH_STATUS: 'Already invited to this property',
+  ERROR_COMMIT_MATCH_INVITE: 'The prospect is aready in final stage for another property',
+  ERROR_ALREADY_MATCH_INVITE: 'The prospect is already in that stage for that property',
 }
 
 const exceptionCodes = {
@@ -140,6 +143,9 @@ const exceptionCodes = {
   ERROR_PROPERTY_NOT_PUBLISHED_CODE: 9000800,
   ERROR_PUBLISH_BUILDING_CODE: 9001000,
   ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE: 9002000,
+  ERROR_WRONG_MATCH_STATUS_CODE: 10001000,
+  ERROR_COMMIT_MATCH_INVITE_CODE: 10001001,
+  ERROR_ALREADY_MATCH_INVITE_CODE: 10001002,
 }
 
 const exceptionKeys = {

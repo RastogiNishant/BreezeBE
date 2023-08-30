@@ -228,7 +228,13 @@ class TimeSlotService {
         .select(Database.raw('extract(epoch from start_at) as start_at'))
         .select(Database.raw('extract(epoch from end_at) as end_at'))
         .where({ estate_id: estateId })
-        .where('start_at', '>=', dateFrom)
+        .where(function () {
+          this.orWhere('start_at', '>=', dateFrom)
+          this.orWhere(function () {
+            this.where('start_at', '<', dateFrom)
+            this.where('end_at', '>', dateFrom)
+          })
+        })
         .orderBy('start_at')
         .limit(500)
     }

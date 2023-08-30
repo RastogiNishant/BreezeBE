@@ -512,6 +512,17 @@ class EstateService {
     return estate
   }
 
+  static async getPublishedEstate(estateId, userId) {
+    const estate = await Estate.query()
+      .where({ id: estateId, user_id: userId })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .first()
+    if (!estate) {
+      throw new HttpException('Estate not found', 404)
+    }
+
+    return estate
+  }
   /**
    *
    */
