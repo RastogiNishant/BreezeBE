@@ -562,7 +562,14 @@ class CreateEstate extends Base {
         energy_proof: yup.mixed(),
         city: yup.string().max(40),
         zip: yup.string().max(8),
-        budget: yup.number().integer().min(0).max(100),
+        budget: yup
+          .number()
+          .integer()
+          .when(['net_rent'], {
+            is: (net_rent) => net_rent > 0,
+            then: yup.number().moreThan(yup.ref('net_rent')),
+            otherwise: yup.number().integer(),
+          }),
         credit_score: yup.number().min(0).max(100),
         rent_arrears: yup.boolean(),
         full_address: yup.boolean(),

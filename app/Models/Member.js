@@ -46,6 +46,11 @@ class Member extends Model {
       'owner_user_id',
       'phone_verified',
       'birth_place',
+      'rent_arrears_doc_submit_later',
+      'rent_proof_not_applicable',
+      'credit_score_not_applicable',
+      'marital_status',
+      'citizen',
     ]
   }
 
@@ -116,6 +121,11 @@ class Member extends Model {
       'owner_user_id',
       'phone_verified',
       'birth_place',
+      'rent_arrears_doc_submit_later',
+      'rent_proof_not_applicable',
+      'credit_score_not_applicable',
+      'marital_status',
+      'citizen',
     ]
   }
 }

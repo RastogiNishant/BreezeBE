@@ -135,6 +135,7 @@ const {
     ERROR_PROPERTY_INVALID_STATUS,
     ERROR_PROPERTY_NOT_PUBLISHED,
     ERROR_PUBLISH_BUILDING,
+    BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY,
   },
   exceptionCodes: {
     ERROR_PROPERTY_AREADY_PUBLISHED_CODE,
@@ -143,6 +144,7 @@ const {
     ERROR_PROPERTY_INVALID_STATUS_CODE,
     ERROR_PROPERTY_NOT_PUBLISHED_CODE,
     ERROR_PUBLISH_BUILDING_CODE,
+    ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE,
   },
 } = require('../../app/exceptions')
 
@@ -1192,65 +1194,161 @@ class EstateService {
    *
    */
   static async addLike(userId, estateId) {
-    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
-    if (!estate) {
-      throw new AppException('Invalid estate')
-    }
+    estateId = await this.getEstateIdsInBuilding(estateId)
 
+    const trx = await Database.beginTransaction()
     try {
-      await Database.into('likes').insert({ user_id: userId, estate_id: estateId })
+      estateId = Array.isArray(estateId) ? estateId : [estateId]
+      const likes = estateId.map((id) => ({
+        user_id: userId,
+        estate_id: id,
+      }))
+
+      await this.upsertBulkLikes(likes, trx)
       const delay = LIKED_BUT_NOT_KNOCKED_FOLLOWUP_HOURS_AFTER * 1000 * 60 * 60 //ms
-      await this.removeDislike(userId, estateId)
+      await this.removeDislike({ user_id: userId, estate_id: estateId }, trx)
+      await trx.commit()
       QueueService.notifyProspectWhoLikedButNotKnocked(estateId, userId, delay)
     } catch (e) {
+      await trx.rollback()
       Logger.error(e)
       throw new AppException('Cant create like')
     }
   }
 
+  static async upsertBulkLikes(likes, trx) {
+    let queries = `INSERT INTO likes 
+                  ( user_id, estate_id )
+                  VALUES 
+                `
+
+    queries = (likes || []).reduce(
+      (q, current, index) =>
+        `${q}\n ${index ? ',' : ''}
+        ( ${current.user_id}, ${current.estate_id} ) `,
+      queries
+    )
+
+    queries += ` ON CONFLICT ( user_id, estate_id ) 
+                  DO NOTHING
+                `
+
+    await Database.raw(queries).transacting(trx)
+  }
+
+  static async getEstateIdsInBuilding(estate_id) {
+    const estate = await this.getActiveEstateQuery()
+      .select('id', 'build_id')
+      .where('id', estate_id)
+      .first()
+
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    if (estate.build_id) {
+      const estates = (
+        await Estate.query()
+          .select('id')
+          .where('build_id', estate.build_id)
+          .whereNot('status', STATUS_DELETE)
+          .fetch()
+      ).toJSON()
+
+      if (!estates?.length) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+
+      estate_id = estates.map((estate) => estate.id)
+    }
+
+    return Array.isArray(estate_id) ? estate_id : [estate_id]
+  }
   /**
    *
    */
-  static async removeLike(userId, estateId, trx) {
-    return Database.table('likes')
-      .where({ user_id: userId, estate_id: estateId })
+  static async removeLike({ user_id, estate_id }, trx) {
+    if (Array.isArray(estate_id) && estate_id?.length) {
+      estate_id = estate_id[0]
+    }
+    estate_id = await this.getEstateIdsInBuilding(estate_id)
+
+    const query = Database.table('likes')
+      .where('user_id', user_id)
+      .whereIn('estate_id', Array.isArray(estate_id) ? estate_id : [estate_id])
       .delete()
-      .transacting(trx)
+    if (trx) {
+      query.transacting(trx)
+    }
+
+    return query
   }
 
   /**
    *
    */
-  static async addDislike(userId, estateId, trx) {
+  static async addDislike({ user_id, estate_id }, trx) {
+    estate_id = await this.getEstateIdsInBuilding(estate_id)
     const shouldTrxProceed = trx
 
     if (!trx) {
       trx = await Database.beginTransaction()
     }
 
-    const estate = await this.getActiveEstateQuery().where({ id: estateId }).first()
-    if (!estate) {
-      throw new AppException('Invalid estate')
-    }
-
     try {
-      await Database.table('dislikes')
-        .insert({ user_id: userId, estate_id: estateId })
-        .transacting(trx)
-      await this.removeLike(userId, estateId, trx)
+      const dislikes = estate_id.map((id) => ({
+        user_id,
+        estate_id: id,
+      }))
+
+      await this.upsertBulkDislikes(dislikes, trx)
+      await this.removeLike({ user_id, estate_id }, trx)
       if (!shouldTrxProceed) await trx.commit()
     } catch (e) {
       Logger.error(e)
       if (!shouldTrxProceed) await trx.rollback()
-      throw new AppException('Cant create like')
+      throw new AppException('Cant create dislike')
     }
+  }
+
+  static async upsertBulkDislikes(likes, trx) {
+    let queries = `INSERT INTO dislikes 
+                  ( user_id, estate_id )
+                  VALUES 
+                `
+
+    queries = (likes || []).reduce(
+      (q, current, index) =>
+        `${q}\n ${index ? ',' : ''}
+        ( ${current.user_id}, ${current.estate_id} ) `,
+      queries
+    )
+
+    queries += ` ON CONFLICT ( user_id, estate_id ) 
+                  DO NOTHING
+                `
+
+    await Database.raw(queries).transacting(trx)
   }
 
   /**
    *
    */
-  static async removeDislike(userId, estateId) {
-    return Database.table('dislikes').where({ user_id: userId, estate_id: estateId }).delete()
+  static async removeDislike({ user_id, estate_id }, trx) {
+    if (Array.isArray(estate_id) && estate_id?.length) {
+      estate_id = estate_id[0]
+    }
+    estate_id = await this.getEstateIdsInBuilding(estate_id)
+
+    const query = Database.table('dislikes')
+      .where('user_id', user_id)
+      .whereIn('estate_id', Array.isArray(estate_id) ? estate_id : [estate_id])
+      .delete()
+
+    if (trx) {
+      query.transacting(trx)
+    }
+    return query
   }
 
   /**
@@ -1295,7 +1393,12 @@ class EstateService {
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
-    const categoryCounts = this.calculateInsideCategoryCounts(estates, tenant)
+    const groupedEstates = groupBy(estates, (estate) =>
+      estate.build_id ? `g_${estate.build_id}` : estate.id
+    )
+    estates = Object.keys(groupedEstates).map((key) => ({ ...groupedEstates[key][0] }))
+
+    const categoryCounts = this.calculateCategoryCounts(estates, tenant)
     const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
     return {
       estates: filteredEstates,
@@ -1320,7 +1423,7 @@ class EstateService {
     return counts
   }
 
-  static calculateInsideCategoryCounts(estates, tenant) {
+  static calculateCategoryCounts(estates, tenant) {
     const rooms_number = this.calculateCounts({
       estates,
       fieldName: 'rooms_number',
@@ -1657,6 +1760,14 @@ class EstateService {
   }
 
   static getMachesQuery(query, { userId, build_id }) {
+    if (!build_id) {
+      query.select(
+        Database.raw(
+          `distinct on (case when build_id is null then estates.id else estates.build_id end) build_id`
+        )
+      )
+    }
+
     query
       .select('estates.*')
       .withCount('knocked')
@@ -1693,9 +1804,14 @@ class EstateService {
 
     if (build_id) {
       query.where('estates.build_id', build_id)
+      return query.orderBy('_m.prospect_score', 'DESC')
     }
-
-    return query.orderBy('_m.prospect_score', 'DESC')
+    return query
+      .orderBy(
+        Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
+        'DESC'
+      )
+      .orderBy('_m.prospect_score', 'DESC')
   }
   /**
    * If tenant not active get points by zone/point+dist/range zone
@@ -1741,11 +1857,18 @@ class EstateService {
       query = this.getNotActiveMatchesQuery({ tenant, userId, build_id })
     }
 
+    let estates = []
     if (page != -1 && limit != -1) {
-      return query.paginate(page, limit)
+      estates =
+        (await query.paginate(page, limit)).toJSON({
+          isShort: false,
+          role: ROLE_USER,
+        })?.data || []
     } else {
-      return query.fetch()
+      estates = (await query.fetch()).toJSON({ isShort: false, role: ROLE_USER })
     }
+
+    return orderBy(estates, 'match', 'desc')
   }
 
   static async countPublishedPropertyByLandlord(user_id) {
@@ -1761,6 +1884,14 @@ class EstateService {
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
+
+    if (performed_by && estate.build_id) {
+      throw new HttpException(
+        BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY,
+        400,
+        ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE
+      )
     }
 
     estate.available_end_at = estate.is_duration_later ? null : estate.available_end_at
@@ -1862,6 +1993,7 @@ class EstateService {
       publishers?.map((publisher) => {
         textMessage += ` - ${publisher}\r\n`
       })
+      //FIXME: textMessage is NOT sent anymore to support@breeze4me.de
 
       await Estate.query()
         .where('id', estate.id)
@@ -3080,9 +3212,12 @@ class EstateService {
   }
 
   static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
-    const estates = (
-      await EstateService.getTenantAllEstates({ userId: user_id, build_id, page: -1, limit: -1 })
-    ).toJSON()
+    const estates = await EstateService.getTenantAllEstates({
+      userId: user_id,
+      build_id,
+      page: -1,
+      limit: -1,
+    })
 
     const categories = uniq(
       estates.map((estate) => EstateService.getBasicPropertyId(estate.property_id))
@@ -3113,7 +3248,10 @@ class EstateService {
       buildingEstates[axis] = categoryEstates
     })
 
-    return buildingEstates
+    return {
+      categories: Object.keys(yAxisEstates).sort((a, b) => b - a),
+      estates: buildingEstates,
+    }
   }
 
   static async getTenantEstates({ user_id, page, limit }) {
@@ -3130,8 +3268,7 @@ class EstateService {
     if ((page - 1) * limit < insideNewMatchesCount) {
       estates = await EstateService.getTenantAllEstates({ userId: user_id, page, limit })
       estates = await Promise.all(
-        estates.rows.map(async (estate) => {
-          estate = estate.toJSON({ isShort: false, role: ROLE_USER })
+        estates.map(async (estate) => {
           estate.isoline = await EstateService.getIsolines(estate)
           return estate
         })

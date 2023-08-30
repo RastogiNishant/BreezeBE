@@ -1,6 +1,6 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty, intersection, countBy, groupBy } = require('lodash')
+const { get, isNumber, isEmpty, intersection, countBy, groupBy, uniqBy } = require('lodash')
 const { props } = require('bluebird')
 const Promise = require('bluebird')
 const Database = use('Database')
@@ -93,6 +93,7 @@ const {
   WEBSOCKET_TENANT_REDIS_KEY,
   EXPIRED_FINAL_CONFIRM_PERIOD,
   WEBSOCKET_EVENT_MATCH_COUNT,
+  YES_UNPAID_RENTAL,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -793,7 +794,13 @@ class MatchService {
         tenant,
         estates[idx]
       )
-      passedEstates.push({ estate_id: estates[idx].id, percent, landlord_score, prospect_score })
+      passedEstates.push({
+        estate_id: estates[idx].id,
+        percent,
+        landlord_score,
+        prospect_score,
+        build_id: estates[idx].build_id,
+      })
       idx++
     }
 
@@ -834,12 +841,22 @@ class MatchService {
     await this.upsertBulkMatches(matches, trx)
 
     if (has_notification_sent) {
-      const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
+      const superMatches = matches.filter(
+        ({ prospect_score }) => prospect_score >= MATCH_SCORE_GOOD_MATCH
+      )
       if (superMatches?.length) {
         await NoticeService.prospectSuperMatch(superMatches)
       }
     }
 
+    const groupedPassEstates = groupBy(passedEstates, (estate) =>
+      estate.build_id ? `g_${estate.build_id}` : estate.id
+    )
+    const uniqueMatchEstateIds = Object.keys(groupedPassEstates).map(
+      (key) => groupedPassEstates[key][0].id
+    )
+
+    matches = matches.filter((m) => uniqueMatchEstateIds.includes(m.estate_id))
     return {
       count: matches?.length,
       matches,
@@ -1204,7 +1221,7 @@ class MatchService {
 
     try {
       await Match.query().where({ user_id: userId, estate_id: estateId }).delete().transacting(trx)
-      await EstateService.addDislike(userId, estateId, trx)
+      await EstateService.addDislike({ user_id: userId, estate_id: estateId }, trx)
       await trx.commit()
       this.emitMatch({
         data: {
@@ -1956,7 +1973,7 @@ class MatchService {
         })
         .first()
       if (!dislike) {
-        await EstateService.addDislike(tenantId, estateId)
+        await EstateService.addDislike({ user_id: tenantId, estate_id: estateId })
       }
     }
 
@@ -2873,7 +2890,14 @@ class MatchService {
     let query = Match.query()
       .select('_e.user_id as estate_user_id')
       .select('matches.user_id as tenant_user_id')
-      .where('matches.status', '>=', MATCH_STATUS_TOP)
+      .where(function () {
+        this.orWhere('matches.status', '>=', MATCH_STATUS_TOP)
+        this.orWhere(function () {
+          this.where('_e.is_not_show', true)
+          this.where('matches.status', '>=', MATCH_STATUS_KNOCK)
+        })
+      })
+
       .where('estate_id', estate_id)
 
     if (role === ROLE_LANDLORD) {
@@ -3794,7 +3818,7 @@ class MatchService {
         '_m.members_age',
         '_m.members_count', //adult members only
         'pets',
-        'budget_max',
+        Database.raw(`(100*budget_max/_me.total_income) as budget_max`),
         'rent_start',
         'options', //array
         'space_min',
@@ -3817,7 +3841,7 @@ class MatchService {
         count(id) as members_count,
         bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
         bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
-        bool_or(coalesce(unpaid_rental, 0) > 0) as rent_arrears,
+        bool_or(unpaid_rental='${YES_UNPAID_RENTAL}' is true) as rent_arrears,
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
       from members
@@ -3921,7 +3945,8 @@ class MatchService {
     if (!isEmpty(matchScores)) {
       const insertQuery = Database.query().into('matches').insert(matchScores).toString()
       await Database.raw(
-        `${insertQuery} ON CONFLICT (user_id, estate_id) DO UPDATE SET "percent" = EXCLUDED.percent`
+        `${insertQuery} ON CONFLICT (user_id, estate_id) 
+          DO UPDATE SET "percent" = EXCLUDED.percent, "landlord_score" = EXCLUDED.landlord_score, "prospect_score" = EXCLUDED.prospect_score`
       ).transacting(trx)
     }
   }
@@ -4248,7 +4273,11 @@ class MatchService {
     return (
       (
         await Estate.query()
-          .count('*')
+          .count(
+            Database.raw(
+              `distinct case when estates.build_id is null then estates.id else estates.build_id end`
+            )
+          )
           .innerJoin({ _m: 'matches' }, function () {
             this.on('_m.estate_id', 'estates.id')
               .onIn('_m.user_id', [userId])

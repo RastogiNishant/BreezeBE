@@ -115,6 +115,8 @@ const exceptions = {
     'You have already requests final match, please cancel that one first to proceed',
   NO_BUILDING_ID_EXIST: 'NO BUILDING ID EXIST',
   ERROR_PUBLISH_BUILDING: 'Some properties are not ready to publish',
+  BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY:
+    'The unit which belongs to a building can not be published separately',
 }
 
 const exceptionCodes = {
@@ -137,6 +139,7 @@ const exceptionCodes = {
   ERROR_PROPERTY_INVALID_STATUS_CODE: 9000700,
   ERROR_PROPERTY_NOT_PUBLISHED_CODE: 9000800,
   ERROR_PUBLISH_BUILDING_CODE: 9001000,
+  ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE: 9002000,
 }
 
 const exceptionKeys = {

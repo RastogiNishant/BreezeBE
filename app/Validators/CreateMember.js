@@ -25,6 +25,13 @@ const {
   YES_INCOME_SEIZURE,
   NO_ANSWER_INCOME_SEIZURE,
   GENDER_NEUTRAL,
+  MARITAL_SINGLE,
+  MARITAL_MARRIED,
+  MARITAL_PERMANENT_SEPRATED,
+  MARITAL_DIVORCED,
+  MARITAL_WIDOWED,
+  MARITAL_COHABITATION,
+  MARITAL_REGISTERED_COHABITATION,
 } = require('../constants')
 
 class CreateMember extends Base {
@@ -58,6 +65,22 @@ class CreateMember extends Base {
       external_duties: yup.array().of(yup.number().oneOf([1, 2, 3])),
       duties_amount: yup.number().min(0).max(1000000),
       birth_place: yup.string().max('255'),
+      rent_arrears_doc_submit_later: yup.boolean(),
+      rent_proof_not_applicable: yup.boolean(),
+      credit_score_not_applicable: yup.boolean(),
+      marital_status: yup
+        .number()
+        .oneOf([
+          MARITAL_SINGLE,
+          MARITAL_MARRIED,
+          MARITAL_PERMANENT_SEPRATED,
+          MARITAL_DIVORCED,
+          MARITAL_WIDOWED,
+          MARITAL_COHABITATION,
+          MARITAL_REGISTERED_COHABITATION,
+        ])
+        .nullable(),
+      citizen: yup.string().nullable(),
     })
   }
 }
