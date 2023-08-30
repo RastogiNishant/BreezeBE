@@ -1,6 +1,15 @@
 const uuid = require('uuid')
 const moment = require('moment')
-const { get, isNumber, isEmpty, intersection, countBy, groupBy, uniqBy } = require('lodash')
+const {
+  get,
+  isNumber,
+  isEmpty,
+  intersection,
+  countBy,
+  groupBy,
+  uniqBy,
+  isEqual,
+} = require('lodash')
 const { props } = require('bluebird')
 const Promise = require('bluebird')
 const Database = use('Database')
@@ -223,6 +232,10 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
+    //WBS certificate score
+    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+      return 0
+    }
     const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
@@ -427,6 +440,11 @@ class MatchService {
     const realBudget = estatePrice / userIncome
 
     const prospectBudgetRel = prospectBudget / 100
+
+    //WBS certificate score
+    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+      return 0
+    }
 
     //Prospect Budget Points
     const PROSPECT_BUDGET_POINT_FACTOR = 0.1
@@ -3785,8 +3803,22 @@ class MatchService {
         'area',
         'apt_type',
         'income_sources',
+        '_ec.wbs_certificate',
         'property_id',
         'build_id'
+      )
+      .leftJoin(
+        Database.raw(`
+        (select estates.id as estate_id,
+          case when estates.cert_category is null or estates.cert_category='' then
+            null else 
+            json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
+            end
+          as wbs_certificate from estates left join cities on cities.city=estates.city)
+        as _ec`),
+        function () {
+          this.on('_ec.estate_id', 'estates.id')
+        }
       )
       .leftJoin(
         Database.raw(`
@@ -3828,6 +3860,7 @@ class MatchService {
         'rooms_max',
         'house_type', //array
         'apt_type', //array
+        '_tc.wbs_certificate',
         'tenants.income_level',
         'tenants.is_public_certificate'
       )
@@ -3853,6 +3886,24 @@ class MatchService {
               `( _m.user_id = tenants.user_id and _m.owner_user_id is null ) or ( _m.owner_user_id = tenants.user_id and _m.owner_user_id is not null )`
             )
           )
+        }
+      )
+      .leftJoin(
+        Database.raw(`
+        (select
+          user_id,
+          status, 
+          case when income_level is null or income_level='' then
+            null else
+            json_build_object('city_id', city_id, 'income_level', income_level)
+            end
+            as wbs_certificate
+          from tenant_certificates
+          where expired_at > NOW()
+          ) as _tc
+        `),
+        function () {
+          this.on(Database.raw(`(tenants.user_id=_tc.user_id)`)).on(`_tc.status`, STATUS_ACTIVE)
         }
       )
       .leftJoin(
