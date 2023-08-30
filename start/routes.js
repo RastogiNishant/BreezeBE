@@ -204,6 +204,11 @@ Route.group(() => {
     'auth:jwtAdministrator',
     'valid:Id',
   ])
+
+  Route.get(
+    '/utilities/matchscore/:id/:estate_id',
+    'Admin/AppController.calculateMatchScore'
+  ).middleware(['auth:jwtAdministrator', 'valid:Id,EstateId'])
 }).prefix('api/v1/administration')
 
 /** End administration */
@@ -1142,6 +1147,10 @@ Route.group(() => {
   Route.post('/invite', 'MatchController.matchToInvite').middleware([
     'auth:jwtLandlord',
     'valid:MatchInvite',
+  ])
+  Route.post('/move', 'MatchController.matchMoveToNewEstate').middleware([
+    'auth:jwtLandlord',
+    'valid:MatchMoveToNewEstate',
   ])
   Route.delete('/invite', 'MatchController.removeInvite').middleware([
     'auth:jwtLandlord',

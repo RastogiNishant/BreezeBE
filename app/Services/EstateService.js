@@ -512,6 +512,17 @@ class EstateService {
     return estate
   }
 
+  static async getPublishedEstate(estateId, userId) {
+    const estate = await Estate.query()
+      .where({ id: estateId, user_id: userId })
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .first()
+    if (!estate) {
+      throw new HttpException('Estate not found', 404)
+    }
+
+    return estate
+  }
   /**
    *
    */
@@ -1473,7 +1484,6 @@ class EstateService {
 
     const minTenantBudget = tenant?.budget_min || 0
     const maxTenantBudget = tenant?.budget_max || 0
-
     estates = estates.filter((estate) => {
       const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
       return budget >= minTenantBudget && budget <= maxTenantBudget
@@ -1484,14 +1494,16 @@ class EstateService {
     }
 
     //transfer budget
-    estates = estates.filter(
-      (estate) =>
-        !estate.transfer_budget ||
-        (estate.transfer_budget >= (tenant.transfer_budget_min ?? 0) &&
-          estate.transfer_budget <= (tenant.transfer_budget_max ?? 0))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after transfer ${estates?.length}`)
+    if (tenant.transfer_budget_min && tenant.transfer_budget_max) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.transfer_budget ||
+          (estate.transfer_budget >= (tenant.transfer_budget_min ?? 0) &&
+            estate.transfer_budget <= (tenant.transfer_budget_max ?? 0))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after transfer ${estates?.length}`)
+      }
     }
 
     if (tenant.rent_start && inside_property) {
@@ -2331,7 +2343,7 @@ class EstateService {
       .select(Database.raw(`count(*) filter(where status='${STATUS_ACTIVE}') as online_count`))
   }
 
-  static async getShortEstatesByQuery({ user_id, query, letting_type }) {
+  static async getShortEstatesByQuery({ user_id, query, letting_type, status }) {
     let estateQuery = this.getActiveEstateQuery()
       .select(
         'estates.id',
@@ -2378,13 +2390,17 @@ class EstateService {
       })
     }
 
-    if (letting_type.includes(LETTING_TYPE_LET)) {
+    if (letting_type?.includes(LETTING_TYPE_LET)) {
       estateQuery.where('estates.letting_type', LETTING_TYPE_LET)
       estateQuery.innerJoin({ _ect: 'estate_current_tenants' }, function () {
         this.on('_ect.estate_id', 'estates.id')
           .on(Database.raw(`_ect.user_id IS NOT NULL`))
           .on('_ect.status', STATUS_ACTIVE)
       })
+    }
+
+    if (status) {
+      estateQuery.whereIn('estates.status', Array.isArray(status) ? status : [status])
     }
 
     return await estateQuery.fetch()
