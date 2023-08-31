@@ -660,7 +660,9 @@ class EstateService {
   }
 
   static async updateShowRequired({ id, is_not_show = false }) {
-    await Estate.query().where('id', id).update({ is_not_show })
+    await Estate.query()
+      .whereIn('id', Array.isArray(id) ? id : [id])
+      .update({ is_not_show })
   }
 
   static async updateEstate({ request, data, user_id }, trx = null) {
@@ -1256,7 +1258,6 @@ class EstateService {
     if (!estate) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
-
     if (estate.build_id) {
       const estates = (
         await Estate.query()
