@@ -205,6 +205,9 @@ class TimeSlotService {
       }
 
       const slot = await this.getTimeSlotByOwner(user_id, data.slot_id)
+      if (!slot) {
+        throw new HttpException(TIME_SLOT_NOT_FOUND, 404)
+      }
 
       let slots = await this.getSameTimeSlotInBuilding({
         estateId: estate_ids,
@@ -223,7 +226,7 @@ class TimeSlotService {
         })
       }
       await trx.commit()
-      const newSlot = slots?.filter((slot) => slot.estate_id === estate_id)?.[0] || {}
+      const newSlot = slots?.filter((slot) => slot.estate_id === data.estate_id)?.[0] || {}
       return {
         is_not_show: data.is_not_show,
         ...newSlot,
