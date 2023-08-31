@@ -69,9 +69,8 @@ class TimeSlotService {
     }
 
     const estateIds = await EstateService.getEstateIdsInBuilding(estate_id)
-    console.log('estateIds=', estateIds)
-    const trx = await Database.beginTransaction()
 
+    const trx = await Database.beginTransaction()
     try {
       if (data.is_not_show !== undefined) {
         await EstateService.updateShowRequired(
