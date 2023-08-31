@@ -63,6 +63,7 @@ const {
   INCOME_TYPE_OTHER_BENEFIT,
   INCOME_TYPE_CHILD_BENEFIT,
   HIRING_TYPE_FULL_TIME,
+  DAY_FORMAT,
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 const HttpException = require('../Exceptions/HttpException')
@@ -160,7 +161,41 @@ class TenantService {
   }
 
   static async getTenant(userId) {
-    return Tenant.query().select('*').where('user_id', userId).first()
+    return Tenant.query().where('user_id', userId).first()
+  }
+
+  static async getTenantWithCertificates(userId) {
+    return Tenant.query()
+      .select('*')
+      .select('_tc.wbs_certificate')
+      .leftJoin(
+        Database.raw(`
+      (select
+        user_id,
+        array_agg(json_build_object(
+          'city_id', city_id,
+          'city', cities.city,
+          'expiration_date', to_char(
+            tenant_certificates.expired_at, '${DAY_FORMAT}'
+          ),
+          'expiration_status',
+            case when tenant_certificates.expired_at < NOW() then
+              'expired' else 'active' end,              
+          'income_level', income_level))
+        as wbs_certificate
+        from tenant_certificates
+        left join
+          cities
+        on tenant_certificates.city_id=cities.id
+        where status=${STATUS_ACTIVE}
+        group by user_id
+        ) as _tc
+      `),
+        '_tc.user_id',
+        'tenants.user_id'
+      )
+      .where('tenants.user_id', userId)
+      .first()
   }
   /**
    * Get Tenant with linked point

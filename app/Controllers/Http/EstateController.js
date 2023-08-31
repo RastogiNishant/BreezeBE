@@ -229,7 +229,7 @@ class EstateController {
         estate_id,
         tenant_id
       )
-      let tenant = await TenantService.getTenant(tenant_id)
+      let tenant = await TenantService.getTenantWithCertificates(tenant_id)
       let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
 
