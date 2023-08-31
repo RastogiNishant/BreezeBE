@@ -2404,6 +2404,8 @@ class EstateService {
       estateQuery.whereIn('estates.status', Array.isArray(status) ? status : [status])
     }
 
+    estateQuery.orderBy('estates.property_id').orderBy('estates.address')
+
     return await estateQuery.fetch()
   }
 
