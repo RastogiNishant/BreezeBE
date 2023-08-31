@@ -482,20 +482,19 @@ class MatchService {
     let houseTypeScore = 0
     let amenitiesScore = 0
 
-    const amenitiesCount = 7
     // Prospect Score Weights
     const prospectBudgetWeight = 2
     const roomsWeight = 0.2
     const areaWeight = 0.4
     const rentStartWeight = 0.5
-    const amenitiesWeight = 0.4 / amenitiesCount
+    const amenitiesWeight = 0.4
     const floorWeight = 0.3
     const aptTypeWeight = 0.1
     const houseTypeWeight = 0.1
     const maxScoreT =
       prospectBudgetWeight +
       rentStartWeight +
-      0.4 + //amenitiesWeight
+      amenitiesWeight +
       areaWeight +
       floorWeight +
       roomsWeight +
@@ -733,8 +732,22 @@ class MatchService {
     scoreT += houseTypeScore * houseTypeWeight
 
     //Amenities Score
-    const passAmenities = intersection(estate.options, prospect.options).length
-    amenitiesScore = passAmenities
+    const prospectPreferredAmenities = prospect.options || []
+    const estateAmenities = estate.options || []
+    if (prospectPreferredAmenities.length === 0) {
+      amenitiesScore = 1
+    } else {
+      const amenitiesProvidedByEstate = prospectPreferredAmenities.reduce(
+        (amenitiesProvidedByEstate, prospectPreferredAmenity) => {
+          if (estateAmenities.indexOf(prospectPreferredAmenity) > -1) {
+            amenitiesProvidedByEstate = [...amenitiesProvidedByEstate, prospectPreferredAmenity]
+          }
+          return amenitiesProvidedByEstate
+        },
+        []
+      )
+      amenitiesScore = amenitiesProvidedByEstate.length / prospect.options.length
+    }
     log({ estateAmenities: estate.options, prospectAmenities: prospect.options })
     scoreT += amenitiesScore * amenitiesWeight
 
