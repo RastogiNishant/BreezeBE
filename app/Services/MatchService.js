@@ -947,7 +947,7 @@ class MatchService {
       idx++
     }
 
-    const matches =
+    let matches =
       passedEstates.map((e) => ({
         user_id: tenant.user_id,
         estate_id: e.estate_id,
