@@ -71,10 +71,12 @@ class TimeSlotService {
     const estateIds = await EstateService.getEstateIdsInBuilding(estate_id)
 
     const trx = await Database.beginTransaction()
-
     try {
       if (data.is_not_show !== undefined) {
-        await EstateService.updateShowRequired({ id: [estateIds], is_not_show: data.is_not_show })
+        await EstateService.updateShowRequired(
+          { id: estateIds, is_not_show: data.is_not_show },
+          trx
+        )
       }
 
       let slots = []

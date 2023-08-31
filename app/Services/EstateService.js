@@ -659,10 +659,11 @@ class EstateService {
     }
   }
 
-  static async updateShowRequired({ id, is_not_show = false }) {
+  static async updateShowRequired({ id, is_not_show = false }, trx) {
     await Estate.query()
       .whereIn('id', Array.isArray(id) ? id : [id])
       .update({ is_not_show })
+      .transacting(trx)
   }
 
   static async updateEstate({ request, data, user_id }, trx = null) {
