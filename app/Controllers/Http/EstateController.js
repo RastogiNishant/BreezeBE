@@ -954,30 +954,7 @@ class EstateController {
    */
   async createSlot({ request, auth, response }) {
     const { estate_id, ...data } = request.all()
-    const estate = await EstateService.getActiveEstateQuery()
-      .where('user_id', auth.user.id)
-      .where('id', estate_id)
-      .first()
-    if (!estate) {
-      throw new HttpException(ESTATE_NOT_EXISTS, 400)
-    }
-    try {
-      let slot = {}
-      if (data.is_not_show !== undefined) {
-        await EstateService.updateShowRequired({ id: estate_id, is_not_show: data.is_not_show })
-      }
-
-      if (data.start_at && data.end_at) {
-        slot = (await TimeSlotService.createSlot(omit(data, ['is_not_show']), estate)).toJSON()
-      }
-      response.res({
-        is_not_show: data.is_not_show,
-        ...slot,
-      })
-    } catch (e) {
-      Logger.error(e)
-      throw new HttpException(e.message, 400)
-    }
+    response.res(await TimeSlotService.createSlotMany({ user_id: auth.user.id, estate_id, data }))
   }
 
   /**
@@ -985,28 +962,7 @@ class EstateController {
    */
   async updateSlot({ request, auth, response }) {
     const data = request.all()
-    try {
-      if (data.is_not_show !== undefined) {
-        await EstateService.updateShowRequired({
-          id: data.estate_id,
-          is_not_show: data.is_not_show,
-        })
-      }
-
-      let slot = {}
-      if (data.start_at && data.end_at) {
-        slot = (
-          await TimeSlotService.updateTimeSlot(auth.user.id, omit(data, ['is_not_show']))
-        ).toJSON()
-      }
-      response.res({
-        is_not_show: data.is_not_show,
-        ...slot,
-      })
-    } catch (e) {
-      Logger.error(e)
-      throw new HttpException(e.message, 400)
-    }
+    response.res(await TimeSlotService.updateSlotMany(auth.user.id, data))
   }
 
   /**
@@ -1015,7 +971,7 @@ class EstateController {
   async removeSlot({ request, auth, response }) {
     const { slot_id } = request.all()
     try {
-      response.res(await TimeSlotService.removeSlot(auth.user.id, slot_id))
+      response.res(await TimeSlotService.removeSlotMany(auth.user.id, slot_id))
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, e.status || 400, e.code || 0)
