@@ -16,7 +16,8 @@ class AppController {
       .first()
     const landlordScore = MatchService.calculateLandlordScore(prospect, estate, true)
     const prospectScore = MatchService.calculateProspectScore(prospect, estate, true)
-    const matchScore = (100 * (landlordScore?.scoreLPer || 0 + prospectScore?.scoreTPer || 0)) / 2
+    const matchScore =
+      (100 * ((landlordScore?.scoreLPer || 0) + (prospectScore?.scoreTPer || 0))) / 2
     return response.res({ estate, prospect, landlordScore, prospectScore, matchScore })
   }
 }
