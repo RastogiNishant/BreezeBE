@@ -194,10 +194,13 @@ class TimeSlotService {
     const trx = await Database.beginTransaction()
     try {
       if (data.is_not_show !== undefined) {
-        await EstateService.updateShowRequired({
-          id: estate_ids,
-          is_not_show: data.is_not_show,
-        })
+        await EstateService.updateShowRequired(
+          {
+            id: estate_ids,
+            is_not_show: data.is_not_show,
+          },
+          trx
+        )
       }
 
       const slot = await this.getTimeSlotByOwner(user_id, data.slot_id)
