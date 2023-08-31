@@ -98,7 +98,7 @@ class TimeSlotService {
       await trx.commit()
       return {
         is_not_show: data.is_not_show,
-        slot: slots?.filter((slot) => slot.estate_id === estate_id),
+        slot: slots?.filter((slot) => slot.estate_id === estate_id)?.[0],
       }
     } catch (e) {
       Logger.error(e)
@@ -224,7 +224,7 @@ class TimeSlotService {
       await trx.commit()
       return {
         is_not_show: data.is_not_show,
-        slot: slots?.filter((slot) => slot.estate_id === data.estate_id),
+        slot: slots?.filter((slot) => slot.estate_id === data.estate_id)?.[0],
       }
     } catch (e) {
       Logger.error(e)
