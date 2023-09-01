@@ -1393,6 +1393,14 @@ Estates: [ESTATES]
   MARITAL_WIDOWED: 5,
   MARITAL_COHABITATION: 6,
   MARITAL_REGISTERED_COHABITATION: 7,
+
+  MANDATORY_AMENITIES: {
+    FURNISHED: 'furnished',
+    FITTED_KITCHEN: 'fitted_kitchen',
+    BARRIER_FREE: 'landlord.property.details.building_amenities.barrier_free',
+    ELEVATOR: 'elevator',
+    BALCONY: 'apt_balcony',
+  },
 }
 
 module.exports = constants
