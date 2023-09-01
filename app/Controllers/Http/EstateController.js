@@ -1358,6 +1358,15 @@ class EstateController {
       throw new HttpException(e.message, e.status || 500, e.code || 0)
     }
   }
+
+  async canBuildPublish({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      response.res(await EstateService.checkBuildCanPublish({ build_id: id }))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
 }
 
 module.exports = EstateController

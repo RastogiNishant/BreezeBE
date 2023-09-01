@@ -554,6 +554,9 @@ Route.group(() => {
   Route.put('/building/:id/publish', 'EstateController.publishBuild').middleware([
     'valid:Id,PublishEstate',
   ])
+  Route.get('/building/:id/can_publish', 'EstateController.canBuildPublish').middleware([
+    'valid:Id',
+  ])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.put('/:id/offline', 'EstateController.makeEstateOffline').middleware(['valid:Id'])
   Route.delete('/:id', 'EstateController.removeEstate').middleware(['valid:Id'])

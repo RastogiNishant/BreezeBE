@@ -3692,7 +3692,9 @@ class EstateService {
     // const floorPlans = files?.filter(({ type }) => type === DOCUMENT_VIEW_TYPES.PLAN)
     const externalView = (files ?? []).filter(({ type }) => type === FILE_TYPE_EXTERNAL)
     const insideView = (rooms ?? []).filter(({ images }) => images?.length || false)
-    Logger.info(`isDocumentsUpload= ${externalView?.length && insideView.length}`)
+    Logger.info(
+      `isDocumentsUpload= ${estateDetails.id} ${externalView?.length && insideView.length}`
+    )
     return externalView?.length && insideView.length
   }
 
@@ -3707,7 +3709,9 @@ class EstateService {
       rent_arrears,
       family_size_max,
     }
-    Logger.info(`isTenantPreferenceUpdated= ${checkIfIsValid(tenantPreferenceObject)}`)
+    Logger.info(
+      `isTenantPreferenceUpdated= ${estateDetails.id} ${checkIfIsValid(tenantPreferenceObject)}`
+    )
     return checkIfIsValid(tenantPreferenceObject)
   }
 
@@ -3782,8 +3786,15 @@ class EstateService {
         property_type,
       }
     }
-    Logger.info(`isLocationRentUnitUpdated= ${checkIfIsValid(locationObject)}`)
-    return checkIfIsValid(locationObject)
+    Logger.info(`isLocationRentUnitUpdated= ${estateDetails.id} ${checkIfIsValid(locationObject)}`)
+
+    const isValid = checkIfIsValid(locationObject)
+    if (!isValid) {
+      Object.keys(locationObject).forEach((key) =>
+        console.log(`locationObject ${estateDetails.id} > ${key} ${locationObject[key]}`)
+      )
+    }
+    return isValid
   }
 
   static isAllInfoAvailable(estate) {
@@ -3797,8 +3808,22 @@ class EstateService {
   //TODO: need to fill out room images/floor plan for the units in the same category
   static async fillOutUnit() {}
 
+  static async checkBuildCanPublish({ build_id }) {
+    //for checking publish
+    const buildingEstates = (
+      await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        from: 0,
+        params: { build_id },
+      })
+    ).data
+
+    buildingEstates.map((estate) => EstateService.isAllInfoAvailable(estate))
+  }
+
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
     const estates = await this.getEstatesByBuilding({ user_id, build_id })
+    console.log('publishBuilding=', user_id)
 
     const can_publish = estates.every((estate) => estate.can_publish)
     if (!can_publish) {
