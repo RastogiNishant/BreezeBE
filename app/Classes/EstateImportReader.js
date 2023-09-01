@@ -7,7 +7,7 @@ const {
   exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
   getExceptionMessage,
 } = require('../exceptions')
-const { MAX_ROOM_TYPES_TO_IMPORT, DEFAULT_LANG } = require('../constants')
+const { MAX_ROOM_TYPES_TO_IMPORT, DEFAULT_LANG, AVAILABLE_LANGUAGES } = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
 const schema = require('../Validators/ImportEstate').schema()
@@ -107,7 +107,6 @@ class EstateImportReader {
     try {
       this.lang = overrides.lang
       const data = xlsx.parse(filePath, { cellDates: true })
-
       if (overrides?.sheetName) {
         this.sheetName = overrides.sheetName
       }
@@ -119,38 +118,28 @@ class EstateImportReader {
       if (overrides?.dataStart) {
         this.dataStart = overrides.dataStart
       }
-
       if (overrides?.validHeaderVars) {
         this.validHeaderVars = overrides.validHeaderVars
       }
 
-      const unitSheet = data.find(
-        (i) =>
-          i.name === l.get(this.sheetName[0], this.lang) ||
-          i.name === l.get(this.sheetName[0], DEFAULT_LANG)
+      const unitSheet = data.find((i) =>
+        AVAILABLE_LANGUAGES.map((lang) => l.get(this.sheetName[0], lang)).includes(i.name)
       )
       const buildingSheet =
-        data.find(
-          (i) =>
-            i.name === l.get(this.sheetName[1], this.lang) ||
-            i.name === l.get(this.sheetName[1], DEFAULT_LANG)
+        data.find((i) =>
+          AVAILABLE_LANGUAGES.map((lang) => l.get(this.sheetName[1], lang)).includes(i.name)
         ) || {}
-
       this.sheet = [unitSheet, buildingSheet]
       //sheet where the estates to import are found...
       if (!unitSheet || !unitSheet.data) {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
-
       this.reverseTranslator = new EstateAttributeTranslations()
       this.dataMapping = this.reverseTranslator.getMap()
-
       this.setValidColumns(get(unitSheet, `data.${this.rowForColumnKeys}`) || [])
-
       if (!this.validateColumns(this.validColumns)) {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
-
       this.validateBuildingColumns()
     } catch (e) {
       Logger.error('Excel parse error', e.message)

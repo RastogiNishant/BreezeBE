@@ -253,7 +253,8 @@ class ImportEstate extends Base {
           APARTMENT_TYPE_GALLERY,
           APARTMENT_TYPE_ATTIC,
           null,
-        ]),
+        ])
+        .nullable(),
       house_type: yup
         .number()
         .oneOf([
@@ -268,7 +269,8 @@ class ImportEstate extends Base {
           HOUSE_TYPE_VILLA,
           HOUSE_TYPE_GARDENHOUSE,
           null,
-        ]),
+        ])
+        .nullable(),
       description: yup.string().min(2).max(500).nullable(),
       category: yup.string().min(2).max(20).nullable(),
       // TODO: add rooms schema
