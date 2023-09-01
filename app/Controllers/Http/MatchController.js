@@ -503,16 +503,14 @@ class MatchController {
     if (finalMatch) {
       throw new HttpException('There is a final match for that property', 400)
     }
-
     if (!(await MatchService.canRequestFinalCommit(estate_id))) {
       throw new HttpException(ERROR_MATCH_COMMIT_DOUBLE, 400, ERROR_MATCH_COMMIT_DOUBLE_CODE)
     }
-
     const isValidMatch = await MatchService.checkMatchIsValidForFinalRequest(estate_id, user_id)
     const trx = await Database.beginTransaction()
     if (isValidMatch) {
       try {
-        await MatchService.requestFinalConfirm({ estate_id, tenantId: user_id }, trx)
+        await MatchService.requestFinalConfirm({ estateId: estate_id, tenantId: user_id }, trx)
         logEvent(
           request,
           LOG_TYPE_FINAL_MATCH_REQUEST,
@@ -525,7 +523,7 @@ class MatchController {
         response.res(true)
       } catch (e) {
         await trx.rollback()
-        throw HttpException(e.message, 400)
+        throw new HttpException(e.message, 400)
       }
     } else {
       throw new HttpException(
