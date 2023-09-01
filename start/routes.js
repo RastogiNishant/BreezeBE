@@ -1196,6 +1196,15 @@ Route.group(() => {
     'auth:jwt,jwtLandlord',
     'valid:ChangeOrder',
   ])
+  Route.delete('/cancel/:action', 'MatchController.cancelAction').middleware([
+    'auth:jwt',
+    'valid:MatchAction',
+  ])
+  //this should be cancel-category
+  Route.delete('/cancel-building/:action', 'MatchController.cancelBuildingAction').middleware([
+    'auth:jwt',
+    'valid:MatchBuildingAction',
+  ])
 }).prefix('api/v1/match')
 
 /**
