@@ -33,6 +33,7 @@ const Event = use('Event')
 const File = use('App/Classes/File')
 const Ws = use('Ws')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+const EstateAmenityService = use('App/Services/EstateAmenityService')
 const TenantService = use('App/Services/TenantService')
 const MatchFilters = require('../Classes/MatchFilters')
 const EstateFilters = require('../Classes/EstateFilters')
@@ -208,7 +209,7 @@ class MatchService {
     }
 
     const scoreLPer = MatchService.calculateLandlordScore(prospect, estate) * 100
-    const scoreTPer = MatchService.calculateProspectScore(prospect, estate) * 100
+    const scoreTPer = (await MatchService.calculateProspectScore(prospect, estate)) * 100
     const percent = (scoreTPer + scoreLPer) / 2
     return {
       landlord_score: scoreLPer.toFixed(2),
@@ -472,7 +473,7 @@ class MatchService {
     return scoreLPer
   }
 
-  static calculateProspectScore(prospect, estate, debug = false) {
+  static async calculateProspectScore(prospect, estate, debug = false) {
     let prospectBudgetScore = 0
     let roomsScore = 0
     let spaceScore = 0
@@ -734,9 +735,33 @@ class MatchService {
     //Amenities Score
     const prospectPreferredAmenities = prospect.options || []
     const estateAmenities = estate.options || []
+    const mandatoryAmenityIds = await EstateAmenityService.getMandatoryAmenityIds()
     if (prospectPreferredAmenities.length === 0) {
       amenitiesScore = 1
     } else {
+      for (let count = 0; count < prospectPreferredAmenities.length; count++) {
+        if (
+          mandatoryAmenityIds.indexOf(prospectPreferredAmenities[count]) > -1 &&
+          estateAmenities.indexOf(prospectPreferredAmenities[count]) === -1
+        ) {
+          //prospect has a mandatory amenity but estate doesn't have that amenity
+          if (debug) {
+            return {
+              scoreT,
+              prospectBudgetScore,
+              roomsScore,
+              spaceScore,
+              floorScore,
+              rentStartScore,
+              aptTypeScore,
+              houseTypeScore,
+              amenitiesScore,
+              reason: 'prospect preferred mandatory amenities but not provided by estate',
+            }
+          }
+          return 0
+        }
+      }
       const amenitiesProvidedByEstate = prospectPreferredAmenities.reduce(
         (amenitiesProvidedByEstate, prospectPreferredAmenity) => {
           if (estateAmenities.indexOf(prospectPreferredAmenity) > -1) {
