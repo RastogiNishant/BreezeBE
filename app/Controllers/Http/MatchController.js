@@ -1249,6 +1249,78 @@ class MatchController {
       throw new HttpException(e.message, 400)
     }
   }
+
+  async cancelAction({ request, auth, response }) {
+    const { estate_id, action } = request.all()
+    const user_id = auth.user.id
+    try {
+      const Match = use('App/Models/Match')
+      const match = await Match.query()
+        .where('user_id', user_id)
+        .where('estate_id', estate_id)
+        .first()
+      if (!match) {
+        throw new Error('Cannot cancel action. User not matched with estate.')
+      }
+      let table
+      switch (action) {
+        case 'knock':
+          await Match.query()
+            .where('user_id', user_id)
+            .where('estate_id', estate_id)
+            .update({ status: MATCH_STATUS_NEW })
+          break
+        case 'like':
+        case 'dislike':
+          table = `${action}s`
+          await Database.table(table)
+            .where('user_id', user_id)
+            .where('estate_id', estate_id)
+            .delete()
+          break
+      }
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 400)
+    }
+  }
+
+  async cancelBuildingAction({ request, auth, response }) {
+    const { building_id, action } = request.all()
+    const user_id = auth.user.id
+    try {
+      const Match = use('App/Models/Match')
+      const matches = await Match.query()
+        .leftJoin('estates', 'estates.id', 'matches.estate_id')
+        .where('matches.user_id', user_id)
+        .where('estates.building_id', building_id)
+        .fetch()
+
+      if (!matches) {
+        throw new Error('Cannot cancel action. User not matched with estate.')
+      }
+      let table
+      switch (action) {
+        case 'knock':
+          await Match.query()
+            .where('user_id', user_id)
+            .where('estate_id', estate_id)
+            .update({ status: MATCH_STATUS_NEW })
+          break
+        case 'like':
+        case 'dislike':
+          table = `${action}s`
+          await Database.table(table)
+            .where('user_id', user_id)
+            .where('estate_id', estate_id)
+            .delete()
+          break
+      }
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 400)
+    }
+  }
 }
 
 module.exports = MatchController
