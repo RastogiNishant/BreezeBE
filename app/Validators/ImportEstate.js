@@ -225,7 +225,10 @@ class ImportEstate extends Base {
   static schema = () =>
     yup.object().shape({
       breeze_id: yup.string().nullable(),
-      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
+      coord: yup
+        .string()
+        .matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/)
+        .nullable(),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
         .number()
@@ -235,8 +238,9 @@ class ImportEstate extends Base {
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
           PROPERTY_TYPE_OFFICE,
+          null,
         ])
-        .required(getExceptionMessage('Property type', REQUIRED)),
+        .nullable(),
       apt_type: yup
         .number()
         .oneOf([
@@ -275,13 +279,9 @@ class ImportEstate extends Base {
       category: yup.string().min(2).max(20).nullable(),
       // TODO: add rooms schema
       rooms: yup.mixed(),
-      street: yup.string().min(2).max(255).required(getExceptionMessage('Street', REQUIRED)),
-      house_number: yup
-        .string()
-        .min(1)
-        .max(255)
-        .required(getExceptionMessage('House Number', REQUIRED)),
-      country: yup.string().min(1).max(255).required(getExceptionMessage('Country', REQUIRED)),
+      street: yup.string().min(2).max(255).nullable(),
+      house_number: yup.string().min(1).max(255).nullable(),
+      country: yup.string().min(1).max(255).nullable(),
       floor: yup.number().integer().min(-10).max(200).nullable(),
       floor_direction: yup
         .number()
@@ -309,7 +309,7 @@ class ImportEstate extends Base {
       stp_garage: yup.number().min(0).nullable(),
       stp_parkhaus: yup.number().min(0).nullable(),
       stp_tiefgarage: yup.number().min(0).nullable(),
-      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH]).nullable(),
+      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH, null]).nullable(),
       area: yup.number().min(0).nullable(),
       living_space: yup.number().min(0).nullable(),
       usable_area: yup.number().min(0).nullable(),
@@ -528,8 +528,8 @@ class ImportEstate extends Base {
           }),
         ])
         .nullable(),
-      city: yup.string().max(40).required(getExceptionMessage('City', REQUIRED)),
-      zip: yup.string().max(8).required(getExceptionMessage('Post Code', REQUIRED)),
+      city: yup.string().max(40).nullable(),
+      zip: yup.string().max(8).nullable(),
       budget: yup.string().nullable(),
       credit_score: yup.string().nullable(),
       rent_arrears: yup.boolean().nullable(),
