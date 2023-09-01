@@ -112,16 +112,14 @@ class MatchController {
   }
 
   async matchMoveToNewEstate({ request, auth, response }) {
-    const landlordId = auth.user.id
     const { estate_id, user_id, new_estate_id } = request.all()
 
     try {
-      const estate = await EstateService.getPublishedEstate(estate_id, landlordId)
-      await EstateService.getPublishedEstate(new_estate_id, landlordId)
       await MatchService.matchMoveToNewEstate({
-        estate,
+        estateId: estate_id,
         userId: user_id,
         newEstateId: new_estate_id,
+        landlordId: auth.user.id,
       })
       return response.res(true)
     } catch (e) {

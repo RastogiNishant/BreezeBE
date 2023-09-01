@@ -118,7 +118,7 @@ const exceptions = {
   BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY:
     'The unit which belongs to a building can not be published separately',
   ERROR_WRONG_MATCH_STATUS: 'Already invited to this property',
-  ERROR_COMMIT_MATCH_INVITE: 'The prospect is aready in final stage for another property',
+  ERROR_COMMIT_MATCH_INVITE: 'No match for that property',
   ERROR_ALREADY_MATCH_INVITE: 'The prospect is already in that stage for that property',
 }
 
