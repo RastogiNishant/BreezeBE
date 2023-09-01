@@ -1262,7 +1262,6 @@ class MatchController {
       if (!match) {
         throw new Error('Cannot cancel action. User not matched with estate.')
       }
-      let table
       switch (action) {
         case 'knock':
           await Match.query()
@@ -1272,7 +1271,7 @@ class MatchController {
           break
         case 'like':
         case 'dislike':
-          table = `${action}s`
+          const table = `${action}s`
           await Database.table(table)
             .where('user_id', user_id)
             .where('estate_id', estate_id)
@@ -1291,28 +1290,29 @@ class MatchController {
     try {
       const Match = use('App/Models/Match')
       const matches = await Match.query()
+        .select(Database.raw(`matches.id as match_id, matches.estate_id`))
         .leftJoin('estates', 'estates.id', 'matches.estate_id')
         .where('matches.user_id', user_id)
-        .where('estates.building_id', building_id)
+        .where('estates.build_id', building_id)
         .fetch()
 
-      if (!matches) {
-        throw new Error('Cannot cancel action. User not matched with estate.')
+      if (matches.toJSON().length < 1) {
+        throw new Error('Cannot cancel action. User not matched with building.')
       }
-      let table
+      const estate_ids = (matches.toJSON() || []).map((match) => match.estate_id)
       switch (action) {
         case 'knock':
           await Match.query()
             .where('user_id', user_id)
-            .where('estate_id', estate_id)
+            .whereIn('estate_id', estate_ids)
             .update({ status: MATCH_STATUS_NEW })
           break
         case 'like':
         case 'dislike':
-          table = `${action}s`
+          const table = `${action}s`
           await Database.table(table)
             .where('user_id', user_id)
-            .where('estate_id', estate_id)
+            .whereIn('estate_id', estate_ids)
             .delete()
           break
       }
