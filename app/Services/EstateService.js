@@ -1898,13 +1898,16 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate({ estate, publishers, performed_by = null, is_queue = false }, trx) {
+  static async publishEstate(
+    { estate, publishers, performed_by = null, is_queue = false, is_build_publish = false },
+    trx
+  ) {
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    if (performed_by && estate.build_id) {
+    if (performed_by && estate.build_id && !is_build_publish) {
       throw new HttpException(
         BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY,
         400,
@@ -3823,7 +3826,6 @@ class EstateService {
 
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
     const estates = await this.getEstatesByBuilding({ user_id, build_id })
-    console.log('publishBuilding=', user_id)
 
     const can_publish = estates.every((estate) => estate.can_publish)
     if (!can_publish) {
@@ -3870,6 +3872,7 @@ class EstateService {
             estate,
             publishers,
             performed_by: user_id,
+            is_build_publish: true,
           },
           trx
         )
