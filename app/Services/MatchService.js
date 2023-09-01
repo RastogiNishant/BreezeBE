@@ -1425,8 +1425,10 @@ class MatchService {
     }
   }
 
-  static async matchMoveToNewEstate({ estate, userId, newEstateId }) {
-    const estateId = estate.id
+  static async matchMoveToNewEstate({ estateId, userId, newEstateId, landlordId }) {
+    const estate = await EstateService.getPublishedEstate(estateId, landlordId)
+    const newEstate = await EstateService.getPublishedEstate(newEstateId, landlordId)
+
     const match = await Database.query()
       .table('matches')
       .where({ estate_id: estateId, user_id: userId })
@@ -1474,8 +1476,21 @@ class MatchService {
       switch (match.status) {
         case MATCH_STATUS_KNOCK:
         case MATCH_STATUS_INVITE:
-          await this.matchInviteAfter({ userId, estateId: newEstateId }, trx)
-          newStatus = MATCH_STATUS_INVITE
+          if (newEstate.is_not_show) {
+            await this.toTop(
+              {
+                estateId: newEstateId,
+                tenantId: userId,
+                landlordId: estate.user_id,
+                match: { ...newMatch, status: MATCH_STATUS_TOP },
+              },
+              trx
+            )
+            newStatus = MATCH_STATUS_TOP
+          } else {
+            await this.matchInviteAfter({ userId, estateId: newEstateId }, trx)
+            newStatus = MATCH_STATUS_INVITE
+          }
           break
         case MATCH_STATUS_VISIT:
         case MATCH_STATUS_SHARE:
