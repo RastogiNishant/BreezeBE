@@ -309,10 +309,7 @@ class ImportEstate extends Base {
       stp_garage: yup.number().min(0).nullable(),
       stp_parkhaus: yup.number().min(0).nullable(),
       stp_tiefgarage: yup.number().min(0).nullable(),
-      currency: yup
-        .string()
-        .oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH])
-        .default(CURRENCY_EUR),
+      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH]).nullable(),
       area: yup.number().min(0).nullable(),
       living_space: yup.number().min(0).nullable(),
       usable_area: yup.number().min(0).nullable(),
