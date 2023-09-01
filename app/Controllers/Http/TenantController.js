@@ -171,8 +171,9 @@ class TenantController {
       Event.fire('mautic:syncContact', auth.user.id, { activated_profile_date: new Date() })
     } catch (e) {
       throw new HttpException(e.message, 400, e.code)
+    } finally {
+      await MatchService.matchByUser({ userId: auth.user.id, ignoreNullFields: true })
     }
-    await MatchService.matchByUser({ userId: auth.user.id, ignoreNullFields: true })
 
     response.res(true)
   }
