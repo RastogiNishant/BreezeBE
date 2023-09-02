@@ -71,7 +71,8 @@ const HttpException = require('../Exceptions/HttpException')
 const {
   exceptions: { USER_NOT_FOUND },
 } = require('../exceptions')
-class TenantService {
+const BaseService = require('./BaseService')
+class TenantService extends BaseService {
   /**
    *
    */
@@ -165,38 +166,47 @@ class TenantService {
   }
 
   static async getTenantWithCertificates(userId) {
-    return Tenant.query()
+    let tenantWithCertificate = await Tenant.query()
       .select('*')
       .select('_tc.wbs_certificate')
       .leftJoin(
         Database.raw(`
-      (select
-        user_id,
-        array_agg(json_build_object(
-          'city_id', city_id,
-          'city', cities.city,
-          'attachments', attachments,           
-          'expiration_date', to_char(
-            tenant_certificates.expired_at, '${DAY_FORMAT}'
-          ),
-          'expiration_status',
-            case when tenant_certificates.expired_at < NOW() then
-              'expired' else 'active' end,              
-          'income_level', income_level))
-        as wbs_certificate
-        from tenant_certificates
-        left join
-          cities
-        on tenant_certificates.city_id=cities.id
-        where status=${STATUS_ACTIVE}
-        group by user_id
-        ) as _tc
-      `),
+    (select
+      user_id,
+      array_agg(json_build_object(
+        'city_id', city_id,
+        'city', cities.city,
+        'attachments', attachments,           
+        'expiration_date', to_char(
+          tenant_certificates.expired_at, '${DAY_FORMAT}'
+        ),
+        'expiration_status',
+          case when tenant_certificates.expired_at < NOW() then
+            'expired' else 'active' end,              
+        'income_level', income_level))
+      as wbs_certificate
+      from tenant_certificates
+      left join
+        cities
+      on tenant_certificates.city_id=cities.id
+      where status=${STATUS_ACTIVE}
+      group by user_id
+      ) as _tc
+    `),
         '_tc.user_id',
         'tenants.user_id'
       )
       .where('tenants.user_id', userId)
       .first()
+
+    const wbs_certificate = await Promise.map(
+      tenantWithCertificate.wbs_certificate,
+      async (cert) => await this.getWithAbsoluteUrl(cert)
+    )
+
+    tenantWithCertificate.wbs_certificate = wbs_certificate
+
+    return tenantWithCertificate
   }
   /**
    * Get Tenant with linked point
