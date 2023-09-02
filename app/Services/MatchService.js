@@ -1168,54 +1168,29 @@ class MatchService {
     let matches = []
     let estate_ids = []
     try {
-      if (!share_profile) {
-        const sameCategoryEstates = await EstateService.getEstatesInSameCategory({
-          estate,
-          status: STATUS_ACTIVE,
-        })
+      const sameCategoryEstates = await EstateService.getEstatesInSameCategory({
+        estate,
+        status: STATUS_ACTIVE,
+      })
 
-        estate_ids = sameCategoryEstates.map((e) => e.id)
-        matches = sameCategoryEstates.map((e) => ({
-          user_id,
-          estate_id: e.id,
-          percent,
-          landlord_score,
-          prospect_score,
-          status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
-          share: share_profile ? true : false,
-          buddy,
-          knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
-          status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        }))
-      } else {
-        estate_ids = [estate_id]
-        matches = [
-          {
-            user_id,
-            estate_id,
-            percent,
-            landlord_score,
-            prospect_score,
-            status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
-            share: share_profile ? true : false,
-            buddy,
-            knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
-            status_at: moment.utc(new Date()).format(DATE_FORMAT),
-          },
-        ]
-      }
+      estate_ids = sameCategoryEstates.map((e) => e.id)
+      matches = sameCategoryEstates.map((e) => ({
+        user_id,
+        estate_id: e.id,
+        percent,
+        landlord_score,
+        prospect_score,
+        status: MATCH_STATUS_KNOCK,
+        share: share_profile ? true : false,
+        buddy,
+        knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+      }))
 
       if (!matches?.length) {
         throw new HttpException(NO_MATCH_EXIST, 400)
       }
       await this.upsertBulkMatches(matches, trx)
-
-      if (share_profile) {
-        await require('./TaskService').createGlobalTask(
-          { tenantId: user_id, landlordId: estate.user_id, estateId: estate_id },
-          trx
-        )
-      }
 
       await Dislike.query()
         .where('user_id', user_id)
@@ -1282,7 +1257,7 @@ class MatchService {
         old_status: MATCH_STATUS_NEW,
         share: share_profile,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+        status: MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
       event: WEBSOCKET_EVENT_MATCH_STAGE,
@@ -1295,13 +1270,17 @@ class MatchService {
         old_status: MATCH_STATUS_NEW,
         share: share_profile,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+        status: MATCH_STATUS_KNOCK,
       },
       role: ROLE_LANDLORD,
     })
   }
 
   static async sendMatchInviteWebsocketFromKnock({ estate_id, user_id, share_profile = false }) {
+    const estate = await EstateService.getActiveById(estate_id)
+    if (!estate) {
+      throw new HttpException(NO_ESTATE_EXIST, 400)
+    }
     this.emitMatch({
       data: {
         estate_id,
@@ -1309,7 +1288,7 @@ class MatchService {
         old_status: MATCH_STATUS_NEW,
         share: share_profile,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+        status: estate.is_not_show ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
       },
       role: ROLE_LANDLORD,
       event: WEBSOCKET_EVENT_MATCH_STAGE,
@@ -1322,7 +1301,7 @@ class MatchService {
         old_status: MATCH_STATUS_NEW,
         share: share_profile,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
-        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+        status: estate.is_not_show ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
       },
       role: ROLE_LANDLORD,
     })
@@ -1476,21 +1455,13 @@ class MatchService {
       switch (match.status) {
         case MATCH_STATUS_KNOCK:
         case MATCH_STATUS_INVITE:
+          await this.matchInviteAfter({ userId, estate: newEstate }, trx)
           if (newEstate.is_not_show) {
-            await this.toTop(
-              {
-                estateId: newEstateId,
-                tenantId: userId,
-                landlordId: estate.user_id,
-                match: { ...newMatch, status: MATCH_STATUS_TOP },
-              },
-              trx
-            )
             newStatus = MATCH_STATUS_TOP
           } else {
-            await this.matchInviteAfter({ userId, estateId: newEstateId }, trx)
             newStatus = MATCH_STATUS_INVITE
           }
+
           break
         case MATCH_STATUS_VISIT:
         case MATCH_STATUS_SHARE:
@@ -1589,14 +1560,14 @@ class MatchService {
       }
     }
 
-    await this.matchInviteAfter({ userId, estateId }, trx)
+    await this.matchInviteAfter({ userId, estate }, trx)
 
     this.emitMatch({
       data: {
         estate_id: estateId,
         user_id: userId,
         old_status: MATCH_STATUS_KNOCK,
-        status: MATCH_STATUS_INVITE,
+        status: estate.is_not_show ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
       },
       role: ROLE_USER,
     })
@@ -1604,27 +1575,30 @@ class MatchService {
     await this.removeAutoKnockedMatch({ id: estateId, user_id: userId }, trx)
   }
 
-  static async matchInviteAfter({ userId, estateId }, trx) {
-    const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
-    const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
-    if (!timeSlotCount) {
-      throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
+  static async matchInviteAfter({ userId, estate }, trx) {
+    if (!estate.is_not_show) {
+      const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
+      const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
+      if (!timeSlotCount) {
+        throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)
+      }
     }
 
     const existingMatch = await Match.query()
-      .where('estate_id', estateId)
+      .where('estate_id', estate.id)
       .where('user_id', userId)
       .first()
 
     if (existingMatch) {
       let query = Database.table('matches')
         .update({
-          status: MATCH_STATUS_INVITE,
+          status: estate.is_not_show ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+          share: estate.is_not_show,
           status_at: moment.utc(new Date()).format(DATE_FORMAT),
         })
         .where({
           user_id: userId,
-          estate_id: estateId,
+          estate_id: estate.id,
         })
       if (trx) {
         query.transacting(trx)
@@ -1634,8 +1608,8 @@ class MatchService {
       await Match.createItem(
         {
           user_id: userId,
-          estate_id: estateId,
-          status: MATCH_STATUS_INVITE,
+          estate_id: estate.id,
+          status: estate.is_not_show ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
           percent: 0,
           status_at: moment.utc(new Date()).format(DATE_FORMAT),
         },
@@ -1643,8 +1617,10 @@ class MatchService {
       )
     }
 
-    await NoticeService.userInvite(estateId, userId)
-    MatchService.inviteEmailToProspect({ estateId, userId })
+    if (!estate.is_not_show) {
+      await NoticeService.userInvite(estate.id, userId)
+      MatchService.inviteEmailToProspect({ estateId: estate.id, userId })
+    }
   }
 
   static async removeAutoKnockedMatch({ id, user_id }, trx) {

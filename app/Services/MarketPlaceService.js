@@ -622,12 +622,7 @@ class MarketPlaceService {
           })
 
           if (!hasMatch) {
-            const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(
-              knock.estate_id
-            )
-            const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
-
-            if (!knock.is_invited_by_landlord || knock.estate?.is_not_show || !timeSlotCount) {
+            if (!knock.is_invited_by_landlord) {
               await MatchService.knockEstate(
                 {
                   estate_id: knock.estate_id,
