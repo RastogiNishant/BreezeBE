@@ -1616,6 +1616,13 @@ class MatchService {
       )
     }
 
+    if (estate.is_not_show) {
+      await require('./TaskService').createGlobalTask(
+        { tenantId: userId, landlordId: estate.user_id, estateId: estate.id },
+        trx
+      )
+    }
+
     if (!estate.is_not_show) {
       await NoticeService.userInvite(estate.id, userId)
       MatchService.inviteEmailToProspect({ estateId: estate.id, userId })
