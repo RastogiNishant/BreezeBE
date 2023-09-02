@@ -282,12 +282,11 @@ class TenantService {
         })
         .where('_t.id', tenantId)
     }
+
     const data = await getRequiredTenantData(tenant.id)
-
     const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
-
     if (!data.find((m) => m.rent_proof_not_applicable) && isEmpty(counts)) {
-      throw new AppException('Invalid members')
+      throw new AppException('members proof not provided', 400)
     }
     // Check is user has income proofs for last 3 month
     const hasUnconfirmedProofs = !!counts.find(
@@ -391,7 +390,6 @@ class TenantService {
       ]),
       employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME]),
     })
-
     const trx = await Database.beginTransaction()
     try {
       await yup.array().of(schema).validate(data)
@@ -402,9 +400,8 @@ class TenantService {
       await trx.commit()
       MemberService.calcTenantMemberData(tenant.user_id)
     } catch (e) {
-      console.log(e.message)
       await trx.rollback()
-      throw new AppException('Invalid tenant data')
+      throw new AppException(e.message, 400)
     }
   }
 

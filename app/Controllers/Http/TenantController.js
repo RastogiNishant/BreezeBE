@@ -170,6 +170,7 @@ class TenantController {
       logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
       Event.fire('mautic:syncContact', auth.user.id, { activated_profile_date: new Date() })
     } catch (e) {
+      console.log(`activateTenant controller error ${auth.user.id} ${e.message}`)
       throw new HttpException(e.message, 400, e.code)
     } finally {
       await MatchService.matchByUser({ userId: auth.user.id, ignoreNullFields: true })
