@@ -241,7 +241,7 @@ class TenantService {
   /**
    *
    */
-  static async activateTenant(tenant) {
+  static async activateTenant(tenant, trx) {
     const getRequiredTenantData = (tenantId) => {
       return Database.table({ _t: 'tenants' })
         .select(
@@ -380,17 +380,30 @@ class TenantService {
       ]),
       employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME]),
     })
-    const trx = await Database.beginTransaction()
+
+    let insideTrx = false
+    if (!trx) {
+      insideTrx = true
+      trx = await Database.beginTransaction()
+    }
+
     try {
       await yup.array().of(schema).validate(data)
       tenant.status = STATUS_ACTIVE
 
       await tenant.save(trx)
       await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
-      await trx.commit()
+
+      if (insideTrx) {
+        await trx.commit()
+      }
+
       MemberService.calcTenantMemberData(tenant.user_id)
     } catch (e) {
-      await trx.rollback()
+      if (insideTrx) {
+        await trx.rollback()
+      }
+
       throw new AppException(e.message, 400)
     }
   }
@@ -400,10 +413,8 @@ class TenantService {
    */
   static async deactivateTenant(userId) {
     const trx = await Database.beginTransaction()
+
     try {
-      await Tenant.query()
-        .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] }, trx)
-        .where({ user_id: userId })
       await MemberService.calcTenantMemberData(userId, trx)
       // Remove New matches
       await Database.table({ _m: 'matches' })
@@ -412,6 +423,19 @@ class TenantService {
         .delete()
         .transacting(trx)
       await require('./MatchService').recalculateMatchScoresByUserId(userId, trx)
+
+      try {
+        const tenant = await Tenant.query().where({ user_id: userId }).first()
+        await this.activateTenant(tenant, trx)
+      } catch (e) {
+        await Tenant.query()
+          .update(
+            { status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] },
+            trx
+          )
+          .where({ user_id: userId })
+      }
+
       await trx.commit()
     } catch (e) {
       await trx.rollback()
