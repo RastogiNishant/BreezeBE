@@ -1433,7 +1433,7 @@ class MatchService {
       userId,
       estateId: newEstateId,
     })
-    console.log('matchMoveToNewEstate= 4')
+
     const trx = await Database.beginTransaction()
     try {
       let newStatus = match.status
