@@ -72,7 +72,9 @@ class EstateFilters extends Filter {
     'customRent',
     'customNumFloor',
     'rooms_number',
+    'completeness',
     'customUpdatedAt',
+    'customVacantDate',
   ]
   globalSearchFields = ['property_id', 'address', 'six_char_code']
 
@@ -89,6 +91,8 @@ class EstateFilters extends Filter {
       customNumFloor: 'number_floors',
       customRent: 'net_rent',
       customUpdatedAt: 'updated_at',
+      customVacantDate: 'vacant_date',
+      completeness: 'percent',
     }
 
     this.matchFilter(EstateFilters.possibleStringParams, params)
