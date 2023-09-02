@@ -1245,6 +1245,78 @@ class MatchController {
       throw new HttpException(e.message, 400)
     }
   }
+
+  async cancelAction({ request, auth, response }) {
+    const { estate_id, action } = request.all()
+    const user_id = auth.user.id
+    try {
+      const Match = use('App/Models/Match')
+      const match = await Match.query()
+        .where('user_id', user_id)
+        .where('estate_id', estate_id)
+        .first()
+      if (!match) {
+        throw new Error('Cannot cancel action. User not matched with estate.')
+      }
+      switch (action) {
+        case 'knock':
+          await Match.query()
+            .where('user_id', user_id)
+            .where('estate_id', estate_id)
+            .update({ status: MATCH_STATUS_NEW })
+          break
+        case 'like':
+        case 'dislike':
+          const table = `${action}s`
+          await Database.table(table)
+            .where('user_id', user_id)
+            .where('estate_id', estate_id)
+            .delete()
+          break
+      }
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 400)
+    }
+  }
+
+  async cancelBuildingAction({ request, auth, response }) {
+    const { building_id, action } = request.all()
+    const user_id = auth.user.id
+    try {
+      const Match = use('App/Models/Match')
+      const matches = await Match.query()
+        .select(Database.raw(`matches.id as match_id, matches.estate_id`))
+        .leftJoin('estates', 'estates.id', 'matches.estate_id')
+        .where('matches.user_id', user_id)
+        .where('estates.build_id', building_id)
+        .fetch()
+
+      if (matches.toJSON().length < 1) {
+        throw new Error('Cannot cancel action. User not matched with building.')
+      }
+      const estate_ids = (matches.toJSON() || []).map((match) => match.estate_id)
+      switch (action) {
+        case 'knock':
+          await Match.query()
+            .where('user_id', user_id)
+            .whereIn('estate_id', estate_ids)
+            .update({ status: MATCH_STATUS_NEW })
+          break
+        case 'like':
+        case 'dislike':
+          const table = `${action}s`
+          await Database.table(table)
+            .where('user_id', user_id)
+            .whereIn('estate_id', estate_ids)
+            .delete()
+          break
+      }
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 400)
+    }
+  }
 }
 
 module.exports = MatchController
