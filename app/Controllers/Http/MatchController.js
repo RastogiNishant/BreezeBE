@@ -135,7 +135,7 @@ class MatchController {
     const landlordId = auth.user.id
     const { estate_id, user_id } = request.all()
     // Check is estate owner
-    const estate = await EstateService.getPublishedEstate(estate_id, landlordId)
+    const estate = await EstateService.getMatchEstate(estate_id, landlordId)
     try {
       await MatchService.inviteKnockedUser({ estate, userId: user_id })
       logEvent(
@@ -166,7 +166,7 @@ class MatchController {
    */
   async removeInvite({ request, auth, response }) {
     const { estate_id, user_id } = request.all()
-    await EstateService.getPublishedEstate(estate_id, auth.user.id)
+    await EstateService.getMatchEstate(estate_id, auth.user.id)
 
     try {
       await MatchService.cancelInvite(estate_id, user_id, auth.user.role)
@@ -331,7 +331,7 @@ class MatchController {
    */
   async updateVisitTimeslotLandlord({ request, auth, response }) {
     const { estate_id, status, delay = null, user_id } = request.all()
-    const estate = await EstateService.getPublishedEstate(estate_id, auth.user.id)
+    const estate = await EstateService.getMatchEstate(estate_id, auth.user.id)
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
@@ -389,7 +389,7 @@ class MatchController {
   async shareTenantData({ request, auth, response }) {
     const { estate_id, code } = request.all()
     const userId = auth.user.id
-    await EstateService.getPublishedEstate(estate_id, userId)
+    await EstateService.getMatchEstate(estate_id, userId)
 
     try {
       const { tenantId } = await MatchService.share({
@@ -438,7 +438,7 @@ class MatchController {
     const { user_id, estate_id } = request.all()
     const trx = await Database.beginTransaction()
     try {
-      await EstateService.getPublishedEstate(estate_id, auth.user.id)
+      await EstateService.getMatchEstate(estate_id, auth.user.id)
       const success = await MatchService.toTop(
         {
           estateId: estate_id,
@@ -477,7 +477,7 @@ class MatchController {
    */
   async discardUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await EstateService.getPublishedEstate(estate_id, auth.user.id)
+    await EstateService.getMatchEstate(estate_id, auth.user.id)
     try {
       await MatchService.removeFromTop(estate_id, user_id)
     } catch (e) {
@@ -497,7 +497,7 @@ class MatchController {
    */
   async requestUserCommit({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await EstateService.getPublishedEstate(estate_id, auth.user.id)
+    await EstateService.getMatchEstate(estate_id, auth.user.id)
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (finalMatch) {
@@ -1157,7 +1157,7 @@ class MatchController {
    */
   async inviteToCome({ request, auth, response }) {
     const { estate_id, user_id } = request.all()
-    await EstateService.getPublishedEstate(estate_id, auth.user.id)
+    await EstateService.getMatchEstate(estate_id, auth.user.id)
     await MatchService.inviteUserToCome(estate_id, user_id)
 
     response.res(true)
