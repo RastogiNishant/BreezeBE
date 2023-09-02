@@ -1567,7 +1567,7 @@ class MatchService {
         estate_id: estateId,
         user_id: userId,
         old_status: MATCH_STATUS_KNOCK,
-        status: MATCH_STATUS_INVITE,
+        status: estate.is_not_show ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
       },
       role: ROLE_USER,
     })
@@ -1593,6 +1593,7 @@ class MatchService {
       let query = Database.table('matches')
         .update({
           status: estate.is_not_show ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
+          share: estate.is_not_show,
           status_at: moment.utc(new Date()).format(DATE_FORMAT),
         })
         .where({
