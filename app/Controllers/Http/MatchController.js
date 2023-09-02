@@ -1251,8 +1251,7 @@ class MatchController {
   }
 
   async cancelAction({ request, auth, response }) {
-    const { estate_id, action } = request.all()
-    const user_id = auth.user.id
+    const { estate_id, user_id, action } = request.all()
     try {
       const Match = use('App/Models/Match')
       const match = await Match.query()
@@ -1285,8 +1284,7 @@ class MatchController {
   }
 
   async cancelBuildingAction({ request, auth, response }) {
-    const { building_id, action } = request.all()
-    const user_id = auth.user.id
+    const { building_id, user_id, action } = request.all()
     try {
       const Match = use('App/Models/Match')
       const matches = await Match.query()

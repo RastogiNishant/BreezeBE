@@ -8,6 +8,7 @@ class MatchAction extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: id.required(),
+      user_id: id.required(),
       action: yup.string().oneOf(['like', 'dislike', 'knock']).required(),
     })
 }
