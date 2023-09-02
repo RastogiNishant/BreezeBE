@@ -1405,8 +1405,8 @@ class MatchService {
   }
 
   static async matchMoveToNewEstate({ estateId, userId, newEstateId, landlordId }) {
-    const estate = await EstateService.getPublishedEstate(estateId, landlordId)
-    const newEstate = await EstateService.getPublishedEstate(newEstateId, landlordId)
+    const estate = await EstateService.getMatchEstate(estateId, landlordId)
+    const newEstate = await EstateService.getMatchEstate(newEstateId, landlordId)
 
     const match = await Database.query()
       .table('matches')
@@ -1425,7 +1425,6 @@ class MatchService {
     }
 
     const newMatch = await Match.query().where({ estate_id: newEstateId, user_id: userId }).first()
-
     if (newMatch?.status >= match.status) {
       throw new AppException(ERROR_ALREADY_MATCH_INVITE, 400, ERROR_ALREADY_MATCH_INVITE_CODE)
     }
@@ -1434,7 +1433,7 @@ class MatchService {
       userId,
       estateId: newEstateId,
     })
-
+    console.log('matchMoveToNewEstate= 4')
     const trx = await Database.beginTransaction()
     try {
       let newStatus = match.status
