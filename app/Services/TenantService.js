@@ -247,21 +247,7 @@ class TenantService {
         .select(
           '_t.private_use',
           '_t.pets',
-          '_m.firstname',
-          '_m.secondname',
-          '_m.birthday',
-          '_m.last_address',
-          '_m.landlord_name',
-          '_m.unpaid_rental',
-          '_m.insolvency_proceed',
-          '_m.clean_procedure',
-          '_m.income_seizure',
-          '_m.debt_proof',
-          '_m.execution',
-          '_m.credit_score',
-          '_m.credit_score_submit_later',
-          '_m.phone_verified',
-          '_m.birth_place',
+          '_m.*',
           '_i.position',
           '_i.company',
           '_i.income_type',
@@ -325,13 +311,17 @@ class TenantService {
       last_address: yup.string().required(),
       firstname: yup.string().required(),
       secondname: yup.string().required(),
-      debt_proof: yup.string().when(['credit_score_submit_later'], {
-        is: (credit_score_submit_later) => {
-          return credit_score_submit_later
-        },
-        then: yup.string().notRequired().nullable(),
-        otherwise: yup.string().required(),
-      }),
+      debt_proof: yup
+        .string()
+        .when(['rent_proof_not_applicable', 'rent_arrears_doc_submit_later'], {
+          is: (rent_proof_not_applicable, rent_arrears_doc_submit_later) => {
+            console.log('rent_proof_not_applicable=', rent_proof_not_applicable)
+            console.log('rent_arrears_doc_submit_later=', rent_arrears_doc_submit_later)
+            return rent_proof_not_applicable || rent_arrears_doc_submit_later
+          },
+          then: yup.string().notRequired().nullable(),
+          otherwise: yup.string().required(),
+        }),
       birthday: yup.date().required(),
       birth_place: yup.string().required(),
       unpaid_rental: yup
