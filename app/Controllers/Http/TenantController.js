@@ -179,6 +179,15 @@ class TenantController {
     response.res(true)
   }
 
+  async detail({ request, auth, response }) {
+    let tenant = await TenantService.getTenantWithCertificates(auth.user.id)
+    let members = await MemberService.getMembers(auth.user.id, true)
+    response.res({
+      tenant,
+      members,
+    })
+  }
+
   /**
    *
    */
