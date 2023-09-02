@@ -175,6 +175,7 @@ class TenantService {
         array_agg(json_build_object(
           'city_id', city_id,
           'city', cities.city,
+          'attachments', attachments,           
           'expiration_date', to_char(
             tenant_certificates.expired_at, '${DAY_FORMAT}'
           ),
