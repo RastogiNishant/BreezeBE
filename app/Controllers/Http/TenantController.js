@@ -140,13 +140,13 @@ class TenantController {
 
       let filterResult = {}
 
-      if (!shouldDeactivateTenant.length && data.only_count) {
+      if (data.only_count) {
         filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
           has_notification_sent: false,
           only_count: true,
         })
-      } else if (!shouldDeactivateTenant.length) {
+      } else {
         filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
           has_notification_sent: false,
