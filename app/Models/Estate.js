@@ -180,6 +180,7 @@ class Estate extends Model {
       'build_id',
       'cert_category',
       'can_publish',
+      'unit_category_id',
     ]
   }
 
@@ -629,6 +630,10 @@ class Estate extends Model {
       return false
     }
     return true
+  }
+
+  category() {
+    this.belongsTo('App/Models/UnitCategory', 'unit_category_id', 'id')
   }
 }
 
