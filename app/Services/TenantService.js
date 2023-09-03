@@ -200,7 +200,7 @@ class TenantService extends BaseService {
       .first()
 
     const wbs_certificate = await Promise.map(
-      tenantWithCertificate.wbs_certificate,
+      tenantWithCertificate.wbs_certificate || [],
       async (cert) => await this.getWithAbsoluteUrl(cert)
     )
 
