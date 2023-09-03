@@ -399,6 +399,7 @@ Route.group(() => {
   Route.put('/certificate/:id/image', 'TenantCertificateController.updateImage').middleware([
     'valid:Id,CreateFile',
   ])
+  Route.get('/detail', 'TenantController.detail')
 })
   .prefix('/api/v1/users/tenant')
   .middleware(['auth:jwt'])
@@ -553,6 +554,9 @@ Route.group(() => {
 
   Route.put('/building/:id/publish', 'EstateController.publishBuild').middleware([
     'valid:Id,PublishEstate',
+  ])
+  Route.get('/building/:id/can_publish', 'EstateController.canBuildPublish').middleware([
+    'valid:Id',
   ])
   Route.put('/:id/publish', 'EstateController.publishEstate').middleware(['valid:Id,PublishEstate'])
   Route.put('/:id/offline', 'EstateController.makeEstateOffline').middleware(['valid:Id'])
@@ -1198,6 +1202,15 @@ Route.group(() => {
   ])
 }).prefix('api/v1/match')
 
+Route.group(() => {
+  Route.delete('/cancel/:action', 'MatchController.cancelAction').middleware(['valid:MatchAction'])
+  //this should be cancel-category
+  Route.delete('/cancel-building/:action', 'MatchController.cancelBuildingAction').middleware([
+    'valid:MatchBuildingAction',
+  ])
+})
+  .middleware(['auth:jwtAdministrator'])
+  .prefix('api/v1/match')
 /**
  * Landlord company manage
  */
