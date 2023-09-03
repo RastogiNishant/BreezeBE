@@ -747,7 +747,7 @@ class MatchService {
           //prospect has a mandatory amenity but estate doesn't have that amenity
           if (debug) {
             return {
-              scoreT,
+              scoreT: 0,
               prospectBudgetScore,
               roomsScore,
               spaceScore,
