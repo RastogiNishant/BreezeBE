@@ -914,7 +914,6 @@ class MatchService {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
     let { estates, categoryCounts } = await EstateService.searchEstatesQuery(tenant)
-
     if (only_count) {
       return {
         categoryCounts,

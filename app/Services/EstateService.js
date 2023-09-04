@@ -1492,10 +1492,15 @@ class EstateService {
 
     const minTenantBudget = tenant?.budget_min || 0
     const maxTenantBudget = tenant?.budget_max || 0
-    estates = estates.filter((estate) => {
-      const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
-      return budget >= minTenantBudget && budget <= maxTenantBudget
-    })
+
+    if (minTenantBudget && minTenantBudget) {
+      estates = estates.filter((estate) => {
+        const budget = tenant.include_utility
+          ? estate.net_rent + estate.extra_costs
+          : estate.net_rent
+        return budget >= minTenantBudget && budget <= maxTenantBudget
+      })
+    }
 
     if (process.env.DEV === 'true') {
       Logger.info(`filterEstates after budget ${estates?.length}`)
@@ -1559,32 +1564,39 @@ class EstateService {
       Logger.info(`filterEstates after short term ${estates?.length}`)
     }
 
-    estates = estates.filter(
-      (estate) =>
-        !estate.rooms_number ||
-        (estate.rooms_number >= (tenant.rooms_min || 1) &&
-          estate.rooms_number <= (tenant.rooms_max || 1))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after rooms ${estates?.length}`)
+    if (tenant.rooms_min !== null && tenant.rooms_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.rooms_number ||
+          (estate.rooms_number >= (tenant.rooms_min || 1) &&
+            estate.rooms_number <= (tenant.rooms_max || 1))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after rooms ${estates?.length}`)
+      }
     }
 
-    estates = estates.filter(
-      (estate) =>
-        estate.floor === null ||
-        (estate.floor >= (tenant.floor_min || 0) && estate.rooms_number <= (tenant.floor_max || 20))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after floors ${estates?.length}`)
+    if (tenant.floor_min !== null && tenant.floor_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          estate.floor === null ||
+          (estate.floor >= (tenant.floor_min || 0) &&
+            estate.rooms_number <= (tenant.floor_max || 20))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after floors ${estates?.length}`)
+      }
     }
 
-    estates = estates.filter(
-      (estate) =>
-        !estate.area ||
-        (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after area ${estates?.length}`)
+    if (tenant.space_min !== null && tenant.space_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.area ||
+          (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after area ${estates?.length}`)
+      }
     }
 
     if (tenant.apt_type?.length) {
