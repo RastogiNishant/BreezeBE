@@ -507,6 +507,9 @@ class MatchController {
       throw new HttpException(ERROR_MATCH_COMMIT_DOUBLE, 400, ERROR_MATCH_COMMIT_DOUBLE_CODE)
     }
     const isValidMatch = await MatchService.checkMatchIsValidForFinalRequest(estate_id, user_id)
+
+    const trx = await Database.beginTransaction()
+
     if (!isValidMatch) {
       throw new HttpException(
         'This prospect has not shared the data. Match is not valid for final match request',
@@ -514,7 +517,6 @@ class MatchController {
       )
     }
 
-    const trx = await Database.beginTransaction()
     try {
       await MatchService.requestFinalConfirm({ estateId: estate_id, tenantId: user_id }, trx)
       logEvent(
