@@ -2090,12 +2090,17 @@ class EstateService {
         trx,
         true
       )
+      let building
       if (estate.build_id) {
-        await EstateService.updateBuildingPublishStatus(estate.build_id, 'deactivate')
+        building = await EstateService.updateBuildingPublishStatus(estate.build_id, 'deactivate')
       }
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
-      await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
+      await this.handleOffline({
+        estates: [estate],
+        building,
+        event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED,
+      })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -2154,18 +2159,24 @@ class EstateService {
       },
       true
     )
-
+    let building
     if (estate.build_id) {
-      await EstateService.updateBuildingPublishStatus(estate.build_id, 'unpublish')
+      building = await EstateService.updateBuildingPublishStatus(estate.build_id, 'unpublish')
     }
 
-    await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
+    await this.handleOffline({
+      building,
+      estates: [estate],
+      event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
+    })
   }
 
-  static async handleOffline({ build_id, estates, event }, trx) {
+  static async handleOffline({ building, build_id, estates, event }, trx) {
     const data = {
       success: true,
-      build_id,
+      build_id: building?.id || build_id,
+      published: building?.published,
+      building_status: building?.status,
       status: estates?.[0]?.status,
       publish_status: estates?.[0]?.publish_status,
     }
