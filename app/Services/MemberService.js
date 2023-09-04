@@ -514,10 +514,11 @@ class MemberService {
       income.income_type === INCOME_TYPE_PENSIONER ||
       income.income_type === INCOME_TYPE_TRAINEE ||
       income.income_type === INCOME_TYPE_OTHER_BENEFIT ||
-      income_income_type === INCOME_TYPE_CHILD_BENEFIT
+      income.income_type === INCOME_TYPE_CHILD_BENEFIT
     ) {
       data.expire_date = null
     }
+
     return IncomeProof.createItem({
       ...data,
       income_id: income.id,
