@@ -4009,6 +4009,7 @@ class EstateService {
   }
 
   static async updateBuildingPublishStatus(building_id, action = 'publish') {
+    const building = await Building.findOrFail(building_id)
     const estatesOfSameBuilding = await Estate.query()
       .select('status')
       .where('build_id', building_id)
@@ -4024,14 +4025,11 @@ class EstateService {
     )
     if (unpublishedPublishedOfSameBuilding.length === 0) {
       //mark building
-      await Building.query()
-        .where('id', building_id)
-        .update({
-          published: action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT,
-        })
-      return true
+      building.published =
+        action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT
+      await building.save()
     }
-    return false
+    return building.published
   }
 }
 module.exports = EstateService
