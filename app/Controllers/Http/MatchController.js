@@ -953,6 +953,7 @@ class MatchController {
       'final_match_date',
       'status_at',
       'unread_count',
+      'credit_score',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
