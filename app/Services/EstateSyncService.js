@@ -668,41 +668,37 @@ class EstateSyncService {
         }
       }
       const result = await estateSync.post('targets', data)
-      if (result.success) {
-        const existingTarget = await EstateSyncTarget.query()
-          .where('publishing_provider', publisher)
-          .where('estate_sync_credential_id', credential.id)
-          .first()
-        if (existingTarget) {
-          await existingTarget.updateItemWithTrx(
-            {
-              estate_sync_target_id: result.data.id,
-              status: STATUS_ACTIVE,
-            },
-            trx
-          )
-        } else {
-          const queryResult = await EstateSyncTarget.createItem(
-            {
-              estate_sync_credential_id: credential.id,
-              publishing_provider: publisher,
-              estate_sync_target_id: result.data.id,
-            },
-            trx
-          )
-        }
-        await trx.commit()
-        return result
-      } else {
+      if (!result.success) {
         throw new Error(result?.data?.message || 'Unknown error found.')
       }
+
+      const existingTarget = await EstateSyncTarget.query()
+        .where('publishing_provider', publisher)
+        .where('estate_sync_credential_id', credential.id)
+        .first()
+      if (existingTarget) {
+        await existingTarget.updateItemWithTrx(
+          {
+            estate_sync_target_id: result.data.id,
+            status: STATUS_ACTIVE,
+          },
+          trx
+        )
+      } else {
+        const queryResult = await EstateSyncTarget.createItem(
+          {
+            estate_sync_credential_id: credential.id,
+            publishing_provider: publisher,
+            estate_sync_target_id: result.data.id,
+          },
+          trx
+        )
+      }
+      await trx.commit()
+      return result
     } catch (err) {
       await trx.rollback()
-      if (err.message) {
-        throw new HttpException(err.message)
-      } else {
-        throw new HttpException('Error found while adding Target')
-      }
+      throw new HttpException(err?.message)
     }
   }
 
@@ -736,11 +732,7 @@ class EstateSyncService {
       return true
     } catch (err) {
       await trx.rollback()
-      if (err.message) {
-        throw new HttpException(err.message)
-      } else {
-        throw new HttpException('Error found while removing target.')
-      }
+      throw new HttpException(err?.message)
     }
   }
 

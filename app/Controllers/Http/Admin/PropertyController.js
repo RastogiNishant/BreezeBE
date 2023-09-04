@@ -393,7 +393,6 @@ class PropertyController {
         throw new HttpException('Estate not found', 400, 113214)
       }
     }
-    const trx = await Database.beginTransaction()
     let ret
     switch (action) {
       case 'approve-publish':
@@ -409,15 +408,10 @@ class PropertyController {
         await EstateService.deactivateBulkEstates(ids)
         return response.res(ids)
       case UNPUBLISH_PROPERTY:
-        try {
-          await EstateService.unpublishBulkEstates(ids)
-          return response.res(ids.length)
-        } catch (error) {
-          await trx.rollback()
-          throw new HttpException(error.message, 422)
-        }
+        await EstateService.unpublishBulkEstates(ids)
+        return response.res(ids.length)
     }
-    await trx.rollback()
+
     throw new HttpException('Action not allowed.')
   }
 

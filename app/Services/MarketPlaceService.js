@@ -202,6 +202,7 @@ class MarketPlaceService {
       Logger.error(`createContact error ${e.message || e}`)
 
       await trx.rollback()
+      throw new HttpException(e?.message, 400)
     }
   }
 
