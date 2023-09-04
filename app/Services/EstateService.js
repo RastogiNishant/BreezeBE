@@ -4023,5 +4023,32 @@ class EstateService {
         .fetch()
     ).toJSON()
   }
+
+  static async updateBuildingPublishStatus(building_id, action = 'publish') {
+    const estatesOfSameBuilding = await Estate.query()
+      .select('status')
+      .where('build_id', building_id)
+      .whereNot('status', STATUS_DELETE)
+      .fetch()
+    const unpublishedPublishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
+      (estate) => {
+        if (action === 'publish') {
+          return estate.status !== STATUS_ACTIVE
+        }
+        return estate.status === STATUS_ACTIVE
+      }
+    )
+    if (unpublishedPublishedOfSameBuilding.length === 0) {
+      //mark building
+      await Building.query()
+        .where('id', build_id)
+        .update({
+          published:
+            action === 'published' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT,
+        })
+      return true
+    }
+    return false
+  }
 }
 module.exports = EstateService
