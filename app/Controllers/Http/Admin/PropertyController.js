@@ -304,7 +304,6 @@ class PropertyController {
       await Estate.query()
         .where('id', id)
         .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
-      //we can mark building as published
       let buildingPublished = false
       if (requestPublishEstate.build_id) {
         buildingPublished = await EstateService.updateBuildingPublishStatus(
@@ -356,6 +355,13 @@ class PropertyController {
     await Estate.query()
       .where('id', id)
       .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN })
+
+    if (requestPublishEstate.build_id) {
+      await EstateService.updateBuildingPublishStatus(
+        requestPublishEstate.build_id,
+        'decline-publish'
+      )
+    }
     await EstateSyncService.markListingsForDelete(id)
     const listings = await EstateSyncListing.query()
       .where('estate_id', id)
