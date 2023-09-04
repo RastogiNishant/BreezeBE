@@ -2034,24 +2034,6 @@ class EstateService {
 
       if (isNull(performed_by)) {
         //comes from admin so we can publish to market place
-        //we can mark also building as published
-        if (estate.build_id) {
-          const estatesOfSameBuilding = await Estate.query()
-            .select('status')
-            .where('build_id', estate.build_id)
-            .whereNot('status', STATUS_DELETE)
-            .fetch()
-          const unpublishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
-            (estate) => estate.status !== STATUS_ACTIVE
-          )
-          if (unpublishedOfSameBuilding.length === 0) {
-            //mark building as approved by admin...
-            await BuildingService.update({
-              user_id: estate.user_id,
-              data: { status: PUBLISH_STATUS_APPROVED_BY_ADMIN },
-            })
-          }
-        }
         await QueueService.estateSyncPublishEstate({ estate_id: estate.id })
       }
       if (!is_queue) {
