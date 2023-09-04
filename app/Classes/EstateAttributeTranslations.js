@@ -486,7 +486,7 @@ class EstateAttributeTranslations {
     stp_garage: (i) => parseInt(i) || 0,
     credit_score: toPercent,
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
-    budget: (i, o) => (isEmpty(i) ? null : parseInt(i)),
+    budget: (i, o) => parseInt(i) || 0,
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
       switch (escapeStr(i)) {
