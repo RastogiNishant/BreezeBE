@@ -3640,7 +3640,7 @@ class MatchService {
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
       .select(`_mf.id_verified`)
-      .select('_mb.firstname', '_mb.secondname', '_mb.birthday')
+      .select('_mb.firstname', '_mb.secondname', '_mb.birthday', '_mb.credit_score')
       .select(
         Database.raw(`
         (case when _bd.user_id is null
@@ -3681,6 +3681,7 @@ class MatchService {
       '_mb.last_address',
       '_mb.phone_verified',
       '_mb.is_verified',
+      '_mb.credit_score',
       '_v.date',
       '_v.start_date AS visit_start_date',
       '_v.end_date AS visit_end_date',
