@@ -34,7 +34,6 @@ const {
   MATCH_STATUS_VISIT,
   MATCH_STATUS_SHARE,
   MATCH_STATUS_FINISH,
-  WEBSOCKET_EVENT_BUILDING_PUBLISHED,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
