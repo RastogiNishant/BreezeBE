@@ -87,7 +87,7 @@ class BuildingService {
         })
         .where('buildings.user_id', user_id)
         .whereNotNull('_e.build_id')
-        .whereNot('estates.status', STATUS_DELETE)
+        .whereNot('_e.status', STATUS_DELETE)
         .fetch()
     ).toJSON()
   }
