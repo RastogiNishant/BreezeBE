@@ -48,11 +48,13 @@ const File = use('App/Models/File')
 const Image = use('App/Models/Image')
 const MailService = use('App/Services/MailService')
 const EstateSyncService = use('App/Services/EstateSyncService')
+const Building = use('App/Models/Building')
 const QueueService = use('App/Services/QueueService')
 const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
 } = require('../../../exceptions')
 const NoticeService = require('../../../Services/NoticeService')
+const { publishRequestedProperty } = require('../../../Services/EstateService')
 
 class PropertyController {
   async getProperties({ request, response }) {
@@ -301,6 +303,23 @@ class PropertyController {
       await Estate.query()
         .where('id', id)
         .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
+      //we can mark building as published
+      if (requestPublishEstate.build_id) {
+        const estatesOfSameBuilding = await Estate.query()
+          .select('status')
+          .where('build_id', requestPublishEstate.build_id)
+          .whereNot('status', STATUS_DELETE)
+          .fetch()
+        const unpublishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
+          (estate) => estate.status !== STATUS_ACTIVE
+        )
+        if (unpublishedOfSameBuilding.length === 0) {
+          //mark building as approved by admin...
+          await Building.query().where('id', requestPublishEstate.build_id).update({
+            published: PUBLISH_STATUS_APPROVED_BY_ADMIN,
+          })
+        }
+      }
       const listings = await EstateSyncListing.query()
         .where('estate_id', id)
         .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
