@@ -2142,25 +2142,7 @@ class EstateService {
     )
 
     if (estate.build_id) {
-      const estatesOfSameBuilding = await Estate.query()
-        .select('status')
-        .where('build_id', estate.build_id)
-        .whereNot('status', STATUS_DELETE)
-        .fetch()
-      const publishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
-        (estate) => estate.status === STATUS_ACTIVE
-      )
-      if (publishedOfSameBuilding.length === 0) {
-        await Building.query().where('id', estate.build_id).update({
-          published: PUBLISH_STATUS_INIT,
-        })
-        const building = await Building.query().where('id', estate.build_id).first()
-        await require('./EstateSyncService').emitWebsocketEventToLandlord({
-          event: WEBSOCKET_EVENT_BUILDING_UNPUBLISHED,
-          user_id: estate.user_id,
-          data: building.toJSON(),
-        })
-      }
+      await EstateService.updateBuildingPublishStatus(estate.build_id, 'unpublish')
     }
 
     await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
@@ -4041,10 +4023,9 @@ class EstateService {
     if (unpublishedPublishedOfSameBuilding.length === 0) {
       //mark building
       await Building.query()
-        .where('id', build_id)
+        .where('id', building_id)
         .update({
-          published:
-            action === 'published' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT,
+          published: action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT,
         })
       return true
     }

@@ -305,27 +305,12 @@ class PropertyController {
         .where('id', id)
         .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
       //we can mark building as published
+      let buildingPublished = false
       if (requestPublishEstate.build_id) {
-        const estatesOfSameBuilding = await Estate.query()
-          .select('status')
-          .where('build_id', requestPublishEstate.build_id)
-          .whereNot('status', STATUS_DELETE)
-          .fetch()
-        const unpublishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
-          (estate) => estate.status !== STATUS_ACTIVE
+        buildingPublished = await EstateService.updateBuildingPublishStatus(
+          requestPublishEstate.build_id,
+          'publish'
         )
-        if (unpublishedOfSameBuilding.length === 0) {
-          //mark building as approved by admin...
-          await Building.query().where('id', requestPublishEstate.build_id).update({
-            published: PUBLISH_STATUS_APPROVED_BY_ADMIN,
-          })
-          const building = await Building.query().where('id', requestPublishEstate.build_id).first()
-          await EstateSyncService.emitWebsocketEventToLandlord({
-            event: WEBSOCKET_EVENT_BUILDING_PUBLISHED,
-            user_id: requestPublishEstate.user_id,
-            data: building.toJSON(),
-          })
-        }
       }
       const listings = await EstateSyncListing.query()
         .where('estate_id', id)
@@ -336,6 +321,7 @@ class PropertyController {
         property_id: requestPublishEstate.property_id,
         estate_id: requestPublishEstate.estate_id,
         build_id: requestPublishEstate.build_id,
+        published: buildingPublished,
         publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN,
         status: STATUS_ACTIVE,
         type: 'approved-publish',
