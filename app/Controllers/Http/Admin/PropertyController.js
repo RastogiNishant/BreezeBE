@@ -54,7 +54,6 @@ const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
 } = require('../../../exceptions')
 const NoticeService = require('../../../Services/NoticeService')
-const { publishRequestedProperty } = require('../../../Services/EstateService')
 
 class PropertyController {
   async getProperties({ request, response }) {
