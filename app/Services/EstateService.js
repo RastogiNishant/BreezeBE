@@ -2041,7 +2041,7 @@ class EstateService {
             .where('build_id', estate.build_id)
             .whereNot('status', STATUS_DELETE)
             .fetch()
-          const unpublishedOfSameBuilding = await (estatesOfSameBuilding.toJSON() || []).filter(
+          const unpublishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
             (estate) => estate.status !== STATUS_ACTIVE
           )
           if (unpublishedOfSameBuilding.length === 0) {
