@@ -2738,6 +2738,11 @@ class MatchService {
     const defaultWhereIn = final ? [STATUS_DRAFT] : [STATUS_ACTIVE, STATUS_EXPIRE]
 
     const query = Estate.query()
+      .select(
+        Database.raw(
+          `distinct on (case when build_id is null then estates.id else estates.build_id end) build_id`
+        )
+      )
       .select('estates.*')
       .select('_m.prospect_score as match')
       .select('_m.updated_at', '_m.status_at')
