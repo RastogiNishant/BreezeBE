@@ -440,11 +440,9 @@ class TenantService extends BaseService {
         await this.activateTenant(tenant, trx)
       } catch (e) {
         await Tenant.query()
-          .update(
-            { status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] },
-            trx
-          )
+          .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] })
           .where({ user_id: userId })
+          .transacting(trx)
       }
 
       await trx.commit()

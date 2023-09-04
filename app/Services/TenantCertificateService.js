@@ -27,40 +27,40 @@ class TenantCertificateSerivce {
         { field: 'file', mime: imageMimes, isPublic: false },
       ])
 
-      if (files && files.file) {
-        const paths = Array.isArray(files.file) ? files.file : [files.file]
-        const original_file_names = Array.isArray(files.original_file)
-          ? files.original_file
-          : [files.original_file]
-        const attachments = paths.map((path, index) => ({
-          disk: 's3',
-          uri: path,
-          file_name: original_file_names[index],
-        }))
-        await TenantService.requestCertificate(
-          {
-            user_id,
-            request_certificate_at: null,
-            request_certificate_city_id: null,
-          },
-          trx
-        )
-        const certificate = await TenantCertificate.createItem(
-          {
-            user_id,
-            city_id,
-            income_level,
-            expired_at,
-            attachments: JSON.stringify(attachments),
-          },
-          trx
-        )
-
-        await trx.commit()
-        return certificate
-      } else {
+      if (!files.file) {
         throw new HttpException(FAILED_TO_ADD_FILE, 400)
       }
+
+      const paths = Array.isArray(files.file) ? files.file : [files.file]
+      const original_file_names = Array.isArray(files.original_file)
+        ? files.original_file
+        : [files.original_file]
+      const attachments = paths.map((path, index) => ({
+        disk: 's3',
+        uri: path,
+        file_name: original_file_names[index],
+      }))
+      await TenantService.requestCertificate(
+        {
+          user_id,
+          request_certificate_at: null,
+          request_certificate_city_id: null,
+        },
+        trx
+      )
+      const certificate = await TenantCertificate.createItem(
+        {
+          user_id,
+          city_id,
+          income_level,
+          expired_at,
+          attachments: JSON.stringify(attachments),
+        },
+        trx
+      )
+
+      await trx.commit()
+      return certificate
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)
