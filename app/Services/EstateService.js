@@ -4031,7 +4031,7 @@ class EstateService {
       building.status = action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT
       await building.save()
     }
-    return building.published
+    return building
   }
 }
 module.exports = EstateService
