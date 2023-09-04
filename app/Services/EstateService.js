@@ -32,6 +32,7 @@ const Visit = use('App/Models/Visit')
 const Task = use('App/Models/Task')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
+const Building = use('App/Models/Building')
 const FileBucket = use('App/Classes/File')
 const Import = use('App/Models/Import')
 const AppException = use('App/Exceptions/AppException')
@@ -1492,10 +1493,15 @@ class EstateService {
 
     const minTenantBudget = tenant?.budget_min || 0
     const maxTenantBudget = tenant?.budget_max || 0
-    estates = estates.filter((estate) => {
-      const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
-      return budget >= minTenantBudget && budget <= maxTenantBudget
-    })
+
+    if (minTenantBudget && minTenantBudget) {
+      estates = estates.filter((estate) => {
+        const budget = tenant.include_utility
+          ? estate.net_rent + estate.extra_costs
+          : estate.net_rent
+        return budget >= minTenantBudget && budget <= maxTenantBudget
+      })
+    }
 
     if (process.env.DEV === 'true') {
       Logger.info(`filterEstates after budget ${estates?.length}`)
@@ -1559,32 +1565,39 @@ class EstateService {
       Logger.info(`filterEstates after short term ${estates?.length}`)
     }
 
-    estates = estates.filter(
-      (estate) =>
-        !estate.rooms_number ||
-        (estate.rooms_number >= (tenant.rooms_min || 1) &&
-          estate.rooms_number <= (tenant.rooms_max || 1))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after rooms ${estates?.length}`)
+    if (tenant.rooms_min !== null && tenant.rooms_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.rooms_number ||
+          (estate.rooms_number >= (tenant.rooms_min || 1) &&
+            estate.rooms_number <= (tenant.rooms_max || 1))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after rooms ${estates?.length}`)
+      }
     }
 
-    estates = estates.filter(
-      (estate) =>
-        estate.floor === null ||
-        (estate.floor >= (tenant.floor_min || 0) && estate.rooms_number <= (tenant.floor_max || 20))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after floors ${estates?.length}`)
+    if (tenant.floor_min !== null && tenant.floor_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          estate.floor === null ||
+          (estate.floor >= (tenant.floor_min || 0) &&
+            estate.rooms_number <= (tenant.floor_max || 20))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after floors ${estates?.length}`)
+      }
     }
 
-    estates = estates.filter(
-      (estate) =>
-        !estate.area ||
-        (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after area ${estates?.length}`)
+    if (tenant.space_min !== null && tenant.space_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.area ||
+          (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after area ${estates?.length}`)
+      }
     }
 
     if (tenant.apt_type?.length) {
@@ -2077,7 +2090,9 @@ class EstateService {
         trx,
         true
       )
-
+      if (estate.build_id) {
+        await EstateService.updateBuildingPublishStatus(estate.build_id, 'deactivate')
+      }
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
       await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
@@ -2139,6 +2154,10 @@ class EstateService {
       },
       true
     )
+
+    if (estate.build_id) {
+      await EstateService.updateBuildingPublishStatus(estate.build_id, 'unpublish')
+    }
 
     await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
   }
@@ -3959,6 +3978,7 @@ class EstateService {
         { build_id, estates, event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED },
         trx
       )
+      await Building.query().where('id', build_id).update({ status: STATUS_DRAFT }).transacting(trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -3999,6 +4019,31 @@ class EstateService {
         .where('build_id', estate.build_id)
         .fetch()
     ).toJSON()
+  }
+
+  static async updateBuildingPublishStatus(building_id, action = 'publish') {
+    const building = await Building.findOrFail(building_id)
+    const estatesOfSameBuilding = await Estate.query()
+      .select('status')
+      .where('build_id', building_id)
+      .whereNot('status', STATUS_DELETE)
+      .fetch()
+    const unpublishedPublishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
+      (estate) => {
+        if (action === 'publish') {
+          return estate.status !== STATUS_ACTIVE
+        }
+        return estate.status === STATUS_ACTIVE
+      }
+    )
+    if (unpublishedPublishedOfSameBuilding.length === 0) {
+      //mark building
+      building.published =
+        action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT
+      building.status = action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT
+      await building.save()
+    }
+    return building
   }
 }
 module.exports = EstateService

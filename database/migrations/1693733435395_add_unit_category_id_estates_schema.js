@@ -17,7 +17,7 @@ class AddUnitCategoryIdEstatesSchema extends Schema {
   }
 
   down() {
-    this.table('add_unit_category_id_estates', (table) => {
+    this.table('estates', (table) => {
       // reverse alternations
       table.dropColumn('unit_category_id')
     })

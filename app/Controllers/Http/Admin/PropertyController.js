@@ -48,6 +48,7 @@ const File = use('App/Models/File')
 const Image = use('App/Models/Image')
 const MailService = use('App/Services/MailService')
 const EstateSyncService = use('App/Services/EstateSyncService')
+const Building = use('App/Models/Building')
 const QueueService = use('App/Services/QueueService')
 const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
@@ -301,6 +302,13 @@ class PropertyController {
       await Estate.query()
         .where('id', id)
         .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
+      let buildingPublished = false
+      if (requestPublishEstate.build_id) {
+        buildingPublished = await EstateService.updateBuildingPublishStatus(
+          requestPublishEstate.build_id,
+          'publish'
+        )
+      }
       const listings = await EstateSyncListing.query()
         .where('estate_id', id)
         .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
@@ -310,6 +318,8 @@ class PropertyController {
         property_id: requestPublishEstate.property_id,
         estate_id: requestPublishEstate.estate_id,
         build_id: requestPublishEstate.build_id,
+        published: buildingPublished.published,
+        building_status: buildingPublished.status,
         publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN,
         status: STATUS_ACTIVE,
         type: 'approved-publish',
@@ -344,6 +354,13 @@ class PropertyController {
     await Estate.query()
       .where('id', id)
       .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN })
+
+    if (requestPublishEstate.build_id) {
+      await EstateService.updateBuildingPublishStatus(
+        requestPublishEstate.build_id,
+        'decline-publish'
+      )
+    }
     await EstateSyncService.markListingsForDelete(id)
     const listings = await EstateSyncListing.query()
       .where('estate_id', id)

@@ -914,7 +914,6 @@ class MatchService {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
     let { estates, categoryCounts } = await EstateService.searchEstatesQuery(tenant)
-
     if (only_count) {
       return {
         categoryCounts,
@@ -2728,6 +2727,10 @@ class MatchService {
       .clearSelect()
       .clearOrder()
       .select(Database.raw(`count(DISTINCT("estates"."id"))`))
+      .orderBy(
+        Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
+        'DESC'
+      )
       .fetch()
   }
   /**
@@ -2738,14 +2741,22 @@ class MatchService {
     { buddy, like, dislike, knock, invite, visit, share, top, commit, final }
   ) {
     const defaultWhereIn = final ? [STATUS_DRAFT] : [STATUS_ACTIVE, STATUS_EXPIRE]
-
     const query = Estate.query()
+      .select(
+        Database.raw(
+          `distinct on (case when build_id is null then estates.id else estates.build_id end) build_id`
+        )
+      )
       .select('estates.*')
       .select('_m.prospect_score as match')
       .select('_m.updated_at', '_m.status_at')
       .withCount('notifications', function (n) {
         n.where('user_id', userId)
       })
+      .orderBy(
+        Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
+        'DESC'
+      )
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', defaultWhereIn)
 
@@ -2765,6 +2776,11 @@ class MatchService {
       // All liked estates
       query
         .clearSelect()
+        .select(
+          Database.raw(
+            `distinct on (case when build_id is null then estates.id else estates.build_id end) build_id`
+          )
+        )
         .select('estates.*')
         .select('_m.updated_at', '_m.status_at')
         .select(Database.raw('"_l"."updated_at" as "action_at"'))
@@ -2782,6 +2798,11 @@ class MatchService {
       // All disliked estates
       query
         .clearSelect()
+        .select(
+          Database.raw(
+            `distinct on (case when build_id is null then estates.id else estates.build_id end) build_id`
+          )
+        )
         .select('estates.*')
         .select('_m.updated_at', '_m.status_at')
         .select(Database.raw('_d.created_at as action_at'))
@@ -2837,11 +2858,19 @@ class MatchService {
             })
         })
         .clearOrder()
+        .orderBy(
+          Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
+          'DESC'
+        )
         .orderBy('_v.date', 'asc')
     } else if (share) {
       query
         .where({ '_m.share': true })
         .clearOrder()
+        .orderBy(
+          Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
+          'DESC'
+        )
         .orderBy([
           { column: '_m.order_tenant', order: 'ASK' },
           { column: '_m.updated_at', order: 'DESC' },
@@ -2860,6 +2889,10 @@ class MatchService {
         .select('_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
         .where({ '_m.status': MATCH_STATUS_TOP, share: true })
         .clearOrder()
+        .orderBy(
+          Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
+          'DESC'
+        )
         .orderBy([
           { column: '_m.order_tenant', order: 'ASK' },
           { column: '_m.updated_at', order: 'DESC' },
@@ -2921,6 +2954,7 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay'
     )
+
     return query
   }
 
