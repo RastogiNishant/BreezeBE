@@ -3967,6 +3967,7 @@ class EstateService {
         { build_id, estates, event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED },
         trx
       )
+      await Building.query().where('id', build_id).update({ status: STATUS_DRAFT }).transacting(trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -4028,6 +4029,7 @@ class EstateService {
       //mark building
       building.published =
         action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT
+      building.status = action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT
       await building.save()
     }
     return building.published
