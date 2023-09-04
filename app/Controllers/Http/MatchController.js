@@ -507,29 +507,29 @@ class MatchController {
       throw new HttpException(ERROR_MATCH_COMMIT_DOUBLE, 400, ERROR_MATCH_COMMIT_DOUBLE_CODE)
     }
     const isValidMatch = await MatchService.checkMatchIsValidForFinalRequest(estate_id, user_id)
-    const trx = await Database.beginTransaction()
-    if (isValidMatch) {
-      try {
-        await MatchService.requestFinalConfirm({ estateId: estate_id, tenantId: user_id }, trx)
-        logEvent(
-          request,
-          LOG_TYPE_FINAL_MATCH_REQUEST,
-          auth.user.id,
-          { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
-          false
-        )
-        await trx.commit()
-        Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
-        response.res(true)
-      } catch (e) {
-        await trx.rollback()
-        throw new HttpException(e.message, 400)
-      }
-    } else {
+    if (!isValidMatch) {
       throw new HttpException(
         'This prospect has not shared the data. Match is not valid for final match request',
         400
       )
+    }
+
+    const trx = await Database.beginTransaction()
+    try {
+      await MatchService.requestFinalConfirm({ estateId: estate_id, tenantId: user_id }, trx)
+      logEvent(
+        request,
+        LOG_TYPE_FINAL_MATCH_REQUEST,
+        auth.user.id,
+        { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
+        false
+      )
+      await trx.commit()
+      Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
     }
   }
 

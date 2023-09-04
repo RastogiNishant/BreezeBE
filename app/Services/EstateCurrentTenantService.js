@@ -1101,7 +1101,7 @@ class EstateCurrentTenantService extends BaseService {
         .fetch()
 
       estateCurrentTenants = estateCurrentTenants?.toJSON() || []
-      if (estateCurrentTenants.length > 0) {
+      if (estateCurrentTenants.length) {
         await EstateCurrentTenant.query()
           .whereIn(
             'id',
