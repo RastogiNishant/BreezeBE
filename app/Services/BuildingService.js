@@ -9,7 +9,7 @@ const Database = use('Database')
 const {
   exceptions: { NO_BUILDING_ID_EXIST },
 } = require('../exceptions')
-const { PUBLISH_STATUS_INIT } = require('../constants')
+const { PUBLISH_STATUS_INIT, STATUS_DELETE } = require('../constants')
 class BuildingService {
   static async upsert({ user_id, data }) {
     if (!data.building_id) {
