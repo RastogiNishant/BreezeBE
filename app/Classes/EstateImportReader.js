@@ -100,6 +100,7 @@ class EstateImportReader {
     'building_id',
     'name',
     'rooms',
+    'property_id',
     'area',
     'rent',
     'income_level',
@@ -307,10 +308,7 @@ class EstateImportReader {
         })
       } else if (sheetName === CATEGORY_SHEET) {
         this.categoryColumns.map((column) => {
-          const value = get(data[k], `${column.index}`)
-          if (value) {
-            row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
-          }
+          row[column.name] = get(data[k], `${column.index}`) ?? null
         })
       }
 
