@@ -1413,13 +1413,14 @@ class EstateService {
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
-    const groupedEstates = groupBy(estates, (estate) =>
+    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
+    const groupedEstates = groupBy(filteredEstates, (estate) =>
       estate.build_id ? `g_${estate.build_id}` : estate.id
     )
     estates = Object.keys(groupedEstates).map((key) => ({ ...groupedEstates[key][0] }))
 
     const categoryCounts = this.calculateCategoryCounts(estates, tenant)
-    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
+
     return {
       estates: filteredEstates,
       categoryCounts,

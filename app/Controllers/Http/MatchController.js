@@ -571,6 +571,7 @@ class MatchController {
    *
    */
   async getMatchesListTenant({ request, auth, response }) {
+    console.log('getMatchesListTenant controller====')
     const user = auth.user
     // filters: { buddy, like, dislike, knock, invite, share, top, commit },
     const { filters, page, limit } = request.all()
@@ -586,9 +587,12 @@ class MatchController {
     }
 
     let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()
+    console.log('getMatchesListTenant controller 2222====')
     let thirdPartyOffers = []
     if (filters && (filters.knock || filters.like || filters.dislike)) {
+      console.log('getMatchesListTenant controller 3====')
       thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
+      console.log('getMatchesListTenant controller 4====')
     }
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
