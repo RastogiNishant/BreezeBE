@@ -34,6 +34,7 @@ const {
   MATCH_STATUS_VISIT,
   MATCH_STATUS_SHARE,
   MATCH_STATUS_FINISH,
+  WEBSOCKET_EVENT_BUILDING_PUBLISHED,
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -317,6 +318,12 @@ class PropertyController {
           //mark building as approved by admin...
           await Building.query().where('id', requestPublishEstate.build_id).update({
             published: PUBLISH_STATUS_APPROVED_BY_ADMIN,
+          })
+          const building = await Building.query().where('id', requestPublishEstate.build_id).first()
+          await EstateSyncService.emitWebsocketEventToLandlord({
+            event: WEBSOCKET_EVENT_BUILDING_PUBLISHED,
+            user_id: requestPublishEstate.user_id,
+            data: building.toJSON(),
           })
         }
       }
