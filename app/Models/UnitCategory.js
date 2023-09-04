@@ -7,18 +7,7 @@ const Model = require('./BaseModel')
 
 class UnitCategory extends Model {
   static get columns() {
-    return [
-      'id',
-      'building_id',
-      'name',
-      'rooms',
-      'area_min',
-      'area_max',
-      'rent_min',
-      'rent_max',
-      'income_level',
-      'household_size',
-    ]
+    return ['id', 'build_id', 'name', 'rooms', 'area', 'rent', 'income_level', 'household_size']
   }
 
   estates() {

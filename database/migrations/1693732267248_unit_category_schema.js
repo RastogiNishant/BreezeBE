@@ -7,13 +7,11 @@ class UnitCategorySchema extends Schema {
   up() {
     this.create('unit_categories', (table) => {
       table.increments()
-      table.integer('building_id').unsigned().references('id').inTable('buildings').index()
+      table.integer('build_id').unsigned().references('id').inTable('buildings').index()
       table.string('name')
-      table.integer('rooms')
-      table.integer('area_min')
-      table.integer('area_max')
-      table.integer('rent_min')
-      table.integer('rent_max')
+      table.string('rooms')
+      table.string('area')
+      table.string('rent')
       table.string('income_level')
       table.string('household_size')
       table.timestamps()
