@@ -151,6 +151,7 @@ const {
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
 const BuildingService = require('./BuildingService')
+const UnitCategoryService = require('./UnitCategoryService')
 
 const MAX_DIST = 10000
 
@@ -512,10 +513,10 @@ class EstateService {
     return estate
   }
 
-  static async getPublishedEstate(estateId, userId) {
+  static async getMatchEstate(estateId, userId) {
     const estate = await Estate.query()
       .where({ id: estateId, user_id: userId })
-      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT])
       .first()
     if (!estate) {
       throw new HttpException('Estate not found', 404)
@@ -1410,13 +1411,14 @@ class EstateService {
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
-    const groupedEstates = groupBy(estates, (estate) =>
+    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
+    const groupedEstates = groupBy(filteredEstates, (estate) =>
       estate.build_id ? `g_${estate.build_id}` : estate.id
     )
     estates = Object.keys(groupedEstates).map((key) => ({ ...groupedEstates[key][0] }))
 
     const categoryCounts = this.calculateCategoryCounts(estates, tenant)
-    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
+
     return {
       estates: filteredEstates,
       categoryCounts,
@@ -1898,13 +1900,16 @@ class EstateService {
   /**
    *
    */
-  static async publishEstate({ estate, publishers, performed_by = null, is_queue = false }, trx) {
+  static async publishEstate(
+    { estate, publishers, performed_by = null, is_queue = false, is_build_publish = false },
+    trx
+  ) {
     const user = await User.query().where('id', estate.user_id).first()
     if (!user) {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    if (performed_by && estate.build_id) {
+    if (performed_by && estate.build_id && !is_build_publish) {
       throw new HttpException(
         BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY,
         400,
@@ -3243,10 +3248,7 @@ class EstateService {
       limit: -1,
     })
 
-    const categories = uniq(
-      estates.map((estate) => EstateService.getBasicPropertyId(estate.property_id))
-    )
-
+    const categories = await UnitCategoryService.getAll(build_id)
     // const regex = /-\d+/
 
     const yAxisKey = is_social ? `cert_category` : `floor`
@@ -3255,20 +3257,19 @@ class EstateService {
           estates.filter((estate) => estate.cert_category),
           (estate) => estate.cert_category
         )
-      : groupBy(
-          estates.filter((estate) => estate.floor),
-          (estate) => estate.floor
-        )
+      : groupBy(estates, (estate) => estate.floor)
 
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
       categories.forEach((category) => {
-        categoryEstates[category] = estates.filter(
+        categoryEstates[category.name] = estates.filter(
           (estate) =>
-            estate[yAxisKey].toString() === axis.toString() && estate.property_id.includes(category)
+            estate[yAxisKey].toString() === axis.toString() &&
+            (!estate.unit_category_id || estate.unit_category_id === category.id)
         )
       })
+
       buildingEstates[axis] = categoryEstates
     })
 
@@ -3692,7 +3693,9 @@ class EstateService {
     // const floorPlans = files?.filter(({ type }) => type === DOCUMENT_VIEW_TYPES.PLAN)
     const externalView = (files ?? []).filter(({ type }) => type === FILE_TYPE_EXTERNAL)
     const insideView = (rooms ?? []).filter(({ images }) => images?.length || false)
-    Logger.info(`isDocumentsUpload= ${externalView?.length && insideView.length}`)
+    Logger.info(
+      `isDocumentsUpload= ${estateDetails.id} ${externalView?.length && insideView.length}`
+    )
     return externalView?.length && insideView.length
   }
 
@@ -3707,7 +3710,9 @@ class EstateService {
       rent_arrears,
       family_size_max,
     }
-    Logger.info(`isTenantPreferenceUpdated= ${checkIfIsValid(tenantPreferenceObject)}`)
+    Logger.info(
+      `isTenantPreferenceUpdated= ${estateDetails.id} ${checkIfIsValid(tenantPreferenceObject)}`
+    )
     return checkIfIsValid(tenantPreferenceObject)
   }
 
@@ -3782,8 +3787,15 @@ class EstateService {
         property_type,
       }
     }
-    Logger.info(`isLocationRentUnitUpdated= ${checkIfIsValid(locationObject)}`)
-    return checkIfIsValid(locationObject)
+    Logger.info(`isLocationRentUnitUpdated= ${estateDetails.id} ${checkIfIsValid(locationObject)}`)
+
+    const isValid = checkIfIsValid(locationObject)
+    if (!isValid) {
+      Object.keys(locationObject).forEach((key) =>
+        console.log(`locationObject ${estateDetails.id} > ${key} ${locationObject[key]}`)
+      )
+    }
+    return isValid
   }
 
   static isAllInfoAvailable(estate) {
@@ -3796,6 +3808,19 @@ class EstateService {
 
   //TODO: need to fill out room images/floor plan for the units in the same category
   static async fillOutUnit() {}
+
+  static async checkBuildCanPublish({ build_id }) {
+    //for checking publish
+    const buildingEstates = (
+      await require('./EstateService').getEstatesByUserId({
+        limit: 1,
+        from: 0,
+        params: { build_id },
+      })
+    ).data
+
+    buildingEstates.map((estate) => EstateService.isAllInfoAvailable(estate))
+  }
 
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
     const estates = await this.getEstatesByBuilding({ user_id, build_id })
@@ -3845,6 +3870,7 @@ class EstateService {
             estate,
             publishers,
             performed_by: user_id,
+            is_build_publish: true,
           },
           trx
         )
@@ -3960,16 +3986,15 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    if (!estate.property_id || trim(estate.property_id) === '' || !estate.build_id) {
+    if (!estate.unit_category_id || !estate.build_id) {
       return [{ id: estate.id }]
     }
-    const category = this.getBasicPropertyId(estate.property_id)
 
     return (
       await Estate.query()
         .select('id')
         .where('user_id', estate.user_id)
-        .where('property_id', 'ilike', `${category}%`)
+        .where('unit_category_id', `${estate.unit_category_id}%`)
         .where('status', status)
         .where('build_id', estate.build_id)
         .fetch()

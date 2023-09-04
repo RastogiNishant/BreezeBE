@@ -235,6 +235,8 @@ class RoomService {
         )
         //Event.fire('estate::update', room.estate_id)
         await trx.commit()
+
+        await require('./EstateService').updatePercentAndIsPublished({ estate_id: room.estate_id })
         return images
       } else {
         throw new HttpException(FAILED_TO_ADD_FILE, 400)

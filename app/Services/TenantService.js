@@ -71,7 +71,8 @@ const HttpException = require('../Exceptions/HttpException')
 const {
   exceptions: { USER_NOT_FOUND },
 } = require('../exceptions')
-class TenantService {
+const BaseService = require('./BaseService')
+class TenantService extends BaseService {
   /**
    *
    */
@@ -165,37 +166,47 @@ class TenantService {
   }
 
   static async getTenantWithCertificates(userId) {
-    return Tenant.query()
+    let tenantWithCertificate = await Tenant.query()
       .select('*')
       .select('_tc.wbs_certificate')
       .leftJoin(
         Database.raw(`
-      (select
-        user_id,
-        array_agg(json_build_object(
-          'city_id', city_id,
-          'city', cities.city,
-          'expiration_date', to_char(
-            tenant_certificates.expired_at, '${DAY_FORMAT}'
-          ),
-          'expiration_status',
-            case when tenant_certificates.expired_at < NOW() then
-              'expired' else 'active' end,              
-          'income_level', income_level))
-        as wbs_certificate
-        from tenant_certificates
-        left join
-          cities
-        on tenant_certificates.city_id=cities.id
-        where status=${STATUS_ACTIVE}
-        group by user_id
-        ) as _tc
-      `),
+    (select
+      user_id,
+      array_agg(json_build_object(
+        'city_id', city_id,
+        'city', cities.city,
+        'attachments', attachments,           
+        'expiration_date', to_char(
+          tenant_certificates.expired_at, '${DAY_FORMAT}'
+        ),
+        'expiration_status',
+          case when tenant_certificates.expired_at < NOW() then
+            'expired' else 'active' end,              
+        'income_level', income_level))
+      as wbs_certificate
+      from tenant_certificates
+      left join
+        cities
+      on tenant_certificates.city_id=cities.id
+      where status=${STATUS_ACTIVE}
+      group by user_id
+      ) as _tc
+    `),
         '_tc.user_id',
         'tenants.user_id'
       )
       .where('tenants.user_id', userId)
       .first()
+
+    const wbs_certificate = await Promise.map(
+      tenantWithCertificate.wbs_certificate || [],
+      async (cert) => await this.getWithAbsoluteUrl(cert)
+    )
+
+    tenantWithCertificate.wbs_certificate = wbs_certificate
+
+    return tenantWithCertificate
   }
   /**
    * Get Tenant with linked point
@@ -241,27 +252,13 @@ class TenantService {
   /**
    *
    */
-  static async activateTenant(tenant) {
+  static async activateTenant(tenant, trx) {
     const getRequiredTenantData = (tenantId) => {
       return Database.table({ _t: 'tenants' })
         .select(
           '_t.private_use',
           '_t.pets',
-          '_m.firstname',
-          '_m.secondname',
-          '_m.birthday',
-          '_m.last_address',
-          '_m.landlord_name',
-          '_m.unpaid_rental',
-          '_m.insolvency_proceed',
-          '_m.clean_procedure',
-          '_m.income_seizure',
-          '_m.debt_proof',
-          '_m.execution',
-          '_m.credit_score',
-          '_m.credit_score_submit_later',
-          '_m.phone_verified',
-          '_m.birth_place',
+          '_m.*',
           '_i.position',
           '_i.company',
           '_i.income_type',
@@ -282,12 +279,11 @@ class TenantService {
         })
         .where('_t.id', tenantId)
     }
+
     const data = await getRequiredTenantData(tenant.id)
-
     const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
-
     if (!data.find((m) => m.rent_proof_not_applicable) && isEmpty(counts)) {
-      throw new AppException('Invalid members')
+      throw new AppException('members proof not provided', 400)
     }
     // Check is user has income proofs for last 3 month
     const hasUnconfirmedProofs = !!counts.find(
@@ -326,13 +322,17 @@ class TenantService {
       last_address: yup.string().required(),
       firstname: yup.string().required(),
       secondname: yup.string().required(),
-      debt_proof: yup.string().when(['credit_score_submit_later'], {
-        is: (credit_score_submit_later) => {
-          return credit_score_submit_later
-        },
-        then: yup.string().notRequired().nullable(),
-        otherwise: yup.string().required(),
-      }),
+      debt_proof: yup
+        .string()
+        .when(['rent_proof_not_applicable', 'rent_arrears_doc_submit_later'], {
+          is: (rent_proof_not_applicable, rent_arrears_doc_submit_later) => {
+            console.log('rent_proof_not_applicable=', rent_proof_not_applicable)
+            console.log('rent_arrears_doc_submit_later=', rent_arrears_doc_submit_later)
+            return rent_proof_not_applicable || rent_arrears_doc_submit_later
+          },
+          then: yup.string().notRequired().nullable(),
+          otherwise: yup.string().required(),
+        }),
       birthday: yup.date().required(),
       birth_place: yup.string().required(),
       unpaid_rental: yup
@@ -392,19 +392,30 @@ class TenantService {
       employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME]),
     })
 
-    const trx = await Database.beginTransaction()
+    let insideTrx = false
+    if (!trx) {
+      insideTrx = true
+      trx = await Database.beginTransaction()
+    }
+
     try {
       await yup.array().of(schema).validate(data)
       tenant.status = STATUS_ACTIVE
 
       await tenant.save(trx)
       await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
-      await trx.commit()
+
+      if (insideTrx) {
+        await trx.commit()
+      }
+
       MemberService.calcTenantMemberData(tenant.user_id)
     } catch (e) {
-      console.log(e.message)
-      await trx.rollback()
-      throw new AppException('Invalid tenant data')
+      if (insideTrx) {
+        await trx.rollback()
+      }
+
+      throw new AppException(e.message, 400)
     }
   }
 
@@ -413,10 +424,8 @@ class TenantService {
    */
   static async deactivateTenant(userId) {
     const trx = await Database.beginTransaction()
+
     try {
-      await Tenant.query()
-        .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] }, trx)
-        .where({ user_id: userId })
       await MemberService.calcTenantMemberData(userId, trx)
       // Remove New matches
       await Database.table({ _m: 'matches' })
@@ -425,6 +434,19 @@ class TenantService {
         .delete()
         .transacting(trx)
       await require('./MatchService').recalculateMatchScoresByUserId(userId, trx)
+
+      try {
+        const tenant = await Tenant.query().where({ user_id: userId }).first()
+        await this.activateTenant(tenant, trx)
+      } catch (e) {
+        await Tenant.query()
+          .update(
+            { status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] },
+            trx
+          )
+          .where({ user_id: userId })
+      }
+
       await trx.commit()
     } catch (e) {
       await trx.rollback()

@@ -175,7 +175,6 @@ const checkIfIsValid = (object) => {
   let flag = true
   Object.keys(object).forEach((each) => {
     if (
-      object[each] === 0 ||
       object[each] === null ||
       object[each] === undefined ||
       Array.isArray(object[each] && object[each].length === 0)

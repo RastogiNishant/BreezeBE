@@ -51,6 +51,8 @@ const {
   DEFAULT_LANG,
   WEBSOCKET_EVENT_MEMBER_INVITATION,
   VALID_INCOME_PROOFS_PERIOD,
+  INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT,
 } = require('../constants')
 
 const {
@@ -510,7 +512,9 @@ class MemberService {
       income.income_type === INCOME_TYPE_UNEMPLOYED ||
       income.income_type === INCOME_TYPE_HOUSE_WORK ||
       income.income_type === INCOME_TYPE_PENSIONER ||
-      income.income_type === INCOME_TYPE_TRAINEE
+      income.income_type === INCOME_TYPE_TRAINEE ||
+      income.income_type === INCOME_TYPE_OTHER_BENEFIT ||
+      income_income_type === INCOME_TYPE_CHILD_BENEFIT
     ) {
       data.expire_date = null
     }
@@ -923,6 +927,8 @@ class MemberService {
         INCOME_TYPE_PENSIONER,
         INCOME_TYPE_SELF_EMPLOYED,
         INCOME_TYPE_TRAINEE,
+        INCOME_TYPE_OTHER_BENEFIT,
+        INCOME_TYPE_CHILD_BENEFIT,
       ].map(async (income_source) => {
         const count = (
           await Income.query()
