@@ -999,8 +999,6 @@ const constants = {
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED_BY_ADMIN: 'landlord:estateUnpublishedByAdmin',
   WEBSOCKET_EVENT_ESTATE_UNPUBLISHED: 'landlord:estateUnpublished',
   WEBSOCKET_EVENT_ESTATE_DEACTIVATED: 'landlord:estateDeactivated',
-  WEBSOCKET_EVENT_BUILDING_PUBLISHED: 'landlord:buildingPublished',
-  WEBSOCKET_EVENT_BUILDING_UNPUBLISHED: 'landlord:buildingUnpublished',
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
