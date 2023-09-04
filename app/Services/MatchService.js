@@ -103,6 +103,8 @@ const {
   EXPIRED_FINAL_CONFIRM_PERIOD,
   WEBSOCKET_EVENT_MATCH_COUNT,
   YES_UNPAID_RENTAL,
+  INCOME_TYPE_CHILD_BENEFIT,
+  INCOME_TYPE_OTHER_BENEFIT,
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -3711,6 +3713,8 @@ class MatchService {
       INCOME_TYPE_PENSIONER,
       INCOME_TYPE_SELF_EMPLOYED,
       INCOME_TYPE_TRAINEE,
+      INCOME_TYPE_OTHER_BENEFIT,
+      INCOME_TYPE_CHILD_BENEFIT,
     ]
 
     const incomeMatches = (

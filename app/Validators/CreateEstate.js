@@ -215,6 +215,8 @@ const {
   FURNISHING_NOT_FURNISHED,
   FURNISHING_PARTIALLY_FURNISHED,
   FURNISHING_FULLY_FURNISHED,
+  INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT,
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -695,6 +697,8 @@ class CreateEstate extends Base {
                 INCOME_TYPE_PENSIONER,
                 INCOME_TYPE_SELF_EMPLOYED,
                 INCOME_TYPE_TRAINEE,
+                INCOME_TYPE_OTHER_BENEFIT,
+                INCOME_TYPE_CHILD_BENEFIT,
                 null,
               ])
               .nullable()
