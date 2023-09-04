@@ -2078,7 +2078,9 @@ class EstateService {
         trx,
         true
       )
-
+      if (estate.build_id) {
+        await EstateService.updateBuildingPublishStatus(estate.build_id, 'deactivate')
+      }
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
       await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
