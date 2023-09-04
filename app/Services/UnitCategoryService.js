@@ -56,6 +56,36 @@ class UnitCategoryService {
 
     return (await query.fetch()).toJSON()
   }
+
+  static categoryNameQuery(params) {
+    const param = 'name'
+    let where = null
+    if (params[param]) {
+      if (params[param].operator && params[param].constraints.length > 0) {
+        if (toLower(params[param].operator) === 'or') {
+          params[param].constraints.map((constraint) => {
+            if (!isNull(constraint.value)) {
+              where = where ? ` OR ` : ''
+              where += Filter.parseMatchMode(param, constraint.value, constraint.matchMode)
+            }
+          })
+        } else if (toLower(params[param].operator) === 'and') {
+          params[param].constraints.map((constraint) => {
+            if (!isNull(constraint.value)) {
+              where = where ? ` AND ` : ''
+              where += Filter.parseMatchMode(param, constraint.value, constraint.matchMode)
+            }
+          })
+        }
+      }
+    }
+
+    let query
+    if (where) {
+      query = ` SELECT id from buildings where ${where}`
+    }
+    return query
+  }
 }
 
 module.exports = UnitCategoryService
