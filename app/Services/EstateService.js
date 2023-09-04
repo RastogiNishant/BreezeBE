@@ -151,6 +151,7 @@ const {
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
 const BuildingService = require('./BuildingService')
+const UnitCategoryService = require('./UnitCategoryService')
 
 const MAX_DIST = 10000
 
@@ -3246,10 +3247,7 @@ class EstateService {
       limit: -1,
     })
 
-    const categories = uniq(
-      estates.map((estate) => EstateService.getBasicPropertyId(estate.property_id))
-    )
-
+    const categories = await UnitCategoryService.getAll(build_id)
     // const regex = /-\d+/
 
     const yAxisKey = is_social ? `cert_category` : `floor`
@@ -3258,20 +3256,19 @@ class EstateService {
           estates.filter((estate) => estate.cert_category),
           (estate) => estate.cert_category
         )
-      : groupBy(
-          estates.filter((estate) => estate.floor),
-          (estate) => estate.floor
-        )
+      : groupBy(estates, (estate) => estate.floor)
 
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
       categories.forEach((category) => {
-        categoryEstates[category] = estates.filter(
+        categoryEstates[category.name] = estates.filter(
           (estate) =>
-            estate[yAxisKey].toString() === axis.toString() && estate.property_id.includes(category)
+            estate[yAxisKey].toString() === axis.toString() &&
+            (!estate.unit_category_id || estate.unit_category_id === category.id)
         )
       })
+
       buildingEstates[axis] = categoryEstates
     })
 
@@ -3988,16 +3985,15 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    if (!estate.property_id || trim(estate.property_id) === '' || !estate.build_id) {
+    if (!estate.unit_category_id || !estate.build_id) {
       return [{ id: estate.id }]
     }
-    const category = this.getBasicPropertyId(estate.property_id)
 
     return (
       await Estate.query()
         .select('id')
         .where('user_id', estate.user_id)
-        .where('property_id', 'ilike', `${category}%`)
+        .where('unit_category_id', `${estate.unit_category_id}%`)
         .where('status', status)
         .where('build_id', estate.build_id)
         .fetch()

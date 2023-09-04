@@ -7,11 +7,19 @@ const {
   exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
   getExceptionMessage,
 } = require('../exceptions')
-const { MAX_ROOM_TYPES_TO_IMPORT, DEFAULT_LANG, AVAILABLE_LANGUAGES } = require('../constants')
+const {
+  MAX_ROOM_TYPES_TO_IMPORT,
+  DEFAULT_LANG,
+  AVAILABLE_LANGUAGES,
+  UNIT_SHEET,
+  BUILDING_SHEET,
+  CATEGORY_SHEET,
+} = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
 const schema = require('../Validators/ImportEstate').schema()
 const buildSchema = require('../Validators/CreateBuilding').schema()
+const categorySchema = require('../Validators/CreateUnitCategory').schema()
 const Logger = use('Logger')
 const l = use('Localize')
 
@@ -76,6 +84,7 @@ class EstateImportReader {
     'family_size_max',
     'minors',
     'pets_allowed',
+    'unit_category_id',
   ]
   validateBuildingHeaders = [
     'building_id',
@@ -86,9 +95,21 @@ class EstateImportReader {
     'city',
     'country',
   ]
+
+  validateCategoryHeaders = [
+    'building_id',
+    'name',
+    'rooms',
+    'area',
+    'rent',
+    'income_level',
+    'household_size',
+  ]
+
   sheetName = [
     'landlord.web.my-properties.import.excel_import.txt_units',
     'landlord.web.my-properties.import.excel_import.txt_buildings',
+    'landlord.web.my-properties.import.excel_import.txt_unitcategories',
   ]
   rowForColumnKeys = 4
   dataStart = 5
@@ -97,6 +118,7 @@ class EstateImportReader {
   data = []
   buildingData = []
   buildingColumns = []
+  categoryColumns = []
   lang = DEFAULT_LANG
 
   constructor() {
@@ -129,11 +151,17 @@ class EstateImportReader {
         data.find((i) =>
           AVAILABLE_LANGUAGES.map((lang) => l.get(this.sheetName[1], lang)).includes(i.name)
         ) || {}
-      this.sheet = [unitSheet, buildingSheet]
+      const categorySheet =
+        data.find((i) =>
+          AVAILABLE_LANGUAGES.map((lang) => l.get(this.sheetName[2], lang)).includes(i.name)
+        ) || {}
+
+      this.sheet = [unitSheet, buildingSheet, categorySheet]
       //sheet where the estates to import are found...
       if (!unitSheet || !unitSheet.data) {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
+
       this.reverseTranslator = new EstateAttributeTranslations()
       this.dataMapping = this.reverseTranslator.getMap()
       this.setValidColumns(get(unitSheet, `data.${this.rowForColumnKeys}`) || [])
@@ -141,6 +169,7 @@ class EstateImportReader {
         throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
       }
       this.validateBuildingColumns()
+      this.validateCategoryColumns()
     } catch (e) {
       Logger.error('Excel parse error', e.message)
       throw new HttpException('Excel parse failed. please try again', 400)
@@ -204,6 +233,44 @@ class EstateImportReader {
     }
   }
 
+  validateCategoryColumns() {
+    try {
+      const categorySheet = this.sheet?.[2] || {}
+      if (!Object.keys(categorySheet)?.length) {
+        return true
+      }
+
+      this.categoryColumns = []
+
+      let columns = get(categorySheet, `data.${this.rowForColumnKeys}`) || []
+
+      columns = columns.reduce((columns, current, index) => {
+        if (this.validateCategoryHeaders.includes(current)) {
+          columns = [
+            ...columns,
+            {
+              name: current,
+              index,
+            },
+          ]
+        } else {
+          this.warnings.push(
+            getExceptionMessage('', IMPORT_ESTATE_INVALID_VARIABLE_WARNING, current)
+          )
+        }
+        return columns
+      }, [])
+
+      this.categoryColumns = columns
+
+      if (this.categoryColumns.length < this.validateBuildingHeaders.length) {
+        throw new HttpException(IMPORT_ESTATE_INVALID_SHEET, 422)
+      }
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400)
+    }
+  }
+
   validateColumns(columns) {
     if (columns.length !== this.validHeaderVars.length) {
       //probably one or more hidden keys are altered or sheet is not updated.
@@ -212,7 +279,7 @@ class EstateImportReader {
     return true
   }
 
-  async setData(data, isUnit = true) {
+  async setData(data, sheetName = UNIT_SHEET) {
     const sheetData = []
     for (let k = this.dataStart; k < data.length; k++) {
       if (!data?.[k].length) {
@@ -222,7 +289,7 @@ class EstateImportReader {
       let row = {}
       //we only work with valid columns and disregard the rest
 
-      if (isUnit) {
+      if (sheetName === UNIT_SHEET) {
         this.validColumns.map((column) => {
           const value = get(data[k], `${column.index}`)
           if (value) {
@@ -231,8 +298,15 @@ class EstateImportReader {
             row[column.name] = null
           }
         })
-      } else {
+      } else if (sheetName === BUILDING_SHEET) {
         this.buildingColumns.map((column) => {
+          const value = get(data[k], `${column.index}`)
+          if (value) {
+            row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
+          }
+        })
+      } else if (sheetName === CATEGORY_SHEET) {
+        this.categoryColumns.map((column) => {
           const value = get(data[k], `${column.index}`)
           if (value) {
             row[column.name] = this.mapValue(column.name, get(data[k], `${column.index}`))
@@ -244,10 +318,12 @@ class EstateImportReader {
         Object.keys(omit(row, ['six_char_code'])) &&
         Object.keys(omit(row, ['six_char_code'])).length
       ) {
-        if (isUnit) {
-          row = await this.processRow({ row, rowCount: k, isUnit })
-        } else {
+        if (sheetName === UNIT_SHEET) {
+          row = await this.processRow({ row, rowCount: k, isUnit: sheetName })
+        } else if (sheetName === BUILDING_SHEET) {
           row = await this.validateBuildRow(row, k)
+        } else if (sheetName === CATEGORY_SHEET) {
+          row = await this.validateCategoryRow(row, k)
         }
 
         if (row) {
@@ -361,6 +437,28 @@ class EstateImportReader {
       this.errors.push(ret)
     }
   }
+
+  async validateCategoryRow(row, rowCount) {
+    try {
+      const data = await categorySchema.validate(row)
+      return {
+        line: rowCount,
+        data,
+      }
+    } catch (e) {
+      const ret = {
+        line: rowCount + 1,
+        error: e.errors,
+        sheet: l.get(this.sheetName[2], this.lang),
+        building_id: row
+          ? row.building_id
+          : `no build id in ${l.get(this.sheetName[1], this.lang)} sheet`,
+        name: row ? row.name : `no street code in ${l.get(this.sheetName[2], this.lang)}`,
+      }
+      this.errors.push(ret)
+    }
+  }
+
   async validateRow(row, rowCount) {
     try {
       const data = await schema.validate(row)
@@ -384,12 +482,13 @@ class EstateImportReader {
   }
 
   async process() {
-    const unitData = await this.setData(get(this.sheet[0], 'data') || [])
-    const buildingData = await this.setData(get(this.sheet[1], 'data') || [], false)
+    const unitData = await this.setData(get(this.sheet[0], 'data') || [], UNIT_SHEET)
+    const buildingData = await this.setData(get(this.sheet[1], 'data') || [], BUILDING_SHEET)
+    const categoryData = await this.setData(get(this.sheet[2], 'data') || [], CATEGORY_SHEET)
     return {
       errors: this.errors,
       warnings: this.warnings,
-      data: { unit: unitData, building: buildingData },
+      data: { unit: unitData, building: buildingData, category: categoryData },
     }
   }
 }
