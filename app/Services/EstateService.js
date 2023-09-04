@@ -32,6 +32,7 @@ const Visit = use('App/Models/Visit')
 const Task = use('App/Models/Task')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
+const Building = use('App/Models/Building')
 const FileBucket = use('App/Classes/File')
 const Import = use('App/Models/Import')
 const AppException = use('App/Exceptions/AppException')
@@ -2089,7 +2090,9 @@ class EstateService {
         trx,
         true
       )
-
+      if (estate.build_id) {
+        await EstateService.updateBuildingPublishStatus(estate.build_id, 'deactivate')
+      }
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
       await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
@@ -2151,6 +2154,10 @@ class EstateService {
       },
       true
     )
+
+    if (estate.build_id) {
+      await EstateService.updateBuildingPublishStatus(estate.build_id, 'unpublish')
+    }
 
     await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
   }
@@ -3971,6 +3978,7 @@ class EstateService {
         { build_id, estates, event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED },
         trx
       )
+      await Building.query().where('id', build_id).update({ status: STATUS_DRAFT }).transacting(trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -4011,6 +4019,31 @@ class EstateService {
         .where('build_id', estate.build_id)
         .fetch()
     ).toJSON()
+  }
+
+  static async updateBuildingPublishStatus(building_id, action = 'publish') {
+    const building = await Building.findOrFail(building_id)
+    const estatesOfSameBuilding = await Estate.query()
+      .select('status')
+      .where('build_id', building_id)
+      .whereNot('status', STATUS_DELETE)
+      .fetch()
+    const unpublishedPublishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
+      (estate) => {
+        if (action === 'publish') {
+          return estate.status !== STATUS_ACTIVE
+        }
+        return estate.status === STATUS_ACTIVE
+      }
+    )
+    if (unpublishedPublishedOfSameBuilding.length === 0) {
+      //mark building
+      building.published =
+        action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT
+      building.status = action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT
+      await building.save()
+    }
+    return building
   }
 }
 module.exports = EstateService

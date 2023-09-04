@@ -49,22 +49,32 @@ class BuildingService {
   }
 
   static async delete({ id, user_id }) {
-    return await Building.query().where('id', id).where('user_id', user_id).delete()
+    return await Building.query()
+      .where('id', id)
+      .where('user_id', user_id)
+      .update({ status: STATUS_DELETE })
   }
 
   static async get({ id, user_id }) {
-    return await Building.query().where('id', id).where('user_id', user_id).first()
+    return await Building.query()
+      .where('id', id)
+      .where('user_id', user_id)
+      .whereNot('status', STATUS_DELETE)
+      .first()
   }
 
   static async getByBuildingId({ user_id, building_id }) {
     return await Building.query()
       .where('building_id', building_id)
       .where('user_id', user_id)
+      .whereNot('status', STATUS_DELETE)
       .first()
   }
 
   static async getAll(user_id) {
-    return (await Building.query().where('user_id', user_id).fetch()).toJSON()
+    return (
+      await Building.query().where('user_id', user_id).whereNot('status', STATUS_DELETE).fetch()
+    ).toJSON()
   }
 
   static async getAllHasUnit(user_id) {
@@ -77,6 +87,7 @@ class BuildingService {
         })
         .where('buildings.user_id', user_id)
         .whereNotNull('_e.build_id')
+        .whereNot('status', STATUS_DELETE)
         .fetch()
     ).toJSON()
   }
