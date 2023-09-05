@@ -2094,7 +2094,7 @@ class EstateService {
       if (estate.build_id) {
         building = await EstateService.updateBuildingPublishStatus(
           {
-            build_id: estate.build_id,
+            building_id: estate.build_id,
             action: 'deactivate',
           },
           trx
@@ -2172,7 +2172,7 @@ class EstateService {
       let building
       if (estate.build_id) {
         building = await EstateService.updateBuildingPublishStatus(
-          { build_id: estate.build_id, action: 'unpublish' },
+          { building_id: estate.build_id, action: 'unpublish' },
           trx
         )
       }
