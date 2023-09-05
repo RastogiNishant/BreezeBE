@@ -75,6 +75,7 @@ class EstateFilters extends Filter {
     'completeness',
     'customUpdatedAt',
     'customVacantDate',
+    'unitCategory',
   ]
   globalSearchFields = ['property_id', 'address', 'six_char_code']
 
@@ -93,6 +94,7 @@ class EstateFilters extends Filter {
       customUpdatedAt: 'updated_at',
       customVacantDate: 'vacant_date',
       completeness: 'percent',
+      unitCategory: 'name',
     }
 
     this.matchFilter(EstateFilters.possibleStringParams, params)
@@ -216,14 +218,34 @@ class EstateFilters extends Filter {
     EstateFilters.filterWithBuildingId(query, params)
   }
 
+  processGlobals() {
+    if (this.params.global && this.params.global.value) {
+      const globalSearchFields = this.globalSearchFields
+      const value = this.params.global.value
+      this.query.where(function () {
+        globalSearchFields.map((field) => {
+          this.orWhere(Database.raw(`${field} ilike '%${value}%'`))
+        })
+        this.orWhere(
+          Database.raw(` unit_category_id in ( ${EstateFilters.filterWithUnitCategory(value)} )`)
+        )
+      })
+    }
+  }
+
   static filterWithBuildingId(query, params) {
     const param = 'building_id'
     if (params[param]) {
       const buildingQuery = require('../Services/BuildingService').buildingIdQuery(params)
       if (buildingQuery) {
-        query.where(Database.raw(`build_id in ( ${buildingQuery} )`))
+        query.where(Database.raw(` build_id in ( ${buildingQuery} )`))
       }
     }
+  }
+
+  static filterWithUnitCategory(value) {
+    const unitCategoryIds = require('../Services/UnitCategoryService').categoryNameQuery(value)
+    return unitCategoryIds
   }
 
   static parseLetting(letting) {

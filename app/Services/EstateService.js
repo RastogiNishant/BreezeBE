@@ -2271,6 +2271,7 @@ class EstateService {
       })
       .with('files')
       .with('estateSyncListings')
+      .with('category')
 
     let result
     if (from === -1 || limit === -1) {
