@@ -633,7 +633,7 @@ class Estate extends Model {
   }
 
   category() {
-    this.belongsTo('App/Models/UnitCategory', 'unit_category_id', 'id')
+    return this.belongsTo('App/Models/UnitCategory', 'unit_category_id', 'id')
   }
 }
 

@@ -56,6 +56,11 @@ class UnitCategoryService {
 
     return (await query.fetch()).toJSON()
   }
+
+  static categoryNameQuery(value) {
+    const query = ` SELECT id from unit_categories where name ilike '%${value}%'`
+    return query
+  }
 }
 
 module.exports = UnitCategoryService
