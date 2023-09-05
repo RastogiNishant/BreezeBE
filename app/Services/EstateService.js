@@ -4016,6 +4016,7 @@ class EstateService {
     }
 
     if (!estate.unit_category_id || !estate.build_id) {
+      console.log({ estate })
       return [{ id: estate.id }]
     }
 
@@ -4023,7 +4024,7 @@ class EstateService {
       await Estate.query()
         .select('id')
         .where('user_id', estate.user_id)
-        .where('unit_category_id', `${estate.unit_category_id}%`)
+        .where('unit_category_id', estate.unit_category_id)
         .where('status', status)
         .where('build_id', estate.build_id)
         .fetch()
