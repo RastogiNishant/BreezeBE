@@ -2093,8 +2093,10 @@ class EstateService {
       let building
       if (estate.build_id) {
         building = await EstateService.updateBuildingPublishStatus(
-          estate.build_id,
-          'deactivate',
+          {
+            build_id: estate.build_id,
+            action: 'deactivate',
+          },
           trx
         )
       }
@@ -2156,23 +2158,38 @@ class EstateService {
       throw new HttpException(ERROR_PROPERTY_NOT_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
     }
 
-    await estate.updateItem(
-      {
-        status: STATUS_EXPIRE,
-        publish_status: PUBLISH_STATUS_INIT,
-      },
-      true
-    )
-    let building
-    if (estate.build_id) {
-      building = await EstateService.updateBuildingPublishStatus(estate.build_id, 'unpublish')
-    }
+    const trx = await Database.beginTransaction()
 
-    await this.handleOffline({
-      building,
-      estates: [estate],
-      event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
-    })
+    try {
+      await estate.updateItemWithTrx(
+        {
+          status: STATUS_EXPIRE,
+          publish_status: PUBLISH_STATUS_INIT,
+        },
+        trx,
+        true
+      )
+      let building
+      if (estate.build_id) {
+        building = await EstateService.updateBuildingPublishStatus(
+          { build_id: estate.build_id, action: 'unpublish' },
+          trx
+        )
+      }
+
+      await this.handleOffline(
+        {
+          building,
+          estates: [estate],
+          event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
+        },
+        trx
+      )
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   static async handleOffline({ building, build_id, estates, event }, trx) {
@@ -4036,7 +4053,7 @@ class EstateService {
     ).toJSON()
   }
 
-  static async updateBuildingPublishStatus(building_id, action = 'publish', trx = null) {
+  static async updateBuildingPublishStatus({ building_id, action = 'publish' }, trx = null) {
     const building = await Building.findOrFail(building_id)
     const estatesOfSameBuilding = await Estate.query()
       .select('status')

@@ -305,8 +305,10 @@ class PropertyController {
       let buildingPublished = false
       if (requestPublishEstate.build_id) {
         buildingPublished = await EstateService.updateBuildingPublishStatus(
-          requestPublishEstate.build_id,
-          'publish',
+          {
+            build_id: requestPublishEstate.build_id,
+            action: 'publish',
+          },
           trx
         )
       }
@@ -358,8 +360,11 @@ class PropertyController {
 
     if (requestPublishEstate.build_id) {
       await EstateService.updateBuildingPublishStatus(
-        requestPublishEstate.build_id,
-        'decline-publish'
+        {
+          build_id: requestPublishEstate.build_id,
+          action: 'decline-publish',
+        },
+        trx
       )
     }
     await EstateSyncService.markListingsForDelete(id)
