@@ -32,7 +32,7 @@ class Building extends Model {
   }
 
   categories() {
-    return this.hasMany('App/Models/UnitCategory', 'id', 'building_id')
+    return this.hasMany('App/Models/UnitCategory', 'id', 'build_id')
   }
 }
 
