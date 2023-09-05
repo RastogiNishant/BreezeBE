@@ -306,7 +306,8 @@ class PropertyController {
       if (requestPublishEstate.build_id) {
         buildingPublished = await EstateService.updateBuildingPublishStatus(
           requestPublishEstate.build_id,
-          'publish'
+          'publish',
+          trx
         )
       }
       const listings = await EstateSyncListing.query()

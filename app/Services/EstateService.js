@@ -2092,7 +2092,11 @@ class EstateService {
       )
       let building
       if (estate.build_id) {
-        building = await EstateService.updateBuildingPublishStatus(estate.build_id, 'deactivate')
+        building = await EstateService.updateBuildingPublishStatus(
+          estate.build_id,
+          'deactivate',
+          trx
+        )
       }
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
@@ -4032,7 +4036,7 @@ class EstateService {
     ).toJSON()
   }
 
-  static async updateBuildingPublishStatus(building_id, action = 'publish') {
+  static async updateBuildingPublishStatus(building_id, action = 'publish', trx = null) {
     const building = await Building.findOrFail(building_id)
     const estatesOfSameBuilding = await Estate.query()
       .select('status')
@@ -4052,7 +4056,7 @@ class EstateService {
       building.published =
         action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT
       building.status = action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT
-      await building.save()
+      await building.save(trx)
     }
     return building
   }
