@@ -4132,7 +4132,8 @@ class MatchService {
         'income_sources',
         '_ec.wbs_certificate',
         'property_id',
-        'build_id'
+        'build_id',
+        'unit_category_id'
       )
       .leftJoin(
         Database.raw(`
