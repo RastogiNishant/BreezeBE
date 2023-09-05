@@ -3267,7 +3267,7 @@ class EstateService {
       limit: -1,
     })
 
-    const categories = await UnitCategoryService.getAll(build_id)
+    let categories = await UnitCategoryService.getAll(build_id)
     // const regex = /-\d+/
 
     const yAxisKey = is_social ? `cert_category` : `floor`
@@ -3278,6 +3278,15 @@ class EstateService {
         )
       : groupBy(estates, (estate) => estate.floor)
 
+    if (!categories?.length || estates?.filter((estate) => !estate.unit_category_id)?.length) {
+      categories = [
+        ...categories,
+        {
+          id: null,
+          name: 'noCategory',
+        },
+      ]
+    }
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
@@ -3285,7 +3294,7 @@ class EstateService {
         categoryEstates[category.name] = estates.filter(
           (estate) =>
             estate[yAxisKey].toString() === axis.toString() &&
-            (!estate.unit_category_id || estate.unit_category_id === category.id)
+            estate.unit_category_id === category.id
         )
       })
 
