@@ -4016,7 +4016,6 @@ class EstateService {
     }
 
     if (!estate.unit_category_id || !estate.build_id) {
-      console.log({ estate })
       return [{ id: estate.id }]
     }
 
