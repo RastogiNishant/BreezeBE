@@ -134,6 +134,7 @@ class BuildingService {
 
   static async getMatchBuilding({ user_id, limit = -1, from = -1, params = {} }) {
     let query = Building.query()
+      .with('categories')
       .select(Database.raw(`DISTINCT(buildings.id)`))
       // .with('estates', function () {
       //   this.select('id')
