@@ -955,6 +955,7 @@ class MatchService {
         percent: e.percent,
         prospect_score: e.prospect_score,
         landlord_score: e.landlord_score,
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
         status: MATCH_STATUS_NEW,
       })) || []
 
@@ -1009,20 +1010,20 @@ class MatchService {
 
   static async upsertBulkMatches(matches, trx) {
     let queries = `INSERT INTO matches 
-                  ( user_id, estate_id, percent, status, landlord_score, prospect_score )    
+                  ( user_id, estate_id, percent, status, landlord_score, prospect_score, status_at )    
                   VALUES 
                 `
     queries = (matches || []).reduce(
       (q, current, index) =>
         `${q}\n ${index ? ',' : ''}
         ( ${current.user_id}, ${current.estate_id}, ${current.percent}, ${current.status},
-          ${current.landlord_score}, ${current.prospect_score} ) `,
+          ${current.landlord_score}, ${current.prospect_score}, '${current.status_at}' ) `,
       queries
     )
 
     queries += ` ON CONFLICT ( user_id, estate_id ) 
                   DO UPDATE SET percent = EXCLUDED.percent, landlord_score = EXCLUDED.landlord_score,
-                  prospect_score = EXCLUDED.prospect_score, status = EXCLUDED.status
+                  prospect_score = EXCLUDED.prospect_score, status = EXCLUDED.status, status_at = EXCLUDED.status_at
                 `
 
     await Database.raw(queries).transacting(trx)
@@ -2726,7 +2727,7 @@ class MatchService {
       .select(Database.raw(`count(DISTINCT("estates"."id"))`))
       .orderBy(
         Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
-        'DESC'
+        'asc'
       )
       .fetch()
   }
@@ -2745,6 +2746,7 @@ class MatchService {
         )
       )
       .select('estates.*')
+      .select(Database.raw(`true as inside`))
       .select('_m.prospect_score as match')
       .select('_m.updated_at', '_m.status_at')
       .withCount('notifications', function (n) {
@@ -2752,7 +2754,7 @@ class MatchService {
       })
       .orderBy(
         Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
-        'DESC'
+        'asc'
       )
       .orderBy('_m.updated_at', 'DESC')
       .whereIn('estates.status', defaultWhereIn)
