@@ -3293,14 +3293,15 @@ class EstateService {
   }
 
   static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
-    let estates = (
-      await EstateService.getTenantAllEstates({
-        userId: user_id,
-        build_id,
-        page: -1,
-        limit: -1,
-      })
-    )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category))
+    let estates =
+      (
+        await EstateService.getTenantAllEstates({
+          userId: user_id,
+          build_id,
+          page: -1,
+          limit: -1,
+        })
+      )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
     estates = orderBy(estates, 'floor', 'asc')
 
     let categories = await UnitCategoryService.getAll(build_id)
