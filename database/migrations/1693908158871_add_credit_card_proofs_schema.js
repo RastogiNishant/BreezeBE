@@ -13,7 +13,9 @@ class AddCreditCardProofsSchema extends Schema {
         .references('id')
         .inTable('prospect_credit_scores')
         .index()
-      table.string('file')
+      table.string('url')
+      table.string('filename')
+      table.string('file_format')
       table.timestamps()
     })
   }
