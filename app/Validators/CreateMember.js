@@ -60,7 +60,9 @@ class CreateMember extends Base {
           CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
           CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA,
           CREDIT_HISTORY_STATUS_ENFORCEABLE_CLAIMS,
-        ]),
+          null,
+        ])
+        .nullable(),
       credit_score_issued_at: yup.date(),
       unpaid_rental: yup
         .number()
