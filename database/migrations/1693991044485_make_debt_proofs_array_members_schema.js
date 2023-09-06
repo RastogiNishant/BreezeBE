@@ -7,14 +7,14 @@ class MakeDebtProofsArrayMembersSchema extends Schema {
   up() {
     this.table('members', (table) => {
       // alter table
-      table.specificType('credit_score_proofs', 'text[]')
+      table.specificType('debt_proof', 'text[]')
     })
   }
 
   down() {
     this.table('members', (table) => {
       // reverse alternations
-      table.dropColumn('credit_score_proofs')
+      table.dropColumn('debt_proof')
     })
   }
 }
