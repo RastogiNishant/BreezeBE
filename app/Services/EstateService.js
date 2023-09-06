@@ -3302,9 +3302,9 @@ class EstateService {
           limit: -1,
         })
       )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
-    estates = orderBy(estates, 'floor', 'asc')
+    estates = orderBy(estates, 'rooms_number', 'asc')
 
-    let categories = await UnitCategoryService.getAll(build_id)
+    let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
     // const regex = /-\d+/
 
     const yAxisKey = is_social ? `cert_category` : `floor`
@@ -3315,23 +3315,21 @@ class EstateService {
         )
       : groupBy(estates, (estate) => estate.floor)
 
-    if (!categories?.length || estates?.filter((estate) => !estate.unit_category_id)?.length) {
-      categories = [
-        ...categories,
+    if (!category_ids?.length || estates?.filter((estate) => !estate.unit_category_id)?.length) {
+      category_ids = [
+        ...category_ids,
         {
           id: null,
-          name: 'noCategory',
         },
       ]
     }
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
-      categories.forEach((category) => {
-        categoryEstates[category.name] = estates.filter(
+      category_ids.forEach((cat_id) => {
+        categoryEstates[cat_id] = estates.filter(
           (estate) =>
-            estate[yAxisKey].toString() === axis.toString() &&
-            estate.unit_category_id === category.id
+            estate[yAxisKey].toString() === axis.toString() && estate.unit_category_id === cat_id
         )
       })
 
@@ -3347,7 +3345,9 @@ class EstateService {
     })
 
     return {
-      categories: Object.keys(yAxisEstates).sort((a, b) => b - a),
+      categories: Object.keys(yAxisEstates).sort((a, b) =>
+        is_social ? b.localeCompare(a) : b - a
+      ),
       estates: buildingEstates,
     }
   }
