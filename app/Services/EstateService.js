@@ -2090,12 +2090,23 @@ class EstateService {
         trx,
         true
       )
+      let building
       if (estate.build_id) {
-        await EstateService.updateBuildingPublishStatus(estate.build_id, 'deactivate')
+        building = await EstateService.updateBuildingPublishStatus(
+          {
+            building_id: estate.build_id,
+            action: 'deactivate',
+          },
+          trx
+        )
       }
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
-      await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
+      await this.handleOffline({
+        estates: [estate],
+        building,
+        event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED,
+      })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -2147,25 +2158,46 @@ class EstateService {
       throw new HttpException(ERROR_PROPERTY_NOT_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
     }
 
-    await estate.updateItem(
-      {
-        status: STATUS_EXPIRE,
-        publish_status: PUBLISH_STATUS_INIT,
-      },
-      true
-    )
+    const trx = await Database.beginTransaction()
 
-    if (estate.build_id) {
-      await EstateService.updateBuildingPublishStatus(estate.build_id, 'unpublish')
+    try {
+      await estate.updateItemWithTrx(
+        {
+          status: STATUS_EXPIRE,
+          publish_status: PUBLISH_STATUS_INIT,
+        },
+        trx,
+        true
+      )
+      let building
+      if (estate.build_id) {
+        building = await EstateService.updateBuildingPublishStatus(
+          { building_id: estate.build_id, action: 'unpublish' },
+          trx
+        )
+      }
+
+      await this.handleOffline(
+        {
+          building,
+          estates: [estate],
+          event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
+        },
+        trx
+      )
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
     }
-
-    await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
   }
 
-  static async handleOffline({ build_id, estates, event }, trx) {
+  static async handleOffline({ building, build_id, estates, event }, trx) {
     const data = {
       success: true,
-      build_id,
+      build_id: building?.id || build_id,
+      published: building?.published,
+      building_status: building?.status,
       status: estates?.[0]?.status,
       publish_status: estates?.[0]?.publish_status,
     }
@@ -2271,6 +2303,7 @@ class EstateService {
       })
       .with('files')
       .with('estateSyncListings')
+      .with('category')
 
     let result
     if (from === -1 || limit === -1) {
@@ -3260,14 +3293,18 @@ class EstateService {
   }
 
   static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
-    const estates = await EstateService.getTenantAllEstates({
-      userId: user_id,
-      build_id,
-      page: -1,
-      limit: -1,
-    })
+    let estates =
+      (
+        await EstateService.getTenantAllEstates({
+          userId: user_id,
+          build_id,
+          page: -1,
+          limit: -1,
+        })
+      )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
+    estates = orderBy(estates, 'rooms_number', 'asc')
 
-    let categories = await UnitCategoryService.getAll(build_id)
+    let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
     // const regex = /-\d+/
 
     const yAxisKey = is_social ? `cert_category` : `floor`
@@ -3278,31 +3315,39 @@ class EstateService {
         )
       : groupBy(estates, (estate) => estate.floor)
 
-    if (!categories?.length || estates?.filter((estate) => !estate.unit_category_id)?.length) {
-      categories = [
-        ...categories,
+    if (!category_ids?.length || estates?.filter((estate) => !estate.unit_category_id)?.length) {
+      category_ids = [
+        ...category_ids,
         {
           id: null,
-          name: 'noCategory',
         },
       ]
     }
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
-      categories.forEach((category) => {
-        categoryEstates[category.name] = estates.filter(
+      category_ids.forEach((cat_id) => {
+        categoryEstates[cat_id] = estates.filter(
           (estate) =>
-            estate[yAxisKey].toString() === axis.toString() &&
-            estate.unit_category_id === category.id
+            estate[yAxisKey].toString() === axis.toString() && estate.unit_category_id === cat_id
         )
       })
 
       buildingEstates[axis] = categoryEstates
     })
 
+    categories.forEach((category) => {
+      if (
+        Object.keys(buildingEstates).every((key) => !buildingEstates[key]?.[category.name]?.length)
+      ) {
+        Object.keys(buildingEstates).forEach((key) => delete buildingEstates[key][category.name])
+      }
+    })
+
     return {
-      categories: Object.keys(yAxisEstates).sort((a, b) => b - a),
+      categories: Object.keys(yAxisEstates).sort((a, b) =>
+        is_social ? b.localeCompare(a) : b - a
+      ),
       estates: buildingEstates,
     }
   }
@@ -4023,14 +4068,14 @@ class EstateService {
       await Estate.query()
         .select('id')
         .where('user_id', estate.user_id)
-        .where('unit_category_id', `${estate.unit_category_id}%`)
+        .where('unit_category_id', estate.unit_category_id)
         .where('status', status)
         .where('build_id', estate.build_id)
         .fetch()
     ).toJSON()
   }
 
-  static async updateBuildingPublishStatus(building_id, action = 'publish') {
+  static async updateBuildingPublishStatus({ building_id, action = 'publish' }, trx = null) {
     const building = await Building.findOrFail(building_id)
     const estatesOfSameBuilding = await Estate.query()
       .select('status')
@@ -4050,7 +4095,7 @@ class EstateService {
       building.published =
         action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT
       building.status = action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT
-      await building.save()
+      await building.save(trx)
     }
     return building
   }
