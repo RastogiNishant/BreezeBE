@@ -3305,7 +3305,7 @@ class EstateService {
     estates = orderBy(estates, 'rooms_number', 'asc')
 
     let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
-    // const regex = /-\d+/
+    console.log('category_ids=', category_ids)
 
     const yAxisKey = is_social ? `cert_category` : `floor`
     const yAxisEstates = is_social
@@ -3315,14 +3315,6 @@ class EstateService {
         )
       : groupBy(estates, (estate) => estate.floor)
 
-    if (!category_ids?.length || estates?.filter((estate) => !estate.unit_category_id)?.length) {
-      category_ids = [
-        ...category_ids,
-        {
-          id: null,
-        },
-      ]
-    }
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
@@ -3340,6 +3332,7 @@ class EstateService {
       categories: Object.keys(yAxisEstates).sort((a, b) =>
         is_social ? b.localeCompare(a) : b - a
       ),
+      xAxisCategories: category_ids,
       estates: buildingEstates,
     }
   }
