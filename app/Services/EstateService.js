@@ -3305,7 +3305,6 @@ class EstateService {
     estates = orderBy(estates, 'rooms_number', 'asc')
 
     let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
-    console.log('category_ids=', category_ids)
 
     const yAxisKey = is_social ? `cert_category` : `floor`
     const yAxisEstates = is_social
