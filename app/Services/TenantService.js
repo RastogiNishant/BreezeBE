@@ -281,8 +281,10 @@ class TenantService extends BaseService {
     }
 
     const data = await getRequiredTenantData(tenant.id)
+
     const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
-    if (!data.find((m) => m.rent_proof_not_applicable) && isEmpty(counts)) {
+
+    if (!data.find((m) => !m.rent_proof_not_applicable) && isEmpty(counts)) {
       throw new AppException('members proof not provided', 400)
     }
     // Check is user has income proofs for last 3 month
@@ -294,7 +296,7 @@ class TenantService extends BaseService {
           INCOME_TYPE_CHILD_BENEFIT,
           INCOME_TYPE_HOUSE_WORK,
           INCOME_TYPE_UNEMPLOYED,
-        ].includes(i.income_type) && parseInt(i.income_proofs_count) < 3
+        ].includes(i.income_type) || parseInt(i.income_proofs_count) < 3
     )
     if (hasUnconfirmedProofs) {
       throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
