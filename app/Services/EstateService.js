@@ -4053,7 +4053,7 @@ class EstateService {
         .select('id')
         .where('user_id', estate.user_id)
         .where('unit_category_id', estate.unit_category_id)
-        .where('status', status)
+        .whereIn('status', Array.isArray(status) ? status : [status])
         .where('build_id', estate.build_id)
         .fetch()
     ).toJSON()
