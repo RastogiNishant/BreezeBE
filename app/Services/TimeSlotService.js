@@ -1,7 +1,7 @@
 const { props } = require('bluebird')
-const { range, findIndex, get } = require('lodash')
+const { range, findIndex, get, omit } = require('lodash')
 const moment = require('moment')
-const { DATE_FORMAT } = require('../constants')
+const { DATE_FORMAT, DAY_FORMAT } = require('../constants')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
@@ -9,6 +9,7 @@ const Estate = use('App/Models/Estate')
 const TimeSlot = use('App/Models/TimeSlot')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
+const Promise = require('bluebird')
 
 const {
   exceptions: {
@@ -21,45 +22,93 @@ const {
   exceptionCodes: { SHOW_ALREADY_STARTED_ERROR_CODE },
 } = require('../exceptions')
 class TimeSlotService {
-  static async createSlot({ end_at, start_at, slot_length }, estate) {
+  static async createSlot({ end_at, start_at, slot_length, estate_id, user_id }, trx) {
     start_at = moment.utc(start_at).format(DATE_FORMAT)
     end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
     //Checks is time slot crossing existing
     const existing = await this.getCrossTimeslotQuery(
-      { end_at, start_at, estate_id: estate.id },
-      estate.user_id
+      { end_at, start_at, estate_id },
+      user_id
     ).first()
 
     if (existing) {
       throw new AppException(TIME_SLOT_CROSSING_EXISTING)
     }
 
-    const trx = await Database.beginTransaction()
     try {
       const slot = await TimeSlot.createItem(
         {
           start_at,
           end_at,
           slot_length,
-          estate_id: estate.id,
+          estate_id,
         },
         trx
       )
-      await require('./EstateService').updatePercent(
-        { estate_id: estate.id, slots: [slot.toJSON()] },
+      await require('./EstateService').updatePercentAndIsPublished(
+        { estate_id, slots: [slot.toJSON()] },
         trx
       )
-      await trx.commit()
       return slot
     } catch (e) {
-      await trx.rollback()
+      console.log('timeslot here error', e.message)
       throw new HttpException(FAILED_CREATE_TIME_SLOT, 400)
     }
   }
 
-  static async updateTimeSlot(user_id, data) {
+  static async createSlotMany({ user_id, estate_id, data }) {
+    const EstateService = require('./EstateService')
+    const estate = await EstateService.getActiveEstateQuery()
+      .where('user_id', user_id)
+      .where('id', estate_id)
+      .first()
+    if (!estate) {
+      throw new HttpException(ESTATE_NOT_EXISTS, 400)
+    }
+
+    const estateIds = await EstateService.getEstateIdsInBuilding(estate_id)
+
+    const trx = await Database.beginTransaction()
+    try {
+      if (data.is_not_show !== undefined) {
+        await EstateService.updateShowRequired(
+          { id: estateIds, is_not_show: data.is_not_show },
+          trx
+        )
+      }
+
+      let slots = []
+      if (data.start_at && data.end_at) {
+        slots = await Promise.map(
+          estateIds,
+          async (estate_id) => {
+            return (
+              await TimeSlotService.createSlot(
+                { ...omit(data, ['is_not_show']), estate_id, user_id },
+                trx
+              )
+            ).toJSON()
+          },
+          { concurrency: 1 }
+        )
+      }
+
+      await trx.commit()
+      const slot = slots?.filter((slot) => slot.estate_id === estate_id)?.[0] || {}
+      return {
+        is_not_show: data.is_not_show,
+        ...slot,
+      }
+    } catch (e) {
+      Logger.error(e)
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  static async updateTimeSlot({ user_id, data }, trx) {
     const { estate_id, slot_id, ...rest } = data
     const slot = await this.getTimeSlotByOwner(user_id, slot_id)
 
@@ -69,7 +118,6 @@ class TimeSlotService {
 
     const { slot_length, end_at, start_at } = slot.toJSON()
 
-    const trx = await Database.beginTransaction()
     try {
       const updatedSlot = await this.updateSlot(slot, rest, trx)
       const MatchService = require('./MatchService')
@@ -104,8 +152,6 @@ class TimeSlotService {
         })
       )
 
-      await trx.commit()
-
       const notifyUserIds = visitIds.concat(invitedUserIds || [])
       if (notifyUserIds && notifyUserIds.length) {
         NoticeService.updateTimeSlot(estate_id, notifyUserIds)
@@ -113,7 +159,6 @@ class TimeSlotService {
 
       return updatedSlot
     } catch (e) {
-      await trx.rollback()
       throw new HttpException(e.message, e.status || 500)
     }
   }
@@ -142,6 +187,55 @@ class TimeSlotService {
     }
     await slot.save(trx)
     return slot
+  }
+
+  static async updateSlotMany(user_id, data) {
+    const EstateService = require('./EstateService')
+    const estate_ids = await EstateService.getEstateIdsInBuilding(data.estate_id)
+    const trx = await Database.beginTransaction()
+    try {
+      if (data.is_not_show !== undefined) {
+        await EstateService.updateShowRequired(
+          {
+            id: estate_ids,
+            is_not_show: data.is_not_show,
+          },
+          trx
+        )
+      }
+
+      const slot = await this.getTimeSlotByOwner(user_id, data.slot_id)
+      if (!slot) {
+        throw new HttpException(TIME_SLOT_NOT_FOUND, 404)
+      }
+
+      let slots = await this.getSameTimeSlotInBuilding({
+        estateId: estate_ids,
+        start_at: moment(slot.start_at).format(DATE_FORMAT),
+        end_at: moment(slot.end_at).format(DATE_FORMAT),
+      })
+
+      if (data.start_at && data.end_at) {
+        slots = await Promise.map(slots, async (slot) => {
+          return (
+            await TimeSlotService.updateTimeSlot(
+              { user_id, data: { ...omit(data, ['is_not_show']), slot_id: slot.id } },
+              trx
+            )
+          ).toJSON()
+        })
+      }
+      await trx.commit()
+      const newSlot = slots?.filter((slot) => slot.estate_id === data.estate_id)?.[0] || {}
+      return {
+        is_not_show: data.is_not_show,
+        ...newSlot,
+      }
+    } catch (e) {
+      Logger.error(e)
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   static validateTimeRange({ start_at, end_at, slot_length }) {
@@ -227,7 +321,13 @@ class TimeSlotService {
         .select(Database.raw('extract(epoch from start_at) as start_at'))
         .select(Database.raw('extract(epoch from end_at) as end_at'))
         .where({ estate_id: estateId })
-        .where('start_at', '>=', dateFrom)
+        .where(function () {
+          this.orWhere('start_at', '>=', dateFrom)
+          this.orWhere(function () {
+            this.where('start_at', '<', dateFrom)
+            this.where('end_at', '>', dateFrom)
+          })
+        })
         .orderBy('start_at')
         .limit(500)
     }
@@ -299,12 +399,7 @@ class TimeSlotService {
     return result
   }
 
-  static async removeSlot(user_id, slot_id) {
-    const slot = await TimeSlotService.getTimeSlotByOwner(user_id, slot_id)
-    if (!slot) {
-      throw new HttpException(TIME_SLOT_NOT_FOUND, 404)
-    }
-
+  static async removeSlot(slot, trx) {
     // The landlord can't remove the slot if it is already started
     if (slot.start_at < moment.utc(new Date(), DATE_FORMAT)) {
       throw new HttpException(SHOW_ALREADY_STARTED, 400, SHOW_ALREADY_STARTED_ERROR_CODE)
@@ -312,33 +407,69 @@ class TimeSlotService {
 
     // If slot's end date is passed, we only delete the slot
     // But if slot's end date is not passed, we delete the slot and all the visits
-    const trx = await Database.beginTransaction()
+
     try {
       if (slot.end_at < new Date()) {
-        await slot.delete(trx)
+        await TimeSlot.query().where('id', slot.id).delete().transacting(trx)
       } else {
         const estateId = slot.estate_id
         const userIds = await require('./MatchService').handleDeletedTimeSlotVisits(slot, trx)
-        await slot.delete(trx)
+        await TimeSlot.query().where('id', slot.id).delete().transacting(trx)
         let idx = 0
         while (idx < userIds.length) {
           await NoticeService.cancelVisit(estateId, userIds[idx])
           idx++
         }
       }
-      await require('./EstateService').updatePercent(
+      await require('./EstateService').updatePercentAndIsPublished(
         {
           estate_id: slot.estate_id,
-          deleted_slots_ids: [slot_id],
+          deleted_slots_ids: [slot.id],
         },
         trx
       )
-      await trx.commit()
     } catch (e) {
-      await trx.rollback()
       Logger.error(e)
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
+  }
+
+  static async removeSlotMany(user_id, slot_id) {
+    const EstateService = require('./EstateService')
+    const trx = await Database.beginTransaction()
+    try {
+      const slot = await this.getTimeSlotByOwner(user_id, slot_id)
+      if (!slot) {
+        throw new HttpException(TIME_SLOT_NOT_FOUND, 404)
+      }
+
+      const estate_ids = await EstateService.getEstateIdsInBuilding(slot.estate_id)
+      let slots = await this.getSameTimeSlotInBuilding({
+        estateId: estate_ids,
+        start_at: moment(slot.start_at).format(DATE_FORMAT),
+        end_at: moment(slot.end_at).format(DATE_FORMAT),
+      })
+
+      await Promise.map(slots, async (slot) => {
+        await TimeSlotService.removeSlot(slot, trx)
+      })
+
+      await trx.commit()
+      return true
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  static async getSameTimeSlotInBuilding({ estateId, start_at, end_at }) {
+    return (
+      await TimeSlot.query()
+        .whereIn('estate_id', Array.isArray(estateId) ? estateId : [estateId])
+        .where('start_at', start_at)
+        .where('end_at', end_at)
+        .fetch()
+    ).toJSON()
   }
 }
 

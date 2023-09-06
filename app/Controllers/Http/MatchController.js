@@ -5,6 +5,7 @@ const Database = use('Database')
 const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
+const Admin = use('App/Models/Admin')
 const Visit = use('App/Models/Visit')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
@@ -64,21 +65,6 @@ class MatchController {
   /**
    *
    */
-  async getOwnEstate(estateId, userId) {
-    const estate = await Estate.query()
-      .where({ id: estateId, user_id: userId })
-      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
-      .first()
-    if (!estate) {
-      throw new HttpException('Estate not found', 404)
-    }
-
-    return estate
-  }
-
-  /**
-   *
-   */
   async getActiveEstate(estateId, withExpired = true) {
     const estate = await EstateService.getActiveById(estateId)
     if (!estate) {
@@ -94,14 +80,9 @@ class MatchController {
    */
   async knockEstate({ request, auth, response }) {
     const { estate_id, knock_anyway, share_profile, buddy } = request.all()
-    const estate = await this.getActiveEstate(estate_id, false)
-    if (!estate.is_not_show && estate.status !== STATUS_OFFLINE_ACTIVE && share_profile) {
-      throw new HttpException(UNSECURE_PROFILE_SHARE, 400, WARNING_UNSECURE_PROFILE_SHARE)
-    }
     try {
       const result = await MatchService.knockEstate({
         estate_id: estate_id,
-        landlord_id: estate.user_id,
         user_id: auth.user.id,
         knock_anyway,
         share_profile,
@@ -130,6 +111,22 @@ class MatchController {
     }
   }
 
+  async matchMoveToNewEstate({ request, auth, response }) {
+    const { estate_id, user_id, new_estate_id } = request.all()
+
+    try {
+      await MatchService.matchMoveToNewEstate({
+        estateId: estate_id,
+        userId: user_id,
+        newEstateId: new_estate_id,
+        landlordId: auth.user.id,
+      })
+      return response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
   /**
    * Landlord
    * If use knock (or just buddy) move to invite
@@ -138,7 +135,7 @@ class MatchController {
     const landlordId = auth.user.id
     const { estate_id, user_id } = request.all()
     // Check is estate owner
-    const estate = await this.getOwnEstate(estate_id, landlordId)
+    const estate = await EstateService.getMatchEstate(estate_id, landlordId)
     try {
       await MatchService.inviteKnockedUser({ estate, userId: user_id })
       logEvent(
@@ -169,7 +166,7 @@ class MatchController {
    */
   async removeInvite({ request, auth, response }) {
     const { estate_id, user_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
+    await EstateService.getMatchEstate(estate_id, auth.user.id)
 
     try {
       await MatchService.cancelInvite(estate_id, user_id, auth.user.role)
@@ -334,7 +331,7 @@ class MatchController {
    */
   async updateVisitTimeslotLandlord({ request, auth, response }) {
     const { estate_id, status, delay = null, user_id } = request.all()
-    const estate = await this.getOwnEstate(estate_id, auth.user.id)
+    const estate = await EstateService.getMatchEstate(estate_id, auth.user.id)
     if (!estate) {
       throw new HttpException('Invalid estate', 404)
     }
@@ -392,7 +389,7 @@ class MatchController {
   async shareTenantData({ request, auth, response }) {
     const { estate_id, code } = request.all()
     const userId = auth.user.id
-    await this.getOwnEstate(estate_id, userId)
+    await EstateService.getMatchEstate(estate_id, userId)
 
     try {
       const { tenantId } = await MatchService.share({
@@ -439,19 +436,25 @@ class MatchController {
    */
   async moveUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
+    const trx = await Database.beginTransaction()
     try {
-      await this.getOwnEstate(estate_id, auth.user.id)
-      const success = await MatchService.toTop({
-        estateId: estate_id,
-        tenantId: user_id,
-        landlordId: auth.user.id,
-      })
+      await EstateService.getMatchEstate(estate_id, auth.user.id)
+      const success = await MatchService.toTop(
+        {
+          estateId: estate_id,
+          tenantId: user_id,
+          landlordId: auth.user.id,
+        },
+        trx
+      )
       if (!success) {
         throw new HttpException('Cant move to top', 400)
       }
+      await trx.commit()
       NoticeService.landlordMovedProspectToTop(estate_id, user_id)
       response.res(true)
     } catch (e) {
+      await trx.rollback()
       console.log('moveUserToTop', e.message)
       throw new HttpException(e.message, e.status || 400)
     }
@@ -474,7 +477,7 @@ class MatchController {
    */
   async discardUserToTop({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
+    await EstateService.getMatchEstate(estate_id, auth.user.id)
     try {
       await MatchService.removeFromTop(estate_id, user_id)
     } catch (e) {
@@ -494,20 +497,28 @@ class MatchController {
    */
   async requestUserCommit({ request, auth, response }) {
     const { user_id, estate_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
+    await EstateService.getMatchEstate(estate_id, auth.user.id)
 
     const finalMatch = await MatchService.getFinalMatch(estate_id)
     if (finalMatch) {
       throw new HttpException('There is a final match for that property', 400)
     }
-
     if (!(await MatchService.canRequestFinalCommit(estate_id))) {
       throw new HttpException(ERROR_MATCH_COMMIT_DOUBLE, 400, ERROR_MATCH_COMMIT_DOUBLE_CODE)
     }
-
     const isValidMatch = await MatchService.checkMatchIsValidForFinalRequest(estate_id, user_id)
-    if (isValidMatch) {
-      await MatchService.requestFinalConfirm(estate_id, user_id)
+
+    const trx = await Database.beginTransaction()
+
+    if (!isValidMatch) {
+      throw new HttpException(
+        'This prospect has not shared the data. Match is not valid for final match request',
+        400
+      )
+    }
+
+    try {
+      await MatchService.requestFinalConfirm({ estateId: estate_id, tenantId: user_id }, trx)
       logEvent(
         request,
         LOG_TYPE_FINAL_MATCH_REQUEST,
@@ -515,13 +526,12 @@ class MatchController {
         { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
         false
       )
+      await trx.commit()
       Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
       response.res(true)
-    } else {
-      throw new HttpException(
-        'This prospect has not shared the data. Match is not valid for final match request',
-        400
-      )
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -563,6 +573,7 @@ class MatchController {
    *
    */
   async getMatchesListTenant({ request, auth, response }) {
+    console.log('getMatchesListTenant controller====')
     const user = auth.user
     // filters: { buddy, like, dislike, knock, invite, share, top, commit },
     const { filters, page, limit } = request.all()
@@ -578,9 +589,12 @@ class MatchController {
     }
 
     let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()
+    console.log('getMatchesListTenant controller 2222====')
     let thirdPartyOffers = []
     if (filters && (filters.knock || filters.like || filters.dislike)) {
+      console.log('getMatchesListTenant controller 3====')
       thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
+      console.log('getMatchesListTenant controller 4====')
     }
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
@@ -901,12 +915,17 @@ class MatchController {
     if (!page) {
       throw new HttpException('Page param is required')
     }
-    const estate = await EstateService.getQuery({
-      id: estate_id,
-      'estates.user_id': user.id,
-    })
-      .with('slots')
-      .first()
+
+    const query =
+      auth.current.user instanceof Admin
+        ? { id: estate_id }
+        : {
+            id: estate_id,
+            'estates.user_id': user.id,
+          }
+
+    const estate = await EstateService.getQuery(query).with('slots').first()
+
     if (!estate) {
       throw new HttpException('Not found', 400)
     }
@@ -934,6 +953,7 @@ class MatchController {
       'final_match_date',
       'status_at',
       'unread_count',
+      'credit_score',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
@@ -1144,7 +1164,7 @@ class MatchController {
    */
   async inviteToCome({ request, auth, response }) {
     const { estate_id, user_id } = request.all()
-    await this.getOwnEstate(estate_id, auth.user.id)
+    await EstateService.getMatchEstate(estate_id, auth.user.id)
     await MatchService.inviteUserToCome(estate_id, user_id)
 
     response.res(true)
@@ -1230,6 +1250,76 @@ class MatchController {
       response.res(await MatchService.getKnockedPosition({ user_id: auth.user.id, estate_id }))
     } catch (e) {
       throw new HttpException(e.message, 400)
+    }
+  }
+
+  async cancelAction({ request, auth, response }) {
+    const { estate_id, user_id, action } = request.all()
+    try {
+      const Match = use('App/Models/Match')
+      const match = await Match.query()
+        .where('user_id', user_id)
+        .where('estate_id', estate_id)
+        .first()
+      if (!match) {
+        throw new Error('Cannot cancel action. User not matched with estate.')
+      }
+      switch (action) {
+        case 'knock':
+          await Match.query()
+            .where('user_id', user_id)
+            .where('estate_id', estate_id)
+            .update({ status: MATCH_STATUS_NEW })
+          break
+        case 'like':
+        case 'dislike':
+          const table = `${action}s`
+          await Database.table(table)
+            .where('user_id', user_id)
+            .where('estate_id', estate_id)
+            .delete()
+          break
+      }
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 400)
+    }
+  }
+
+  async cancelBuildingAction({ request, auth, response }) {
+    const { building_id, user_id, action } = request.all()
+    try {
+      const Match = use('App/Models/Match')
+      const matches = await Match.query()
+        .select(Database.raw(`matches.id as match_id, matches.estate_id`))
+        .leftJoin('estates', 'estates.id', 'matches.estate_id')
+        .where('matches.user_id', user_id)
+        .where('estates.build_id', building_id)
+        .fetch()
+
+      if (matches.toJSON().length < 1) {
+        throw new Error('Cannot cancel action. User not matched with building.')
+      }
+      const estate_ids = (matches.toJSON() || []).map((match) => match.estate_id)
+      switch (action) {
+        case 'knock':
+          await Match.query()
+            .where('user_id', user_id)
+            .whereIn('estate_id', estate_ids)
+            .update({ status: MATCH_STATUS_NEW })
+          break
+        case 'like':
+        case 'dislike':
+          const table = `${action}s`
+          await Database.table(table)
+            .where('user_id', user_id)
+            .whereIn('estate_id', estate_ids)
+            .delete()
+          break
+      }
+      response.res(true)
+    } catch (err) {
+      throw new HttpException(err.message, 400)
     }
   }
 }

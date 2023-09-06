@@ -8,6 +8,9 @@ const {
 
 const Redis = require('ioredis')
 const Ws = use('Ws')
+const moment = require('moment')
+const Logger = use('Logger')
+
 class WebSocket {
   static redisSubscriber = new Redis({
     host: process.env.REDIS_HOST,
@@ -47,6 +50,7 @@ class WebSocket {
   }
 
   static publishToTenant({ event, userId, data }) {
+    Logger.info(`websocket publish ${userId} ${event} ${moment.utc(new Date()).toISOString()}`)
     WebSocket.publish({
       topic: `${WEBSOCKET_TENANT_REDIS_KEY}:${userId}`,
       channel: 'tenant:*',
@@ -76,12 +80,16 @@ class WebSocket {
 
 WebSocket.redisSubscriber.on('message', (channel, message) => {
   try {
+    Logger.info(`websocket subscribe ${channel} ${moment.utc(new Date()).toISOString()}`)
     const object = JSON.parse(message)
     if (!object?.event || !object?.data) {
       return true
     }
 
     const topic = Ws?.getChannel(object?.channel || `landlord:*`)?.topic(channel)
+    if (!topic) {
+      Logger.info(`Topic not found ${message} ${moment.utc(new Date()).toISOString()}`)
+    }
     if (object.data?.broadcast_all) {
       topic?.broadcastToAll(object.event, object.data)
     } else {

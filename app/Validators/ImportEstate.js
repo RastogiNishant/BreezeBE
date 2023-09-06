@@ -225,22 +225,24 @@ class ImportEstate extends Base {
   static schema = () =>
     yup.object().shape({
       breeze_id: yup.string().nullable(),
-      coord: yup.string().matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/),
+      coord: yup
+        .string()
+        .matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/)
+        .nullable(),
       property_id: yup.string().uppercase().max(20).nullable(),
       property_type: yup
         .number()
-        .positive()
         .oneOf([
           PROPERTY_TYPE_APARTMENT,
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
           PROPERTY_TYPE_OFFICE,
+          null,
         ])
-        .required(getExceptionMessage('Property type', REQUIRED)),
+        .nullable(),
       apt_type: yup
         .number()
-        .positive()
         .oneOf([
           APARTMENT_TYPE_FLAT,
           APARTMENT_TYPE_GROUND,
@@ -254,10 +256,11 @@ class ImportEstate extends Base {
           APARTMENT_TYPE_HOLIDAY,
           APARTMENT_TYPE_GALLERY,
           APARTMENT_TYPE_ATTIC,
-        ]),
+          null,
+        ])
+        .nullable(),
       house_type: yup
         .number()
-        .positive()
         .oneOf([
           HOUSE_TYPE_MULTIFAMILY_HOUSE,
           HOUSE_TYPE_HIGH_RISE,
@@ -269,18 +272,16 @@ class ImportEstate extends Base {
           HOUSE_TYPE_BUNGALOW,
           HOUSE_TYPE_VILLA,
           HOUSE_TYPE_GARDENHOUSE,
-        ]),
-      description: yup.string().min(2).max(500),
-      category: yup.string().min(2).max(20),
+          null,
+        ])
+        .nullable(),
+      description: yup.string().min(2).max(500).nullable(),
+      category: yup.string().min(2).max(20).nullable(),
       // TODO: add rooms schema
       rooms: yup.mixed(),
-      street: yup.string().min(2).max(255).required(getExceptionMessage('Street', REQUIRED)),
-      house_number: yup
-        .string()
-        .min(1)
-        .max(255)
-        .required(getExceptionMessage('House Number', REQUIRED)),
-      country: yup.string().min(1).max(255).required(getExceptionMessage('Country', REQUIRED)),
+      street: yup.string().min(2).max(255).nullable(),
+      house_number: yup.string().min(1).max(255).nullable(),
+      country: yup.string().min(1).max(255).nullable(),
       floor: yup.number().integer().min(-10).max(200).nullable(),
       floor_direction: yup
         .number()
@@ -292,42 +293,41 @@ class ImportEstate extends Base {
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
-        ]),
-      number_floors: yup.number().integer().min(1).max(100),
-      prices: yup.number().min(0).max(100000),
-      net_rent: yup.number().min(0).max(100000),
-      cold_rent: yup.number().min(0).max(100000),
-      rent_including_heating: yup.number().min(0).max(100000),
-      additional_costs: yup.number().min(0).max(100000),
-      heating_costs_included: yup.number().min(0).max(100000),
-      heating_costs: yup.number().min(0).max(100000),
-      rent_per_sqm: yup.number().min(0).max(100000),
-      deposit: yup.number().min(0).max(400000),
-      stp_garage: yup.number().min(0),
-      stp_parkhaus: yup.number().min(0),
-      stp_tiefgarage: yup.number().min(0),
-      currency: yup
-        .string()
-        .oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH])
-        .default(CURRENCY_EUR),
-      area: yup.number().min(0),
-      living_space: yup.number().min(0),
-      usable_area: yup.number().min(0),
-      rooms_number: yup.number().max(99).min(0), //decimal with 1 decimal place, will truncate if more decimal places
-      bedrooms_number: yup.number().min(0),
-      bathrooms_number: yup.number().min(0),
+          null,
+        ])
+        .nullable(),
+      number_floors: yup.number().integer().min(1).max(100).nullable(),
+      prices: yup.number().min(0).max(100000).nullable(),
+      net_rent: yup.number().min(0).max(100000).nullable(),
+      cold_rent: yup.number().min(0).max(100000).nullable(),
+      rent_including_heating: yup.number().min(0).max(100000).nullable(),
+      additional_costs: yup.number().min(0).max(100000).nullable(),
+      heating_costs_included: yup.number().min(0).max(100000).nullable(),
+      heating_costs: yup.number().min(0).max(100000).nullable(),
+      rent_per_sqm: yup.number().min(0).max(100000).nullable(),
+      deposit: yup.number().min(0).max(400000).nullable(),
+      stp_garage: yup.number().min(0).nullable(),
+      stp_parkhaus: yup.number().min(0).nullable(),
+      stp_tiefgarage: yup.number().min(0).nullable(),
+      currency: yup.string().oneOf([CURRENCY_EUR, CURRENCY_USD, CURRENCY_UAH, null]).nullable(),
+      area: yup.number().min(0).nullable(),
+      living_space: yup.number().min(0).nullable(),
+      usable_area: yup.number().min(0).nullable(),
+      rooms_number: yup.number().max(99).min(0).nullable(), //decimal with 1 decimal place, will truncate if more decimal places
+      bedrooms_number: yup.number().min(0).nullable(),
+      bathrooms_number: yup.number().min(0).nullable(),
       kitchen_options: yup
         .array()
         .of(yup.number().oneOf([KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN])),
       bath_options: yup
         .array()
-        .of(yup.number().oneOf([BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER])),
-      wc_number: yup.number().min(0),
-      balconies_number: yup.number().min(0),
-      terraces_number: yup.number().min(0),
+        .of(yup.number().oneOf([BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER]))
+        .nullable(),
+      wc_number: yup.number().min(0).nullable(),
+      balconies_number: yup.number().min(0).nullable(),
+      terraces_number: yup.number().min(0).nullable(),
       occupancy: yup
         .number()
-        .positive()
         .oneOf([
           OCCUPATION_TYPE_OCCUPIED_OWN,
           OCCUPATION_TYPE_OCCUPIED_TENANT,
@@ -335,10 +335,11 @@ class ImportEstate extends Base {
           OCCUPATION_TYPE_VACANCY,
           OCCUPATION_TYPE_NOT_RENT,
           OCCUPATION_TYPE_NOT_OCCUPIED,
-        ]),
+          null,
+        ])
+        .nullable(),
       use_type: yup
         .number()
-        .positive()
         .oneOf([
           USE_TYPE_RESIDENTIAL,
           USE_TYPE_COMMERCIAL,
@@ -346,28 +347,31 @@ class ImportEstate extends Base {
           USE_TYPE_WAZ,
           USE_TYPE_PLANT,
           USE_TYPE_OTHER,
-        ]),
+          null,
+        ])
+        .nullable(),
       ownership_type: yup
         .number()
-        .positive()
         .oneOf([
           OWNERSHIP_TYPE_FREEHOLDER,
           OWNERSHIP_TYPE_DIRECT_PROPERTY,
           OWNERSHIP_TYPE_LEASEHOLD,
           OWNERSHIP_TYPE_OTHER,
-        ]),
+          null,
+        ])
+        .nullable(),
       marketing_type: yup
         .number()
-        .positive()
         .oneOf([
           MARKETING_TYPE_PURCHASE,
           MARKETING_TYPE_RENT_LEASE,
           MARKETING_TYPE_LEASEHOLD,
           MARKETING_TYPE_LEASING,
-        ]),
+          null,
+        ])
+        .nullable(),
       energy_type: yup
         .number()
-        .positive()
         .oneOf([
           ENERGY_TYPE_LOW_ENERGY,
           ENERGY_TYPE_PASSIVE_HOUSE,
@@ -378,20 +382,22 @@ class ImportEstate extends Base {
           ENERGY_TYPE_KFW70,
           ENERGY_TYPE_MINERGIE_CONSTRUCTION,
           ENERGY_TYPE_MINERGIE_CERTIFIED,
-        ]),
-      vacant_date: yup.date(),
-      to_date: yup.date(),
-      min_lease_duration: yup.number().integer().min(0),
-      max_lease_duration: yup.number().integer().min(0),
-      non_smoker: yup.boolean(),
-      pets_allowed: yup.number().integer().oneOf([PETS_NO, PETS_SMALL]).nullable(),
+          null,
+        ])
+        .nullable(),
+      vacant_date: yup.date().nullable(),
+      to_date: yup.date().nullable(),
+      min_lease_duration: yup.number().integer().min(0).nullable(),
+      max_lease_duration: yup.number().integer().min(0).nullable(),
+      non_smoker: yup.boolean().nullable(),
+      pets_allowed: yup.number().integer().oneOf([PETS_NO, PETS_SMALL, null]).nullable(),
       gender: yup
         .number()
         .integer()
         .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY, null])
         .nullable(),
-      monumental_protection: yup.boolean(),
-      parking_space: yup.number().min(0).max(10),
+      monumental_protection: yup.boolean().nullable(),
+      parking_space: yup.number().min(0).max(10).nullable(),
       parking_space_type: yup
         .number()
         .oneOf([
@@ -402,12 +408,13 @@ class ImportEstate extends Base {
           PARKING_SPACE_TYPE_CAR_PARK,
           PARKING_SPACE_TYPE_DUPLEX,
           PARKING_SPACE_TYPE_GARAGE,
-        ]),
+          null,
+        ])
+        .nullable(),
       construction_year: yup.date().nullable(),
       last_modernization: yup.date().nullable(),
       building_status: yup
         .number()
-        .positive()
         .oneOf([
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
           BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
@@ -425,11 +432,12 @@ class ImportEstate extends Base {
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
           BUILDING_STATUS_FULLY_REFURBISHED,
-        ]),
-      building_age: yup.number().integer().min(0),
+          null,
+        ])
+        .nullable(),
+      building_age: yup.number().integer().min(0).nullable(),
       firing: yup
         .number()
-        .positive()
         .oneOf([
           FIRING_OEL,
           FIRING_GAS,
@@ -445,10 +453,11 @@ class ImportEstate extends Base {
           FIRING_COAL,
           FIRING_WOOD,
           FIRING_LIQUID_GAS,
-        ]),
+          null,
+        ])
+        .nullable(),
       heating_type: yup
         .number()
-        // .positive()
         .oneOf([
           HEATING_TYPE_NO,
           HEATING_TYPE_OVEN,
@@ -457,7 +466,9 @@ class ImportEstate extends Base {
           HEATING_TYPE_REMOTE,
           HEATING_TYPE_UNDERFLOOR,
           HEATING_TYPE_MISC,
-        ]),
+          null,
+        ])
+        .nullable(),
       equipment: yup
         .array()
         .of(
@@ -474,14 +485,19 @@ class ImportEstate extends Base {
               EQUIPMENT_GUEST_WC,
               EQUIPMENT_WG_SUITABLE,
             ])
-        ),
+        )
+        .nullable(),
       equipment_standard: yup
         .number()
-        .positive()
-        .oneOf([EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED]),
+        .oneOf([
+          EQUIPMENT_STANDARD_SIMPLE,
+          EQUIPMENT_STANDARD_NORMAL,
+          EQUIPMENT_STANDARD_ENHANCED,
+          null,
+        ])
+        .nullable(),
       ground: yup
         .number()
-        .positive()
         .oneOf([
           GROUND_TILES,
           GROUND_STONE,
@@ -512,13 +528,13 @@ class ImportEstate extends Base {
           }),
         ])
         .nullable(),
-      city: yup.string().max(40).required(getExceptionMessage('City', REQUIRED)),
-      zip: yup.string().max(8).required(getExceptionMessage('Post Code', REQUIRED)),
-      budget: yup.string(),
-      credit_score: yup.string(),
-      rent_arrears: yup.boolean(),
-      full_address: yup.boolean(),
-      photo_require: yup.boolean(),
+      city: yup.string().max(40).nullable(),
+      zip: yup.string().max(8).nullable(),
+      budget: yup.string().nullable(),
+      credit_score: yup.string().nullable(),
+      rent_arrears: yup.boolean().nullable(),
+      full_address: yup.boolean().nullable(),
+      photo_require: yup.boolean().nullable(),
       furnished: yup
         .number()
         .integer()
@@ -526,23 +542,24 @@ class ImportEstate extends Base {
           FURNISHING_NOT_FURNISHED,
           FURNISHING_PARTIALLY_FURNISHED,
           FURNISHING_FULLY_FURNISHED,
+          null,
         ])
         .nullable(),
       kids_type: yup.number().integer().min(0).max(MAX_MINOR_COUNT).nullable(),
       source_person: yup
         .number()
         .integer()
-        .oneOf([SOURCE_TYPE_BUDDY, SOURCE_TYPE_MATCHED])
+        .oneOf([SOURCE_TYPE_BUDDY, SOURCE_TYPE_MATCHED, null])
         .nullable(),
       family_status: yup
         .number()
         .integer()
         .oneOf([FAMILY_STATUS_WITH_CHILD, FAMILY_STATUS_SINGLE, FAMILY_STATUS_NO_CHILD, null])
         .nullable(),
-      options: yup.array().of(yup.number().integer().positive().max(999)),
-      min_age: yup.number().integer().min(0).max(120),
-      max_age: yup.number().integer().min(0).max(120),
-      minors: yup.boolean(),
+      options: yup.array().of(yup.number().integer().positive().max(999)).nullable(),
+      min_age: yup.number().integer().min(0).max(120).nullable(),
+      max_age: yup.number().integer().min(0).max(120).nullable(),
+      minors: yup.boolean().nullable(),
       letting_status: yup
         .number()
         .oneOf([
@@ -550,10 +567,15 @@ class ImportEstate extends Base {
           LETTING_STATUS_TERMINATED,
           LETTING_STATUS_NEW_RENOVATED,
           LETTING_STATUS_VACANCY,
-        ]),
-      letting_type: yup.number().oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]),
+          null,
+        ])
+        .nullable(),
+      letting_type: yup
+        .number()
+        .oneOf([LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA, null])
+        .nullable(),
       family_size_max: yup.number().integer().min(1).max(100).nullable(),
-      family_size_min: yup.number().integer(),
+      family_size_min: yup.number().integer().nullable(),
       apartment_status: yup
         .number()
         .integer()
@@ -574,7 +596,9 @@ class ImportEstate extends Base {
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
           BUILDING_STATUS_FULLY_REFURBISHED,
-        ]),
+          null,
+        ])
+        .nullable(),
       extra_address: yup.string().min(0).max(255).nullable(),
       extra_costs: yup
         .number()

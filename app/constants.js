@@ -110,6 +110,7 @@ const constants = {
 
   GLOBAL_CACHE_KEY: 'GLOBAL_OPTIONS',
   GLOBAL_CACHE_OPTION: 'apt_options',
+  GLOBAL_CACHE_CITY: 'apt_cities',
 
   OWNERSHIP_TYPE_FREEHOLDER: 1,
   OWNERSHIP_TYPE_DIRECT_PROPERTY: 2,
@@ -353,6 +354,8 @@ const constants = {
   INCOME_TYPE_PENSIONER: 'pensioner',
   INCOME_TYPE_SELF_EMPLOYED: 'self',
   INCOME_TYPE_TRAINEE: 'trainee',
+  INCOME_TYPE_OTHER_BENEFIT: 'other_benefit',
+  INCOME_TYPE_CHILD_BENEFIT: 'child_benefit',
 
   FAMILY_STATUS_SINGLE: 1,
   FAMILY_STATUS_WITH_CHILD: 3,
@@ -1037,6 +1040,8 @@ const constants = {
   INCOME_TYPE_PENSIONER_LABEL: 'Pensioner',
   INCOME_TYPE_SELF_EMPLOYED_LABEL: 'Self-Employeed',
   INCOME_TYPE_TRAINEE_LABEL: 'Trainee',
+  INCOME_TYPE_OTHER_BENEFIT_LABEL: 'Other benefit',
+  INCOME_TYPE_CHILD_BENEFIT_LABEL: 'Child benefit',
 
   DOC_INCOME_PROOF_LABEL: 'Income proof',
   DOC_RENT_ARREARS_LABEL: 'Rent arrears',
@@ -1352,7 +1357,7 @@ Estates: [ESTATES]
     'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
   },
 
-  SHORTENURL_LENGTH: 9,
+  SHORTENURL_LENGTH: 10,
   EXPIRED_FINAL_CONFIRM_PERIOD: 2, // hourly based
 
   ROOM_INTERVAL_COUNT: 1,
@@ -1361,6 +1366,37 @@ Estates: [ESTATES]
   MAX_SPACE_COUNT: 500,
   RENT_INTERVAL_COUNT: 100,
   MAX_RENT_COUNT: 5000,
+
+  FURNISHED_GERMAN_NAME: 'Möbliert',
+
+  CERT_CATEGORY_A: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryA',
+  CERT_CATEGORY_B: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryB',
+  CERT_CATEGORY_C: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryC',
+  CERT_CATEGORY_I: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryI',
+  CERT_CATEGORY_II: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryII',
+  CERT_CATEGORY_III: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryIII',
+  CERT_CATEGORY_IV: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryIV',
+  CERT_CATEGORY_100: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory100',
+  CERT_CATEGORY_140: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory140',
+  CERT_CATEGORY_160: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory160',
+  CERT_CATEGORY_180: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory180',
+  CERT_CATEGORY_220: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory220',
+  CERT_CATEGORY_NOT: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryBWB',
+
+  INCOME_CONTRACT_DURATION_UNLIMITED: 1,
+  INCOME_CONTRACT_DURATION_LIMITED: 2,
+
+  MARITAL_SINGLE: 1,
+  MARITAL_MARRIED: 2,
+  MARITAL_PERMANENT_SEPRATED: 3,
+  MARITAL_DIVORCED: 4,
+  MARITAL_WIDOWED: 5,
+  MARITAL_COHABITATION: 6,
+  MARITAL_REGISTERED_COHABITATION: 7,
+
+  UNIT_SHEET: 1,
+  BUILDING_SHEET: 2,
+  CATEGORY_SHEET: 3,
 }
 
 module.exports = constants

@@ -94,10 +94,10 @@ class QueueService {
     Queue.addJob(CONTACT_GEWOBAG, { third_party_offer_id, userId }, { delay: 1 })
   }
 
-  static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id }) {
+  static importEstate({ s3_bucket_file_name, fileName, user_id, template, import_id, lang }) {
     Queue.addJob(
       IMPORT_ESTATES_VIA_EXCEL,
-      { s3_bucket_file_name, fileName, user_id, template, import_id },
+      { s3_bucket_file_name, fileName, user_id, template, import_id, lang },
       { delay: 1 }
     )
   }
@@ -218,7 +218,10 @@ class QueueService {
   static async performEvery1HourJob() {
     const MatchService = require('./MatchService')
 
-    return Promise.all([wrapException(MatchService.moveExpiredFinalConfirmToTop)])
+    return Promise.all([
+      wrapException(MatchService.moveExpiredFinalConfirmToTop),
+      wrapException(require('./EstateService').updateVacantDate),
+    ])
   }
 
   static async pullGewobag() {
@@ -328,6 +331,7 @@ class QueueService {
             user_id: job.data.user_id,
             type: job.data.template,
             import_id: job.data.import_id,
+            lang: job.data.lang,
           })
         case SCHEDULED_EVERY_15MINUTE_NIGHT_JOB:
           return QueueService.doEvery15MinsJob()

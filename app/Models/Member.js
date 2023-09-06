@@ -45,6 +45,12 @@ class Member extends Model {
       'owner_id',
       'owner_user_id',
       'phone_verified',
+      'birth_place',
+      'rent_arrears_doc_submit_later',
+      'rent_proof_not_applicable',
+      'credit_score_not_applicable',
+      'marital_status',
+      'citizen',
     ]
   }
 
@@ -70,7 +76,7 @@ class Member extends Model {
   }
 
   final_incomes() {
-    return this.hasMany('App/Models/Income').where('is_final', true)    
+    return this.hasMany('App/Models/Income').where('is_final', true)
   }
 
   passports() {
@@ -114,6 +120,12 @@ class Member extends Model {
       'owner_id',
       'owner_user_id',
       'phone_verified',
+      'birth_place',
+      'rent_arrears_doc_submit_later',
+      'rent_proof_not_applicable',
+      'credit_score_not_applicable',
+      'marital_status',
+      'citizen',
     ]
   }
 }

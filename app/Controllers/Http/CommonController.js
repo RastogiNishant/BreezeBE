@@ -1,4 +1,5 @@
 'use strict'
+const CityService = require('../../Services/CityService')
 const constants = require('../../constants')
 const { get, map } = require('lodash')
 const File = use('App/Classes/File')
@@ -37,6 +38,7 @@ class CommonController {
       constants,
       options: await OptionService.getOptions(),
       ROOM_TYPE: OptionService.getRoomTypes(),
+      cities: await CityService.getAll(),
     }
     response.res(result)
   }
@@ -147,7 +149,7 @@ class CommonController {
   async getOriginalUrl({ request, response }) {
     const { key } = request.all()
 
-    if (key?.length !== constants.SHORTENURL_LENGTH) {
+    if (key?.length !== parseInt(process.env.SHORTENURL_LENGTH ?? constants.SHORTENURL_LENGTH)) {
       return response.redirect(`https://www.breeze4me.de/404`)
     }
 
@@ -157,6 +159,11 @@ class CommonController {
     }
 
     response.redirect(shortenLinkData.link)
+  }
+
+  async getProtectedUrl({ request, auth, response }) {
+    const { uri } = request.all()
+    response.res(await File.getProtectedUrl(uri))
   }
 }
 

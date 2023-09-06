@@ -38,7 +38,7 @@ const {
 class EstateFilter extends Base {
   static schema = () =>
     yup.object().shape({
-      query: yup.string().min(2).nullable(),
+      query: yup.string().nullable(),
       filter: yup
         .array()
         .of(
@@ -140,6 +140,18 @@ class EstateFilter extends Base {
           ),
         })
         .nullable(),
+      completeness: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
       customLettingStatus: yup
         .object()
         .shape({
@@ -172,6 +184,15 @@ class EstateFilter extends Base {
         })
         .nullable(),
       customUpdatedAt: yup.object().shape({
+        operator: yup.string().oneOf(['and', 'or']),
+        constraints: yup.array().of(
+          yup.object().shape({
+            matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_DATE_MATCH_MODES).required(),
+            value: yup.date().typeError('please enter a valid date').nullable(),
+          })
+        ),
+      }),
+      customVacantDate: yup.object().shape({
         operator: yup.string().oneOf(['and', 'or']),
         constraints: yup.array().of(
           yup.object().shape({
@@ -234,6 +255,18 @@ class EstateFilter extends Base {
         })
         .nullable(),
       is_expired_no_match_exclude: yup.boolean(),
+      building_id: yup
+        .object()
+        .shape({
+          operator: yup.string().oneOf(['and', 'or']),
+          constraints: yup.array().of(
+            yup.object().shape({
+              matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
+              value: yup.string().nullable(),
+            })
+          ),
+        })
+        .nullable(),
     })
 }
 

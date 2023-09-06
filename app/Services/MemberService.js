@@ -51,6 +51,8 @@ const {
   DEFAULT_LANG,
   WEBSOCKET_EVENT_MEMBER_INVITATION,
   VALID_INCOME_PROOFS_PERIOD,
+  INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT,
 } = require('../constants')
 
 const {
@@ -128,6 +130,7 @@ class MemberService {
   static async getMembers(householdId, includes_absolute_url = false) {
     const query = Member.query()
       .select('members.*')
+      .select(Database.raw(`date_part('year', age(birthday)) as age`))
       .where('members.user_id', householdId)
       .with('incomes', function (b) {
         b.with('proofs')
@@ -346,7 +349,7 @@ class MemberService {
         member.owner_user_id || member.user_id,
       ])
       const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
-      const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
+      const txt = l.get('sms.tenant.phone_verification', lang).replace('{code}', code)
 
       await SMSService.send({ to: phone, txt })
     } catch (e) {
@@ -505,6 +508,17 @@ class MemberService {
    *
    */
   static async addMemberIncomeProof(data, income) {
+    if (
+      income.income_type === INCOME_TYPE_UNEMPLOYED ||
+      income.income_type === INCOME_TYPE_HOUSE_WORK ||
+      income.income_type === INCOME_TYPE_PENSIONER ||
+      income.income_type === INCOME_TYPE_TRAINEE ||
+      income.income_type === INCOME_TYPE_OTHER_BENEFIT ||
+      income.income_type === INCOME_TYPE_CHILD_BENEFIT
+    ) {
+      data.expire_date = null
+    }
+
     return IncomeProof.createItem({
       ...data,
       income_id: income.id,
@@ -777,7 +791,10 @@ class MemberService {
       .format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
-      .where('income_proofs.expire_date', '<=', startOf)
+      .where(function () {
+        this.orWhere('income_proofs.expire_date', '>=', startOf)
+        this.orWhereNull('income_proofs.expire_date')
+      })
       .where('income_proofs.status', STATUS_ACTIVE)
       .innerJoin({ _i: 'incomes' }, function () {
         this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
@@ -911,6 +928,8 @@ class MemberService {
         INCOME_TYPE_PENSIONER,
         INCOME_TYPE_SELF_EMPLOYED,
         INCOME_TYPE_TRAINEE,
+        INCOME_TYPE_OTHER_BENEFIT,
+        INCOME_TYPE_CHILD_BENEFIT,
       ].map(async (income_source) => {
         const count = (
           await Income.query()
@@ -933,7 +952,10 @@ class MemberService {
       (
         await IncomeProof.query()
           .select('_i.id', '_i.income_type')
-          .where('income_proofs.expire_date', '>=', startOf)
+          .where(function () {
+            this.orWhere('income_proofs.expire_date', '>=', startOf)
+            this.orWhereNull('income_proofs.expire_date')
+          })
           .innerJoin({ _i: 'incomes' }, function () {
             this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
           })

@@ -202,6 +202,7 @@ class MarketPlaceService {
       Logger.error(`createContact error ${e.message || e}`)
 
       await trx.rollback()
+      throw new HttpException(e?.message, 400)
     }
   }
 
@@ -240,10 +241,6 @@ class MarketPlaceService {
 
       const shortLink = `${DOMAIN}/${contact.hash}`
 
-      const from =
-        process.env.NODE_ENV === 'production'
-          ? l.get('sms.prospect.marketplace_title', lang).replace('{{partner_name}}', publisher)
-          : ''
       const txt = l
         .get('sms.prospect.marketplace_request', lang)
         .replace('{{url}}', shortLink)
@@ -252,7 +249,7 @@ class MarketPlaceService {
         .replace('{{partner_name}}', `${publisher ?? ''}`)
         .replace('{{site_url}}', DOMAIN)
 
-      await SMSService.send({ to: phone_number, txt, from })
+      await SMSService.send({ to: phone_number, txt })
     } catch (e) {
       console.log('sending sms error', e.message)
     }
@@ -506,6 +503,7 @@ class MarketPlaceService {
     uri += `&rooms_number=${rooms_number}`
     uri += `&number_floors=${number_floors}`
     uri += `&cover=${cover}`
+    uri += `&is_not_show=${estate.is_not_show || false}`
 
     const prospects = (await UserService.getByEmailWithRole([email], ROLE_USER)).toJSON()
 
@@ -625,12 +623,7 @@ class MarketPlaceService {
           })
 
           if (!hasMatch) {
-            const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(
-              knock.estate_id
-            )
-            const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
-
-            if (!knock.is_invited_by_landlord || knock.estate?.is_not_show || !timeSlotCount) {
+            if (!knock.is_invited_by_landlord) {
               await MatchService.knockEstate(
                 {
                   estate_id: knock.estate_id,

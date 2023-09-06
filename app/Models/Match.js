@@ -12,6 +12,8 @@ class Match extends Model {
       'knocked_at',
       'status_at',
       'final_match_date',
+      'prospect_score',
+      'landlord_score',
     ]
   }
 

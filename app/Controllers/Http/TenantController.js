@@ -6,11 +6,13 @@ const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
+const TenantCertificateService = use('App/Services/TenantCertificateService')
+const CityService = use('App/Services/CityService')
 const Tenant = use('App/Models/Tenant')
 const Database = use('Database')
 const { without, omit } = require('lodash')
 const Logger = use('Logger')
-
+const moment = require('moment')
 const {
   ROLE_USER,
   ROLE_LANDLORD,
@@ -24,7 +26,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
 } = require('../../constants')
-const QueueService = require('../../Services/QueueService')
+
 const { logEvent } = require('../../Services/TrackingService')
 
 class TenantController {
@@ -121,7 +123,6 @@ class TenantController {
         tenant.status = STATUS_DRAFT
       } else {
       }
-
       await tenant.updateItemWithTrx(omit(data, ['only_count']), trx)
 
       await trx.commit()
@@ -135,14 +136,24 @@ class TenantController {
       if (shouldDeactivateTenant) {
         Event.fire('tenant::update', auth.user.id)
       }
-      Logger.info(`Before QueueService ${auth.user.id} ${new Date().toISOString()}`)
-      QueueService.getTenantMatchProperties({
-        userId: auth.user.id,
-        has_notification_sent: false,
-        only_count: data.only_count,
-      })
+      Logger.info(`Before QueueService ${auth.user.id} ${moment.utc(new Date()).toISOString()}`)
 
-      response.res(await Tenant.find(tenant.id))
+      let filterResult = {}
+
+      if (data.only_count) {
+        filterResult = await MatchService.matchByUser({
+          userId: auth.user.id,
+          has_notification_sent: false,
+          only_count: true,
+        })
+      } else {
+        filterResult = await MatchService.matchByUser({
+          userId: auth.user.id,
+          has_notification_sent: false,
+        })
+      }
+
+      response.res({ tenant: await Tenant.find(tenant.id), filter: filterResult })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400, e.code)
@@ -159,11 +170,22 @@ class TenantController {
       logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
       Event.fire('mautic:syncContact', auth.user.id, { activated_profile_date: new Date() })
     } catch (e) {
+      console.log(`activateTenant controller error ${auth.user.id} ${e.message}`)
       throw new HttpException(e.message, 400, e.code)
+    } finally {
+      await MatchService.matchByUser({ userId: auth.user.id, ignoreNullFields: true })
     }
-    await MatchService.matchByUser({ userId: auth.user.id, ignoreNullFields: true })
 
     response.res(true)
+  }
+
+  async detail({ request, auth, response }) {
+    let tenant = await TenantService.getTenantWithCertificates(auth.user.id)
+    let members = await MemberService.getMembers(auth.user.id, true)
+    response.res({
+      tenant,
+      members,
+    })
   }
 
   /**
@@ -210,6 +232,46 @@ class TenantController {
       id: idVerifiedCount,
       income: incomeCounts,
     })
+  }
+
+  async requestCertificate({ request, auth, response }) {
+    const { request_certificate_at, request_certificate_city_id } = request.all()
+    await TenantService.requestCertificate({
+      user_id: auth.user.id,
+      request_certificate_at,
+      request_certificate_city_id,
+    })
+
+    let city = null
+    if (request_certificate_city_id) {
+      city = await CityService.get(request_certificate_city_id)
+    }
+
+    //TODO: need to send wbs link from city table. coming soon
+    response.res({
+      request_certificate_at,
+      city,
+    })
+  }
+
+  async removeRequestCertificate({ request, auth, response }) {
+    const trx = await Database.beginTransaction()
+    try {
+      await TenantCertificateService.deleteCertificate({ user_id: auth.user.id }, trx)
+      const deleteCertificateResult = await TenantService.requestCertificate(
+        {
+          user_id: auth.user.id,
+          request_certificate_at: null,
+          request_certificate_city_id: null,
+        },
+        trx
+      )
+      await trx.commit()
+      response.res(deleteCertificateResult)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 }
 

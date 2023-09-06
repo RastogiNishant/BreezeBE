@@ -192,10 +192,11 @@ class QueueJobService {
 
       let i = 0
       while (i < estates.length) {
-        await require('./EstateService').publishEstate(
-          { estate: estates[i], performed_by: estates[i].user_id },
-          true
-        )
+        await require('./EstateService').publishEstate({
+          estate: estates[i],
+          performed_by: estates[i].user_id,
+          is_queue: true,
+        })
         i++
       }
     } catch (e) {

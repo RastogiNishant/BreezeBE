@@ -72,7 +72,10 @@ class EstateFilters extends Filter {
     'customRent',
     'customNumFloor',
     'rooms_number',
+    'completeness',
     'customUpdatedAt',
+    'customVacantDate',
+    'unitCategory',
   ]
   globalSearchFields = ['property_id', 'address', 'six_char_code']
 
@@ -82,12 +85,16 @@ class EstateFilters extends Filter {
       return
     }
     this.processGlobals()
+
     Filter.paramToField = {
       customArea: 'area',
       customFloor: 'floor',
       customNumFloor: 'number_floors',
       customRent: 'net_rent',
       customUpdatedAt: 'updated_at',
+      customVacantDate: 'vacant_date',
+      completeness: 'percent',
+      unitCategory: 'name',
     }
 
     this.matchFilter(EstateFilters.possibleStringParams, params)
@@ -197,6 +204,48 @@ class EstateFilters extends Filter {
         )
       }
     }
+
+    if (params?.is_no_build) {
+      query.whereNull('estates.build_id')
+    } else if (params?.is_no_build === false) {
+      query.whereNotNull('estates.build_id')
+    }
+
+    if (params?.build_id) {
+      params.build_id = Array.isArray(params.build_id) ? params.build_id : [params.build_id]
+    }
+
+    EstateFilters.filterWithBuildingId(query, params)
+  }
+
+  processGlobals() {
+    if (this.params.global && this.params.global.value) {
+      const globalSearchFields = this.globalSearchFields
+      const value = this.params.global.value
+      this.query.where(function () {
+        globalSearchFields.map((field) => {
+          this.orWhere(Database.raw(`${field} ilike '%${value}%'`))
+        })
+        this.orWhere(
+          Database.raw(` unit_category_id in ( ${EstateFilters.filterWithUnitCategory(value)} )`)
+        )
+      })
+    }
+  }
+
+  static filterWithBuildingId(query, params) {
+    const param = 'building_id'
+    if (params[param]) {
+      const buildingQuery = require('../Services/BuildingService').buildingIdQuery(params)
+      if (buildingQuery) {
+        query.where(Database.raw(` build_id in ( ${buildingQuery} )`))
+      }
+    }
+  }
+
+  static filterWithUnitCategory(value) {
+    const unitCategoryIds = require('../Services/UnitCategoryService').categoryNameQuery(value)
+    return unitCategoryIds
   }
 
   static parseLetting(letting) {
