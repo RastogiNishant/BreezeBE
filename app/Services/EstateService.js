@@ -3329,7 +3329,7 @@ class EstateService {
 
     return {
       categories: Object.keys(yAxisEstates).sort((a, b) =>
-        is_social ? b.localeCompare(a) : b - a
+        is_social ? a.localeCompare(b) : b - a
       ),
       xAxisCategories: category_ids,
       estates: buildingEstates,

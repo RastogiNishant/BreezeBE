@@ -1634,7 +1634,6 @@ class MatchService {
       status: [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT],
     })
     const estate_ids = estates.map((e) => e.id).filter((eid) => eid !== id)
-    console.log('estate_ids=', estate_ids)
     if (estate_ids?.length) {
       const query = Match.query()
         .where('user_id', user_id)
