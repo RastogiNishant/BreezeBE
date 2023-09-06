@@ -98,6 +98,9 @@ class MemberController {
         { field: 'passport', mime: docMimes, isPublic: false },
       ])
 
+      if (files.debt_proof) {
+        files.debt_proof = [files.debt_proof]
+      }
       const user_id = auth.user.id
 
       if (!data.email) {
@@ -123,7 +126,6 @@ class MemberController {
 
         data.owner_user_id = existingUser.id
       }
-
       const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
 
       if (files.passport) {
