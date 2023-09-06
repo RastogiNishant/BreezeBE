@@ -1559,9 +1559,7 @@ class MatchService {
         throw new AppException('Invalid match stage')
       }
     }
-
     await this.matchInviteAfter({ userId, estate }, trx)
-
     this.emitMatch({
       data: {
         estate_id: estateId,
@@ -1571,13 +1569,12 @@ class MatchService {
       },
       role: ROLE_USER,
     })
-
     await this.removeAutoKnockedMatch({ id: estateId, user_id: userId }, trx)
   }
 
   static async matchInviteAfter({ userId, estate }, trx) {
     if (!estate.is_not_show) {
-      const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estateId)
+      const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate.id)
       const timeSlotCount = Object.keys(freeTimeSlots || {}).length || 0
       if (!timeSlotCount) {
         throw new HttpException(TIME_SLOT_NOT_FOUND, 400, NO_TIME_SLOT_ERROR_CODE)

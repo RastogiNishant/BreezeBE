@@ -145,13 +145,7 @@ class MatchController {
         { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
         false
       )
-      logEvent(
-        request,
-        LOG_TYPE_GOT_INVITE,
-        user_id,
-        { estate_id, estate_id, role: ROLE_USER },
-        false
-      )
+      logEvent(request, LOG_TYPE_GOT_INVITE, user_id, { estate_id, role: ROLE_USER }, false)
       Event.fire('mautic:syncContact', auth.user.id, { invited_count: 1 })
       return response.res(true)
     } catch (e) {
