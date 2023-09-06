@@ -4206,7 +4206,7 @@ class MatchService {
         user_id, owner_user_id,
         avg(credit_score) as credit_score,
         count(id) as members_count,
-        bool_and(coalesce(debt_proof, '') <> '') as credit_score_proofs,
+        bool_and(coalesce(debt_proof, null) is not null) as credit_score_proofs,
         bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
         bool_or(unpaid_rental='${YES_UNPAID_RENTAL}' is true) as rent_arrears,
         -- sum(income) as income,
