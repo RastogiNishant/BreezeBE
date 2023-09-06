@@ -192,7 +192,6 @@ class MemberController {
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
-
     const trx = await Database.beginTransaction()
     try {
       if (files.passport) {
@@ -207,6 +206,9 @@ class MemberController {
       }
 
       let member = await MemberService.allowEditMemberByPermission(auth.user, id)
+      if (files.debt_proof) {
+        member.credit_score_proofs = [...(member.credit_score_proofs || []), files.debt_proof]
+      }
       const newData = member.owner_user_id ? omit(data, ['email']) : data
 
       if (data?.phone && data?.phone !== member.phone) {
