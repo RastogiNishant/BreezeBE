@@ -136,8 +136,10 @@ class MatchController {
     const { estate_id, user_id } = request.all()
     // Check is estate owner
     const estate = await EstateService.getMatchEstate(estate_id, landlordId)
+    const trx = await Database.beginTransaction()
     try {
-      await MatchService.inviteKnockedUser({ estate, userId: user_id })
+      await MatchService.inviteKnockedUser({ estate, userId: user_id }, trx)
+      await trx.commit()
       logEvent(
         request,
         LOG_TYPE_INVITED,
@@ -149,6 +151,7 @@ class MatchController {
       Event.fire('mautic:syncContact', auth.user.id, { invited_count: 1 })
       return response.res(true)
     } catch (e) {
+      await trx.rollback()
       Logger.error(e)
       throw new HttpException(e.message, e?.status || 400, e?.code || 0)
     }
