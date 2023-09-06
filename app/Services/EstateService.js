@@ -3336,14 +3336,6 @@ class EstateService {
       buildingEstates[axis] = categoryEstates
     })
 
-    categories.forEach((category) => {
-      if (
-        Object.keys(buildingEstates).every((key) => !buildingEstates[key]?.[category.name]?.length)
-      ) {
-        Object.keys(buildingEstates).forEach((key) => delete buildingEstates[key][category.name])
-      }
-    })
-
     return {
       categories: Object.keys(yAxisEstates).sort((a, b) =>
         is_social ? b.localeCompare(a) : b - a
