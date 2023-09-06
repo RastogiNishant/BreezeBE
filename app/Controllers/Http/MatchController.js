@@ -80,6 +80,7 @@ class MatchController {
    */
   async knockEstate({ request, auth, response }) {
     const { estate_id, knock_anyway, share_profile, buddy } = request.all()
+    console.log('knockEstate=', auth.user.id)
     try {
       const result = await MatchService.knockEstate({
         estate_id: estate_id,
