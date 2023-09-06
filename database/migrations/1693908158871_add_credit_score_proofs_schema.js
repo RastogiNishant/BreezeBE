@@ -3,9 +3,9 @@
 /** @type {import('@adonisjs/lucid/src/Schema')} */
 const Schema = use('Schema')
 
-class AddCreditCardProofsSchema extends Schema {
+class AddCreditScoreProofsSchema extends Schema {
   up() {
-    this.create('add_credit_card_proofs', (table) => {
+    this.create('credit_score_proofs', (table) => {
       table.increments()
       table
         .integer('prospect_credit_score_id')
@@ -21,8 +21,8 @@ class AddCreditCardProofsSchema extends Schema {
   }
 
   down() {
-    this.drop('add_credit_card_proofs')
+    this.drop('credit_score_proofs')
   }
 }
 
-module.exports = AddCreditCardProofsSchema
+module.exports = AddCreditScoreProofsSchema
