@@ -31,6 +31,8 @@ class Member extends Model {
       'rent_arrears_doc',
       'credit_score',
       'credit_score_submit_later',
+      'credit_history_status',
+      'credit_score_issued_at',
       'debt_proof',
       'unpaid_rental',
       'insolvency_proceed',

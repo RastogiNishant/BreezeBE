@@ -32,6 +32,9 @@ const {
   MARITAL_WIDOWED,
   MARITAL_COHABITATION,
   MARITAL_REGISTERED_COHABITATION,
+  CREDIT_HISTORY_STATUS_ENFORCEABLE_CLAIMS,
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
+  CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA,
 } = require('../constants')
 
 class CreateMember extends Base {
@@ -51,6 +54,14 @@ class CreateMember extends Base {
       last_address: yup.string().max('255'),
       credit_score: yup.number().min(0).max(100),
       credit_score_submit_later: yup.boolean(),
+      credit_history_status: yup
+        .number()
+        .oneOf([
+          CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
+          CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA,
+          CREDIT_HISTORY_STATUS_ENFORCEABLE_CLAIMS,
+        ]),
+      credit_score_issued_at: yup.date(),
       unpaid_rental: yup
         .number()
         .oneOf([NO_UNPAID_RENTAL, YES_UNPAID_RENTAL, NO_ANSWER_UNPAID_RENTAL]),
