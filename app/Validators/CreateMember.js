@@ -63,7 +63,7 @@ class CreateMember extends Base {
           null,
         ])
         .nullable(),
-      credit_score_issued_at: yup.date(),
+      credit_score_issued_at: yup.date().nullable(),
       unpaid_rental: yup
         .number()
         .oneOf([NO_UNPAID_RENTAL, YES_UNPAID_RENTAL, NO_ANSWER_UNPAID_RENTAL]),
