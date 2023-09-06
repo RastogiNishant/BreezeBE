@@ -3293,12 +3293,16 @@ class EstateService {
   }
 
   static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
-    const estates = await EstateService.getTenantAllEstates({
-      userId: user_id,
-      build_id,
-      page: -1,
-      limit: -1,
-    })
+    let estates =
+      (
+        await EstateService.getTenantAllEstates({
+          userId: user_id,
+          build_id,
+          page: -1,
+          limit: -1,
+        })
+      )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
+    estates = orderBy(estates, 'floor', 'asc')
 
     let categories = await UnitCategoryService.getAll(build_id)
     // const regex = /-\d+/
@@ -3332,6 +3336,14 @@ class EstateService {
       })
 
       buildingEstates[axis] = categoryEstates
+    })
+
+    categories.forEach((category) => {
+      if (
+        Object.keys(buildingEstates).every((key) => !buildingEstates[key]?.[category.name]?.length)
+      ) {
+        Object.keys(buildingEstates).forEach((key) => delete buildingEstates[key][category.name])
+      }
     })
 
     return {
