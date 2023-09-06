@@ -3684,7 +3684,7 @@ class MatchService {
       '_mb.credit_score',
       '_mb.credit_history_status',
       '_mb.credit_score_issued_at',
-      '_mb.credit_score_proofs',
+      '_mb.debt_proof',
       '_v.date',
       '_v.start_date AS visit_start_date',
       '_v.end_date AS visit_end_date',

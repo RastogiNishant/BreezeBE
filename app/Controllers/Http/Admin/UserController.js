@@ -492,8 +492,7 @@ class UserController {
                 'clean_procedure', members.clean_procedure,
                 'income_seizure', members.income_seizure,
                 'credit_history_status', members.credit_history_status,
-                'credit_score_issued_at', members.credit_score_issued_at,
-                'credit_score_proofs', members.credit_score_proofs
+                'credit_score_issued_at', members.credit_score_issued_at
               )
             ) as member_info
           from
