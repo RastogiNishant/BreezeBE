@@ -209,7 +209,7 @@ class MemberController {
 
       let member = await MemberService.allowEditMemberByPermission(auth.user, id)
       if (files.debt_proof) {
-        member.debt_proof = [...(member.debt_proof || []), files.debt_proof]
+        files.debt_proof = [...(member.debt_proof || []), files.debt_proof]
       }
       const newData = member.owner_user_id ? omit(data, ['email']) : data
 
