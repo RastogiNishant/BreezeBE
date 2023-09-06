@@ -1172,7 +1172,7 @@ class MatchService {
     try {
       const sameCategoryEstates = await EstateService.getEstatesInSameCategory({
         estate,
-        status: STATUS_ACTIVE,
+        status: [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT],
       })
 
       estate_ids = sameCategoryEstates.map((e) => e.id)
@@ -1541,7 +1541,7 @@ class MatchService {
    */
   static async inviteKnockedUser({ estate, userId, is_from_market_place = false }, trx = null) {
     const estateId = estate.id
-
+    console.log(`inviteKnockedUser ${estateId} ${userId}`)
     //invited from knock
     if (!is_from_market_place) {
       const match = await Database.query()
@@ -1629,16 +1629,21 @@ class MatchService {
   }
 
   static async removeAutoKnockedMatch({ id, user_id }, trx) {
-    const estates = await EstateService.getEstatesInSameCategory({ id, status: STATUS_ACTIVE })
+    const estates = await EstateService.getEstatesInSameCategory({
+      id,
+      status: [STATUS_ACTIVE, STATUS_EXPIRE, STATUS_DRAFT],
+    })
     const estate_ids = estates.map((e) => e.id).filter((eid) => eid !== id)
+    console.log('estate_ids=', estate_ids)
     if (estate_ids?.length) {
       const query = Match.query()
         .where('user_id', user_id)
         .whereIn('estate_id', estate_ids)
-        .where('status', MATCH_STATUS_KNOCK)
+        .whereIn('status', [MATCH_STATUS_KNOCK, MATCH_STATUS_KNOCK])
         .delete()
+
       if (trx) {
-        query.transacting(trx)
+        await query.transacting(trx)
       }
 
       await query
