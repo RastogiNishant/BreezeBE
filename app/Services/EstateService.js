@@ -3305,6 +3305,7 @@ class EstateService {
     estates = orderBy(estates, 'rooms_number', 'asc')
 
     let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
+    category_ids = category_ids.map((cat_id) => cat_id || -1)
 
     const yAxisKey = is_social ? `cert_category` : `floor`
     const yAxisEstates = is_social
@@ -3320,7 +3321,8 @@ class EstateService {
       category_ids.forEach((cat_id) => {
         categoryEstates[cat_id] = estates.filter(
           (estate) =>
-            estate[yAxisKey].toString() === axis.toString() && estate.unit_category_id === cat_id
+            estate[yAxisKey].toString() === axis.toString() &&
+            (cat_id != -1 ? estate.unit_category_id === cat_id : !estate.unit_category_id)
         )
       })
 
