@@ -1336,7 +1336,6 @@ class MatchService {
         .where('estates.id', data.estate_id)
         .first()
       landlordSenderId = estateInfo?.user_id
-
       if (!data?.from_market_place && data.user_id) {
         const estates = await this.getLandlordMatchesWithFilterQuery(
           estateInfo,
@@ -1346,6 +1345,13 @@ class MatchService {
 
         estate = estates.rows?.[0]
       }
+    }
+
+    if (estate?.build_id) {
+      estate.building = await require('./BuildingService').get({
+        id: estate.build_id,
+        user_id: estate.user_id,
+      })
     }
 
     if (role === ROLE_LANDLORD) {
