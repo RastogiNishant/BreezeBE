@@ -233,6 +233,7 @@ class TenantService extends BaseService {
 
     return Database.table({ _m: 'members' })
       .select(Database.raw(`COUNT(_ip.id) as income_proofs_count`))
+      .select('_m.credit_score_not_applicable')
       .select('_i.income_type')
       .leftJoin({ _i: 'incomes' }, function () {
         this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
@@ -272,34 +273,41 @@ class TenantService extends BaseService {
           '_i.probation_period'
         )
         .leftJoin({ _m: 'members' }, function () {
-          this.on('_m.user_id', '_t.user_id').on(
-            Database.raw(`"_m"."child" not in ( true ) or "_m"."child" is null`)
-          )
+          this.on('_m.user_id', '_t.user_id').on(Database.raw(`"_m"."child" not in ( true )`))
         })
         .leftJoin({ _i: 'incomes' }, function () {
           this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
         })
         .where('_t.id', tenantId)
     }
-
+    console.log('getRequiredTenantData=')
     const data = await getRequiredTenantData(tenant.id)
-
     const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
 
-    if (!data.find((m) => !m.rent_proof_not_applicable) && isEmpty(counts)) {
-      throw new AppException('members proof not provided', 400)
-    }
+    // if (!data.find((m) => !m.rent_proof_not_applicable) && isEmpty(counts)) {
+    //   throw new AppException('members proof not provided', 400)
+    // }
+    console.log('income proofs counts=', data)
     // Check is user has income proofs for last 3 month
     const hasUnconfirmedProofs = !!counts.find(
       (i) =>
-        ![
-          INCOME_TYPE_TRAINEE,
-          INCOME_TYPE_OTHER_BENEFIT,
-          INCOME_TYPE_CHILD_BENEFIT,
-          INCOME_TYPE_HOUSE_WORK,
-          INCOME_TYPE_UNEMPLOYED,
-        ].includes(i.income_type) || parseInt(i.income_proofs_count) < 3
+        !i.credit_score_not_applicable &&
+        (([INCOME_TYPE_EMPLOYEE, INCOME_TYPE_WORKER, INCOME_TYPE_CIVIL_SERVANT].includes(
+          i.income_type
+        ) &&
+          parseInt(i.income_proofs_count) < 3) ||
+          ([
+            INCOME_TYPE_UNEMPLOYED,
+            INCOME_TYPE_FREELANCER,
+            INCOME_TYPE_PENSIONER,
+            INCOME_TYPE_SELF_EMPLOYED,
+            INCOME_TYPE_TRAINEE,
+            INCOME_TYPE_OTHER_BENEFIT,
+            INCOME_TYPE_CHILD_BENEFIT,
+          ].includes(i.income_type) &&
+            parseInt(i.income_proofs_count) < 1))
     )
+
     if (hasUnconfirmedProofs) {
       throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
     }
