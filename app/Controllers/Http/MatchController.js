@@ -586,7 +586,7 @@ class MatchController {
 
     const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
     let estates = orderBy(
-      (await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()).toJSON(params),
+      (await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()).toJSON(),
       'updated_at',
       'desc'
     )
