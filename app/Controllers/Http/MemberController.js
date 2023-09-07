@@ -99,7 +99,9 @@ class MemberController {
       ])
 
       if (files.debt_proof) {
-        files.debt_proof = [files.debt_proof]
+        if (!Array.isArray(files.debt_proof)) {
+          files.debt_proof = [files.debt_proof]
+        }
       }
       const user_id = auth.user.id
 
