@@ -30,6 +30,7 @@ const PLACE_SUBWAY = 'public_transport.subway'
 const PLACE_RAIL = 'public_transport.light_rail'
 const PLACE_PARK = 'leisure.park,national_park'
 const PLACE_KINDERGARTEN = 'childcare.kindergarten'
+const PLACE_FITNESS = 'sport.fitness'
 const BATCHED_PLACE_INPUTS = [
   { id: PLACE_SCHOOL, params: { categories: PLACE_SCHOOL } },
   { id: PLACE_HOSPITAL, params: { categories: PLACE_HOSPITAL } },
@@ -39,6 +40,7 @@ const BATCHED_PLACE_INPUTS = [
   { id: PLACE_RAIL, params: { categories: PLACE_RAIL } },
   { id: PLACE_PARK, params: { categories: PLACE_PARK } },
   { id: PLACE_KINDERGARTEN, params: { categories: PLACE_KINDERGARTEN } },
+  { id: PLACE_FITNESS, params: { categories: PLACE_FITNESS } },
 ]
 
 class GeoPify {
