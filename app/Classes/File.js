@@ -263,10 +263,19 @@ class File {
    * Get file protected url 15 min lifetime
    */
   static async getProtectedUrl(filePathName, expiry = 900, params) {
-    if (!filePathName || trim(filePathName).length === 0) {
-      return null
+    if (Array.isArray(filePathName)) {
+      const protectedUrls = await Promise.map(filePathName, async (file) => {
+        if (file && trim(file).length > 0) {
+          return await Drive.disk('s3').getSignedUrl(file, expiry, params)
+        }
+      })
+      return protectedUrls
+    } else {
+      if (!filePathName || trim(filePathName).length === 0) {
+        return null
+      }
+      return await Drive.disk('s3').getSignedUrl(filePathName, expiry, params)
     }
-    return await Drive.disk('s3').getSignedUrl(filePathName, expiry, params)
   }
 
   static filesCount(request, field) {
