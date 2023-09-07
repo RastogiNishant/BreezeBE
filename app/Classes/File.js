@@ -373,7 +373,7 @@ class File {
    */
   static async remove(file, isPublic = true) {
     const disk = isPublic ? 's3public' : 's3'
-    if (!file || !file?.length) {
+    if (!file || (Array.isArray(file) && !file?.length)) {
       return true
     }
 
