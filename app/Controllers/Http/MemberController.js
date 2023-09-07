@@ -98,6 +98,9 @@ class MemberController {
         { field: 'passport', mime: docMimes, isPublic: false },
       ])
 
+      if (files.debt_proof) {
+        files.debt_proof = [files.debt_proof]
+      }
       const user_id = auth.user.id
 
       if (!data.email) {
@@ -123,7 +126,6 @@ class MemberController {
 
         data.owner_user_id = existingUser.id
       }
-
       const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
 
       if (files.passport) {
@@ -192,7 +194,6 @@ class MemberController {
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
-
     const trx = await Database.beginTransaction()
     try {
       if (files.passport) {
@@ -207,6 +208,9 @@ class MemberController {
       }
 
       let member = await MemberService.allowEditMemberByPermission(auth.user, id)
+      if (files.debt_proof) {
+        files.debt_proof = [...(member.debt_proof || []), files.debt_proof]
+      }
       const newData = member.owner_user_id ? omit(data, ['email']) : data
 
       if (data?.phone && data?.phone !== member.phone) {

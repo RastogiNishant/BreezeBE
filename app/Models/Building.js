@@ -24,11 +24,15 @@ class Building extends Model {
   }
 
   estates() {
-    return this.hasMany('App/Models/Estates')
+    return this.hasMany('App/Models/Estate')
   }
 
   static get Serializer() {
     return 'App/Serializers/BuildingSerializer'
+  }
+
+  categories() {
+    return this.hasMany('App/Models/UnitCategory', 'id', 'build_id')
   }
 }
 

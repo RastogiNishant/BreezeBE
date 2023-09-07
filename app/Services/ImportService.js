@@ -42,6 +42,7 @@ const {
   exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE },
 } = require('../exceptions')
 const BuildingService = require('./BuildingService')
+const UnitCategoryService = require('./UnitCategoryService')
 const WebSocket = use('App/Classes/Websocket')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -59,16 +60,18 @@ class ImportService {
    *
    */
 
-  static async createSingleEstate({ property, buildings, userId, lang }) {
+  static async createSingleEstate({ property, buildings, unitCategories, userId, lang }) {
     let data = property.data
     let line = property.line
     let six_char_code = property.six_char_code
 
-    const build_id = data.building_id
+    data.build_id = data.building_id
       ? (buildings || []).filter((b) => b.building_id === data.building_id)[0]?.id
       : null
 
-    data.build_id = build_id
+    data.unit_category_id = data.unit_category_id
+      ? (unitCategories || []).filter((category) => category.name === data.unit_category_id)[0]?.id
+      : null
 
     let estate
     line += 1
@@ -247,6 +250,11 @@ class ImportService {
 
       await BuildingService.bulkUpsert(user_id, buildingsData)
       const buildings = await BuildingService.getAll(user_id)
+      const categoryData = (data.category || []).map((category) => category.data)
+      await UnitCategoryService.bulkUpsert({ user_id, buildings, data: categoryData })
+      const unitCategories = await UnitCategoryService.getAll(
+        (buildings || []).map((building) => building.id)
+      )
 
       result = await Promise.map(
         data?.unit || [],
@@ -256,6 +264,7 @@ class ImportService {
               await ImportService.createSingleEstate({
                 property: i,
                 buildings,
+                unitCategories,
                 userId: user_id,
                 lang,
               })

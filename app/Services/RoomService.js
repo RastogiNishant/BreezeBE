@@ -215,32 +215,32 @@ class RoomService {
         { field: 'file', mime: imageMimes, isPublic: true },
       ])
 
-      if (files && files.file) {
-        const paths = Array.isArray(files.file) ? files.file : [files.file]
-        const original_file_names = Array.isArray(files.original_file)
-          ? files.original_file
-          : [files.original_file]
-        const data = paths.map((path, index) => {
-          return {
-            disk: 's3public',
-            url: path,
-            file_name: original_file_names[index],
-            room_id: room.id,
-          }
-        })
-        const images = await this.addManyImages(data, trx)
-        await require('./EstateService').updateCover(
-          { room: room.toJSON(), addImage: images[0] },
-          trx
-        )
-        //Event.fire('estate::update', room.estate_id)
-        await trx.commit()
-
-        await require('./EstateService').updatePercentAndIsPublished({ estate_id: room.estate_id })
-        return images
-      } else {
-        throw new HttpException(FAILED_TO_ADD_FILE, 400)
+      if (!files?.file) {
+        throw new HttpException(e.message, 400)
       }
+
+      const paths = Array.isArray(files.file) ? files.file : [files.file]
+      const original_file_names = Array.isArray(files.original_file)
+        ? files.original_file
+        : [files.original_file]
+      const data = paths.map((path, index) => {
+        return {
+          disk: 's3public',
+          url: path,
+          file_name: original_file_names[index],
+          room_id: room.id,
+        }
+      })
+      const images = await this.addManyImages(data, trx)
+      await require('./EstateService').updateCover(
+        { room: room.toJSON(), addImage: images[0] },
+        trx
+      )
+      //Event.fire('estate::update', room.estate_id)
+      await trx.commit()
+
+      await require('./EstateService').updatePercentAndIsPublished({ estate_id: room.estate_id })
+      return images
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, 400)

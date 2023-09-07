@@ -48,6 +48,7 @@ const File = use('App/Models/File')
 const Image = use('App/Models/Image')
 const MailService = use('App/Services/MailService')
 const EstateSyncService = use('App/Services/EstateSyncService')
+const Building = use('App/Models/Building')
 const QueueService = use('App/Services/QueueService')
 const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
@@ -301,6 +302,16 @@ class PropertyController {
       await Estate.query()
         .where('id', id)
         .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
+      let buildingPublished = false
+      if (requestPublishEstate.build_id) {
+        buildingPublished = await EstateService.updateBuildingPublishStatus(
+          {
+            building_id: requestPublishEstate.build_id,
+            action: 'publish',
+          },
+          trx
+        )
+      }
       const listings = await EstateSyncListing.query()
         .where('estate_id', id)
         .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
@@ -310,6 +321,8 @@ class PropertyController {
         property_id: requestPublishEstate.property_id,
         estate_id: requestPublishEstate.estate_id,
         build_id: requestPublishEstate.build_id,
+        published: buildingPublished.published,
+        building_status: buildingPublished.status,
         publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN,
         status: STATUS_ACTIVE,
         type: 'approved-publish',
@@ -341,31 +354,48 @@ class PropertyController {
     if (!requestPublishEstate) {
       throw new HttpException('This estate is not marked for publish', 400, 114002)
     }
-    await Estate.query()
-      .where('id', id)
-      .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN })
-    await EstateSyncService.markListingsForDelete(id)
-    const listings = await EstateSyncListing.query()
-      .where('estate_id', id)
-      .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
-      .fetch()
-    const data = {
-      success: true,
-      property_id: requestPublishEstate.property_id,
-      estate_id: requestPublishEstate.estate_id,
-      build_id: requestPublishEstate.build_id,
-      publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN,
-      status: STATUS_DRAFT,
-      type: 'declined-publish',
-      listings: listings?.rows || [],
+
+    const trx = await Database.beginTransaction()
+    try {
+      await Estate.query()
+        .where('id', id)
+        .update({ status: STATUS_DRAFT, publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN }, trx)
+      if (requestPublishEstate.build_id) {
+        await EstateService.updateBuildingPublishStatus(
+          {
+            building_id: requestPublishEstate.build_id,
+            action: 'decline-publish',
+          },
+          trx
+        )
+      }
+      await EstateSyncService.markListingsForDelete(id)
+      const listings = await EstateSyncListing.query()
+        .where('estate_id', id)
+        .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
+        .fetch()
+      const data = {
+        success: true,
+        property_id: requestPublishEstate.property_id,
+        estate_id: requestPublishEstate.estate_id,
+        build_id: requestPublishEstate.build_id,
+        publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN,
+        status: STATUS_DRAFT,
+        type: 'declined-publish',
+        listings: listings?.rows || [],
+      }
+      EstateSyncService.emitWebsocketEventToLandlord({
+        event: WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED,
+        user_id: requestPublishEstate.user_id,
+        data,
+      })
+      QueueService.estateSyncUnpublishEstates([id], false)
+      await trx.commit()
+      return true
+    } catch (err) {
+      console.log(err.message)
+      await trx.rollback()
     }
-    EstateSyncService.emitWebsocketEventToLandlord({
-      event: WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED,
-      user_id: requestPublishEstate.user_id,
-      data,
-    })
-    QueueService.estateSyncUnpublishEstates([id], false)
-    return true
   }
 
   async updatePublishStatus({ request, response }) {
@@ -376,7 +406,6 @@ class PropertyController {
         throw new HttpException('Estate not found', 400, 113214)
       }
     }
-    const trx = await Database.beginTransaction()
     let ret
     switch (action) {
       case 'approve-publish':
@@ -392,15 +421,10 @@ class PropertyController {
         await EstateService.deactivateBulkEstates(ids)
         return response.res(ids)
       case UNPUBLISH_PROPERTY:
-        try {
-          await EstateService.unpublishBulkEstates(ids)
-          return response.res(ids.length)
-        } catch (error) {
-          await trx.rollback()
-          throw new HttpException(error.message, 422)
-        }
+        await EstateService.unpublishBulkEstates(ids)
+        return response.res(ids.length)
     }
-    await trx.rollback()
+
     throw new HttpException('Action not allowed.')
   }
 

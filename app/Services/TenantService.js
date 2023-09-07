@@ -200,7 +200,7 @@ class TenantService extends BaseService {
       .first()
 
     const wbs_certificate = await Promise.map(
-      tenantWithCertificate.wbs_certificate,
+      tenantWithCertificate.wbs_certificate || [],
       async (cert) => await this.getWithAbsoluteUrl(cert)
     )
 
@@ -281,8 +281,10 @@ class TenantService extends BaseService {
     }
 
     const data = await getRequiredTenantData(tenant.id)
+
     const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
-    if (!data.find((m) => m.rent_proof_not_applicable) && isEmpty(counts)) {
+
+    if (!data.find((m) => !m.rent_proof_not_applicable) && isEmpty(counts)) {
       throw new AppException('members proof not provided', 400)
     }
     // Check is user has income proofs for last 3 month
@@ -294,7 +296,7 @@ class TenantService extends BaseService {
           INCOME_TYPE_CHILD_BENEFIT,
           INCOME_TYPE_HOUSE_WORK,
           INCOME_TYPE_UNEMPLOYED,
-        ].includes(i.income_type) && parseInt(i.income_proofs_count) < 3
+        ].includes(i.income_type) || parseInt(i.income_proofs_count) < 3
     )
     if (hasUnconfirmedProofs) {
       throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
@@ -440,11 +442,9 @@ class TenantService extends BaseService {
         await this.activateTenant(tenant, trx)
       } catch (e) {
         await Tenant.query()
-          .update(
-            { status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] },
-            trx
-          )
+          .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] })
           .where({ user_id: userId })
+          .transacting(trx)
       }
 
       await trx.commit()

@@ -16,7 +16,6 @@ class EstateSerializer extends BaseSerializer {
     }
 
     item.coord = item.coord_raw
-    item.coord_raw = undefined
 
     if (!extraFields.includes('verified_address')) {
       item.verified_address = !isEmpty(item.coord)

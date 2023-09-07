@@ -11,7 +11,7 @@ const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
-const { reduce, isEmpty, isNull, uniqBy, uniq } = require('lodash')
+const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -136,8 +136,10 @@ class MatchController {
     const { estate_id, user_id } = request.all()
     // Check is estate owner
     const estate = await EstateService.getMatchEstate(estate_id, landlordId)
+    const trx = await Database.beginTransaction()
     try {
-      await MatchService.inviteKnockedUser({ estate, userId: user_id })
+      await MatchService.inviteKnockedUser({ estate, userId: user_id }, trx)
+      await trx.commit()
       logEvent(
         request,
         LOG_TYPE_INVITED,
@@ -145,16 +147,11 @@ class MatchController {
         { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
         false
       )
-      logEvent(
-        request,
-        LOG_TYPE_GOT_INVITE,
-        user_id,
-        { estate_id, estate_id, role: ROLE_USER },
-        false
-      )
+      logEvent(request, LOG_TYPE_GOT_INVITE, user_id, { estate_id, role: ROLE_USER }, false)
       Event.fire('mautic:syncContact', auth.user.id, { invited_count: 1 })
       return response.res(true)
     } catch (e) {
+      await trx.rollback()
       Logger.error(e)
       throw new HttpException(e.message, e?.status || 400, e?.code || 0)
     }
@@ -507,29 +504,31 @@ class MatchController {
       throw new HttpException(ERROR_MATCH_COMMIT_DOUBLE, 400, ERROR_MATCH_COMMIT_DOUBLE_CODE)
     }
     const isValidMatch = await MatchService.checkMatchIsValidForFinalRequest(estate_id, user_id)
+
     const trx = await Database.beginTransaction()
-    if (isValidMatch) {
-      try {
-        await MatchService.requestFinalConfirm({ estateId: estate_id, tenantId: user_id }, trx)
-        logEvent(
-          request,
-          LOG_TYPE_FINAL_MATCH_REQUEST,
-          auth.user.id,
-          { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
-          false
-        )
-        await trx.commit()
-        Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
-        response.res(true)
-      } catch (e) {
-        await trx.rollback()
-        throw new HttpException(e.message, 400)
-      }
-    } else {
+
+    if (!isValidMatch) {
       throw new HttpException(
         'This prospect has not shared the data. Match is not valid for final match request',
         400
       )
+    }
+
+    try {
+      await MatchService.requestFinalConfirm({ estateId: estate_id, tenantId: user_id }, trx)
+      logEvent(
+        request,
+        LOG_TYPE_FINAL_MATCH_REQUEST,
+        auth.user.id,
+        { estate_id, tenant_id: user_id, role: ROLE_LANDLORD },
+        false
+      )
+      await trx.commit()
+      Event.fire('mautic:syncContact', user_id, { finalmatchrequest_count: 1 })
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -585,17 +584,24 @@ class MatchController {
       currentTab = activeFilters[0]
     }
 
-    let estates = await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()
+    const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
+    let estates = orderBy(
+      (await MatchService.getTenantMatchesWithFilterQuery(user.id, filters).fetch()).toJSON(params),
+      'updated_at',
+      'desc'
+    )
+
     let thirdPartyOffers = []
     if (filters && (filters.knock || filters.like || filters.dislike)) {
       thirdPartyOffers = await ThirdPartyOfferService.getTenantEstatesWithFilter(user.id, filters)
     }
 
-    const params = { isShort: true, fields: TENANT_MATCH_FIELDS }
-    estates = estates.toJSON(params)
     estates = [...estates, ...thirdPartyOffers]
 
-    let estateData = uniqBy(estates, 'id')
+    let estateData = uniqWith(
+      estates,
+      (obj1, obj2) => obj1.id === obj2.id && obj1.inside === obj2.inside
+    )
 
     /**
      * if a tenant invites outside landlord and create a task, need to add pending final match until a landlord accepts invitation
@@ -607,9 +613,7 @@ class MatchController {
       estateData = [...estateData, ...pendingEstates]
     }
 
-    if (filters.like || filters.dislike || filters.knock) {
-      estateData = estateData.sort((a, b) => (a?.action_at > b?.action_at ? -1 : 1))
-    }
+    estateData = estateData.sort((a, b) => (a?.status_at > b?.status_at ? -1 : 1))
 
     const startIndex = (page - 1) * limit
     const endIndex = startIndex + limit
@@ -947,6 +951,7 @@ class MatchController {
       'final_match_date',
       'status_at',
       'unread_count',
+      'credit_score',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(

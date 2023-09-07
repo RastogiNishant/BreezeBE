@@ -32,6 +32,7 @@ const Visit = use('App/Models/Visit')
 const Task = use('App/Models/Task')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
+const Building = use('App/Models/Building')
 const FileBucket = use('App/Classes/File')
 const Import = use('App/Models/Import')
 const AppException = use('App/Exceptions/AppException')
@@ -151,6 +152,7 @@ const {
 const HttpException = use('App/Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
 const BuildingService = require('./BuildingService')
+const UnitCategoryService = require('./UnitCategoryService')
 
 const MAX_DIST = 10000
 
@@ -1410,13 +1412,14 @@ class EstateService {
     const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
     estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
 
-    const groupedEstates = groupBy(estates, (estate) =>
+    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
+    const groupedEstates = groupBy(filteredEstates, (estate) =>
       estate.build_id ? `g_${estate.build_id}` : estate.id
     )
     estates = Object.keys(groupedEstates).map((key) => ({ ...groupedEstates[key][0] }))
 
     const categoryCounts = this.calculateCategoryCounts(estates, tenant)
-    const filteredEstates = await this.filterEstates({ tenant, estates, inside_property: true })
+
     return {
       estates: filteredEstates,
       categoryCounts,
@@ -1490,10 +1493,15 @@ class EstateService {
 
     const minTenantBudget = tenant?.budget_min || 0
     const maxTenantBudget = tenant?.budget_max || 0
-    estates = estates.filter((estate) => {
-      const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
-      return budget >= minTenantBudget && budget <= maxTenantBudget
-    })
+
+    if (minTenantBudget && minTenantBudget) {
+      estates = estates.filter((estate) => {
+        const budget = tenant.include_utility
+          ? estate.net_rent + estate.extra_costs
+          : estate.net_rent
+        return budget >= minTenantBudget && budget <= maxTenantBudget
+      })
+    }
 
     if (process.env.DEV === 'true') {
       Logger.info(`filterEstates after budget ${estates?.length}`)
@@ -1557,32 +1565,39 @@ class EstateService {
       Logger.info(`filterEstates after short term ${estates?.length}`)
     }
 
-    estates = estates.filter(
-      (estate) =>
-        !estate.rooms_number ||
-        (estate.rooms_number >= (tenant.rooms_min || 1) &&
-          estate.rooms_number <= (tenant.rooms_max || 1))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after rooms ${estates?.length}`)
+    if (tenant.rooms_min !== null && tenant.rooms_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.rooms_number ||
+          (estate.rooms_number >= (tenant.rooms_min || 1) &&
+            estate.rooms_number <= (tenant.rooms_max || 1))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after rooms ${estates?.length}`)
+      }
     }
 
-    estates = estates.filter(
-      (estate) =>
-        estate.floor === null ||
-        (estate.floor >= (tenant.floor_min || 0) && estate.rooms_number <= (tenant.floor_max || 20))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after floors ${estates?.length}`)
+    if (tenant.floor_min !== null && tenant.floor_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          estate.floor === null ||
+          (estate.floor >= (tenant.floor_min || 0) &&
+            estate.rooms_number <= (tenant.floor_max || 20))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after floors ${estates?.length}`)
+      }
     }
 
-    estates = estates.filter(
-      (estate) =>
-        !estate.area ||
-        (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
-    )
-    if (process.env.DEV === 'true') {
-      Logger.info(`filterEstates after area ${estates?.length}`)
+    if (tenant.space_min !== null && tenant.space_max !== null) {
+      estates = estates.filter(
+        (estate) =>
+          !estate.area ||
+          (estate.area >= (tenant.space_min || 1) && estate.area <= (tenant.space_max || 1))
+      )
+      if (process.env.DEV === 'true') {
+        Logger.info(`filterEstates after area ${estates?.length}`)
+      }
     }
 
     if (tenant.apt_type?.length) {
@@ -2075,10 +2090,23 @@ class EstateService {
         trx,
         true
       )
-
+      let building
+      if (estate.build_id) {
+        building = await EstateService.updateBuildingPublishStatus(
+          {
+            building_id: estate.build_id,
+            action: 'deactivate',
+          },
+          trx
+        )
+      }
       await this.deleteMatchInfo({ estate_id: id }, trx)
       await trx.commit()
-      await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED })
+      await this.handleOffline({
+        estates: [estate],
+        building,
+        event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED,
+      })
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -2130,21 +2158,46 @@ class EstateService {
       throw new HttpException(ERROR_PROPERTY_NOT_PUBLISHED, 400, ERROR_PROPERTY_NOT_PUBLISHED_CODE)
     }
 
-    await estate.updateItem(
-      {
-        status: STATUS_EXPIRE,
-        publish_status: PUBLISH_STATUS_INIT,
-      },
-      true
-    )
+    const trx = await Database.beginTransaction()
 
-    await this.handleOffline({ estates: [estate], event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED })
+    try {
+      await estate.updateItemWithTrx(
+        {
+          status: STATUS_EXPIRE,
+          publish_status: PUBLISH_STATUS_INIT,
+        },
+        trx,
+        true
+      )
+      let building
+      if (estate.build_id) {
+        building = await EstateService.updateBuildingPublishStatus(
+          { building_id: estate.build_id, action: 'unpublish' },
+          trx
+        )
+      }
+
+      await this.handleOffline(
+        {
+          building,
+          estates: [estate],
+          event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
+        },
+        trx
+      )
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
-  static async handleOffline({ build_id, estates, event }, trx) {
+  static async handleOffline({ building, build_id, estates, event }, trx) {
     const data = {
       success: true,
-      build_id,
+      build_id: building?.id || build_id,
+      published: building?.published,
+      building_status: building?.status,
       status: estates?.[0]?.status,
       publish_status: estates?.[0]?.publish_status,
     }
@@ -2250,6 +2303,7 @@ class EstateService {
       })
       .with('files')
       .with('estateSyncListings')
+      .with('category')
 
     let result
     if (from === -1 || limit === -1) {
@@ -3239,18 +3293,19 @@ class EstateService {
   }
 
   static async getTenantBuildingEstates({ user_id, build_id, is_social = false }) {
-    const estates = await EstateService.getTenantAllEstates({
-      userId: user_id,
-      build_id,
-      page: -1,
-      limit: -1,
-    })
+    let estates =
+      (
+        await EstateService.getTenantAllEstates({
+          userId: user_id,
+          build_id,
+          page: -1,
+          limit: -1,
+        })
+      )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
+    estates = orderBy(estates, 'rooms_number', 'asc')
 
-    const categories = uniq(
-      estates.map((estate) => EstateService.getBasicPropertyId(estate.property_id))
-    )
-
-    // const regex = /-\d+/
+    let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
+    category_ids = category_ids.map((cat_id) => cat_id || -1)
 
     const yAxisKey = is_social ? `cert_category` : `floor`
     const yAxisEstates = is_social
@@ -3258,25 +3313,27 @@ class EstateService {
           estates.filter((estate) => estate.cert_category),
           (estate) => estate.cert_category
         )
-      : groupBy(
-          estates.filter((estate) => estate.floor),
-          (estate) => estate.floor
-        )
+      : groupBy(estates, (estate) => estate.floor)
 
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
-      categories.forEach((category) => {
-        categoryEstates[category] = estates.filter(
+      category_ids.forEach((cat_id) => {
+        categoryEstates[cat_id] = estates.filter(
           (estate) =>
-            estate[yAxisKey].toString() === axis.toString() && estate.property_id.includes(category)
+            estate[yAxisKey].toString() === axis.toString() &&
+            (cat_id != -1 ? estate.unit_category_id === cat_id : !estate.unit_category_id)
         )
       })
+
       buildingEstates[axis] = categoryEstates
     })
 
     return {
-      categories: Object.keys(yAxisEstates).sort((a, b) => b - a),
+      categories: Object.keys(yAxisEstates).sort((a, b) =>
+        is_social ? a.localeCompare(b) : b - a
+      ),
+      xAxisCategories: category_ids,
       estates: buildingEstates,
     }
   }
@@ -3961,6 +4018,7 @@ class EstateService {
         { build_id, estates, event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED },
         trx
       )
+      await Building.query().where('id', build_id).update({ status: STATUS_DRAFT }).transacting(trx)
       await trx.commit()
     } catch (e) {
       await trx.rollback()
@@ -3988,20 +4046,44 @@ class EstateService {
       throw new HttpException(NO_ESTATE_EXIST, 400)
     }
 
-    if (!estate.property_id || trim(estate.property_id) === '' || !estate.build_id) {
+    if (!estate.unit_category_id || !estate.build_id) {
       return [{ id: estate.id }]
     }
-    const category = this.getBasicPropertyId(estate.property_id)
 
     return (
       await Estate.query()
         .select('id')
         .where('user_id', estate.user_id)
-        .where('property_id', 'ilike', `${category}%`)
-        .where('status', status)
+        .where('unit_category_id', estate.unit_category_id)
+        .whereIn('status', Array.isArray(status) ? status : [status])
         .where('build_id', estate.build_id)
         .fetch()
     ).toJSON()
+  }
+
+  static async updateBuildingPublishStatus({ building_id, action = 'publish' }, trx = null) {
+    const building = await Building.findOrFail(building_id)
+    const estatesOfSameBuilding = await Estate.query()
+      .select('status')
+      .where('build_id', building_id)
+      .whereNot('status', STATUS_DELETE)
+      .fetch()
+    const unpublishedPublishedOfSameBuilding = (estatesOfSameBuilding.toJSON() || []).filter(
+      (estate) => {
+        if (action === 'publish') {
+          return estate.status !== STATUS_ACTIVE
+        }
+        return estate.status === STATUS_ACTIVE
+      }
+    )
+    if (unpublishedPublishedOfSameBuilding.length === 0) {
+      //mark building
+      building.published =
+        action === 'publish' ? PUBLISH_STATUS_APPROVED_BY_ADMIN : PUBLISH_STATUS_INIT
+      building.status = action === 'publish' ? STATUS_ACTIVE : STATUS_DRAFT
+      await building.save(trx)
+    }
+    return building
   }
 }
 module.exports = EstateService
