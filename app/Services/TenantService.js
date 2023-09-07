@@ -272,7 +272,9 @@ class TenantService extends BaseService {
           '_i.probation_period'
         )
         .leftJoin({ _m: 'members' }, function () {
-          this.on('_m.user_id', '_t.user_id').onNotIn('_m.child', [true])
+          this.on('_m.user_id', '_t.user_id').on(
+            Database.raw(`"_m"."child" not in ( true ) or "_m"."child" is null`)
+          )
         })
         .leftJoin({ _i: 'incomes' }, function () {
           this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
@@ -328,8 +330,6 @@ class TenantService extends BaseService {
         .string()
         .when(['rent_proof_not_applicable', 'rent_arrears_doc_submit_later'], {
           is: (rent_proof_not_applicable, rent_arrears_doc_submit_later) => {
-            console.log('rent_proof_not_applicable=', rent_proof_not_applicable)
-            console.log('rent_arrears_doc_submit_later=', rent_arrears_doc_submit_later)
             return rent_proof_not_applicable || rent_arrears_doc_submit_later
           },
           then: yup.string().notRequired().nullable(),
