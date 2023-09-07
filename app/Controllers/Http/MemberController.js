@@ -310,7 +310,7 @@ class MemberController {
    *
    */
   async removeMemberDocs({ request, auth, response }) {
-    const { id, field } = request.all()
+    const { id, field, uri } = request.all()
 
     const user_id = auth.user.owner_id || auth.user.id
     const member = await MemberService.allowEditMemberByPermission(auth.user, id)
@@ -319,8 +319,18 @@ class MemberController {
       return response.res(false)
     }
 
-    await File.remove(member[field], false)
-    member[field] = null
+    member[field] = Array.isArray(member[field]) ? member[field] : [member[field]]
+    let deleteFiles = uri ? member[field].find((file) => file === uri) : member[field]
+    await File.remove(deleteFiles, false)
+
+    member[field] = uri ? member[field].filter((file) => file !== uri) : null
+
+    if (!member[field]?.length) {
+      member[field] = null
+    } else {
+      member[field] = field !== MEMBER_FILE_DEBT_PROOFS_DOC ? member[field][0] : member[field]
+    }
+
     await member.save()
 
     Event.fire('tenant::update', user_id)
