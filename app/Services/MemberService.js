@@ -222,7 +222,6 @@ class MemberService {
           member = {
             ...member,
             rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
-            debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
             incomes,
             final_incomes,
             extra_passports,
