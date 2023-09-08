@@ -15,8 +15,9 @@ class AppController {
       .where('tenants.user_id', id)
       .first()
     const landlordScore = MatchService.calculateLandlordScore(prospect, estate, true)
-    const prospectScore = MatchService.calculateProspectScore(prospect, estate, true)
-    const matchScore = (100 * (landlordScore?.scoreLPer || 0 + prospectScore?.scoreTPer || 0)) / 2
+    const prospectScore = await MatchService.calculateProspectScore(prospect, estate, true)
+    const matchScore =
+      (100 * ((landlordScore?.scoreLPer || 0) + (prospectScore?.scoreTPer || 0))) / 2
     return response.res({ estate, prospect, landlordScore, prospectScore, matchScore })
   }
 }

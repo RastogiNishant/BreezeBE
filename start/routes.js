@@ -399,6 +399,9 @@ Route.group(() => {
   Route.put('/certificate/:id/image', 'TenantCertificateController.updateImage').middleware([
     'valid:Id,CreateFile',
   ])
+  Route.delete('/certificate/:id/image', 'TenantCertificateController.deleteImage').middleware([
+    'valid:Id,Uri',
+  ])
   Route.get('/detail', 'TenantController.detail')
 })
   .prefix('/api/v1/users/tenant')

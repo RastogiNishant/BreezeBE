@@ -373,13 +373,16 @@ class File {
    */
   static async remove(file, isPublic = true) {
     const disk = isPublic ? 's3public' : 's3'
-    if (Array.isArray(file)) {
-      await Promise.map(file, async (dfile) => {
-        await Drive.disk(disk).delete(dfile)
-      })
+    if (!file || (Array.isArray(file) && !file?.length)) {
       return true
     }
-    return Drive.disk(disk).delete(file)
+
+    file = Array.isArray(file) ? file : [file]
+
+    await Promise.map(file, async (dfile) => {
+      await Drive.disk(disk).delete(dfile)
+    })
+    return true
   }
 
   static async saveFileTo({ url, ext = 'jpg' }) {
