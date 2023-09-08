@@ -97,7 +97,9 @@ class MemberController {
         { field: 'debt_proof', mime: docMimes, isPublic: false },
         { field: 'passport', mime: docMimes, isPublic: false },
       ])
-      files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
+      if (files.debt_proof) {
+        files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
+      }
       const user_id = auth.user.id
 
       if (!data.email) {
