@@ -3687,7 +3687,9 @@ class MatchService {
     )
 
     query
+      .with('certificates')
       .select(Database.raw(`DISTINCT ON ( "tenants"."id") "tenants"."id"`))
+
       .select([
         'tenants.*',
         '_u.firstname as u_firstname',
