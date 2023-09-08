@@ -1394,6 +1394,13 @@ Estates: [ESTATES]
   MARITAL_COHABITATION: 6,
   MARITAL_REGISTERED_COHABITATION: 7,
 
+  MANDATORY_AMENITIES: {
+    FURNISHED: 'furnished',
+    FITTED_KITCHEN: 'fitted_kitchen',
+    BARRIER_FREE: 'landlord.property.details.building_amenities.barrier_free',
+    ELEVATOR: 'elevator',
+    BALCONY: 'apt_balcony',
+  },
   UNIT_SHEET: 1,
   BUILDING_SHEET: 2,
   CATEGORY_SHEET: 3,

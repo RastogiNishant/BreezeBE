@@ -33,6 +33,7 @@ const Event = use('Event')
 const File = use('App/Classes/File')
 const Ws = use('Ws')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
+const EstateAmenityService = use('App/Services/EstateAmenityService')
 const TenantService = use('App/Services/TenantService')
 const MatchFilters = require('../Classes/MatchFilters')
 const EstateFilters = require('../Classes/EstateFilters')
@@ -210,7 +211,7 @@ class MatchService {
     }
 
     const scoreLPer = MatchService.calculateLandlordScore(prospect, estate) * 100
-    const scoreTPer = MatchService.calculateProspectScore(prospect, estate) * 100
+    const scoreTPer = (await MatchService.calculateProspectScore(prospect, estate)) * 100
     const percent = (scoreTPer + scoreLPer) / 2
     return {
       landlord_score: scoreLPer.toFixed(2),
@@ -474,7 +475,7 @@ class MatchService {
     return scoreLPer
   }
 
-  static calculateProspectScore(prospect, estate, debug = false) {
+  static async calculateProspectScore(prospect, estate, debug = false) {
     let prospectBudgetScore = 0
     let roomsScore = 0
     let spaceScore = 0
@@ -484,20 +485,19 @@ class MatchService {
     let houseTypeScore = 0
     let amenitiesScore = 0
 
-    const amenitiesCount = 7
     // Prospect Score Weights
     const prospectBudgetWeight = 2
     const roomsWeight = 0.2
     const areaWeight = 0.4
     const rentStartWeight = 0.5
-    const amenitiesWeight = 0.4 / amenitiesCount
+    const amenitiesWeight = 0.4
     const floorWeight = 0.3
     const aptTypeWeight = 0.1
     const houseTypeWeight = 0.1
     const maxScoreT =
       prospectBudgetWeight +
       rentStartWeight +
-      0.4 + //amenitiesWeight
+      amenitiesWeight +
       areaWeight +
       floorWeight +
       roomsWeight +
@@ -735,8 +735,46 @@ class MatchService {
     scoreT += houseTypeScore * houseTypeWeight
 
     //Amenities Score
-    const passAmenities = intersection(estate.options, prospect.options).length
-    amenitiesScore = passAmenities
+    const prospectPreferredAmenities = prospect.options || []
+    const estateAmenities = estate.options || []
+    const mandatoryAmenityIds = await EstateAmenityService.getMandatoryAmenityIds()
+    if (prospectPreferredAmenities.length === 0) {
+      amenitiesScore = 1
+    } else {
+      for (let count = 0; count < prospectPreferredAmenities.length; count++) {
+        if (
+          mandatoryAmenityIds.indexOf(prospectPreferredAmenities[count]) > -1 &&
+          estateAmenities.indexOf(prospectPreferredAmenities[count]) === -1
+        ) {
+          //prospect has a mandatory amenity but estate doesn't have that amenity
+          if (debug) {
+            return {
+              scoreT: 0,
+              prospectBudgetScore,
+              roomsScore,
+              spaceScore,
+              floorScore,
+              rentStartScore,
+              aptTypeScore,
+              houseTypeScore,
+              amenitiesScore,
+              reason: 'prospect preferred mandatory amenities but not provided by estate',
+            }
+          }
+          return 0
+        }
+      }
+      const amenitiesProvidedByEstate = prospectPreferredAmenities.reduce(
+        (amenitiesProvidedByEstate, prospectPreferredAmenity) => {
+          if (estateAmenities.indexOf(prospectPreferredAmenity) > -1) {
+            amenitiesProvidedByEstate = [...amenitiesProvidedByEstate, prospectPreferredAmenity]
+          }
+          return amenitiesProvidedByEstate
+        },
+        []
+      )
+      amenitiesScore = amenitiesProvidedByEstate.length / prospect.options.length
+    }
     log({ estateAmenities: estate.options, prospectAmenities: prospect.options })
     scoreT += amenitiesScore * amenitiesWeight
 
