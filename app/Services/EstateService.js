@@ -3319,14 +3319,19 @@ class EstateService {
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
       category_ids.forEach((cat_id) => {
-        categoryEstates[cat_id] = estates.filter(
+        const filteredEstates = estates.filter(
           (estate) =>
             estate[yAxisKey].toString() === axis.toString() &&
             (cat_id != -1 ? estate.unit_category_id === cat_id : !estate.unit_category_id)
         )
+        if (filteredEstates?.length) {
+          categoryEstates[cat_id] = filteredEstates
+        }
       })
 
-      buildingEstates[axis] = categoryEstates
+      if (Object.keys(categoryEstates)?.length) {
+        buildingEstates[axis] = categoryEstates
+      }
     })
 
     return {
