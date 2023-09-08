@@ -97,9 +97,8 @@ class MemberController {
         { field: 'debt_proof', mime: docMimes, isPublic: false },
         { field: 'passport', mime: docMimes, isPublic: false },
       ])
-
       if (files.debt_proof) {
-        files.debt_proof = [files.debt_proof]
+        files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
       }
       const user_id = auth.user.id
 
@@ -209,13 +208,15 @@ class MemberController {
 
       let member = await MemberService.allowEditMemberByPermission(auth.user, id)
       if (files.debt_proof) {
-        files.debt_proof = [...(member.debt_proof || []), files.debt_proof]
+        files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
+        files.debt_proof = [...(member.debt_proof || []), ...files.debt_proof]
       }
       const newData = member.owner_user_id ? omit(data, ['email']) : data
 
       if (data?.phone && data?.phone !== member.phone) {
         newData.phone_verified = false
       }
+
       const result = await member.updateItemWithTrx({ ...newData, ...files }, trx)
       await trx.commit()
 
