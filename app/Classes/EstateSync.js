@@ -312,7 +312,10 @@ class EstateSync {
     return address
   }
 
-  composeTitle({ rooms_number, area, apt_type, city, country }) {
+  composeTitle({ rooms_number, area, apt_type, city, country, category }, is_building = false) {
+    if (is_building) {
+      return category.name
+    }
     let estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES['others']
     const formatter = new Intl.NumberFormat('de-DE')
     if (ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]) {
@@ -392,9 +395,12 @@ class EstateSync {
     }
   }
 
-  async postEstate({ type = 'apartmentRent', estate, contactId = '' }) {
+  async postEstate({ type = 'apartmentRent', estate, contactId = '' }, is_building = false) {
     try {
       const fields = this.composeEstate(estate)
+      if (is_building) {
+        fields.title = this.composeTitle(estate, true)
+      }
       const attachments = this.composeAttachments(estate)
       const externalId = `${process.env.NODE_ENV}-${estate.id}`
       const body = {

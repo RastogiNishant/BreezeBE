@@ -381,6 +381,7 @@ class EstateService {
       .with('amenities', function (q) {
         q.with('option')
       })
+      .with('category')
       .first()
   }
 
