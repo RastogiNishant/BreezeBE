@@ -1453,3 +1453,12 @@ Route.group(() => {
 Route.get('/api/v1/cities', 'CommonController.searchCities').middleware(['valid:SearchCity'])
 Route.get('/api/v1/countries', 'CommonController.getAvailableCountries')
 Route.get('/api/v1/offers', 'CommonController.getOffers').middleware(['valid:GetOffers'])
+
+Route.get('/api/v1/test', async ({ request, response }) => {
+  const EstateSyncService = use('App/Services/EstateSyncService')
+  const result = await EstateSyncService.publishBuilding(
+    { buildingId: 1, publisher: 'immobilienscout-24' },
+    13
+  )
+  response.res(result)
+})
