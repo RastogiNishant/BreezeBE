@@ -36,6 +36,7 @@ const UnitCategoryService = require('./UnitCategoryService')
 const UnitCategory = use('App/Models/UnitCategory')
 const Logger = use('Logger')
 const WebSocket = use('App/Classes/Websocket')
+const Building = use('App/Models/Building')
 class EstateSyncService {
   static async getBreezeEstateSyncCredential() {
     const credential = await EstateSyncCredential.query()
@@ -836,6 +837,27 @@ class EstateSyncService {
       await trx.rollback()
       throw new HttpException(err?.message)
     }
+  }
+
+  static async unpublishBuilding(buildingId) {
+    const publishedEstates = await UnitCategory.query()
+      .select(Database.raw(`estates.id as estate_id`))
+      .leftJoin('estates', 'estates.unit_category_id', 'unit_categories.id')
+      .where('unit_categories.is24_publish_status', IS24_PUBLISHING_STATUS_PUBLISHED)
+      .where('unit_categories.build_id', buildingId)
+      .fetch()
+
+    const publishedIds = (publishedEstates.toJSON() || []).map(
+      (publishedEstate) => publishedEstate.estate_id
+    )
+    console.log({ publishedIds })
+    await EstateSyncService.unpublishMultipleEstates(publishedIds, true)
+    await UnitCategory.query()
+      .where('build_id', buildingId)
+      .update({ is24_publish_status: IS24_PUBLISHING_STATUS_NO_STATUS })
+    await Building.query()
+      .where('id', buildingId)
+      .update({ is24_publish_status: IS24_PUBLISHING_STATUS_NO_STATUS })
   }
 }
 
