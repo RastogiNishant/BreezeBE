@@ -21,6 +21,7 @@ const {
   IS24_PUBLISHING_STATUS_INIT,
   IS24_PUBLISHING_STATUS_POSTED,
   IS24_PUBLISHING_STATUS_NO_STATUS,
+  IS24_PUBLISHING_STATUS_PUBLISHED,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -342,6 +343,14 @@ class EstateSyncService {
             estate_sync_listing_id: resp.data.id,
             user_connected: target.from_user,
           })
+          const isCategoryPublished = await require('./UnitCategoryService').isCategoryPublished(
+            propertyId
+          )
+          if (isCategoryPublished) {
+            await UnitCategory.query()
+              .where('id', isCategoryPublished.id)
+              .update({ is24_publish_status: IS24_PUBLISHING_STATUS_PUBLISHED })
+          }
           //has listing_id but we need to wait for websocket call to make this
         } else {
           if (resp?.data?.message) {

@@ -4,7 +4,11 @@ const { omit } = require('lodash')
 const UnitCategory = use('App/Models/UnitCategory')
 const Estate = use('App/Models/Estate')
 const Promise = require('bluebird')
-const { IS24_PUBLISHING_STATUS_INIT } = require('../constants')
+const {
+  IS24_PUBLISHING_STATUS_INIT,
+  IS24_PUBLISHING_STATUS_POSTED,
+  IS24_PUBLISHING_STATUS_PUBLISHED,
+} = require('../constants')
 
 class UnitCategoryService {
   static async upsert(data) {
@@ -74,6 +78,17 @@ class UnitCategoryService {
     //FIXME: representative should have been preselected during import/creation of unit.
     const representative = await Estate.query().where('unit_category_id', categoryId).first()
     return representative
+  }
+
+  static async isCategoryPublished(estateSyncPropertyId) {
+    const EstateSyncListing = use('App/Models/EstateSyncListing')
+    const isCategoryPublished = await EstateSyncListing.query()
+      .innerJoin('estates', 'estates.id', 'estate_sync_listings.estate_id')
+      .innerJoin('unit_categories', 'unit_categories.id', 'estates.unit_category_id')
+      .where('estate_sync_listings.estate_sync_property_id', estateSyncPropertyId)
+      .where('unit_categories.is24_publish_status', IS24_PUBLISHING_STATUS_POSTED)
+      .first()
+    return isCategoryPublished
   }
 }
 
