@@ -2,6 +2,7 @@
 
 const { omit } = require('lodash')
 const UnitCategory = use('App/Models/UnitCategory')
+const Building = use('App/Models/Building')
 const Estate = use('App/Models/Estate')
 const Promise = require('bluebird')
 const {
@@ -89,6 +90,18 @@ class UnitCategoryService {
       .where('unit_categories.is24_publish_status', IS24_PUBLISHING_STATUS_POSTED)
       .first()
     return isCategoryPublished
+  }
+
+  static async setBuildingPublishingStatusPublished(buildingId) {
+    const categoriesNotPublished = await UnitCategory.query()
+      .where('build_id', buildingId)
+      .whereNot('is24_publish_status', IS24_PUBLISHING_STATUS_PUBLISHED)
+      .first()
+    if (!categoriesNotPublished) {
+      await Building.query()
+        .where('id', buildingId)
+        .update({ is24_publish_status: IS24_PUBLISHING_STATUS_PUBLISHED })
+    }
   }
 }
 

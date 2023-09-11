@@ -350,6 +350,9 @@ class EstateSyncService {
             await UnitCategory.query()
               .where('id', isCategoryPublished.id)
               .update({ is24_publish_status: IS24_PUBLISHING_STATUS_PUBLISHED })
+            await require('./UnitCategoryService').setBuildingPublishingStatusPublished(
+              isCategoryPublished.build_id
+            )
           }
           //has listing_id but we need to wait for websocket call to make this
         } else {
