@@ -34,6 +34,7 @@ const {
   exceptions: { MARKET_PLACE_CONTACT_EXIST, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
 } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
+const { groupBy } = require('lodash')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
