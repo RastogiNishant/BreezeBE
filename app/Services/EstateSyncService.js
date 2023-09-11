@@ -18,6 +18,9 @@ const {
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
   STATUS_DELETE,
   IS24_REDIRECT_URL,
+  IS24_PUBLISHING_STATUS_INIT,
+  IS24_PUBLISHING_STATUS_POSTED,
+  IS24_PUBLISHING_STATUS_NO_STATUS,
 } = require('../constants')
 
 const EstateSync = use('App/Classes/EstateSync')
@@ -28,6 +31,8 @@ const EstateSyncListing = use('App/Models/EstateSyncListing')
 const Estate = use('App/Models/Estate')
 const Database = use('Database')
 const Promise = require('bluebird')
+const UnitCategoryService = require('./UnitCategoryService')
+const UnitCategory = use('App/Models/UnitCategory')
 const Logger = use('Logger')
 const WebSocket = use('App/Classes/Websocket')
 class EstateSyncService {
@@ -54,7 +59,14 @@ class EstateSyncService {
   }
 
   static async saveMarketPlacesInfo(
-    { estate_id, estate_sync_property_id, performed_by, publishers },
+    {
+      estate_id,
+      estate_sync_property_id,
+      performed_by,
+      publishers,
+      building_id = null,
+      unit_category_id = null,
+    },
     trx
   ) {
     let listingExists = []
@@ -86,6 +98,8 @@ class EstateSyncService {
                 posting_error_message: '',
                 publishing_error_message: '',
                 publishing_error_type: '',
+                building_id,
+                unit_category_id,
               })
               .where('provider', publisher)
               .where('estate_id', estate_id)
@@ -100,6 +114,8 @@ class EstateSyncService {
                   ? ESTATE_SYNC_LISTING_STATUS_POSTED
                   : ESTATE_SYNC_LISTING_STATUS_INITIALIZED,
                 estate_sync_property_id,
+                building_id,
+                unit_category_id,
               },
               trx
             )
@@ -131,7 +147,7 @@ class EstateSyncService {
       .first())
   }
 
-  static async postEstate({ estate_id }) {
+  static async postEstate({ estate_id }, is_building = false) {
     try {
       if (!estate_id) {
         return
@@ -157,16 +173,18 @@ class EstateSyncService {
       if (!Number(estate.usable_area)) {
         estate.usable_area = estate.area
       }
-      const resp = await estateSync.postEstate({
-        estate,
-      })
+      const resp = await estateSync.postEstate(
+        {
+          estate,
+        },
+        is_building
+      )
 
       let data = {
         success: true,
         type: 'success-posting',
         estate_id,
       }
-
       if (resp?.success) {
         //make all with estate_id and estate_sync_property_id to draft
         await EstateSyncListing.query()
@@ -739,6 +757,73 @@ class EstateSyncService {
   static async getPublisherFromTargetId(targetId) {
     const target = await EstateSyncTarget.query().where('estate_sync_target_id', targetId).first()
     return target?.publishing_provider || null
+  }
+
+  static async publishBuilding({ buildingId, publisher }, userId) {
+    //we publish to IS24 only for now.
+    if (['immobilienscout-24', 'immobilienscout-24-sandbox'].indexOf(publisher) === -1) {
+      return false
+    }
+    if (process.env.NODE_ENV === 'localhost') {
+      publisher = 'immobilienscout-24-sandbox'
+    }
+    const trx = await Database.beginTransaction()
+    try {
+      const unspecifiedCategories = await UnitCategoryService.getBuildingCategories(
+        buildingId,
+        IS24_PUBLISHING_STATUS_NO_STATUS
+      )
+      if (unspecifiedCategories.length > 0) {
+        //category representative
+        const representativeEstate = await UnitCategoryService.getCategoryRepresentative(
+          unspecifiedCategories[0].id
+        )
+        await EstateSyncService.saveMarketPlacesInfo(
+          {
+            estate_id: representativeEstate.id,
+            performed_by: userId,
+            publishers: [publisher],
+            building_id: representativeEstate.build_id,
+            unit_category_id: representativeEstate.unit_category_id,
+          },
+          trx
+        )
+        await UnitCategory.query().where('id', unspecifiedCategories[0].id).update({
+          is24_publish_status: IS24_PUBLISHING_STATUS_INIT,
+        })
+        require('./QueueService').estateSyncPublishBuilding(
+          { building_id: buildingId, publisher },
+          userId
+        )
+        await trx.commit()
+        return true
+      }
+      //initialized categories
+      const initializedCategories = await UnitCategoryService.getBuildingCategories(
+        buildingId,
+        IS24_PUBLISHING_STATUS_INIT
+      )
+      if (initializedCategories.length > 0) {
+        const representativeEstate = await UnitCategoryService.getCategoryRepresentative(
+          initializedCategories[0].id
+        )
+        await EstateSyncService.postEstate({ estate_id: representativeEstate.id }, true)
+        await UnitCategory.query().where('id', initializedCategories[0].id).update({
+          is24_publish_status: IS24_PUBLISHING_STATUS_POSTED,
+        })
+        require('./QueueService').estateSyncPublishBuilding(
+          { building_id: buildingId, publisher },
+          userId
+        )
+        await trx.commit()
+        return true
+      }
+
+      await trx.commit()
+    } catch (err) {
+      await trx.rollback()
+      throw new HttpException(err?.message)
+    }
   }
 }
 

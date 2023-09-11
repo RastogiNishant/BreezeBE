@@ -2,7 +2,9 @@
 
 const { omit } = require('lodash')
 const UnitCategory = use('App/Models/UnitCategory')
+const Estate = use('App/Models/Estate')
 const Promise = require('bluebird')
+const { IS24_PUBLISHING_STATUS_INIT } = require('../constants')
 
 class UnitCategoryService {
   static async upsert(data) {
@@ -60,6 +62,18 @@ class UnitCategoryService {
   static categoryNameQuery(value) {
     const query = ` SELECT id from unit_categories where name ilike '%${value}%'`
     return query
+  }
+
+  static async getBuildingCategories(buildingId, status = IS24_PUBLISHING_STATUS_INIT) {
+    const query = UnitCategory.query().where('build_id', buildingId)
+    const categories = await query.where('is24_publish_status', status).fetch()
+    return categories.toJSON() || []
+  }
+
+  static async getCategoryRepresentative(categoryId) {
+    //FIXME: representative should have been preselected during import/creation of unit.
+    const representative = await Estate.query().where('unit_category_id', categoryId).first()
+    return representative
   }
 }
 
