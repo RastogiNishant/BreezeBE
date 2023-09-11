@@ -850,7 +850,6 @@ class EstateSyncService {
     const publishedIds = (publishedEstates.toJSON() || []).map(
       (publishedEstate) => publishedEstate.estate_id
     )
-    console.log({ publishedIds })
     await EstateSyncService.unpublishMultipleEstates(publishedIds, true)
     await UnitCategory.query()
       .where('build_id', buildingId)
