@@ -2201,6 +2201,7 @@ class EstateService {
       building_status: building?.status,
       status: estates?.[0]?.status,
       publish_status: estates?.[0]?.publish_status,
+      property_id: estates?.[0]?.property_id,
     }
 
     const EstateSyncService = require('./EstateSyncService')
