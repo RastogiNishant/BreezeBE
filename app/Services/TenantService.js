@@ -3,6 +3,7 @@
 const moment = require('moment')
 const yup = require('yup')
 const { isEmpty } = require('lodash')
+const Logger = use('Logger')
 
 const Database = use('Database')
 const Member = use('App/Models/Member')
@@ -200,11 +201,13 @@ class TenantService extends BaseService {
       .first()
 
     const wbs_certificate = await Promise.map(
-      tenantWithCertificate.wbs_certificate || [],
+      tenantWithCertificate?.wbs_certificate || [],
       async (cert) => await this.getWithAbsoluteUrl(cert)
     )
 
-    tenantWithCertificate.wbs_certificate = wbs_certificate
+    if (tenantWithCertificate) {
+      tenantWithCertificate.wbs_certificate = wbs_certificate
+    }
 
     return tenantWithCertificate
   }
