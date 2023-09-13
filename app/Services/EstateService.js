@@ -118,7 +118,9 @@ const {
   SPACE_INTERVAL_COUNT,
   ROOM_INTERVAL_COUNT,
   RENT_INTERVAL_COUNT,
+  FLOOR_INTERVAL_COUNT,
   MAX_RENT_COUNT,
+  MAX_FLOOR_COUNT,
   FURNISHED_GERMAN_NAME,
   PUBLISH_TYPE_ONLINE_MARKET,
   MAXIMUM_EXPIRE_PERIOD,
@@ -1469,10 +1471,19 @@ class EstateService {
       interval: RENT_INTERVAL_COUNT,
     })
 
+    const number_floors = this.calculateCounts({
+      estates,
+      fieldName: 'number_floors',
+      start: 0,
+      end: MAX_FLOOR_COUNT,
+      interval: FLOOR_INTERVAL_COUNT,
+    })
+
     return {
       rooms_number,
       area,
       net_rent,
+      number_floors,
     }
   }
 
