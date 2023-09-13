@@ -1336,8 +1336,26 @@ class EstateService {
   static async filterEstates({ tenant, estates, inside_property = false }) {
     Logger.info(`before filterEstates count ${estates?.length}`)
 
-    const minTenantBudget = tenant?.budget_min || 0
-    const maxTenantBudget = tenant?.budget_max || 0
+    const budgetMax = tenant?.budget_max
+    const budgetMin = tenant?.budget_min
+
+    let maxTenantBudget = 0
+    if (budgetMax) {
+      if (budgetMax > 100) {
+        maxTenantBudget = budgetMax
+      } else {
+        maxTenantBudget = (budgetMax * tenant?.income) / 100
+      }
+    }
+
+    let minTenantBudget = 0
+    if (budgetMin) {
+      if (budgetMin > 100) {
+        minTenantBudget = budgetMin
+      } else {
+        minTenantBudget = (budgetMin * tenant?.income) / 100
+      }
+    }
 
     estates = estates.filter((estate) => {
       const budget = tenant.include_utility ? estate.net_rent + estate.extra_costs : estate.net_rent
