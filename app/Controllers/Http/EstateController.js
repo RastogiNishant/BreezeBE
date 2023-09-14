@@ -429,13 +429,11 @@ class EstateController {
 
   async extendBuilding({ request, auth, response }) {
     const { id, available_end_at, is_duration_later, min_invite_count } = request.all()
-
     try {
-      const building = await BuildingService.getByBuildingId({
+      const building = await BuildingService.get({
         user_id: auth.user.id,
-        building_id: id,
+        id,
       })
-
       const estates = await EstateService.getEstatesByBuilding({
         user_id: auth.user.id,
         build_id: id,

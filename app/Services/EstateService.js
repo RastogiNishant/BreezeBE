@@ -118,7 +118,9 @@ const {
   SPACE_INTERVAL_COUNT,
   ROOM_INTERVAL_COUNT,
   RENT_INTERVAL_COUNT,
+  FLOOR_INTERVAL_COUNT,
   MAX_RENT_COUNT,
+  MAX_FLOOR_COUNT,
   FURNISHED_GERMAN_NAME,
   PUBLISH_TYPE_ONLINE_MARKET,
   MAXIMUM_EXPIRE_PERIOD,
@@ -381,6 +383,7 @@ class EstateService {
       .with('amenities', function (q) {
         q.with('option')
       })
+      .with('category')
       .first()
   }
 
@@ -749,7 +752,6 @@ class EstateService {
       }
 
       await estate.updateItemWithTrx(updateData, trx)
-      await this.deleteMatchInfo({ estate_id: estate.id }, trx)
 
       if (estate.build_id) {
         await BuildingService.updateCanPublish(
@@ -1422,6 +1424,7 @@ class EstateService {
 
     return {
       estates: filteredEstates,
+      groupedEstates: estates,
       categoryCounts,
     }
   }
@@ -1468,10 +1471,19 @@ class EstateService {
       interval: RENT_INTERVAL_COUNT,
     })
 
+    const number_floors = this.calculateCounts({
+      estates,
+      fieldName: 'number_floors',
+      start: 0,
+      end: MAX_FLOOR_COUNT,
+      interval: FLOOR_INTERVAL_COUNT,
+    })
+
     return {
       rooms_number,
       area,
       net_rent,
+      number_floors,
     }
   }
 
@@ -2218,6 +2230,7 @@ class EstateService {
       building_status: building?.status,
       status: estates?.[0]?.status,
       publish_status: estates?.[0]?.publish_status,
+      property_id: estates?.[0]?.property_id,
     }
 
     const EstateSyncService = require('./EstateSyncService')
