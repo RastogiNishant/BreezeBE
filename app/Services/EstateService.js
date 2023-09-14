@@ -752,7 +752,6 @@ class EstateService {
       }
 
       await estate.updateItemWithTrx(updateData, trx)
-      await this.deleteMatchInfo({ estate_id: estate.id }, trx)
 
       if (estate.build_id) {
         await BuildingService.updateCanPublish(
