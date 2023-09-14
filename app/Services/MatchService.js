@@ -951,11 +951,11 @@ class MatchService {
   static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
-    let { estates, categoryCounts } = await EstateService.searchEstatesQuery(tenant)
+    let { estates, categoryCounts, groupedEstates } = await EstateService.searchEstatesQuery(tenant)
     if (only_count) {
       return {
         categoryCounts,
-        count: estates?.length,
+        count: groupedEstates?.length,
       }
     }
 
