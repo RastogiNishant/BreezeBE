@@ -110,6 +110,26 @@ class TenantCertificateSerivce {
     }
   }
 
+  static async deleteImage({ id, user_id, uri }) {
+    const certificate = await this.getByUserId({ id, user_id })
+
+    const deleteImage = (certificate.attachments || []).find(
+      (attachment) => attachment.uri === uri
+    )?.uri
+    await File.remove(deleteImage, false)
+
+    let remainAttachments = (certificate.attachments || []).filter(
+      (attachment) => attachment.uri !== uri
+    )
+
+    if (!remainAttachments?.length) {
+      remainAttachments = null
+    }
+    await TenantCertificate.query()
+      .where('id', id)
+      .update({ attachments: remainAttachments ? JSON.stringify(remainAttachments) : null })
+  }
+
   static async updateCertificate(data) {
     await TenantCertificate.query()
       .where('id', data.id)
@@ -145,6 +165,14 @@ class TenantCertificateSerivce {
   static async get(id) {
     return await TenantCertificate.query()
       .where('id', id)
+      .whereNot('status', STATUS_DELETE)
+      .firstOrFail()
+  }
+
+  static async getByUserId({ id, user_id }) {
+    return await TenantCertificate.query()
+      .where('id', id)
+      .where('user_id', user_id)
       .whereNot('status', STATUS_DELETE)
       .firstOrFail()
   }

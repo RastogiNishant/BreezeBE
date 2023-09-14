@@ -29,6 +29,11 @@ class TenantCertificateController {
     response.res(await TenantCertificateService.updateImage(request, auth.user.id))
   }
 
+  async deleteImage({ request, auth, response }) {
+    const { id, uri } = request.all()
+    response.res(await TenantCertificateService.deleteImage({ id, uri, user_id: auth.user.id }))
+  }
+
   async deleteCertificate({ request, auth, response }) {
     const { id } = request.all()
     const trx = await Database.beginTransaction()

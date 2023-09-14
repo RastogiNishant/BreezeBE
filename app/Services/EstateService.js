@@ -1491,8 +1491,26 @@ class EstateService {
   static async filterEstates({ tenant, estates, inside_property = false }) {
     Logger.info(`before filterEstates count ${estates?.length}`)
 
-    const minTenantBudget = tenant?.budget_min || 0
-    const maxTenantBudget = tenant?.budget_max || 0
+    const budgetMax = tenant?.budget_max
+    const budgetMin = tenant?.budget_min
+
+    let maxTenantBudget = 0
+    if (budgetMax) {
+      if (budgetMax > 100) {
+        maxTenantBudget = budgetMax
+      } else {
+        maxTenantBudget = (budgetMax * tenant?.income) / 100
+      }
+    }
+
+    let minTenantBudget = 0
+    if (budgetMin) {
+      if (budgetMin > 100) {
+        minTenantBudget = budgetMin
+      } else {
+        minTenantBudget = (budgetMin * tenant?.income) / 100
+      }
+    }
 
     if (minTenantBudget && minTenantBudget) {
       estates = estates.filter((estate) => {
@@ -3302,10 +3320,10 @@ class EstateService {
           limit: -1,
         })
       )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
-    estates = orderBy(estates, 'floor', 'asc')
+    estates = orderBy(estates, 'rooms_number', 'asc')
 
-    let categories = await UnitCategoryService.getAll(build_id)
-    // const regex = /-\d+/
+    let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
+    category_ids = category_ids.map((cat_id) => cat_id || -1)
 
     const yAxisKey = is_social ? `cert_category` : `floor`
     const yAxisEstates = is_social
@@ -3315,39 +3333,30 @@ class EstateService {
         )
       : groupBy(estates, (estate) => estate.floor)
 
-    if (!categories?.length || estates?.filter((estate) => !estate.unit_category_id)?.length) {
-      categories = [
-        ...categories,
-        {
-          id: null,
-          name: 'noCategory',
-        },
-      ]
-    }
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
-      categories.forEach((category) => {
-        categoryEstates[category.name] = estates.filter(
+      category_ids.forEach((cat_id) => {
+        const filteredEstates = estates.filter(
           (estate) =>
             estate[yAxisKey].toString() === axis.toString() &&
-            estate.unit_category_id === category.id
+            (cat_id != -1 ? estate.unit_category_id === cat_id : !estate.unit_category_id)
         )
+        if (filteredEstates?.length) {
+          categoryEstates[cat_id] = filteredEstates
+        }
       })
 
-      buildingEstates[axis] = categoryEstates
-    })
-
-    categories.forEach((category) => {
-      if (
-        Object.keys(buildingEstates).every((key) => !buildingEstates[key]?.[category.name]?.length)
-      ) {
-        Object.keys(buildingEstates).forEach((key) => delete buildingEstates[key][category.name])
+      if (Object.keys(categoryEstates)?.length) {
+        buildingEstates[axis] = categoryEstates
       }
     })
 
     return {
-      categories: Object.keys(yAxisEstates).sort((a, b) => b - a),
+      categories: Object.keys(yAxisEstates).sort((a, b) =>
+        is_social ? a.localeCompare(b) : b - a
+      ),
+      xAxisCategories: category_ids,
       estates: buildingEstates,
     }
   }
@@ -4069,7 +4078,7 @@ class EstateService {
         .select('id')
         .where('user_id', estate.user_id)
         .where('unit_category_id', estate.unit_category_id)
-        .where('status', status)
+        .whereIn('status', Array.isArray(status) ? status : [status])
         .where('build_id', estate.build_id)
         .fetch()
     ).toJSON()
