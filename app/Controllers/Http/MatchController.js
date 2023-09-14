@@ -952,6 +952,9 @@ class MatchController {
       'status_at',
       'unread_count',
       'credit_score',
+      'email',
+      'phone',
+      'last_address',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
@@ -1108,8 +1111,6 @@ class MatchController {
     if (finalMatchesCount && finalMatchesCount.length && parseInt(finalMatchesCount[0].count) > 0) {
       isFinalMatch = true
     }
-
-    extraFields = ['email', 'phone', 'last_address', ...fields]
 
     const filter = isFinalMatch ? { final: true } : { commit: true }
 
