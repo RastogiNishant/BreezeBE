@@ -1424,6 +1424,7 @@ class EstateService {
 
     return {
       estates: filteredEstates,
+      groupedEstates: estates,
       categoryCounts,
     }
   }
