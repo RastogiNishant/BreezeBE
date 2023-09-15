@@ -435,6 +435,7 @@ const constants = {
   ],
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB: 'scheduledEvery37thMinuteHourlyJob',
+  SCHEDULED_EVERY_1M_JOB: 'scheduledEvery1Min',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
   SCHEDULED_EVERY_15MINUTE_NIGHT_JOB: 'scheduledEvery15MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
