@@ -191,6 +191,14 @@ definitions:
     produces: [application/json]
     responses: [200]
 
+/tenant/members/pdfdownload:
+  get:
+    tags: [members]
+    security: [bearerAuth: []]
+    description: Get pdf downloaded
+    produces: [application/json]
+    responses: [200]
+    
   post:
     tags: [members]
     security: [bearerAuth: []]
