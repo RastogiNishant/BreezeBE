@@ -212,6 +212,7 @@ class PropertyController {
     const from = (page - 1) * limit
     let buildings = Building.query()
       .with('categories')
+      .with('user')
       .with('estates', function (e) {
         e.withCount('visits')
           .with('final')
@@ -224,6 +225,7 @@ class PropertyController {
       .select(
         Building.columns.filter((column) => column !== 'id').map((column) => `buildings.${column}`)
       )
+      .select(Database.raw(`NOW() as updated_at`))
       .select(Database.raw(`true as is_building`))
       .innerJoin({ estates: 'estates' }, function () {
         this.on('buildings.id', 'estates.build_id')
@@ -242,6 +244,31 @@ class PropertyController {
       return [...estateIdsOnBuildings, ...estateIds]
     }, [])
 
+    //parse counts...
+    buildings.map((building) => {
+      building.invite_count = 0
+      building.final_match_count = 0
+      building.visit_count = 0
+      for (let count = 0; count < building?.estates?.length; count++) {
+        building.estates[count].invite_count =
+          parseInt(building.estates[count]['__meta__'].knocked_count) +
+          parseInt(building.estates[count]['__meta__'].inviteBuddies_count) +
+          parseInt(building.estates[count]['__meta__'].contact_requests_count)
+        building.invite_count +=
+          parseInt(building.estates[count]['__meta__'].knocked_count) +
+          parseInt(building.estates[count]['__meta__'].inviteBuddies_count) +
+          parseInt(building.estates[count]['__meta__'].contact_requests_count)
+        building.estates[count].visit_count = parseInt(
+          building.estates[count]['__meta__'].visits_count
+        )
+        building.visit_count += parseInt(building.estates[count]['__meta__'].visits_count)
+        building.estates[count].final_match_count = parseInt(
+          building.estates[count]['__meta__'].final_count
+        )
+        building.final_match_count += parseInt(building.estates[count]['__meta__'].final_count)
+      }
+    })
+
     //exact count needed... since count(*) may be approx
     const estateCount = await Estate.query()
       .whereNot('status', STATUS_DELETE)
@@ -259,7 +286,13 @@ class PropertyController {
         if (from < 0) from = 0
         const to = (page - buildEstatePage) * limit - offsetCount < 0 ? limit - offsetCount : limit
 
-        let query = this.getEstatesQuery({ estate_status, activation_status, user_status })
+        let query = this.getEstatesQuery({
+          estate_status,
+          activation_status,
+          user_status,
+        })
+          .whereNotIn('id', estateIdsOnBuildings)
+          .whereNot('status', STATUS_DELETE)
         if (limit !== -1 && from !== -1) {
           estates = await query.offset(from).limit(limit).fetch()
         } else {
@@ -278,7 +311,10 @@ class PropertyController {
         })
       }
     } else {
-      let query = this.getEstatesQuery({ estate_status, activation_status, user_status })
+      let query = this.getEstatesQuery({ estate_status, activation_status, user_status }).whereNot(
+        'status',
+        STATUS_DELETE
+      )
       estates = await query.fetch()
       estates = estates.rows.map((estate) => {
         estate = estate.toJSON()
@@ -292,6 +328,7 @@ class PropertyController {
       })
     }
     estates = [...buildings, ...estates]
+    //estates = [...buildings]
     const pages = {
       total,
       lastPage: Math.ceil(total / limit) || 1,
