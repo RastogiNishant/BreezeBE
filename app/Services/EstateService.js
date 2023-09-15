@@ -1523,8 +1523,7 @@ class EstateService {
         minTenantBudget = (budgetMin * tenant?.income) / 100
       }
     }
-
-    if (minTenantBudget && minTenantBudget) {
+    if (maxTenantBudget) {
       estates = estates.filter((estate) => {
         const budget = tenant.include_utility
           ? estate.net_rent + estate.extra_costs
