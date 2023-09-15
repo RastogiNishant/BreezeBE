@@ -100,6 +100,12 @@ class TenantController {
     try {
       const tenant = await UserService.getOrCreateTenant(auth.user, trx)
 
+      if (!Array.isArray(data.income_level) || data.income_level.length === 0) {
+        data.is_public_certificate = false
+      } else {
+        data.is_public_certificate = true
+      }
+
       if (
         data.transfer_budget_min &&
         data.transfer_budget_max &&
