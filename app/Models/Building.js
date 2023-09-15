@@ -34,6 +34,10 @@ class Building extends Model {
   categories() {
     return this.hasMany('App/Models/UnitCategory', 'id', 'build_id')
   }
+
+  user() {
+    return this.belongsTo('App/Models/User', 'user_id', 'id')
+  }
 }
 
 module.exports = Building
