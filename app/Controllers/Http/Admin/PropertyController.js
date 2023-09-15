@@ -570,6 +570,28 @@ class PropertyController {
     const docs = await Estate.query().select('energy_proof').where('id', id).first()
     return response.res({ files, images, docs })
   }
+
+  async publishBuilding({ request, response }) {
+    const { id } = request.all()
+    //is24 for now...
+    const building = await Building.query()
+      .where('id', id)
+      .whereNot('status', STATUS_DELETE)
+      .first()
+    if (!building) {
+      throw new HttpException('Building not found.')
+    }
+    if (process.env.NODE_ENV === 'localhost') {
+      publisher = 'immobilienscout-24-sandbox'
+    } else {
+      publisher = 'immobilienscout-24'
+    }
+    const result = await EstateSyncService.publishBuilding(
+      { buildingId: id, publisher },
+      building.user_id
+    )
+    return response.res(result)
+  }
 }
 
 module.exports = PropertyController
