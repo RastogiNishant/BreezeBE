@@ -24,7 +24,7 @@ class Building extends Model {
   }
 
   estates() {
-    return this.hasMany('App/Models/Estate')
+    return this.hasMany('App/Models/Estate', 'id', 'build_id')
   }
 
   static get Serializer() {
