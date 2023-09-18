@@ -1,11 +1,30 @@
 'use strict'
 const fs = require('fs')
+const { PDFDocument, rgb } = require('pdf-lib');
 
 class PdfController {
   async generatePdf({ response }) {
-    const pdfFileName = 'sample.pdf'
-    const pdfFilePath = __dirname + '/' + pdfFileName
 
+    const pdfDoc = await PDFDocument.create();
+    // Add a page to the document
+    const page = pdfDoc.addPage([600, 400]);
+    // Add some text to the page
+    page.drawText('Sample PDF Text!', {
+      x: 50,
+      y: 350,
+      size: 30,
+      color: rgb(0, 0, 0), // Black color
+    });
+
+    const pdfFileName = 'sample.pdf'
+    // Write the PDF bytes to a file
+
+    const pdfFilePath = __dirname + '/' + pdfFileName
+    // Serialize the PDF to bytes
+    const pdfBytes = await pdfDoc.save()
+
+   // Write the PDF bytes to a file
+    fs.writeFileSync(pdfFilePath, pdfBytes);
     response.implicitEnd = false
 
     // PDF Stream headers
