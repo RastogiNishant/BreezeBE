@@ -45,6 +45,11 @@ class Tenant extends Model {
       'selected_adults_count',
       'is_short_term_rent',
       'notify_sent',
+      'request_certificate_at',
+      'request_certificate_city_id',
+      'income_level',
+      'is_public_certificate',
+      'mixed_use_type_detail',
     ]
   }
 
@@ -78,6 +83,12 @@ class Tenant extends Model {
       'transfer_budget_max',
       'residency_duration_min',
       'residency_duration_max',
+
+      'request_certificate_at',
+      'request_certificate_city_id',
+      'income_level',
+      'is_public_certificate',
+      'mixed_use_type_detail',
     ]
   }
 
@@ -108,6 +119,11 @@ class Tenant extends Model {
       'residency_duration_max',
       'selected_adults_count',
       'notify_sent',
+
+      'request_certificate_at',
+      'request_certificate_city_id',
+      'income_level',
+      'is_public_certificate',
     ]
   }
 
@@ -177,6 +193,10 @@ class Tenant extends Model {
    */
   members() {
     return this.hasMany('App/Models/Member', 'user_id', 'user_id')
+  }
+
+  certificates() {
+    return this.hasMany('App/Models/TenantCertificate', 'user_id', 'user_id')
   }
 
   /**

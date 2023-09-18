@@ -110,6 +110,7 @@ const constants = {
 
   GLOBAL_CACHE_KEY: 'GLOBAL_OPTIONS',
   GLOBAL_CACHE_OPTION: 'apt_options',
+  GLOBAL_CACHE_CITY: 'apt_cities',
 
   OWNERSHIP_TYPE_FREEHOLDER: 1,
   OWNERSHIP_TYPE_DIRECT_PROPERTY: 2,
@@ -353,6 +354,8 @@ const constants = {
   INCOME_TYPE_PENSIONER: 'pensioner',
   INCOME_TYPE_SELF_EMPLOYED: 'self',
   INCOME_TYPE_TRAINEE: 'trainee',
+  INCOME_TYPE_OTHER_BENEFIT: 'other_benefit',
+  INCOME_TYPE_CHILD_BENEFIT: 'child_benefit',
 
   FAMILY_STATUS_SINGLE: 1,
   FAMILY_STATUS_WITH_CHILD: 3,
@@ -432,6 +435,7 @@ const constants = {
   ],
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB: 'scheduledEvery37thMinuteHourlyJob',
+  SCHEDULED_EVERY_1M_JOB: 'scheduledEvery1Min',
   SCHEDULED_EVERY_5M_JOB: 'scheduledEvery5Min',
   SCHEDULED_EVERY_15MINUTE_NIGHT_JOB: 'scheduledEvery15MinuteNightJob',
   SCHEDULED_13H_DAY_JOB: 'scheduledEveryDay13H',
@@ -1037,6 +1041,8 @@ const constants = {
   INCOME_TYPE_PENSIONER_LABEL: 'Pensioner',
   INCOME_TYPE_SELF_EMPLOYED_LABEL: 'Self-Employeed',
   INCOME_TYPE_TRAINEE_LABEL: 'Trainee',
+  INCOME_TYPE_OTHER_BENEFIT_LABEL: 'Other benefit',
+  INCOME_TYPE_CHILD_BENEFIT_LABEL: 'Child benefit',
 
   DOC_INCOME_PROOF_LABEL: 'Income proof',
   DOC_RENT_ARREARS_LABEL: 'Rent arrears',
@@ -1362,8 +1368,55 @@ Estates: [ESTATES]
   MAX_SPACE_COUNT: 500,
   RENT_INTERVAL_COUNT: 100,
   MAX_RENT_COUNT: 5000,
+  FLOOR_INTERVAL_COUNT: 1,
+  MAX_FLOOR_COUNT: 20,
 
   FURNISHED_GERMAN_NAME: 'Möbliert',
+
+  CERT_CATEGORY_A: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryA',
+  CERT_CATEGORY_B: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryB',
+  CERT_CATEGORY_C: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryC',
+  CERT_CATEGORY_I: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryI',
+  CERT_CATEGORY_II: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryII',
+  CERT_CATEGORY_III: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryIII',
+  CERT_CATEGORY_IV: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryIV',
+  CERT_CATEGORY_100: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory100',
+  CERT_CATEGORY_140: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory140',
+  CERT_CATEGORY_160: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory160',
+  CERT_CATEGORY_180: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory180',
+  CERT_CATEGORY_220: 'prospect.profile.adult.apartment.txt_PublicCertificateCategory220',
+  CERT_CATEGORY_NOT: 'prospect.profile.adult.apartment.txt_PublicCertificateCategoryBWB',
+
+  INCOME_CONTRACT_DURATION_UNLIMITED: 1,
+  INCOME_CONTRACT_DURATION_LIMITED: 2,
+
+  MARITAL_SINGLE: 1,
+  MARITAL_MARRIED: 2,
+  MARITAL_PERMANENT_SEPRATED: 3,
+  MARITAL_DIVORCED: 4,
+  MARITAL_WIDOWED: 5,
+  MARITAL_COHABITATION: 6,
+  MARITAL_REGISTERED_COHABITATION: 7,
+
+  MANDATORY_AMENITIES: {
+    FURNISHED: 'furnished',
+    FITTED_KITCHEN: 'fitted_kitchen',
+    BARRIER_FREE: 'landlord.property.details.building_amenities.barrier_free',
+    ELEVATOR: 'elevator',
+    BALCONY: 'apt_balcony',
+  },
+  UNIT_SHEET: 1,
+  BUILDING_SHEET: 2,
+  CATEGORY_SHEET: 3,
+
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA: 1,
+  CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA: 2,
+  CREDIT_HISTORY_STATUS_ENFORCEABLE_CLAIMS: 3,
+
+  IS24_PUBLISHING_STATUS_NO_STATUS: 0,
+  IS24_PUBLISHING_STATUS_INIT: 1,
+  IS24_PUBLISHING_STATUS_POSTED: 2,
+  IS24_PUBLISHING_STATUS_PUBLISHED: 3,
 }
 
 module.exports = constants

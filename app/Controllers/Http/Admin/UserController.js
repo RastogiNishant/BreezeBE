@@ -109,9 +109,10 @@ class UserController {
   async updateActivationStatus({ request, auth, response }) {
     const { ids, action } = request.all()
     let affectedRows = 0
-    const trx = await Database.beginTransaction()
+    let trx
     switch (action) {
       case 'activate':
+        trx = await Database.beginTransaction()
         try {
           const users = await UserService.getLangByIds({ ids, status: STATUS_ACTIVE })
           if (users.length !== ids.length) {
@@ -155,6 +156,7 @@ class UserController {
         }
 
       case 'deactivate':
+        trx = await Database.beginTransaction()
         try {
           affectedRows = await User.query().whereIn('id', ids).update(
             {
@@ -199,6 +201,7 @@ class UserController {
           throw new HttpException(err.message, 422)
         }
       case 'deactivate-in-2-days':
+        trx = await Database.beginTransaction()
         try {
           await Promise.map(ids, async (id) => {
             const user = await User.query().where('id', id).where('role', ROLE_LANDLORD).first()
@@ -258,7 +261,7 @@ class UserController {
       case 'deactivate-by-date':
         return response.res({ message: 'action not implemented yet.' })
     }
-    await trx.rollback()
+
     response.res(false)
   }
 
@@ -487,7 +490,9 @@ class UserController {
                 'insolvency_proceed', members.insolvency_proceed,
                 'arrest_warranty', members.arrest_warranty,
                 'clean_procedure', members.clean_procedure,
-                'income_seizure', members.income_seizure
+                'income_seizure', members.income_seizure,
+                'credit_history_status', members.credit_history_status,
+                'credit_score_issued_at', members.credit_score_issued_at
               )
             ) as member_info
           from

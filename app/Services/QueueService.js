@@ -26,10 +26,12 @@ const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlord
 const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
 const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
+const ESTATE_SYNC_PUBLISH_BUILDING = 'estateSyncPublishBuilding'
 const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const KNOCK_SEND_REQUEST_EMAIL = 'knockRequestToEstate'
 const {
   SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+  SCHEDULED_EVERY_1M_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
@@ -104,6 +106,11 @@ class QueueService {
 
   static estateSyncPublishEstate({ estate_id }) {
     Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
+  }
+
+  static estateSyncPublishBuilding({ building_id, publisher }, userId) {
+    console.log('esateSyncPublishBuilding called...', building_id, publisher, userId)
+    Queue.addJob(ESTATE_SYNC_PUBLISH_BUILDING, { building_id, publisher, userId })
   }
 
   static estateSyncUnpublishEstates(estate_ids, markListingsForDelete = true) {
@@ -189,6 +196,13 @@ class QueueService {
   /**
    *
    */
+  static async sendEveryMin() {
+    return Promise.all([wrapException(MatchService.moveExpiredFinalConfirmToTop)])
+  }
+
+  /**
+   *
+   */
   static async sendEvery5Min() {
     const NoticeService = require('./NoticeService')
     return Promise.all([
@@ -218,10 +232,7 @@ class QueueService {
   static async performEvery1HourJob() {
     const MatchService = require('./MatchService')
 
-    return Promise.all([
-      wrapException(MatchService.moveExpiredFinalConfirmToTop),
-      wrapException(require('./EstateService').updateVacantDate),
-    ])
+    return Promise.all([wrapException(require('./EstateService').updateVacantDate)])
   }
 
   static async pullGewobag() {
@@ -335,6 +346,8 @@ class QueueService {
           })
         case SCHEDULED_EVERY_15MINUTE_NIGHT_JOB:
           return QueueService.doEvery15MinsJob()
+        case SCHEDULED_EVERY_1M_JOB:
+          return QueueService.sendEveryMin()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
@@ -381,6 +394,12 @@ class QueueService {
           return require('./EstateSyncService').postEstate({
             estate_id: job.data.estate_id,
           })
+        case ESTATE_SYNC_PUBLISH_BUILDING:
+          console.log(ESTATE_SYNC_PUBLISH_BUILDING, job.data)
+          return require('./EstateSyncService').publishBuilding(
+            { buildingId: job.data.building_id, publisher: job.data.publisher },
+            job.data.userId
+          )
         case ESTATE_SYNC_UNPUBLISH_ESTATES:
           return require('./EstateSyncService').unpublishMultipleEstates(
             job.data.estate_ids,

@@ -97,7 +97,9 @@ class MemberController {
         { field: 'debt_proof', mime: docMimes, isPublic: false },
         { field: 'passport', mime: docMimes, isPublic: false },
       ])
-
+      if (files.debt_proof) {
+        files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
+      }
       const user_id = auth.user.id
 
       if (!data.email) {
@@ -123,7 +125,6 @@ class MemberController {
 
         data.owner_user_id = existingUser.id
       }
-
       const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
 
       if (files.passport) {
@@ -192,7 +193,6 @@ class MemberController {
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
-
     const trx = await Database.beginTransaction()
     try {
       if (files.passport) {
@@ -207,11 +207,16 @@ class MemberController {
       }
 
       let member = await MemberService.allowEditMemberByPermission(auth.user, id)
+      if (files.debt_proof) {
+        files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
+        files.debt_proof = [...(member.debt_proof || []), ...files.debt_proof]
+      }
       const newData = member.owner_user_id ? omit(data, ['email']) : data
 
       if (data?.phone && data?.phone !== member.phone) {
         newData.phone_verified = false
       }
+
       const result = await member.updateItemWithTrx({ ...newData, ...files }, trx)
       await trx.commit()
 
@@ -306,7 +311,7 @@ class MemberController {
    *
    */
   async removeMemberDocs({ request, auth, response }) {
-    const { id, field } = request.all()
+    const { id, field, uri } = request.all()
 
     const user_id = auth.user.owner_id || auth.user.id
     const member = await MemberService.allowEditMemberByPermission(auth.user, id)
@@ -315,8 +320,18 @@ class MemberController {
       return response.res(false)
     }
 
-    await File.remove(member[field], false)
-    member[field] = null
+    member[field] = Array.isArray(member[field]) ? member[field] : [member[field]]
+    let deleteFiles = uri ? member[field].find((file) => file === uri) : member[field]
+    await File.remove(deleteFiles, false)
+
+    member[field] = uri ? member[field].filter((file) => file !== uri) : null
+
+    if (!member[field]?.length) {
+      member[field] = null
+    } else {
+      member[field] = field !== MEMBER_FILE_DEBT_PROOFS_DOC ? member[field][0] : member[field]
+    }
+
     await member.save()
 
     Event.fire('tenant::update', user_id)

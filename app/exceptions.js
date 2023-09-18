@@ -113,6 +113,13 @@ const exceptions = {
     'Your property is already published, to manipulate that property, please unpublish it first',
   ERROR_MATCH_COMMIT_DOUBLE:
     'You have already requests final match, please cancel that one first to proceed',
+  NO_BUILDING_ID_EXIST: 'NO BUILDING ID EXIST',
+  ERROR_PUBLISH_BUILDING: 'Some properties are not ready to publish',
+  BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY:
+    'The unit which belongs to a building can not be published separately',
+  ERROR_WRONG_MATCH_STATUS: 'Already invited to this property',
+  ERROR_COMMIT_MATCH_INVITE: 'No match for that property',
+  ERROR_ALREADY_MATCH_INVITE: 'The prospect is already in that stage for that property',
 }
 
 const exceptionCodes = {
@@ -134,6 +141,11 @@ const exceptionCodes = {
   ERROR_PROPERTY_ALREADY_RENTED_CODE: 9000600,
   ERROR_PROPERTY_INVALID_STATUS_CODE: 9000700,
   ERROR_PROPERTY_NOT_PUBLISHED_CODE: 9000800,
+  ERROR_PUBLISH_BUILDING_CODE: 9001000,
+  ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE: 9002000,
+  ERROR_WRONG_MATCH_STATUS_CODE: 10001000,
+  ERROR_COMMIT_MATCH_INVITE_CODE: 10001001,
+  ERROR_ALREADY_MATCH_INVITE_CODE: 10001002,
 }
 
 const exceptionKeys = {

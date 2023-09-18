@@ -1,5 +1,5 @@
 const Promise = require('bluebird')
-const { has, omit, isEmpty, trim } = require('lodash')
+const { has, omit, isEmpty, trim, property } = require('lodash')
 const moment = require('moment')
 const EstateImportReader = use('App/Classes/EstateImportReader')
 const Database = use('Database')
@@ -41,6 +41,8 @@ const {
 const {
   exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE },
 } = require('../exceptions')
+const BuildingService = require('./BuildingService')
+const UnitCategoryService = require('./UnitCategoryService')
 const WebSocket = use('App/Classes/Websocket')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -58,7 +60,19 @@ class ImportService {
    *
    */
 
-  static async createSingleEstate({ data, line, six_char_code }, userId, lang) {
+  static async createSingleEstate({ property, buildings, unitCategories, userId, lang }) {
+    let data = property.data
+    let line = property.line
+    let six_char_code = property.six_char_code
+
+    data.build_id = data.building_id
+      ? (buildings || []).filter((b) => b.building_id === data.building_id)[0]?.id
+      : null
+
+    data.unit_category_id = data.unit_category_id
+      ? (unitCategories || []).filter((category) => category.name === data.unit_category_id)[0]?.id
+      : null
+
     let estate
     line += 1
     const warnings = []
@@ -216,13 +230,13 @@ class ImportService {
         user_id,
       })
 
-      Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name}`)
+      Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name} ${lang}`)
       const url = await FileBucket.getPublicUrl(s3_bucket_file_name)
       Logger.info(`storing excel file to s3 bucket!!! ${url}`)
       const localPath = await FileBucket.saveFileTo({ url: s3_bucket_file_name, ext: 'xlsx' })
       Logger.info(`saved file to path ${localPath}`)
       const reader = new EstateImportReader()
-      reader.init(localPath)
+      reader.init(localPath, { lang })
       Logger.info('processing excel file!!!')
       const excelData = await reader.process()
       errors = excelData.errors
@@ -231,12 +245,29 @@ class ImportService {
 
       fsPromise.unlink(localPath)
 
+      //add/update building
+      const buildingsData = (data.building || []).map((building) => building.data)
+
+      await BuildingService.bulkUpsert(user_id, buildingsData)
+      const buildings = await BuildingService.getAll(user_id)
+      const categoryData = (data.category || []).map((category) => category.data)
+      await UnitCategoryService.bulkUpsert({ user_id, buildings, data: categoryData })
+      const unitCategories = await UnitCategoryService.getAll(
+        (buildings || []).map((building) => building.id)
+      )
+
       result = await Promise.map(
-        data,
+        data?.unit || [],
         async (i, index) => {
           if (i) {
             const { estateResult, singleWarnings, singleErrors } =
-              await ImportService.createSingleEstate(i, user_id, lang)
+              await ImportService.createSingleEstate({
+                property: i,
+                buildings,
+                unitCategories,
+                userId: user_id,
+                lang,
+              })
 
             if (singleErrors) {
               createErrors = createErrors.concat(singleErrors)
@@ -249,7 +280,7 @@ class ImportService {
               data: {
                 message: PROPERTY_HANDLE_FINISHED,
                 count: errors?.length + index + 1,
-                total: data.length + errors?.length,
+                total: (data?.unit?.length || 0) + (errors?.length || 0),
                 result: estateResult,
                 errors: singleErrors || [],
                 warnings: singleWarnings || [],
@@ -337,10 +368,7 @@ class ImportService {
 
       //Recalculating address by disconnected connect (no tenants connected) and unpublished match units (no prospects associated)
       //so addrss can only be updated only in the cases above
-      if (
-        (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) ||
-        estate.status === STATUS_ACTIVE
-      ) {
+      if (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) {
         estate_data = omit(estate_data, ['city', 'country', 'zip', 'street', 'house_number'])
         estate_data.is_coord_changed = false
       } else {

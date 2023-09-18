@@ -178,6 +178,20 @@ const {
   HEATING_TYPE_UNDERFLOOR,
   HEATING_TYPE_MISC,
   DATE_FORMAT,
+
+  CERT_CATEGORY_A,
+  CERT_CATEGORY_B,
+  CERT_CATEGORY_C,
+  CERT_CATEGORY_NOT,
+  CERT_CATEGORY_I,
+  CERT_CATEGORY_II,
+  CERT_CATEGORY_III,
+  CERT_CATEGORY_IV,
+  CERT_CATEGORY_100,
+  CERT_CATEGORY_140,
+  CERT_CATEGORY_160,
+  CERT_CATEGORY_180,
+  CERT_CATEGORY_220,
 } = require('../constants')
 
 const {
@@ -215,6 +229,10 @@ toPercent = (i) => {
   }
 
   return i
+}
+
+toInteger = (i) => {
+  return parseInt(i) || 0
 }
 
 toBool = (v) => {
@@ -466,9 +484,9 @@ class EstateAttributeTranslations {
       PETS_SMALL: 2,
     },
     stp_garage: (i) => parseInt(i) || 0,
-    budget: toPercent,
     credit_score: toPercent,
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
+    budget: (i, o) => parseInt(i) || 0,
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
       switch (escapeStr(i)) {
@@ -1002,6 +1020,38 @@ class EstateAttributeTranslations {
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+        ],
+      },
+      cert_category: {
+        keys: [
+          CERT_CATEGORY_A,
+          CERT_CATEGORY_B,
+          CERT_CATEGORY_C,
+          CERT_CATEGORY_I,
+          CERT_CATEGORY_II,
+          CERT_CATEGORY_III,
+          CERT_CATEGORY_IV,
+          CERT_CATEGORY_100,
+          CERT_CATEGORY_140,
+          CERT_CATEGORY_160,
+          CERT_CATEGORY_180,
+          CERT_CATEGORY_220,
+          CERT_CATEGORY_NOT,
+        ],
+        values: [
+          CERT_CATEGORY_A,
+          CERT_CATEGORY_B,
+          CERT_CATEGORY_C,
+          CERT_CATEGORY_I,
+          CERT_CATEGORY_II,
+          CERT_CATEGORY_III,
+          CERT_CATEGORY_IV,
+          CERT_CATEGORY_100,
+          CERT_CATEGORY_140,
+          CERT_CATEGORY_160,
+          CERT_CATEGORY_180,
+          CERT_CATEGORY_220,
+          CERT_CATEGORY_NOT,
         ],
       },
     }
