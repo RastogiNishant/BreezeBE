@@ -16,6 +16,9 @@ const {
   INCOME_TYPE_PENSIONER_LABEL,
   INCOME_TYPE_SELF_EMPLOYED_LABEL,
   INCOME_TYPE_TRAINEE_LABEL,
+  INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT,
+
   DOC_INCOME_PROOF_LABEL,
   DOC_RENT_ARREARS_LABEL,
   DOC_CREDIT_SCORE_LABEL,
@@ -130,6 +133,8 @@ class MatchFilter extends Base {
                   INCOME_TYPE_PENSIONER_LABEL,
                   INCOME_TYPE_SELF_EMPLOYED_LABEL,
                   INCOME_TYPE_TRAINEE_LABEL,
+                  INCOME_TYPE_OTHER_BENEFIT,
+                  INCOME_TYPE_CHILD_BENEFIT,
                 ])
             )
             .nullable(),

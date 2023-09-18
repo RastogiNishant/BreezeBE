@@ -551,6 +551,7 @@ class EstateCurrentTenantService extends BaseService {
               failureCount: inviteResult.failureCount,
             },
           }
+          return ret
         } else if (phone) {
           inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
           ret = {
@@ -1100,7 +1101,7 @@ class EstateCurrentTenantService extends BaseService {
         .fetch()
 
       estateCurrentTenants = estateCurrentTenants?.toJSON() || []
-      if (estateCurrentTenants.length > 0) {
+      if (estateCurrentTenants.length) {
         await EstateCurrentTenant.query()
           .whereIn(
             'id',

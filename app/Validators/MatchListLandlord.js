@@ -15,14 +15,16 @@ const {
   INCOME_TYPE_PENSIONER,
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
+  INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT,
 } = require('../constants')
 
 class MatchListLandlord extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: id.required(),
-      budget_min: yup.number().integer().min(0).max(100),
-      budget_max: yup.number().integer().min(0).max(100),
+      budget_min: yup.number().integer().min(0),
+      budget_max: yup.number().integer().min(0),
       credit_score_min: yup.number().min(0).max(100),
       credit_score_max: yup.number().min(0).max(100),
       income_type: yup
@@ -40,6 +42,8 @@ class MatchListLandlord extends Base {
               INCOME_TYPE_PENSIONER,
               INCOME_TYPE_SELF_EMPLOYED,
               INCOME_TYPE_TRAINEE,
+              INCOME_TYPE_OTHER_BENEFIT,
+              INCOME_TYPE_CHILD_BENEFIT,
             ])
         ),
       phone_verified: yup.boolean(),

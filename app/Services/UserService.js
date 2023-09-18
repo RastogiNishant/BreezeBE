@@ -526,6 +526,7 @@ class UserService {
     if (code !== userCode) {
       throw new AppException(INVALID_CONFIRM_CODE)
     }
+
     // TODO: check user status active is allow
     user.status = STATUS_ACTIVE
     const trx = await Database.beginTransaction()
@@ -546,13 +547,12 @@ class UserService {
 
       await user.save(trx)
       await trx.commit()
-
-      MarketPlaceService.sendBulkKnockWebsocket(user.id)
       await require('./MatchService').matchByUser({
         userId: user.id,
         ignoreNullFields: true,
         has_notification_sent: true,
       })
+      MarketPlaceService.sendBulkKnockWebsocket(user.id)
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 500)
@@ -1283,6 +1283,7 @@ class UserService {
       .with('letter_template')
       .with('tenantPaymentPlan')
       .with('feedbacks')
+      .with('certificates')
       .first()
 
     if (!user) {

@@ -200,6 +200,10 @@ class User extends Model {
   feedbacks() {
     return this.hasMany('App/Models/Feedback')
   }
+
+  certificates() {
+    return this.hasMany('App/Models/TenantCertificate').whereNot('status', STATUS_DELETE)
+  }
 }
 
 module.exports = User

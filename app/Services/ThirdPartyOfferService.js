@@ -34,6 +34,7 @@ const {
   exceptions: { MARKET_PLACE_CONTACT_EXIST, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
 } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
+const { groupBy } = require('lodash')
 
 class ThirdPartyOfferService {
   static generateChecksum(data) {
@@ -328,11 +329,18 @@ class ThirdPartyOfferService {
       .first()
     let estates = await ThirdPartyOfferService.searchEstatesQuery(userId, null, exclude).fetch()
     estates = estates.toJSON()
-
+    const options = await require('../Services/OptionService').getOptions()
+    const hashOptions = groupBy(options, 'title')
+    const OhneMakler = require('../Classes/OhneMakler')
     tenant.incomes = await require('./MemberService').getIncomes(userId)
     estates = await Promise.all(
       estates.map(async (estate) => {
-        estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+        const amenities = OhneMakler.getOptionIds(estate.amenities, hashOptions)
+        estate = {
+          ...estate,
+          options: amenities,
+          ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+        }
         const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
         estate.match = prospect_score
         estate.isoline = await EstateService.getIsolines(estate)
@@ -398,12 +406,14 @@ class ThirdPartyOfferService {
       .where('_t.user_id', tenant.user_id)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
 
-    const categoryCounts = EstateService.calculateInsideCategoryCounts(estates, tenant)
     const filteredEstates = await EstateService.filterEstates({
       tenant,
       estates,
       inside_property: false,
     })
+
+    const categoryCounts = EstateService.calculateCategoryCounts(filteredEstates, tenant)
+
     return {
       estates: filteredEstates,
       categoryCounts,
@@ -605,9 +615,17 @@ class ThirdPartyOfferService {
 
       tenant.incomes = await require('./MemberService').getIncomes(userId)
       let estates = ret.toJSON()
+      const options = await require('../Services/OptionService').getOptions()
+      const hashOptions = groupBy(options, 'title')
+      const OhneMakler = require('../Classes/OhneMakler')
       estates = await Promise.all(
         estates.map(async (estate) => {
-          estate = { ...estate, ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING }
+          const amenities = OhneMakler.getOptionIds(estate.amenities, hashOptions)
+          estate = {
+            ...estate,
+            options: amenities,
+            ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+          }
           const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
           estate.match = prospect_score
           estate.rooms = null

@@ -100,7 +100,10 @@ class EstateAmenityController {
         await newEstateAmenity.save(trx)
         newEstateAmenityId = newEstateAmenity.id
       }
-      await EstateService.updatePercent({ estate_id, amenities: [{ estate_id, option_id }] }, trx)
+      await EstateService.updatePercentAndIsPublished(
+        { estate_id, amenities: [{ estate_id, option_id }] },
+        trx
+      )
       await trx.commit()
 
       //we return all amenities like getAll...
@@ -124,7 +127,7 @@ class EstateAmenityController {
       .where('location', location)
       .where('id', id)
       .update({ status: STATUS_DELETE })
-    await EstateService.updatePercent({ estate_id })
+    await EstateService.updatePercentAndIsPublished({ estate_id })
     return response.res({ deleted: affectedRows })
   }
 

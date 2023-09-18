@@ -136,7 +136,7 @@ class RoomController {
       )
       //Event.fire('estate::update', room.estate_id)
       await trx.commit()
-
+      await EstateService.updatePercentAndIsPublished({ estate_id: room.estate_id })
       response.res(true)
     } catch (e) {
       await trx.rollback()

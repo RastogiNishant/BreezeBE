@@ -104,6 +104,7 @@ const {
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE },
 } = require('../../../app/exceptions')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
+const BuildingService = require('../../Services/BuildingService')
 
 class EstateController {
   /**
@@ -156,15 +157,65 @@ class EstateController {
       }
 
       await EstateService.updateEstate({ request, user_id: auth.user.id })
-
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
-        page: 1,
+        from: 0,
         params: { id },
       })
 
       QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 400, e.code || 0)
+    }
+  }
+
+  async updateBuilding({ request, auth, response }) {
+    const {
+      id,
+      available_start_at,
+      notify_on_green_matches,
+      available_end_at,
+      is_duration_later,
+      min_invite_count,
+    } = request.all()
+
+    try {
+      const estates = await EstateService.getEstatesByBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+      })
+
+      if (!estates?.length) {
+        throw new HttpException(NO_ESTATE_EXIST, 400)
+      }
+
+      if (estates[0].publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
+        throw new HttpException(ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE, 400)
+      }
+
+      const estate_ids = estates.map((estate) => estate.id)
+      await EstateService.updatEstatesePublishInfo({
+        user_id: auth.user.id,
+        estate_id: estate_ids,
+        available_start_at,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+        notify_on_green_matches,
+      })
+
+      const building = await BuildingService.get({ user_id: auth.user.id, id })
+
+      response.res({
+        ...building.toJSON(),
+        estates: (
+          await EstateService.getEstatesByUserId({
+            user_ids: [auth.user.id],
+            params: { build_id: id },
+          })
+        )?.data,
+      })
     } catch (e) {
       throw new HttpException(e.message, e.status || 400, e.code || 0)
     }
@@ -178,7 +229,7 @@ class EstateController {
         estate_id,
         tenant_id
       )
-      let tenant = await TenantService.getTenant(tenant_id)
+      let tenant = await TenantService.getTenantWithCertificates(tenant_id)
       let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
 
@@ -211,11 +262,33 @@ class EstateController {
   }
 
   async shortSearchEstates({ request, auth, response }) {
-    const { query, letting_type } = request.all()
+    const { query, letting_type, status } = request.all()
     response.res(
-      await EstateService.getShortEstatesByQuery({ user_id: auth.user.id, query, letting_type })
+      await EstateService.getShortEstatesByQuery({
+        user_id: auth.user.id,
+        query,
+        letting_type,
+        status,
+      })
     )
   }
+
+  /**
+   *
+   * @param {*} param0
+   * will be used for match screen for web app
+   */
+  async getMatchEstates({ request, auth, response }) {
+    let { limit, page, ...params } = request.all()
+    if (!isEmpty(request.post())) {
+      params = request.post()
+    }
+
+    response.res(
+      await EstateService.getMatchEstates({ user_id: auth.user.id, params, limit, page })
+    )
+  }
+
   /**
    *
    */
@@ -226,10 +299,12 @@ class EstateController {
       params = request.post()
     }
 
+    let buildings = await BuildingService.getAllHasUnit(auth.user.id)
+
     let result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
       limit,
-      page,
+      from: (page - 1) * limit,
       params,
     })
 
@@ -271,11 +346,26 @@ class EstateController {
     }
     result = {
       ...result,
+      buildings,
       total_estate_count: totalEstateCounts.all_count,
       offline_count: totalEstateCounts.offline_count,
       online_count: totalEstateCounts.online_count,
     }
-    return response.res(result)
+
+    response.res(result)
+  }
+
+  async getBuildingEstates({ request, auth, response }) {
+    const { id, limit, page, ...params } = request.all()
+
+    let result = await EstateService.getEstatesByUserId({
+      user_ids: [auth.user.id],
+      limit: limit || -1,
+      from: page ? (page - 1) * limit : -1,
+      params: { ...(params || {}), build_id: id },
+    })
+
+    response.res(result.data)
   }
 
   /**
@@ -332,6 +422,32 @@ class EstateController {
           role: ROLE_LANDLORD,
         })
       )
+    } catch (e) {
+      throw new HttpException(FAILED_EXTEND_ESTATE, 400)
+    }
+  }
+
+  async extendBuilding({ request, auth, response }) {
+    const { id, available_end_at, is_duration_later, min_invite_count } = request.all()
+    try {
+      const building = await BuildingService.get({
+        user_id: auth.user.id,
+        id,
+      })
+      const estates = await EstateService.getEstatesByBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+      })
+      const estate_ids = estates.map((estate) => estate.id)
+      await EstateService.extendEstate({
+        user_id: auth.user.id,
+        estate_id: estate_ids,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
+
+      response.res({ ...building.toJSON(), available_end_at, is_duration_later, min_invite_count })
     } catch (e) {
       throw new HttpException(FAILED_EXTEND_ESTATE, 400)
     }
@@ -447,6 +563,29 @@ class EstateController {
         })
       )?.data?.[0]
     )
+  }
+
+  async publishBuild({ request, auth, response }) {
+    const { id, action, publishers, estate_ids } = request.all()
+    if (action === PUBLISH_PROPERTY) {
+      await EstateService.publishBuilding({
+        user_id: auth.user.id,
+        build_id: id,
+        publishers,
+        estate_ids,
+      })
+    } else if (action === UNPUBLISH_PROPERTY) {
+      await EstateService.unpublishBuilding({ user_id: auth.user.id, build_id: id })
+    } else if (action === DEACTIVATE_PROPERTY) {
+      await EstateService.deactivateBuilding({ user_id: auth.user.id, build_id: id })
+    }
+
+    let result = await EstateService.getEstatesByUserId({
+      user_ids: [auth.user.id],
+      params: { build_id: id },
+    })
+
+    response.res(result.data)
   }
 
   async makeEstateOffline({ request, auth, response }) {
@@ -612,7 +751,7 @@ class EstateController {
       try {
         const result = await EstateService.addManyFiles(data, trx)
 
-        await EstateService.updatePercent(
+        await EstateService.updatePercentAndIsPublished(
           { estate_id: data[0].estate_id, files: [result[0].toJSON()] },
           trx
         )
@@ -744,6 +883,17 @@ class EstateController {
     response.res(tenantEstate)
   }
 
+  async getTenantBuildingEstate({ request, auth, response }) {
+    const { id, is_social } = request.all()
+    response.res(
+      await EstateService.getTenantBuildingEstates({
+        user_id: auth.user.id,
+        build_id: id,
+        is_social,
+      })
+    )
+  }
+
   async getThirdPartyOfferEstate({ request, auth, response }) {
     const { id } = request.all()
     let estate = await ThirdPartyOfferService.getEstate({ userId: auth?.user?.id, id })
@@ -802,31 +952,7 @@ class EstateController {
    */
   async createSlot({ request, auth, response }) {
     const { estate_id, ...data } = request.all()
-    const estate = await EstateService.getActiveEstateQuery()
-      .where('user_id', auth.user.id)
-      .where('id', estate_id)
-      .first()
-    if (!estate) {
-      throw new HttpException(ESTATE_NOT_EXISTS, 400)
-    }
-
-    try {
-      let slot = {}
-      if (data.is_not_show !== undefined) {
-        await EstateService.updateShowRequired({ id: estate_id, is_not_show: data.is_not_show })
-      }
-
-      if (data.start_at && data.end_at) {
-        slot = (await TimeSlotService.createSlot(omit(data, ['is_not_show']), estate)).toJSON()
-      }
-      response.res({
-        is_not_show: data.is_not_show,
-        ...slot,
-      })
-    } catch (e) {
-      Logger.error(e)
-      throw new HttpException(e.message, 400)
-    }
+    response.res(await TimeSlotService.createSlotMany({ user_id: auth.user.id, estate_id, data }))
   }
 
   /**
@@ -834,28 +960,7 @@ class EstateController {
    */
   async updateSlot({ request, auth, response }) {
     const data = request.all()
-    try {
-      if (data.is_not_show !== undefined) {
-        await EstateService.updateShowRequired({
-          id: data.estate_id,
-          is_not_show: data.is_not_show,
-        })
-      }
-
-      let slot = {}
-      if (data.start_at && data.end_at) {
-        slot = (
-          await TimeSlotService.updateTimeSlot(auth.user.id, omit(data, ['is_not_show']))
-        ).toJSON()
-      }
-      response.res({
-        is_not_show: data.is_not_show,
-        ...slot,
-      })
-    } catch (e) {
-      Logger.error(e)
-      throw new HttpException(e.message, 400)
-    }
+    response.res(await TimeSlotService.updateSlotMany(auth.user.id, data))
   }
 
   /**
@@ -864,7 +969,7 @@ class EstateController {
   async removeSlot({ request, auth, response }) {
     const { slot_id } = request.all()
     try {
-      response.res(await TimeSlotService.removeSlot(auth.user.id, slot_id))
+      response.res(await TimeSlotService.removeSlotMany(auth.user.id, slot_id))
     } catch (e) {
       Logger.error(e)
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -890,7 +995,7 @@ class EstateController {
    */
   async unlikeEstate({ request, auth, response }) {
     const { id } = request.all()
-    await EstateService.removeLike(auth.user.id, id)
+    await EstateService.removeLike({ user_id: auth.user.id, estate_id: id })
     response.res(true)
   }
 
@@ -900,7 +1005,7 @@ class EstateController {
   async dislikeEstate({ request, auth, response }) {
     const { id } = request.all()
     try {
-      await EstateService.addDislike(auth.user.id, id)
+      await EstateService.addDislike({ user_id: auth.user.id, estate_id: id })
     } catch (e) {
       throw new HttpException(e.message)
     }
@@ -913,8 +1018,15 @@ class EstateController {
    */
   async removeEstateDislike({ request, auth, response }) {
     const { id } = request.all()
-    await EstateService.removeDislike(auth.user.id, id)
-    response.res(true)
+    const trx = await Database.beginTransaction()
+    try {
+      await EstateService.removeDislike({ user_id: auth.user.id, estate_id: id }, trx)
+      await trx.commit()
+      response.res(true)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**
@@ -1089,7 +1201,11 @@ class EstateController {
         })
       )
     }
-    return response.res(rows)
+
+    return response.res({
+      estates: rows,
+      buildings: await BuildingService.getAll(auth.user.id),
+    })
   }
 
   async importLastActivity({ auth, request, response }) {
@@ -1238,6 +1354,15 @@ class EstateController {
       response.res(await EstateService.duplicateEstate(auth.user.id, id))
     } catch (e) {
       throw new HttpException(e.message, e.status || 500, e.code || 0)
+    }
+  }
+
+  async canBuildPublish({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      response.res(await EstateService.checkBuildCanPublish({ build_id: id }))
+    } catch (e) {
+      throw new HttpException(e.message, 400)
     }
   }
 }

@@ -73,6 +73,8 @@ const commands = [
   'App/Commands/Recalc',
   'App/Commands/PullOhnemakler',
   'App/Commands/PullGewobag',
+  'App/Commands/FillWbs',
+  'App/Commands/FillCitizen',
 ]
 
 const http = {

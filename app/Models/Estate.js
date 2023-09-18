@@ -177,6 +177,10 @@ class Estate extends Model {
       'publish_type',
       'notify_on_green_matches',
       'notify_sent',
+      'build_id',
+      'cert_category',
+      'can_publish',
+      'unit_category_id',
     ]
   }
 
@@ -199,6 +203,8 @@ class Estate extends Model {
       'address',
       'house_number',
       'country',
+      'build_id',
+      'cert_category',
     ]
   }
 
@@ -318,6 +324,10 @@ class Estate extends Model {
         //need confirmation...
         instance.additional_costs = 0
         instance.heating_costs = 0
+      }
+
+      if (instance.construction_year?.length === 4) {
+        instance.construction_year = `${instance.construction_year}-01-01`
       }
 
       delete instance.is_coord_changed
@@ -525,6 +535,10 @@ class Estate extends Model {
     return this.hasOne('App/Models/Notice')
   }
 
+  building() {
+    return this.hasOne('App/Models/Building')
+  }
+
   /**
    *
    */
@@ -616,6 +630,10 @@ class Estate extends Model {
       return false
     }
     return true
+  }
+
+  category() {
+    return this.belongsTo('App/Models/UnitCategory', 'unit_category_id', 'id')
   }
 }
 
