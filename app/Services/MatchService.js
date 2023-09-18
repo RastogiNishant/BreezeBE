@@ -1023,6 +1023,15 @@ class MatchService {
 
     await this.upsertBulkMatches(matches, trx)
 
+    const groupedPassEstates = groupBy(passedEstates, (estate) =>
+      estate.build_id ? `g_${estate.build_id}` : estate.id
+    )
+    const uniqueMatchEstateIds = Object.keys(groupedPassEstates).map(
+      (key) => groupedPassEstates[key][0].id
+    )
+
+    matches = matches.filter((m) => uniqueMatchEstateIds.includes(m.estate_id))
+
     if (has_notification_sent) {
       const superMatches = matches.filter(
         ({ prospect_score }) => prospect_score >= MATCH_SCORE_GOOD_MATCH
@@ -1032,14 +1041,6 @@ class MatchService {
       }
     }
 
-    const groupedPassEstates = groupBy(passedEstates, (estate) =>
-      estate.build_id ? `g_${estate.build_id}` : estate.id
-    )
-    const uniqueMatchEstateIds = Object.keys(groupedPassEstates).map(
-      (key) => groupedPassEstates[key][0].id
-    )
-
-    matches = matches.filter((m) => uniqueMatchEstateIds.includes(m.estate_id))
     return {
       count: matches?.length,
       matches,
