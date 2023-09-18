@@ -2,6 +2,8 @@
 	"name": "breeze",
 	"version": "4.1.0",
 	"adonis-version": "4.1.0",
+	"author": "",
+	"license": "UNLICENSED",
 	"description": "breeze",
 	"main": "index.js",
 	"engines": {
@@ -24,14 +26,23 @@
 		"test-dev": "adonis test -f ",
 		"setup-env:dev": "cp ./.env.dev ./.env",
 		"setup-env:staging": "cp ./.env.staging ./.env",
-		"setup-env:prod": "cp ./.env.dev ./.env"
+		"setup-env:prod": "cp ./.env.dev ./.env",
+		"prepare": "husky install",
+		"pre-commit": "lint-staged"
+	},
+	"lint-staged": {
+		"**/!(*.d).ts": [
+			"tsc -noEmit",
+			"prettier --write"
+		],
+		"**/*.js": [
+			"prettier --write"
+		]
 	},
 	"keywords": [
 		"adonisjs",
 		"adonis-app"
 	],
-	"author": "",
-	"license": "UNLICENSED",
 	"private": true,
 	"dependencies": {
 		"@adonisjs/ace": "^5.0.8",
@@ -113,7 +124,7 @@
 		"swagger-jsdoc": "^6.2.7",
 		"ts-node": "^10.9.1",
 		"tsconfig-paths": "^4.2.0",
-		"typescript": "^5.0.4",
+		"typescript": "^5.2.2",
 		"url": "^0.11.0",
 		"uuid": "^3.4.0",
 		"webp-converter": "^2.3.3",
@@ -125,7 +136,11 @@
 	},
 	"devDependencies": {
 		"@adonisjs/cli": "^4.0.13",
+		"@types/node-fetch": "^2.6.6",
 		"concurrently": "^6.0.0",
-		"jsonwebtoken": "^8.5.1"
+		"husky": "^8.0.0",
+		"jsonwebtoken": "^8.5.1",
+		"lint-staged": "^14.0.1",
+		"prettier": "^3.0.3"
 	}
 }
