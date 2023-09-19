@@ -25,5 +25,5 @@ app.get('/pdf', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Pdf render app listening on port ${port}`);
 });
