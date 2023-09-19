@@ -197,7 +197,7 @@ class QueueService {
    *
    */
   static async sendEveryMin() {
-    return Promise.all([wrapException(MatchService.moveExpiredFinalConfirmToTop)])
+    return Promise.all([wrapException(require('./MatchService').moveExpiredFinalConfirmToTop)])
   }
 
   /**
@@ -230,8 +230,6 @@ class QueueService {
   }
 
   static async performEvery1HourJob() {
-    const MatchService = require('./MatchService')
-
     return Promise.all([wrapException(require('./EstateService').updateVacantDate)])
   }
 
