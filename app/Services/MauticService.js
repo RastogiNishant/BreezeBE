@@ -37,7 +37,7 @@ const getCountry = (address) => {
   return arr[arr.length - 1].replace(/[0-9]/g, '').trim()
 }
 
-const getUserData = async (user, mauticPrevData) => {
+const getUserData = async (user, mauticPrevData = {}) => {
   let body = {
     firstname: user.firstname,
     lastname: user.secondname,
@@ -48,7 +48,7 @@ const getUserData = async (user, mauticPrevData) => {
   }
 
   if (user.status === STATUS_ACTIVE) {
-    body.email_verification_date = mauticPrevData.email_verification_date || new Date()
+    body.email_verification_date = mauticPrevData?.email_verification_date || new Date()
   }
   if (user.role === ROLE_LANDLORD) {
     let company = await Company.query().where('user_id', user.id).first()
@@ -69,7 +69,7 @@ const getUserData = async (user, mauticPrevData) => {
         })
         if (profileStatus) {
           // landload profile is activated.
-          body.activated_profile_date = mauticPrevData.activated_profile_date || new Date()
+          body.activated_profile_date = mauticPrevData?.activated_profile_date || new Date()
         } else {
           // profile not activated any more
           body.activated_profile_date = null
@@ -88,7 +88,7 @@ const getUserData = async (user, mauticPrevData) => {
     }
 
     if (user.activation_status === USER_ACTIVATION_STATUS_ACTIVATED) {
-      body.admin_approval_date = mauticPrevData.admin_approval_date || new Date()
+      body.admin_approval_date = mauticPrevData?.admin_approval_date || new Date()
     }
   } else {
     const tenant = await user.tenant().fetch()
@@ -97,7 +97,7 @@ const getUserData = async (user, mauticPrevData) => {
       body.country = getCountry(tenant.address)
       body.address = tenant.address
       if (tenant.status === STATUS_ACTIVE) {
-        body.activated_profile_date = mauticPrevData.activated_profile_date || new Date()
+        body.activated_profile_date = mauticPrevData?.activated_profile_date || new Date()
       }
     } else {
       body.city = ''
@@ -212,34 +212,34 @@ class MauticService {
         overwriteWithBlank: false,
       }
       if (payload.invited_count) {
-        body.invited_count = mauticPrevData.invited_count ? mauticPrevData.invited_count + 1 : 1
+        body.invited_count = mauticPrevData?.invited_count ? mauticPrevData?.invited_count + 1 : 1
       }
       if (payload.knocked_count) {
-        body.knocked_count = mauticPrevData.knocked_count ? mauticPrevData.knocked_count + 1 : 1
+        body.knocked_count = mauticPrevData?.knocked_count ? mauticPrevData?.knocked_count + 1 : 1
       }
       if (payload.showedproperty_count) {
-        body.showedproperty_count = mauticPrevData.showedproperty_count
-          ? mauticPrevData.showedproperty_count + 1
+        body.showedproperty_count = mauticPrevData?.showedproperty_count
+          ? mauticPrevData?.showedproperty_count + 1
           : 1
       }
       if (payload.published_property) {
-        body.published_property = mauticPrevData.published_property
-          ? mauticPrevData.published_property + 1
+        body.published_property = mauticPrevData?.published_property
+          ? mauticPrevData?.published_property + 1
           : 1
       }
       if (payload.propertiesimported_count) {
-        body.propertiesimported_count = mauticPrevData.propertiesimported_count
-          ? mauticPrevData.propertiesimported_count + 1
+        body.propertiesimported_count = mauticPrevData?.propertiesimported_count
+          ? mauticPrevData?.propertiesimported_count + 1
           : 1
       }
       if (payload.finalmatchapproval_count) {
-        body.finalmatchapproval_count = mauticPrevData.finalmatchapproval_count
-          ? mauticPrevData.finalmatchapproval_count + 1
+        body.finalmatchapproval_count = mauticPrevData?.finalmatchapproval_count
+          ? mauticPrevData?.finalmatchapproval_count + 1
           : 1
       }
       if (payload.finalmatchrequest_count) {
-        body.finalmatchrequest_count = mauticPrevData.finalmatchrequest_count
-          ? mauticPrevData.finalmatchrequest_count + 1
+        body.finalmatchrequest_count = mauticPrevData?.finalmatchrequest_count
+          ? mauticPrevData?.finalmatchrequest_count + 1
           : 1
       }
 
