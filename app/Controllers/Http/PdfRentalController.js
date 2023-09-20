@@ -2,21 +2,13 @@
 const fs = require('fs')
 const { PDFDocument, rgb } = require('pdf-lib');
 
-class PdfController {
+class PdfRentalController {
   async generatePdf({ response }) {
 
-    const pdfDoc = await PDFDocument.create();
-    // Add a page to the document
-    const page = pdfDoc.addPage([600, 400]);
-    // Add some text to the page
-    page.drawText('Sample PDF Text!', {
-      x: 50,
-      y: 350,
-      size: 30,
-      color: rgb(0, 0, 0), // Black color
-    });
+    const formPDFBytes = await fetch(process.env.RENT_URL).then(res => res.arrayBuffer())
+    const pdfDoc= await PDFDocument.load(formPDFBytes );
 
-    const pdfFileName = 'sample.pdf'
+    const pdfFileName = 'Rental.pdf'
     // Write the PDF bytes to a file
 
     const pdfFilePath = __dirname + '/' + pdfFileName
@@ -44,4 +36,4 @@ class PdfController {
   }
 }
 
-module.exports = PdfController
+module.exports = PdfRentalController

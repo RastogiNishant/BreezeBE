@@ -872,7 +872,7 @@ Route.group(() => {
   Route.post('/email', 'MemberController.addMember').middleware([
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
-  Route.get('/pdfdownload', 'PdfController.generatePdf')
+  Route.get('/pdfdownload', 'PdfRentalController.generatePdf')
   Route.get('/invitation', 'MemberController.prepareHouseholdInvitationDetails')
   Route.put('/invitation/refuse', 'MemberController.refuseInvitation')
   Route.put('/invitation/accept', 'MemberController.acceptInvitation').middleware([
