@@ -615,8 +615,8 @@ class MatchController {
 
     estateData = estateData.sort((a, b) => (a?.status_at > b?.status_at ? -1 : 1))
 
-    const startIndex = (page - 1) * limit
-    const endIndex = startIndex + limit
+    const startIndex = ((page || 1) - 1) * (limit || 999)
+    const endIndex = startIndex + (limit || 999)
 
     estates = {
       total: estateData.length,
