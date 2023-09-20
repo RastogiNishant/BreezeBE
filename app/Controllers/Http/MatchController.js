@@ -15,6 +15,11 @@ const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith } = require('lo
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
+const UserService = use('App/Services/UserService')
+
+const {
+  exceptions: { USER_NOT_FOUND },
+} = require('../../exceptions')
 
 const {
   ROLE_LANDLORD,
@@ -1143,6 +1148,25 @@ class MatchController {
       finalMatches,
       contact_requests,
     })
+  }
+
+  async notifyProspectToFillUpProfile({ request, auth, response }) {
+    const { user_id } = request.all()
+
+    try {
+      /* Get prospect match invite user details by user_id */
+      const user = await UserService.getById(user_id)
+      if (!user) {
+        throw new HttpException(USER_NOT_FOUND, 400)
+      }
+
+      /* Notify to user for complete profile via email */
+      await MailService.sendToProspectForFillUpProfile({ email: user.email, lang: user.lang })
+
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

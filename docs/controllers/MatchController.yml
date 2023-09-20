@@ -238,3 +238,12 @@ definitions:
       - $ref: '#/definitions/userIdOrder'
       - $ref: '#/definitions/position'
     responses: [200]
+
+/api/v1/match/landlord/estate/notifyprospect-fillupprofile:
+  post:
+    tags: [match]
+    security: [bearerAuth: []]
+    produces: [application/json]
+    parameters:
+      - $ref: '#/definitions/userId'
+    responses: [200]
