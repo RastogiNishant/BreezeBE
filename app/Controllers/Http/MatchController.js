@@ -16,10 +16,7 @@ const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
 const UserService = use('App/Services/UserService')
-
-const {
-  exceptions: { USER_NOT_FOUND },
-} = require('../../exceptions')
+const { exceptions: { USER_NOT_FOUND }, } = require('../../exceptions')
 
 const {
   ROLE_LANDLORD,
@@ -1152,7 +1149,6 @@ class MatchController {
 
   async notifyProspectToFillUpProfile({ request, auth, response }) {
     const { user_id } = request.all()
-
     try {
       /* Get prospect match invite user details by user_id */
       const user = await UserService.getById(user_id)

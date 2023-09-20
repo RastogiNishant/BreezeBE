@@ -1094,7 +1094,7 @@ class MailService {
       dynamic_template_data: {
         subject: l.get('prospect.notification.event.incomplete_profile', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        CTA: l.get('prospect.email_day_of_visit_reminder.CTA.message', lang), //prospect.email_fillup_profile_reminder.CTA.message
+        CTA: l.get('prospect.email_day_of_visit_reminder.CTA.message', lang),
         intro: l.get('prospect.notification.next.incomplete_profile', lang),
         link: INVITE_APP_LINK,
         greeting: l.get('email_signature.greeting.message', lang),
