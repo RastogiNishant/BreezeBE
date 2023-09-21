@@ -16,7 +16,9 @@ const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
 const UserService = use('App/Services/UserService')
-const { exceptions: { USER_NOT_FOUND }, } = require('../../exceptions')
+const {
+  exceptions: { USER_NOT_FOUND, ERROR_NO_ACTIVE_MATCH_FOUND },
+} = require('../../exceptions')
 
 const {
   ROLE_LANDLORD,
@@ -1149,15 +1151,31 @@ class MatchController {
 
   async notifyProspectToFillUpProfile({ request, auth, response }) {
     const { user_id } = request.all()
+    const landlord_user_id = auth.user.id
     try {
       /* Get prospect match invite user details by user_id */
-      const user = await UserService.getById(user_id)
-      if (!user) {
+      const prospectUser = await UserService.getById(user_id)
+
+      if (!prospectUser) {
         throw new HttpException(USER_NOT_FOUND, 400)
       }
 
+      /* Check if there is an active match between the prospect and the landlord */
+      const activeMatch = await MatchService.getActiveMatchBetweenProspectAndLandlord(
+        user_id,
+        landlord_user_id
+      )
+
+      if (!activeMatch) {
+        /* No active match found */
+        throw new HttpException(ERROR_NO_ACTIVE_MATCH_FOUND, 400)
+      }
+
       /* Notify to user for complete profile via email */
-      await MailService.sendToProspectForFillUpProfile({ email: user.email, lang: user.lang })
+      await MailService.sendToProspectForFillUpProfile({
+        email: prospectUser.email,
+        lang: prospectUser.lang,
+      })
 
       response.res(true)
     } catch (e) {
