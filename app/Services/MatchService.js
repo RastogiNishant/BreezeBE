@@ -4804,6 +4804,17 @@ class MatchService {
       place_num: placeNumber + 1,
     }
   }
+
+  static async getActiveMatchBetweenProspectAndLandlord(user_id, landlord_user_id) {
+    /* Check if there is an active match between the prospect and the landlord */
+    return await Match.query()
+      .where('user_id', user_id)
+      .where('status', MATCH_STATUS_INVITE)
+      .whereHas('estate', (query) => {
+        query.where('user_id', landlord_user_id)
+      })
+      .first()
+  }
 }
 
 module.exports = MatchService

@@ -120,6 +120,7 @@ const exceptions = {
   ERROR_WRONG_MATCH_STATUS: 'Already invited to this property',
   ERROR_COMMIT_MATCH_INVITE: 'No match for that property',
   ERROR_ALREADY_MATCH_INVITE: 'The prospect is already in that stage for that property',
+  ERROR_NO_ACTIVE_MATCH_FOUND: 'No active match with the landlord found',
 }
 
 const exceptionCodes = {

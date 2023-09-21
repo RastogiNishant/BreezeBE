@@ -1117,6 +1117,12 @@ Route.get(
   'MatchController.getMatchesSummaryLandlordEstate'
 ).middleware(['auth:jwtLandlord,jwtAdministrator', 'valid:MatchListLandlord,Pagination'])
 
+/* Notify prospect match user on email to fillup profile */
+Route.post(
+  '/api/v1/match/landlord/estate/notifyprospect-fillupprofile',
+  'MatchController.notifyProspectToFillUpProfile'
+).middleware(['auth:jwtLandlord'])
+
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord',
 ])
