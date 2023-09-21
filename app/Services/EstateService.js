@@ -2357,12 +2357,15 @@ class EstateService {
       const unassigned_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
 
+      const deposit_multiplier = Math.round(Number(estate?.deposit) / Number(estate?.net_rent))
+
       return {
         ...estate,
         inside_view_has_media,
         outside_view_has_media,
         document_view_has_media,
         unassigned_view_has_media,
+        deposit_multiplier,
       }
     })
     delete result?.rows
