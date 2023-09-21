@@ -1188,17 +1188,13 @@ class MatchService {
       throw new AppException('Not allowed', 400)
     }
 
-    estate = (
-      await MatchService.getEstateForScoringQuery().where({ id: estate_id }).first()
-    ).toJSON()
+    const scoringData = await MatchService.calculationMatchScoreByUserId({
+      userId: user_id,
+      estateId: estate_id,
+    })
 
-    if (!estate) {
-      throw new HttpException(NO_ESTATE_EXIST, 400)
-    }
-    const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
-      tenant,
-      estate
-    )
+    estate = scoringData.estate
+    const { percent, landlord_score, prospect_score } = scoringData
 
     let isOutsideTrxExist = true
     if (!trx) {
@@ -1284,6 +1280,7 @@ class MatchService {
     )
 
     return {
+      estate,
       percent,
       landlord_score,
       prospect_score,
