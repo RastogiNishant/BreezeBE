@@ -4,8 +4,11 @@ const fs = require("fs");
 
 class PdfRentalController {
   async generatePdf({ request,auth,response }) {
-
-   const { data } = await axios.get(process.env.RENT_URL, { responseType: "stream" });
+  
+   const pdfServerPort = (process.env.PORT || 3000) + 1;
+   const url = `http:\\\\localhost:${pdfServerPort}\\pdf`;
+   
+   const { data } = await axios.get(url, { responseType: "stream" });
 
    response.implicitEnd = false
    response.header('Content-type', 'application/pdf')
