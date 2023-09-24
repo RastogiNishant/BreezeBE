@@ -102,7 +102,7 @@ export const TenantDocument = () => (
         />
         <PropertyLandlordDetails
           leftLabel="Rental space"
-          leftValue="40-80 m"
+          leftValue="40-80 m&#xb2;"
           rightIcon
           rightLabel="Household size"
           rightValue="4 Persons"
