@@ -111,6 +111,7 @@
 		"simplify-js": "^1.2.4",
 		"stripe": "^8.209.0",
 		"swagger-jsdoc": "^6.2.7",
+		"ts-node": "^10.9.1",
 		"url": "^0.11.0",
 		"uuid": "^3.4.0",
 		"webp-converter": "^2.3.3",
