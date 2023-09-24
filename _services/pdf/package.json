@@ -5,9 +5,10 @@
   "main": "server.ts",
   "license": "UNLICENSED",
   "scripts": {
-    "postinstall": "npm run build",
-    "build": "tsc",
-    "start": "nodemon ./dist/server.js",
+    "xpostinstall": "npm run build",
+    "xbuild": "tsc",
+    "xstart": "nodemon ./dist/server.js",
+    "start": "nodemon ./server.tsx",
     "dev": "nodemon ./server.tsx"
   },
   "dependencies": {
