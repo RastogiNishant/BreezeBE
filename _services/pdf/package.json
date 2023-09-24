@@ -2,12 +2,13 @@
   "name": "render-pdf",
   "version": "0.1.0",
   "description": "render a pdf document using react-pdf",
-  "main": "server.ts",
+  "main": "server.tsx",
   "license": "UNLICENSED",
   "scripts": {
-    "postinstall": "npm run build",
-    "build": "tsc",
-    "start": "nodemon ./dist/server.js",
+    "xpostinstall": "npm run build",
+    "xbuild": "tsc",
+    "xstart": "nodemon ./dist/server.js",
+    "start": "nodemon ./server.tsx",
     "dev": "nodemon ./server.tsx"
   },
   "dependencies": {
