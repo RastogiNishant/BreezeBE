@@ -1,5 +1,5 @@
 'use strict'
-
+const fetch = require('node-fetch')
 const Route = use('Route')
 const Helpers = use('Helpers')
 const fs = use('fs')
@@ -28,11 +28,25 @@ Route.get('/api/v1/calc_price', 'CommonController.calcRentPrice').middleware([
   'valid:CalcRentPrice',
 ])
 
-Route.get('/', () => {
+Route.get('/', async () => {
+  
+  let pdfServiceResp;
+  
+  try {
+    pdfServiceResp = await (await fetch(`http://localhost:${(parseInt(process.env.PORT) || 3000)+1}/status`)).json();
+  } catch (error) {
+    pdfServiceResp = { status: 'error', error: 'UNREACHABLE' };
+  }
+
   return {
     app: process.env.APP_NAME,
     main: process.env.APP_URL,
     node: process.version,
+    services: [
+      {
+        pdf: pdfServiceResp
+      }
+    ]
   }
 })
 
@@ -858,6 +872,7 @@ Route.group(() => {
   Route.post('/email', 'MemberController.addMember').middleware([
     'valid:CreateMember,Email,ProfileVisibilityToOther',
   ])
+  Route.get('/pdfdownload', 'PdfRentalController.generatePdf')
   Route.get('/invitation', 'MemberController.prepareHouseholdInvitationDetails')
   Route.put('/invitation/refuse', 'MemberController.refuseInvitation')
   Route.put('/invitation/accept', 'MemberController.acceptInvitation').middleware([
@@ -1115,6 +1130,12 @@ Route.get(
   '/api/v1/match/landlord/estate',
   'MatchController.getMatchesSummaryLandlordEstate'
 ).middleware(['auth:jwtLandlord,jwtAdministrator', 'valid:MatchListLandlord,Pagination'])
+
+/* Notify prospect match user on email to fillup profile */
+Route.post(
+  '/api/v1/match/landlord/estate/notifyprospect-fillupprofile',
+  'MatchController.notifyProspectToFillUpProfile'
+).middleware(['auth:jwtLandlord'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord',
