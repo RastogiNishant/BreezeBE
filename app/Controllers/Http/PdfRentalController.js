@@ -5,7 +5,7 @@ const fs = require("fs");
 class PdfRentalController {
   async generatePdf({ request,auth,response }) {
   
-   const pdfServerPort = (process.env.PORT || 3000) + 1;
+   const pdfServerPort = (parseInt(process.env.PORT) || 3000) + 1;
    const url = `http:\\\\localhost:${pdfServerPort}\\pdf`;
    
    const { data } = await axios.get(url, { responseType: "stream" });
