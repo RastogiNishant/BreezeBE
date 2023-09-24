@@ -1,14 +1,15 @@
 import ReactPDF from '@react-pdf/renderer';
 import { TenantDocument } from './templates/tenant_template';
 import * as express from 'express';
+import * as pkg from './package.json';
 
 const app = express();
 // use PORT + 1 to avoid conflict with Breeze_backend
-const port = process.env.PORT + 1 || 3001;
+const port = (parseInt(process.env.PORT) || 3000) + 1;
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
+app.get('/status', (req, res) => {
+  res.json({ status: 'ok', version: pkg.version });
+})
 
 app.get('/pdf', async (req, res) => {
   try {
