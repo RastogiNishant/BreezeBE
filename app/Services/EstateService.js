@@ -689,6 +689,14 @@ class EstateService {
       status: STATUS_DRAFT,
     }
 
+    if (data?.min_invite_count === 0) {
+      updateData.min_invite_count = null
+    }
+
+    if (data?.rent_end_at === 0) {
+      updateData.rent_end_at = null
+    }
+
     let energy_proof = null
     const estate = await this.getByIdWithDetail(data.id)
     if (!estate) {
