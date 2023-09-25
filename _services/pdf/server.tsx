@@ -4,6 +4,7 @@ import * as express from 'express';
 import * as pkg from './package.json';
 
 const app = express();
+app.use(express.json());
 // use PORT + 1 to avoid conflict with Breeze_backend
 const port = (parseInt(process.env.PORT) || 3000) + 1;
 
@@ -11,13 +12,13 @@ app.get('/status', (req, res) => {
   res.json({ status: 'ok', version: pkg.version });
 })
 
-app.get('/pdf', async (req, res) => {
+app.post('/pdf', async (req, res) => {
   try {
     res.setHeader('Content-Type', 'application/pdf');
     res.attachment('tenant.pdf');
 
     // @todo add data from request to pdf
-    const pdfStream = await ReactPDF.renderToStream(<TenantDocument />);
+    const pdfStream = await ReactPDF.renderToStream(<TenantDocument {...req.body.data} />);
     pdfStream.pipe(res);
   } catch (err) {
     // @todo report proper error to caller

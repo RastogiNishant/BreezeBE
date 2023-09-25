@@ -85,7 +85,27 @@ const styles = StyleSheet.create({
   },
 });
 
-export const TenantDocument = () => (
+const mapDisplayValues = (tenant: any, members: any) => ({
+  tenant: {
+    rental_space: `${tenant?.space_min || 0}-${tenant?.space_max || 1000}` + "m²",
+    household_size: `${tenant?.members_count} Persons`,
+    rooms_min_max: `${tenant?.rooms_min || 0}-${tenant?.rooms_max || 1000}`,
+    rent_budget: `€${tenant?.budget_max || 10000}`,
+    rent_duration: `${tenant?.residency_duration_min ? tenant?.residency_duration_min + "-" + tenant?.residency_duration_max : "unlimited"}`,
+    children: `${tenant?.minors_count || "-"}`,
+    pets: `${tenant?.pets ? "Yes" : "-"}`,
+    parking: `${tenant?.parking_space ? "Yes" : "-"}`,
+
+  },
+  members: members?.map((member: any) => ({
+    
+  })),
+});
+
+export const TenantDocument = (props: { tenant?: any, members?: any[]}) => {
+  props?.members?.push(props?.tenant);
+  const {tenant, members} = mapDisplayValues(props?.tenant, props?.members);
+  return (
   <Document>
     <Page size="A4" style={styles.page}>
       <View>
@@ -102,14 +122,14 @@ export const TenantDocument = () => (
         />
         <PropertyLandlordDetails
           leftLabel="Rental space"
-          leftValue="40-80 m&#xb2;"
+          leftValue={tenant?.rental_space}
           rightIcon
           rightLabel="Household size"
-          rightValue="4 Persons"
+          rightValue={tenant?.household_size}
         />
         <PropertyLandlordDetails
           leftLabel="Rooms"
-          leftValue="2-3"
+          leftValue={tenant?.rooms_min_max}
           rightLabel="User Type"
           rightValue="home office"
         />
@@ -117,24 +137,24 @@ export const TenantDocument = () => (
           leftLabel="Rent, duration"
           leftValue={
             <>
-              <Text style={{ fontWeight: 'bold' }}>€500-700, </Text>
-              <Text>unlimited</Text>
+              <Text style={{ fontWeight: 'bold' }}>{tenant?.rent_budget}, </Text>
+              <Text>{tenant?.rent_duration}</Text>
             </>
           }
           rightLabel="Children"
-          rightValue="2"
+          rightValue={tenant?.children}
         />
         <PropertyLandlordDetails
           leftLabel="Public Certificate"
           leftValue="Certificate I (12.02.2024)"
           rightLabel="Pets intended"
-          rightValue="Yes: cat, cat"
+          rightValue={tenant?.pets}
         />
         <PropertyLandlordDetails
           leftLabel="Rent start"
           leftValue="01.01.2022"
           rightLabel="Interest at Parking/Garage"
-          rightValue="Yes"
+          rightValue={tenant?.parking}
         />
         <TenantProfile
           tenantHeader="PERSONAL"
@@ -252,3 +272,4 @@ export const TenantDocument = () => (
     </Page>
   </Document>
 );
+}
