@@ -710,8 +710,7 @@ class EstateService {
       ...updateData,
     }
 
-    const { verified_address, construction_year, cover_thumb, ...omittedData } = updateData
-
+    const { verified_address, cover_thumb, ...omittedData } = updateData
     let insideTrx = !trx ? true : false
     trx = insideTrx ? await Database.beginTransaction() : trx
     try {
@@ -3928,7 +3927,11 @@ class EstateService {
   }
 
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
-    const estates = await this.getEstatesByBuilding({ user_id, build_id })
+    const estates = await this.getEstatesByBuilding({
+      user_id,
+      build_id,
+      exclude_letting_type_let: true,
+    })
 
     const can_publish = estates.every((estate) => estate.can_publish)
     if (!can_publish) {
@@ -3991,14 +3994,16 @@ class EstateService {
     //TODO: publish estates here
   }
 
-  static async getEstatesByBuilding({ user_id, build_id }) {
-    return (
-      await Estate.query()
-        .where('user_id', user_id)
-        .where('build_id', build_id)
-        .whereNot('status', STATUS_DELETE)
-        .fetch()
-    ).toJSON()
+  static async getEstatesByBuilding({ user_id, build_id, exclude_letting_type_let }) {
+    let query = Estate.query()
+      .where('user_id', user_id)
+      .where('build_id', build_id)
+      .whereNot('status', STATUS_DELETE)
+    if (exclude_letting_type_let) {
+      query.whereNot('letting_type', LETTING_TYPE_LET)
+    }
+    const estates = await query.fetch()
+    return estates.toJSON()
   }
 
   static async unpublishBuilding({ user_id, build_id }) {

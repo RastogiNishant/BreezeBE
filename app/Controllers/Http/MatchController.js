@@ -6,7 +6,6 @@ const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
 const Admin = use('App/Models/Admin')
-const Visit = use('App/Models/Visit')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
@@ -15,10 +14,6 @@ const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith } = require('lo
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
-const UserService = use('App/Services/UserService')
-const {
-  exceptions: { USER_NOT_FOUND, ERROR_NO_ACTIVE_MATCH_FOUND },
-} = require('../../exceptions')
 
 const {
   ROLE_LANDLORD,
@@ -1149,34 +1144,14 @@ class MatchController {
     })
   }
 
-  async notifyProspectToFillUpProfile({ request, auth, response }) {
-    const { user_id } = request.all()
-    const landlord_user_id = auth.user.id
+  async notifyOutsideProspectToFillUpProfile({ request, auth, response }) {
+    const { id } = request.all()
     try {
-      /* Get prospect match invite user details by user_id */
-      const prospectUser = await UserService.getById(user_id)
-
-      if (!prospectUser) {
-        throw new HttpException(USER_NOT_FOUND, 400)
-      }
-
-      /* Check if there is an active match between the prospect and the landlord */
-      const activeMatch = await MatchService.getActiveMatchBetweenProspectAndLandlord(
-        user_id,
-        landlord_user_id
-      )
-
-      if (!activeMatch) {
-        /* No active match found */
-        throw new HttpException(ERROR_NO_ACTIVE_MATCH_FOUND, 400)
-      }
-
-      /* Notify to user for complete profile via email */
-      await MailService.sendToProspectForFillUpProfile({
-        email: prospectUser.email,
-        lang: prospectUser.lang,
+      await require('../../Services/MarketPlaceService').sendManualReminder({
+        contactRequestId: id,
+        landlordId: auth.user.id,
+        lang: auth.user.lang,
       })
-
       response.res(true)
     } catch (e) {
       throw new HttpException(e.message, 400)

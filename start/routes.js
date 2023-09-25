@@ -29,13 +29,14 @@ Route.get('/api/v1/calc_price', 'CommonController.calcRentPrice').middleware([
 ])
 
 Route.get('/', async () => {
-  
-  let pdfServiceResp;
-  
+  let pdfServiceResp
+
   try {
-    pdfServiceResp = await (await fetch(`http://localhost:${(parseInt(process.env.PORT) || 3000)+1}/status`)).json();
+    pdfServiceResp = await (
+      await fetch(`http://localhost:${(parseInt(process.env.PORT) || 3000) + 1}/status`)
+    ).json()
   } catch (error) {
-    pdfServiceResp = { status: 'error', error: 'UNREACHABLE' };
+    pdfServiceResp = { status: 'error', error: 'UNREACHABLE' }
   }
 
   return {
@@ -44,9 +45,9 @@ Route.get('/', async () => {
     node: process.version,
     services: [
       {
-        pdf: pdfServiceResp
-      }
-    ]
+        pdf: pdfServiceResp,
+      },
+    ],
   }
 })
 
@@ -1134,7 +1135,7 @@ Route.get(
 /* Notify prospect match user on email to fillup profile */
 Route.post(
   '/api/v1/match/landlord/estate/notifyprospect-fillupprofile',
-  'MatchController.notifyProspectToFillUpProfile'
+  'MatchController.notifyOutsideProspectToFillUpProfile'
 ).middleware(['auth:jwtLandlord'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
