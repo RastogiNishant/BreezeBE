@@ -951,11 +951,11 @@ class MatchService {
   static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
     //FIXME: dist is not used in EstateService.searchEstatesQuery
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
-    let { estates, categoryCounts } = await EstateService.searchEstatesQuery(tenant)
+    let { estates, categoryCounts, groupedEstates } = await EstateService.searchEstatesQuery(tenant)
     if (only_count) {
       return {
         categoryCounts,
-        count: estates?.length,
+        count: groupedEstates?.length,
       }
     }
 
@@ -1023,6 +1023,15 @@ class MatchService {
 
     await this.upsertBulkMatches(matches, trx)
 
+    const groupedPassEstates = groupBy(passedEstates, (estate) =>
+      estate.build_id ? `g_${estate.build_id}` : estate.id
+    )
+    const uniqueMatchEstateIds = Object.keys(groupedPassEstates).map(
+      (key) => groupedPassEstates[key][0].id
+    )
+
+    matches = matches.filter((m) => uniqueMatchEstateIds.includes(m.estate_id))
+
     if (has_notification_sent) {
       const superMatches = matches.filter(
         ({ prospect_score }) => prospect_score >= MATCH_SCORE_GOOD_MATCH
@@ -1032,14 +1041,6 @@ class MatchService {
       }
     }
 
-    const groupedPassEstates = groupBy(passedEstates, (estate) =>
-      estate.build_id ? `g_${estate.build_id}` : estate.id
-    )
-    const uniqueMatchEstateIds = Object.keys(groupedPassEstates).map(
-      (key) => groupedPassEstates[key][0].id
-    )
-
-    matches = matches.filter((m) => uniqueMatchEstateIds.includes(m.estate_id))
     return {
       count: matches?.length,
       matches,
@@ -1187,17 +1188,13 @@ class MatchService {
       throw new AppException('Not allowed', 400)
     }
 
-    estate = (
-      await MatchService.getEstateForScoringQuery().where({ id: estate_id }).first()
-    ).toJSON()
+    const scoringData = await MatchService.calculationMatchScoreByUserId({
+      userId: user_id,
+      estateId: estate_id,
+    })
 
-    if (!estate) {
-      throw new HttpException(NO_ESTATE_EXIST, 400)
-    }
-    const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
-      tenant,
-      estate
-    )
+    estate = scoringData.estate
+    const { percent, landlord_score, prospect_score } = scoringData
 
     let isOutsideTrxExist = true
     if (!trx) {
@@ -1283,6 +1280,7 @@ class MatchService {
     )
 
     return {
+      estate,
       percent,
       landlord_score,
       prospect_score,
@@ -3218,7 +3216,7 @@ class MatchService {
       .innerJoin({ _e: 'estates' }, '_e.id', 'matches.estate_id')
       .where('matches.user_id', userId)
       .where('matches.status', MATCH_STATUS_KNOCK)
-      //.whereIn('matches.estate_id', estateIds)
+      .whereIn('_e.status', [STATUS_ACTIVE, STATUS_EXPIRE])
       .orderBy(Database.raw(`case when build_id is null then _e.id else _e.build_id end`), 'DESC')
       .fetch()
 
@@ -3227,15 +3225,18 @@ class MatchService {
 
   static async getMatchNewCount(userId) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_NEW })
-      //.whereIn('estate_id', estateIds)
+      .where('matches.user_id', userId)
+      .where('matches.status', MATCH_STATUS_NEW)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').onIn('_e.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      })
       .count('*')
     return data
   }
   // Find the invite matches but has available time slots
   static async getTenantInvitesCount(userId) {
     const data = await Estate.query()
-      //.whereIn('id', estateIds)
+      .whereIn('status', [STATUS_ACTIVE, STATUS_EXPIRE])
       .whereHas('matches', (query) => {
         query.where('matches.user_id', userId).where('matches.status', MATCH_STATUS_INVITE)
       })
@@ -3253,7 +3254,7 @@ class MatchService {
     const data = await Estate.query()
       .where((estateQuery) => {
         estateQuery
-          //.whereIn('estates.id', estateIds)
+          .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
           .whereHas('matches', (query) => {
             query.where('matches.user_id', userId).where('matches.status', MATCH_STATUS_VISIT)
           })
@@ -3265,7 +3266,7 @@ class MatchService {
       })
       .orWhere((estateQuery) => {
         estateQuery
-          //.whereIn('estates.id', estateIds)
+          .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
           .whereHas('matches', (query) => {
             query
               .where('matches.status', MATCH_STATUS_SHARE)
@@ -3283,16 +3284,23 @@ class MatchService {
 
   static async getTenantSharesCount(userId) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, share: true })
-      //.whereIn('estate_id', estateIds)
+      .where({ share: true })
+      .where('matches.user_id', userId)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').onIn('_e.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      })
       .count('*')
     return data
   }
 
   static async getTenantTopsCount(userId) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_TOP, share: true })
-      //.whereIn('estate_id', estateIds)
+      .where({ share: true })
+      .where('matches.user_id', userId)
+      .where('matches.status', MATCH_STATUS_TOP)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').onIn('_e.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      })
       .count('*')
     return data
   }
@@ -3330,8 +3338,12 @@ class MatchService {
 
   static async getTenantCommitsCount(userId) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, status: MATCH_STATUS_COMMIT, share: true })
-      //.whereIn('estate_id', estateIds)
+      .where({ share: true })
+      .where('matches.user_id', userId)
+      .where('matches.status', MATCH_STATUS_COMMIT)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').onIn('_e.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      })
       .count('*')
     return data
   }
@@ -3349,8 +3361,12 @@ class MatchService {
 
   static async getTenantBuddiesCount(userId) {
     const data = await Database.table('matches')
-      .where({ user_id: userId, buddy: true, status: MATCH_STATUS_NEW })
-      //.whereIn('estate_id', estateIds)
+      .where({ buddy: true })
+      .where('matches.user_id', userId)
+      .where('matches.status', MATCH_STATUS_NEW)
+      .innerJoin({ _e: 'estates' }, function () {
+        this.on('_e.id', 'matches.estate_id').onIn('_e.status', [STATUS_ACTIVE, STATUS_EXPIRE])
+      })
       .count('*')
     return data
   }
@@ -4787,6 +4803,17 @@ class MatchService {
       match: matches?.[placeNumber],
       place_num: placeNumber + 1,
     }
+  }
+
+  static async getActiveMatchBetweenProspectAndLandlord(user_id, landlord_user_id) {
+    /* Check if there is an active match between the prospect and the landlord */
+    return await Match.query()
+      .where('user_id', user_id)
+      .where('status', MATCH_STATUS_INVITE)
+      .whereHas('estate', (query) => {
+        query.where('user_id', landlord_user_id)
+      })
+      .first()
   }
 }
 

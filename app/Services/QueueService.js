@@ -31,6 +31,7 @@ const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const KNOCK_SEND_REQUEST_EMAIL = 'knockRequestToEstate'
 const {
   SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+  SCHEDULED_EVERY_1M_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
@@ -195,6 +196,13 @@ class QueueService {
   /**
    *
    */
+  static async sendEveryMin() {
+    return Promise.all([wrapException(require('./MatchService').moveExpiredFinalConfirmToTop)])
+  }
+
+  /**
+   *
+   */
   static async sendEvery5Min() {
     const NoticeService = require('./NoticeService')
     return Promise.all([
@@ -222,12 +230,7 @@ class QueueService {
   }
 
   static async performEvery1HourJob() {
-    const MatchService = require('./MatchService')
-
-    return Promise.all([
-      wrapException(MatchService.moveExpiredFinalConfirmToTop),
-      wrapException(require('./EstateService').updateVacantDate),
-    ])
+    return Promise.all([wrapException(require('./EstateService').updateVacantDate)])
   }
 
   static async pullGewobag() {
@@ -341,6 +344,8 @@ class QueueService {
           })
         case SCHEDULED_EVERY_15MINUTE_NIGHT_JOB:
           return QueueService.doEvery15MinsJob()
+        case SCHEDULED_EVERY_1M_JOB:
+          return QueueService.sendEveryMin()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
