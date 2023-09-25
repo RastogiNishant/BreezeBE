@@ -710,8 +710,7 @@ class EstateService {
       ...updateData,
     }
 
-    const { verified_address, construction_year, cover_thumb, ...omittedData } = updateData
-
+    const { verified_address, cover_thumb, ...omittedData } = updateData
     let insideTrx = !trx ? true : false
     trx = insideTrx ? await Database.beginTransaction() : trx
     try {
