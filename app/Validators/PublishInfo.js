@@ -34,7 +34,6 @@ class PublishInfo extends Base {
       min_invite_count: yup
         .number()
         .integer()
-        .positive()
         .when('is_duration_later', {
           is: true,
           then: yup
