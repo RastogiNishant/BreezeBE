@@ -181,6 +181,7 @@ class Estate extends Model {
       'cert_category',
       'can_publish',
       'unit_category_id',
+      'skip_timeslots',
     ]
   }
 
