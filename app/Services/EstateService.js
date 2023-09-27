@@ -614,6 +614,14 @@ class EstateService {
         status: STATUS_DRAFT,
       }
 
+      if (data?.min_invite_count === 0) {
+        createData.min_invite_count = null
+      }
+
+      if (data?.rent_end_at === 0) {
+        createData.rent_end_at = null
+      }
+
       if (request) {
         const files = await this.saveEnergyProof(request)
 
