@@ -614,6 +614,14 @@ class EstateService {
         status: STATUS_DRAFT,
       }
 
+      if (data?.min_invite_count === 0) {
+        createData.min_invite_count = null
+      }
+
+      if (data?.rent_end_at === 0) {
+        createData.rent_end_at = null
+      }
+
       if (request) {
         const files = await this.saveEnergyProof(request)
 
@@ -4015,11 +4023,17 @@ class EstateService {
 
     const trx = await Database.beginTransaction()
     try {
+      const buildingPublishStatus = estates.some(
+        (estate) => estate.publish_status === PUBLISH_STATUS_BY_LANDLORD
+      )
+        ? PUBLISH_STATUS_BY_LANDLORD
+        : PUBLISH_STATUS_INIT
+
       await BuildingService.updatePublishedMarketPlaceEstateIds(
         {
           id: build_id,
           user_id,
-          published: PUBLISH_STATUS_INIT,
+          published: buildingPublishStatus,
           marketplace_estate_ids: null,
         },
         trx

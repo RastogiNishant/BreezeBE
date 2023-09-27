@@ -173,7 +173,7 @@ class TenantService extends BaseService {
       .leftJoin(
         Database.raw(`
     (select
-      user_id,
+      user_id as cert_user_id,
       array_agg(json_build_object(
         'city_id', city_id,
         'city', cities.city,
@@ -194,7 +194,7 @@ class TenantService extends BaseService {
       group by user_id
       ) as _tc
     `),
-        '_tc.user_id',
+        '_tc.cert_user_id',
         'tenants.user_id'
       )
       .where('tenants.user_id', userId)
