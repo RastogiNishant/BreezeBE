@@ -6,7 +6,6 @@ const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
 const Admin = use('App/Models/Admin')
-const Visit = use('App/Models/Visit')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
@@ -1143,6 +1142,20 @@ class MatchController {
       finalMatches,
       contact_requests,
     })
+  }
+
+  async notifyOutsideProspectToFillUpProfile({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      await require('../../Services/MarketPlaceService').sendManualReminder({
+        contactRequestId: id,
+        landlordId: auth.user.id,
+        lang: auth.user.lang,
+      })
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

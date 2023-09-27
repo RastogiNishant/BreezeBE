@@ -447,7 +447,13 @@ class EstateController {
         min_invite_count,
       })
 
-      response.res({ ...building.toJSON(), available_end_at, is_duration_later, min_invite_count })
+      response.res({
+        ...building.toJSON(),
+        estates,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
     } catch (e) {
       throw new HttpException(FAILED_EXTEND_ESTATE, 400)
     }

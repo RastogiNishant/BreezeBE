@@ -416,12 +416,18 @@ class CreateEstate extends Base {
           .nullable(),
         vacant_date: yup.date().nullable(),
         to_date: yup.date().nullable(),
-        rent_end_at: yup
-          .date()
-          .nullable()
-          .transform((value, origin) => {
-            return moment.utc(origin, DATE_FORMAT).toDate()
-          }),
+        // The value should be zero or date
+        // The zero means it will be null
+        rent_end_at: yup.lazy((value) =>
+          typeof value === 'number'
+            ? yup.number().integer().min(0).max(0).nullable()
+            : yup
+                .date()
+                .nullable()
+                .transform((value, origin) => {
+                  return moment.utc(origin, DATE_FORMAT).toDate()
+                })
+        ),
         // .when(['vacant_date'], (vacant_date, schema, { value }) => {
         //   if (!vacant_date) return schema
         //   return value && value <= vacant_date
@@ -591,7 +597,7 @@ class CreateEstate extends Base {
           .integer()
           .when(['net_rent'], {
             is: (net_rent) => net_rent > 0,
-            then: yup.number().moreThan(yup.ref('net_rent')),
+            then: yup.number().min(yup.ref('net_rent')),
             otherwise: yup.number().integer(),
           })
           .nullable(),
@@ -704,6 +710,7 @@ class CreateEstate extends Base {
               .nullable()
           ),
         is_not_show: yup.boolean().nullable(),
+        skip_timeslots: yup.boolean().nullable(),
       })
       .concat(PublishInfo.schema())
 }

@@ -771,6 +771,31 @@ class MarketPlaceService {
     }
   }
 
+  static async sendManualReminder({ contactRequestId, landlordId, lang = DEFAULT_LANG }) {
+    try {
+      let contactRequest = await EstateSyncContactRequest.query()
+        .with('estate')
+        .where('id', contactRequestId)
+        .first()
+
+      if (contactRequest) contactRequest = contactRequest.toJSON()
+      else throw new HttpException(ERROR_CONTACT_REQUEST_NO_EXIST, 400)
+
+      if (!contactRequest?.estate || contactRequest?.estate?.user_id !== landlordId) {
+        throw new HttpException(ERROR_CONTACT_REQUEST_NO_EXIST, 400)
+      }
+
+      /* Notify to user for complete profile via email */
+      await MailService.sendToProspectForFillUpProfile({
+        email: contactRequest?.email,
+        lang,
+      })
+    } catch (e) {
+      Logger.error(`Contact Request sendReminderEmail error ${e.message || e}`)
+      throw new HttpException(e?.message || ERROR_CONTACT_REQUEST_NO_EXIST, 400)
+    }
+  }
+
   static parseIs24OtherInfo(info) {
     const booleanKeys = [
       'pets',

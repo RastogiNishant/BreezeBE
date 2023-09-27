@@ -33,11 +33,17 @@ class DashboardService {
 
     const buildEstateCount = await EstateService.buildEstateCount({
       user_id,
-      params: { status: [STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE] },
+      params: {
+        status: [STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE],
+        letting_type: [LETTING_TYPE_VOID, LETTING_TYPE_NA, null],
+      },
     })
     const noBuildEstateCount = await EstateService.noBuildEstateCount({
       user_id,
-      params: { status: [STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE] },
+      params: {
+        status: [STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE],
+        letting_type: [LETTING_TYPE_VOID, LETTING_TYPE_NA, null],
+      },
     })
 
     return {
