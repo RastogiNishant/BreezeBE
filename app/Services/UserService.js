@@ -179,6 +179,8 @@ class UserService {
           secondname: user?.secondname,
           is_verified: true,
         }
+
+        if (user.sex) memberInfo.sex = user.sex
         memberInfo.birthday = otherInfo?.birthday || null
         memberInfo.insolvency_proceed = otherInfo?.insolvency ? 1 : null
         memberInfo.credit_score = otherInfo?.credit_score || null
