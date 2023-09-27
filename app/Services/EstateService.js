@@ -4015,11 +4015,17 @@ class EstateService {
 
     const trx = await Database.beginTransaction()
     try {
+      const buildingPublishStatus = estates.some(
+        (estate) => estate.publish_status === PUBLISH_STATUS_BY_LANDLORD
+      )
+        ? PUBLISH_STATUS_BY_LANDLORD
+        : PUBLISH_STATUS_INIT
+
       await BuildingService.updatePublishedMarketPlaceEstateIds(
         {
           id: build_id,
           user_id,
-          published: PUBLISH_STATUS_INIT,
+          published: buildingPublishStatus,
           marketplace_estate_ids: null,
         },
         trx
