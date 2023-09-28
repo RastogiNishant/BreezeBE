@@ -581,6 +581,7 @@ class PropertyController {
     if (!building) {
       throw new HttpException('Building not found.')
     }
+    let publisher = null
     if (process.env.NODE_ENV === 'localhost') {
       publisher = 'immobilienscout-24-sandbox'
     } else {
