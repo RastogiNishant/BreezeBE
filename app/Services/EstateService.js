@@ -758,6 +758,7 @@ class EstateService {
         }
       }
 
+      updateData = { ...omit(updateData, ['category']) }
       await estate.updateItemWithTrx(updateData, trx)
 
       if (estate.build_id) {
