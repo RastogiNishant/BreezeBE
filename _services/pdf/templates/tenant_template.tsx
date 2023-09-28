@@ -4,6 +4,7 @@ import PropertyLandlordDetails from './propertyLandlordDetails';
 import TenantProfile from './tenantProfile';
 import IncomeDetails from './incomeDetails';
 import Solvency from './solvency';
+import * as dayjs from 'dayjs';
 
 Font.register({
   family: 'Montserrat',
@@ -85,10 +86,14 @@ const styles = StyleSheet.create({
   },
 });
 
-const boolExpressions = (value: any) => (value === undefined ? '-' : value ? 'Yes' : 'No');
+const boolExpressions = (value: any) =>
+  value === undefined || value === null ? '-' : value ? 'Yes' : 'No';
 
 const dateOfBirth = (age: any, day: any, place: any) =>
   day || age || place ? day && `${day}` + age && `(${age})` + place && place : '-';
+
+const dayConverter = (day: string) =>
+  dayjs(day).isValid() ? dayjs(day).format('DD-MM-YYYY') : day;
 
 const mapDisplayValues = (tenant: any, members: any) => ({
   tenant: {
@@ -103,6 +108,7 @@ const mapDisplayValues = (tenant: any, members: any) => ({
     children: `${tenant?.minors_count || '-'}`,
     pets: `${tenant?.pets ? 'Yes' : '-'}`,
     parking: `${tenant?.parking_space ? 'Yes' : '-'}`,
+    rent_start: tenant?.rent_start ? dayConverter(tenant?.rent_start) : '-',
   },
   members: members?.map((member: any, index: number) => {
     const incomes = Array.isArray(member?.incomes) && member?.incomes[0];
@@ -123,7 +129,11 @@ const mapDisplayValues = (tenant: any, members: any) => ({
       companyDetails: incomes?.company || '-',
       score: member?.credit_score || '-',
 
-      rentArrears: boolExpressions(member?.unpaid_rental),
+      rentArrears:
+        (member?.rent_arrears_doc && boolExpressions(member?.rent_arrears_doc)) ||
+        (member?.rent_arrears_doc_submit_later &&
+          boolExpressions(member?.rent_arrears_doc_submit_later)) ||
+        '-',
       unpaidRental: boolExpressions(member?.unpaid_rental),
       execution: boolExpressions(member?.unpaid_rental),
       insolvency: boolExpressions(member?.insolvency_proceed),
@@ -184,7 +194,7 @@ export const TenantDocument = (props: { tenant?: any, members?: any[] }) => {
           />
           <PropertyLandlordDetails
             leftLabel="Rent start"
-            leftValue="01.01.2022"
+            leftValue={tenant?.rent_start.padStart(10, '0')}
             rightLabel="Interest at Parking/Garage"
             rightValue={tenant?.parking}
           />
