@@ -182,7 +182,7 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rooms')}
             leftValue={tenant?.rooms_min_max}
-            rightLabel="User Type"
+            rightLabel={getTranslation(props?.t, 'prospect.rental_application.UseType')}
             rightValue="home office"
           />
           <PropertyLandlordDetails
