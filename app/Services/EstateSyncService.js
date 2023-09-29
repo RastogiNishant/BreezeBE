@@ -824,11 +824,11 @@ class EstateSyncService {
         await UnitCategory.query().where('id', initializedCategories[0].id).update({
           is24_publish_status: IS24_PUBLISHING_STATUS_POSTED,
         })
+        await trx.commit()
         require('./QueueService').estateSyncPublishBuilding(
           { building_id: buildingId, publisher },
           userId
         )
-        await trx.commit()
         return true
       }
 

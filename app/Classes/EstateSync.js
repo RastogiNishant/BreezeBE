@@ -314,7 +314,7 @@ class EstateSync {
 
   composeTitle({ rooms_number, area, apt_type, city, country, category }, is_building = false) {
     if (is_building) {
-      return category.name
+      return category?.name
     }
     let estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES['others']
     const formatter = new Intl.NumberFormat('de-DE')
