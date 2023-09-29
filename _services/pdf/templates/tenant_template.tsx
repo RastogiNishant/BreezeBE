@@ -100,7 +100,7 @@ const mapDisplayValues = (tenant: any, members: any) => ({
     rental_space: `${tenant?.space_min || 0}-${tenant?.space_max || 1000}` + 'm²',
     household_size: `${tenant?.members_count} Persons`,
     rooms_min_max: `${tenant?.rooms_min || 0}-${tenant?.rooms_max || 1000}`,
-    rent_budget: `${tenant?.budget_min || 0}-${tenant?.budget_max || 10000}`,
+    rent_budget: `€${tenant?.budget_min || 0}-${tenant?.budget_max || 10000}`,
     rent_duration: `${tenant?.residency_duration_min
       ? tenant?.residency_duration_min + '-' + tenant?.residency_duration_max
       : 'unlimited'
