@@ -7,13 +7,22 @@ class PdfRentalController {
   async generatePdf({ request, auth, response }) {
     const tenantData = {
       tenant: await TenantService.getTenantWithCertificates(auth.user.id),
-      members: await MemberService.getMembers(auth.user.id, true)
+      members: await MemberService.getMembers(auth.user.id, true),
     }
-    
+
     const pdfServerPort = (parseInt(process.env.PORT) || 3000) + 1
     const url = `http:\\\\localhost:${pdfServerPort}\\pdf`
 
-    const { data: pdfStream } = await axios.post(url, { data: tenantData }, { responseType: 'stream' })
+    const { data: pdfStream } = await axios.post(
+      url,
+      { data: tenantData },
+      {
+        headers: {
+          'Accept-Language': request.header('Accept-Language'),
+        },
+        responseType: 'stream',
+      }
+    )
 
     response.implicitEnd = false
     response.header('Content-type', 'application/pdf')
