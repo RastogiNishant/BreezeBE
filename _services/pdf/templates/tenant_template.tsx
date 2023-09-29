@@ -4,6 +4,10 @@ import PropertyLandlordDetails from './propertyLandlordDetails';
 import TenantProfile from './tenantProfile';
 import IncomeDetails from './incomeDetails';
 import Solvency from './solvency';
+import dayjs from 'dayjs';
+import { TFunction } from 'i18next';
+import { getTranslation } from '../util/translatedKey';
+import { PUBLIC_CERTIFICATE_KEYS } from '../util/constant';
 
 Font.register({
   family: 'Montserrat',
@@ -85,25 +89,38 @@ const styles = StyleSheet.create({
   },
 });
 
-const boolExpressions = (value: any) => (value === undefined ? '-' : value ? 'Yes' : 'No');
+const boolExpressions = (value: any) =>
+  value === undefined || value === null ? '-' : value ? 'Yes' : 'No';
 
 const dateOfBirth = (age: any, day: any, place: any) =>
   day || age || place ? day && `${day}` + age && `(${age})` + place && place : '-';
 
-const mapDisplayValues = (tenant: any, members: any) => ({
+const dayConverter = (day: string) =>
+  dayjs(day).isValid() ? dayjs(day).format('DD-MM-YYYY') : day;
+
+const mapDisplayValues = (tenant: any, members: any, t: TFunction) => ({
   tenant: {
     rental_space: `${tenant?.space_min || 0}-${tenant?.space_max || 1000}` + 'm²',
     household_size: `${tenant?.members_count} Persons`,
     rooms_min_max: `${tenant?.rooms_min || 0}-${tenant?.rooms_max || 1000}`,
-    rent_budget: `€${tenant?.budget_max || 10000}`,
-    rent_duration: `${tenant?.residency_duration_min
-      ? tenant?.residency_duration_min + '-' + tenant?.residency_duration_max
-      : 'unlimited'
-      }`,
+    rent_budget: `€${tenant?.budget_min || 0}-${tenant?.budget_max || 10000}`,
+    rent_duration: `${
+      tenant?.residency_duration_min
+        ? tenant?.residency_duration_min + '-' + tenant?.residency_duration_max
+        : 'unlimited'
+    }`,
     children: `${tenant?.minors_count || '-'}`,
+    income_level: tenant?.income_level
+      ? Array.isArray(tenant.income_level) &&
+        PUBLIC_CERTIFICATE_KEYS.includes(tenant.income_level[0])
+        ? getTranslation(t, tenant.income_level[0])
+        : tenant.income_level
+      : '-',
     pets: `${tenant?.pets ? 'Yes' : '-'}`,
     parking: `${tenant?.parking_space ? 'Yes' : '-'}`,
+    rent_start: tenant?.rent_start ? dayConverter(tenant?.rent_start) : '-',
   },
+
   members: members?.map((member: any, index: number) => {
     const incomes = Array.isArray(member?.incomes) && member?.incomes[0];
     return {
@@ -123,7 +140,11 @@ const mapDisplayValues = (tenant: any, members: any) => ({
       companyDetails: incomes?.company || '-',
       score: member?.credit_score || '-',
 
-      rentArrears: boolExpressions(member?.unpaid_rental),
+      rentArrears:
+        (member?.rent_arrears_doc && boolExpressions(member?.rent_arrears_doc)) ||
+        (member?.rent_arrears_doc_submit_later &&
+          boolExpressions(member?.rent_arrears_doc_submit_later)) ||
+        '-',
       unpaidRental: boolExpressions(member?.unpaid_rental),
       execution: boolExpressions(member?.unpaid_rental),
       insolvency: boolExpressions(member?.insolvency_proceed),
@@ -133,9 +154,9 @@ const mapDisplayValues = (tenant: any, members: any) => ({
   }),
 });
 
-export const TenantDocument = (props: { tenant?: any, members?: any[] }) => {
+export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: any[] }) => {
   props?.members?.push({}, {});
-  const { tenant, members } = mapDisplayValues(props?.tenant, props?.members);
+  const { tenant, members } = mapDisplayValues(props?.tenant, props?.members, props?.t);
 
   return (
     <Document>
@@ -177,14 +198,14 @@ export const TenantDocument = (props: { tenant?: any, members?: any[] }) => {
             rightValue={tenant?.children}
           />
           <PropertyLandlordDetails
-            leftLabel="Public Certificate"
-            leftValue="Certificate I (12.02.2024)"
+            leftLabel={getTranslation(props?.t, 'prospect.rental_application.PublicCertificate')}
+            leftValue={tenant?.income_level}
             rightLabel="Pets intended"
             rightValue={tenant?.pets}
           />
           <PropertyLandlordDetails
             leftLabel="Rent start"
-            leftValue="01.01.2022"
+            leftValue={tenant?.rent_start.padStart(10, '0')}
             rightLabel="Interest at Parking/Garage"
             rightValue={tenant?.parking}
           />
