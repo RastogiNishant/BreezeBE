@@ -18,7 +18,7 @@ class PdfRentalController {
       { data: tenantData },
       {
         headers: {
-          'Accept-Language': request.header('Accept-Language'),
+          'Accept-Language': auth.user.lang,
         },
         responseType: 'stream',
       }
