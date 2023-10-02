@@ -18,3 +18,10 @@ export const PUBLIC_CERTIFICATE_KEYS = [
   'prospect.profile.adult.apartment.txt_PublicCertificateCategory220',
   'prospect.profile.adult.apartment.txt_PublicCertificateCategoryBWB',
 ];
+
+export const SALUTATION = [
+  'landlord.profile.user_details.salut.mr.message',
+  'landlord.profile.user_details.salut.ms.message',
+  'landlord.profile.user_details.salut.not_def.message',
+  'landlord.profile.user_details.salut.sir_madam.message',
+];

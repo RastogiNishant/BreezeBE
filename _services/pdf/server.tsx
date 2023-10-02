@@ -5,7 +5,7 @@ import * as pkg from './package.json';
 import i18next from 'i18next';
 import Backend from 'i18next-http-backend';
 import middleware from 'i18next-http-middleware';
-import { getAllTranslatedKeyValues } from './util/translatedKey';
+import { getAllTranslatedKeyValues, getTranslation } from './util/translatedKey';
 
 i18next
   .use(Backend)
@@ -48,7 +48,9 @@ app.get('/status', (req, res) => {
 app.post('/pdf', async (req, res) => {
   try {
     res.setHeader('Content-Type', 'application/pdf');
-    res.attachment('tenant.pdf');
+    res.attachment(
+      `${getTranslation(req.t, 'prospect.profile.pdf.file_name').replace(/\s+/g, '')}.pdf`
+    );
 
     // @todo add data from request to pdf
     const pdfStream = await ReactPDF.renderToStream(
