@@ -7,7 +7,7 @@ import Solvency from './solvency';
 import dayjs from 'dayjs';
 import { TFunction } from 'i18next';
 import { getTranslation } from '../util/translatedKey';
-import { PUBLIC_CERTIFICATE_KEYS, SALUTATION } from '../util/constant';
+import { INCOME_TYPES_KEYS, PUBLIC_CERTIFICATE_KEYS, SALUTATION } from '../util/constant';
 
 Font.register({
   family: 'Montserrat',
@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
   },
 });
 
-const boolExpressions = (value: any) =>
-  value === undefined || value === null ? '-' : value ? 'Yes' : 'No';
+const boolExpressions = (t: TFunction, value: any) =>
+  value === undefined || value === null ? '-' : getTranslation(t, value ?'landlord.property.tenant_pref.solvency.rent_arrears.yes.message' : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message');
 
 const dateOfBirth = (day: any, age: any, place: any) =>
   day || age || place
@@ -109,7 +109,7 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => ({
     rent_duration: `${
       tenant?.residency_duration_min
         ? tenant?.residency_duration_min + '-' + tenant?.residency_duration_max
-        : 'unlimited'
+        : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
     }`,
     children: `${tenant?.minors_count || '-'}`,
     income_level: tenant?.income_level
@@ -118,24 +118,27 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => ({
         ? getTranslation(t, tenant.income_level[0])
         : tenant.income_level
       : '-',
-    pets: `${tenant?.pets ? 'Yes' : '-'}`,
-    parking: `${tenant?.parking_space ? 'Yes' : '-'}`,
+    pets: boolExpressions(t,tenant?.pets),
+    parking: boolExpressions(t,tenant?.parking_space),
     rent_start: tenant?.rent_start ? dayConverter(tenant?.rent_start) : '-',
   },
 
   members: members?.map((member: any, index: number) => {
     const incomes = Array.isArray(member?.incomes) && member?.incomes[0];
     return {
-      adultNumber: `RESIDENT ${index + 1}`,
-      surName: [
-        member?.sex &&
-          typeof member?.sex === 'number' &&
-          getTranslation(t, SALUTATION[member?.sex - 1]),
-        member?.firstname,
-        member?.secondname,
-      ]
-        .filter(Boolean)
-        .join(' '),
+      adultNumber: `${getTranslation(t, 'prospect.profile.adult.personal.txt_adult_ph.message')} ${index + 1}`,
+      surName:
+        member?.secondname && member?.firstname && member?.sex
+          ? [
+              member?.sex &&
+                typeof member?.sex === 'number' &&
+                getTranslation(t, SALUTATION[member?.sex - 1]),
+              member?.firstname,
+              member?.secondname,
+            ]
+              .filter(Boolean)
+              .join(' ')
+          : '-',
       dateOfBirth: dateOfBirth(member?.birthday, member?.age, member?.birth_place),
       citizenship: member?.citizen || '-',
       currentAddress: member?.last_address || '-',
@@ -143,27 +146,28 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => ({
       phone: member?.phone || '-',
 
       monthlyIncome: incomes?.income || '-',
-      incomeSource: incomes?.income_type || '-',
+      incomeSource: incomes?.income_type ? getTranslation(t, INCOME_TYPES_KEYS[incomes?.income_type as keyof typeof INCOME_TYPES_KEYS] + '.message') : '-',
       currentJob: incomes?.position || '-',
       jobDuration: incomes?.employment_type || '-',
       companyDetails: incomes?.company || '-',
       score: member?.credit_score || '-',
 
       rentArrears:
-        (member?.rent_arrears_doc && boolExpressions(member?.rent_arrears_doc)) ||
+        (member?.rent_arrears_doc && boolExpressions(t,member?.rent_arrears_doc)) ||
         (member?.rent_arrears_doc_submit_later &&
-          boolExpressions(member?.rent_arrears_doc_submit_later)) ||
+          boolExpressions(t,member?.rent_arrears_doc_submit_later)) ||
         '-',
-      unpaidRental: boolExpressions(member?.unpaid_rental),
-      execution: boolExpressions(member?.unpaid_rental),
-      insolvency: boolExpressions(member?.insolvency_proceed),
-      cleanOut: boolExpressions(member?.clean_procedure),
-      wage: boolExpressions(member?.income_seizure),
+      unpaidRental: boolExpressions(t,member?.unpaid_rental),
+      execution: boolExpressions(t,member?.unpaid_rental),
+      insolvency: boolExpressions(t,member?.insolvency_proceed),
+      cleanOut: boolExpressions(t,member?.clean_procedure),
+      wage: boolExpressions(t,member?.income_seizure),
     };
   }),
 });
 
 export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: any[] }) => {
+  // props?.members.map((item, index) => console.log('member ' + index + 1, item));
   props?.members?.push({}, {});
   const { tenant, members } = mapDisplayValues(props?.tenant, props?.members, props?.t);
 
@@ -195,7 +199,7 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rooms')}
             leftValue={tenant?.rooms_min_max}
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.UseType')}
-            rightValue="home office"
+            rightValue={getTranslation(props.t, 'property.attribute.OCCUPATION_TYPE.Private_Use.message')}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rent_duration')}
@@ -292,7 +296,7 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
           <View style={styles.section}>
             <View style={styles.footerSegment}>
               <View style={styles.footerWrapper}>
-                <Text style={styles.footerStyles}>This profile activated by</Text>
+                <Text style={styles.footerStyles}>{getTranslation(props?.t, 'prospect.rental_application.Thisprofileactivatedby')}</Text>
               </View>
             </View>
             <View style={[styles.footerSegment, { marginLeft: '7.5px' }]}>
