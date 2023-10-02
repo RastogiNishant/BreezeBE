@@ -18,10 +18,22 @@ export const PUBLIC_CERTIFICATE_KEYS = [
   'prospect.profile.adult.apartment.txt_PublicCertificateCategory220',
   'prospect.profile.adult.apartment.txt_PublicCertificateCategoryBWB',
 ];
-
 export const SALUTATION = [
   'landlord.profile.user_details.salut.mr.message',
   'landlord.profile.user_details.salut.ms.message',
   'landlord.profile.user_details.salut.not_def.message',
   'landlord.profile.user_details.salut.sir_madam.message',
 ];
+export enum INCOME_TYPES_KEYS {
+  'employee' = 'prospect.income_type.employee',
+  'unemployed' = 'prospect.income_type.unemployed',
+  'self' = 'prospect.income_type.self',
+  'worker' = 'prospect.profile.adult.income_type.txt_worker',
+  'civil_servant' = 'prospect.profile.adult.income_type.txt_civil_servant',
+  'freelancer' = 'prospect.profile.adult.income_type.txt_freelancer',
+  'pensioner' = 'prospect.profile.adult.income_type.txt_pensioner',
+  'trainee' = 'prospect.profile.adult.income_type.txt_trainee',
+  'housewife_husband' = 'prospect.profile.adult.income_type.txt_housewife_husband',
+  'child_benefit' = 'prospect.profile.adult.income.child_benefit.txt_ChildBenefit',
+  'other_benefit' = 'prospect.profile.adult.income_type.txt_OtherBenefit',
+}
