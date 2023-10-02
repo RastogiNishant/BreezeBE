@@ -123,9 +123,7 @@ const TenantProfile = ({
                     </View>
                     <View style={styles.labelStyles}>
                       <View>
-                        <Text style={[styles.label, styles.isBold]}>
-                          {each?.adultFirstName + ' ' + each?.adultLastName}
-                        </Text>
+                        <Text style={[styles.label, styles.isBold]}>{each?.surName}</Text>
                       </View>
                     </View>
                     <View style={styles.labelStyles}>

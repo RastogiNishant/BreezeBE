@@ -7,7 +7,7 @@ import Solvency from './solvency';
 import dayjs from 'dayjs';
 import { TFunction } from 'i18next';
 import { getTranslation } from '../util/translatedKey';
-import { PUBLIC_CERTIFICATE_KEYS } from '../util/constant';
+import { PUBLIC_CERTIFICATE_KEYS, SALUTATION } from '../util/constant';
 
 Font.register({
   family: 'Montserrat',
@@ -92,11 +92,13 @@ const styles = StyleSheet.create({
 const boolExpressions = (value: any) =>
   value === undefined || value === null ? '-' : value ? 'Yes' : 'No';
 
-const dateOfBirth = (age: any, day: any, place: any) =>
-  day || age || place ? day && `${day}` + age && `(${age})` + place && place : '-';
+const dateOfBirth = (day: any, age: any, place: any) =>
+  day || age || place
+    ? [dayConverter(day), age && `(${age}),`, place].filter(Boolean).join(' ')
+    : '-';
 
 const dayConverter = (day: string) =>
-  dayjs(day).isValid() ? dayjs(day).format('DD-MM-YYYY') : day;
+  dayjs(day).isValid() ? dayjs(day).format('DD.MM.YYYY') : day;
 
 const mapDisplayValues = (tenant: any, members: any, t: TFunction) => ({
   tenant: {
@@ -104,10 +106,11 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => ({
     household_size: `${tenant?.members_count} Persons`,
     rooms_min_max: `${tenant?.rooms_min || 0}-${tenant?.rooms_max || 1000}`,
     rent_budget: `€${tenant?.budget_min || 0}-${tenant?.budget_max || 10000}`,
-    rent_duration: `${tenant?.residency_duration_min
-      ? tenant?.residency_duration_min + '-' + tenant?.residency_duration_max
-      : 'unlimited'
-      }`,
+    rent_duration: `${
+      tenant?.residency_duration_min
+        ? tenant?.residency_duration_min + '-' + tenant?.residency_duration_max
+        : 'unlimited'
+    }`,
     children: `${tenant?.minors_count || '-'}`,
     income_level: tenant?.income_level
       ? Array.isArray(tenant.income_level) &&
@@ -124,9 +127,16 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => ({
     const incomes = Array.isArray(member?.incomes) && member?.incomes[0];
     return {
       adultNumber: `RESIDENT ${index + 1}`,
-      adultFirstName: member?.firstname || '-',
-      adultLastName: member?.secondname || '-',
-      dateOfBirth: dateOfBirth(member?.age, member?.birthday, member?.birth_place),
+      surName: [
+        member?.sex &&
+          typeof member?.sex === 'number' &&
+          getTranslation(t, SALUTATION[member?.sex - 1]),
+        member?.firstname,
+        member?.secondname,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      dateOfBirth: dateOfBirth(member?.birthday, member?.age, member?.birth_place),
       citizenship: member?.citizen || '-',
       currentAddress: member?.last_address || '-',
       email: member?.email || '-',
@@ -162,7 +172,9 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
       <Page size="A4" style={styles.page}>
         <View>
           <View style={styles.headerWrapper}>
-            <Text style={styles.pdfHeader}>RENTAL APPLICATION</Text>
+            <Text style={styles.pdfHeader}>
+              {getTranslation(props?.t, 'prospect.profile.pdf.file_name')}
+            </Text>
             <Image src={'../pdf/img/BreezeLogo.png'} style={styles.image} />
           </View>
         </View>
@@ -203,15 +215,24 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
             rightValue={tenant?.pets}
           />
           <PropertyLandlordDetails
-            leftLabel={getTranslation(props?.t, 'web.letting.tenant_profile.export.Rent_start.message')}
+            leftLabel={getTranslation(
+              props?.t,
+              'web.letting.tenant_profile.export.Rent_start.message'
+            )}
             leftValue={tenant?.rent_start.padStart(10, '0')}
-            rightLabel={getTranslation(props?.t, 'prospect.rental_application.InterestatParking_Garage')}
+            rightLabel={getTranslation(
+              props?.t,
+              'prospect.rental_application.InterestatParking_Garage'
+            )}
             rightValue={tenant?.parking}
           />
           <TenantProfile
             tenantHeader={getTranslation(props?.t, 'prospect.rental_application.PERSONAL')}
             firstLabel={getTranslation(props?.t, 'prospect.rental_application.NameandSurname')}
-            secondLabel={getTranslation(props?.t, 'prospect.rental_application.Date_Age_andplaceofbirth')}
+            secondLabel={getTranslation(
+              props?.t,
+              'prospect.rental_application.Date_Age_andplaceofbirth'
+            )}
             thirdLabel={getTranslation(props?.t, 'prospect.rental_application.Citizenship')}
             fourthLabel={getTranslation(props?.t, 'prospect.rental_application.CurrentAddress')}
             fifthLabel={getTranslation(props?.t, 'prospect.rental_application.Email')}
@@ -219,23 +240,50 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
             tenantDetails={Array.isArray(members) && members.length >= 1 && members.slice(0, 2)}
           />
           <IncomeDetails
-            incomeHeader={getTranslation(props?.t, 'web.letting.tenant_profile.export.Income.message')}
-            monthlyIncome={getTranslation(props?.t, 'prospect.rental_application.TotalNetMonthlyIncome')}
-            incomeSource={getTranslation(props?.t, 'web.letting.tenant_profile.export.Income_Source.message')}
-            currentJob={getTranslation(props?.t, 'prospect.rental_application.CurrentJobwithStartDate')}
+            incomeHeader={getTranslation(
+              props?.t,
+              'web.letting.tenant_profile.export.Income.message'
+            )}
+            monthlyIncome={getTranslation(
+              props?.t,
+              'prospect.rental_application.TotalNetMonthlyIncome'
+            )}
+            incomeSource={getTranslation(
+              props?.t,
+              'web.letting.tenant_profile.export.Income_Source.message'
+            )}
+            currentJob={getTranslation(
+              props?.t,
+              'prospect.rental_application.CurrentJobwithStartDate'
+            )}
             jobDuration={getTranslation(props?.t, 'prospect.rental_application.JobTypeandDuration')}
-            companyDetails={getTranslation(props?.t, 'prospect.rental_application.Companyname_address')}
+            companyDetails={getTranslation(
+              props?.t,
+              'prospect.rental_application.Companyname_address'
+            )}
             page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
             incomeDetails={Array.isArray(members) && members.length >= 1 && members.slice(0, 2)}
           />
           <Solvency
             isCreditHistoryShown
-            solvencyHeader={getTranslation(props?.t, 'web.letting.tenant_profile.export.Solvency.message')}
+            solvencyHeader={getTranslation(
+              props?.t,
+              'web.letting.tenant_profile.export.Solvency.message'
+            )}
             score={getTranslation(props?.t, 'prospect.rental_application.CreditHistory')}
             rentArrears={getTranslation(props?.t, 'prospect.rental_application.RentArrears')}
-            unpaidRental={getTranslation(props?.t, 'prospect.rental_application.UnpaidRentalObligations')}
-            execution={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question2')}
-            insolvency={getTranslation(props?.t, 'web.letting.tenant_profile.export.Insolvency_procedings.message')}
+            unpaidRental={getTranslation(
+              props?.t,
+              'prospect.rental_application.UnpaidRentalObligations'
+            )}
+            execution={getTranslation(
+              props?.t,
+              'prospect.profile.adult.creditworthiness.question2'
+            )}
+            insolvency={getTranslation(
+              props?.t,
+              'web.letting.tenant_profile.export.Insolvency_procedings.message'
+            )}
             cleanOut={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question5')}
             wage={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question6')}
             page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
@@ -249,7 +297,9 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
             </View>
             <View style={[styles.footerSegment, { marginLeft: '7.5px' }]}>
               <View style={styles.footerWrapper}>
-                <Text style={styles.footerStyles}>Mr. Bill Gates, 10:47 12.10.2021</Text>
+                <Text style={styles.footerStyles}>
+                  {members[0]?.surName}, {dayjs().format('HH:mm DD.MM.YYYY')}
+                </Text>
               </View>
             </View>
           </View>
