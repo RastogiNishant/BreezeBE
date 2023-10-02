@@ -4007,6 +4007,89 @@ class EstateService {
       .where('user_id', user_id)
       .where('build_id', build_id)
       .whereNot('status', STATUS_DELETE)
+          if (exclude_letting_type_let) {
+      query.whereNot('letting_type', LETTING_TYPE_LET)
+    }
+    const estates = await query.fetch()
+    return estates.toJSON()
+  }
+
+  static async getEstatesByBuildingId({ user_id, build_id, exclude_letting_type_let }) {
+    let query = Estate.query()
+      .where('user_id', user_id)
+      .where('build_id', build_id)
+      .whereNot('status', STATUS_DELETE)
+      .with('estateSyncListings')
+      .withCount('visits')
+      .with('final')
+      .withCount('inviteBuddies')
+      .withCount('knocked')
+      .withCount('contact_requests')
+      .select(
+        Database.raw(
+          `case when status='${STATUS_ACTIVE}' 
+  then true else false end
+  as "unpublishable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
+    not (
+      (available_start_at is null) is true or
+      ((is_duration_later is false or is_duration_later is null)
+        and (available_end_at is null) is true) or
+      (is_duration_later is true and min_invite_count < 1) or
+      ((available_end_at is not null) is true and available_end_at < NOW()) or
+      ((available_end_at is not null) is true and
+        (available_start_at is not null) is true and
+        available_start_at >= available_end_at)
+    ) and
+    letting_type <> '${LETTING_TYPE_LET}'
+    then true else false end
+    as "approvable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status='${PUBLISH_STATUS_BY_LANDLORD}'
+    then true else false end
+    as "declineable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}') and
+    not (
+      (available_start_at is null) is true or
+      ((is_duration_later is false or is_duration_later is null)
+        and (available_end_at is null) is true) or
+      (is_duration_later is true and min_invite_count < 1) or
+      ((available_end_at is not null) is true and available_end_at < NOW()) or
+      ((available_end_at is not null) is true and
+        (available_start_at is not null) is true and
+        available_start_at >= available_end_at)
+    ) and
+    letting_type <> '${LETTING_TYPE_LET}'
+    then true else false end
+    as "publishable"
+  `
+        ),
+        Database.raw(
+          `json_build_object(
+    'letting_type_is_let', (letting_type = '${LETTING_TYPE_LET}') is true,
+    'available_start_at_is_null', (available_start_at is null) is true,
+    'is_not_duration_later_but_available_end_at_is_null',
+      ((is_duration_later is false or is_duration_later is null)
+      and (available_end_at is null) is true) is true,
+    'is_duration_later_but_no_min_invite_count', 
+      (is_duration_later is true and min_invite_count < 1) is true,
+    'available_end_at_is_past', 
+      ((available_end_at is not null) is true and available_end_at < NOW()) is true,
+    'available_start_at_is_later_than_available_end_at',
+      ((available_end_at is not null) is true and
+      (available_start_at is not null) is true and
+      available_start_at >= available_end_at) is true
+  ) as non_publishable_approvable_reasons`
+        )
+      )
     if (exclude_letting_type_let) {
       query.whereNot('letting_type', LETTING_TYPE_LET)
     }
