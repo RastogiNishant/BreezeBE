@@ -880,7 +880,15 @@ class EstateService {
     }
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
-    return query.orderBy('estates.id', 'desc')
+
+    if (params?.orderdByField) {
+      for (const [key, value] of Object.entries(params.orderdByField)) {
+        query.orderBy(`${key}`, `${value}`)
+      }
+    } else {
+      query.orderBy('estates.id', 'desc')
+    }
+    return query
   }
 
   /**
@@ -3773,6 +3781,7 @@ class EstateService {
           params: {
             ...(params || {}),
             is_no_build: true,
+            orderdByField: { 'estates.publish_status': 'desc' },
           },
         })
         estates = [...estates, ...(result?.data || [])]
@@ -3783,6 +3792,7 @@ class EstateService {
         params: {
           ...(params || {}),
           is_no_build: true,
+          orderdByField: { 'estates.publish_status': 'desc' },
         },
       })
 

@@ -146,6 +146,7 @@ class BuildingService {
       .innerJoin({ estates: 'estates' }, function () {
         this.on('buildings.id', 'estates.build_id').on('estates.user_id', user_id)
       })
+      .orderBy('buildings.published', 'desc')
 
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
@@ -163,7 +164,7 @@ class BuildingService {
     const build_id = (buildings || []).map((building) => building.id)
     const estates = await require('./EstateService').getEstatesByUserId({
       user_ids: [user_id],
-      params: { ...params, build_id },
+      params: { ...params, build_id, orderdByField: { 'estates.publish_status': 'desc' } },
     })
 
     buildings = buildings.map((building) => ({
