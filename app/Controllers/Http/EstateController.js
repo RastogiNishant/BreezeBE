@@ -434,11 +434,24 @@ class EstateController {
         user_id: auth.user.id,
         id,
       })
-      const estates = await EstateService.getEstatesByBuilding({
+
+      let estates = await EstateService.getEstatesByBuildingId({
         user_id: auth.user.id,
         build_id: id,
       })
+
+      estates = estates.map((estate) => {
+        estate.invite_count =
+          parseInt(estate['__meta__'].knocked_count) +
+          parseInt(estate['__meta__'].inviteBuddies_count) +
+          parseInt(estate['__meta__'].contact_requests_count)
+        estate.visit_count = parseInt(estate['__meta__'].visits_count)
+        estate.final_match_count = parseInt(estate['__meta__'].final_count)
+        return estate
+      })
+
       const estate_ids = estates.map((estate) => estate.id)
+
       await EstateService.extendEstate({
         user_id: auth.user.id,
         estate_id: estate_ids,
@@ -458,7 +471,6 @@ class EstateController {
       throw new HttpException(FAILED_EXTEND_ESTATE, 400)
     }
   }
-
   // /**
   //  *
   //  */
