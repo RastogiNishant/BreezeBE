@@ -247,6 +247,12 @@ class MatchService {
 
     //WBS certificate score
     if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'wbs certificate mismatch',
+        }
+      }
       return 0
     }
     const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
@@ -515,6 +521,20 @@ class MatchService {
 
     //WBS certificate score
     if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'wbs certificate mismatch',
+        }
+      }
       return 0
     }
 
