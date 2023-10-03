@@ -164,7 +164,7 @@ class BuildingService {
     const build_id = (buildings || []).map((building) => building.id)
     const estates = await require('./EstateService').getEstatesByUserId({
       user_ids: [user_id],
-      params: { ...params, build_id, orderdByField: { 'estates.publish_status': 'desc' } },
+      params: { ...params, build_id, isStatusSort: true },
     })
 
     buildings = buildings.map((building) => ({

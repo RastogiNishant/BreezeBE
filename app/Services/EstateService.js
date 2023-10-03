@@ -881,10 +881,12 @@ class EstateService {
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
 
-    if (params?.orderdByField) {
-      for (const [key, value] of Object.entries(params.orderdByField)) {
-        query.orderBy(`${key}`, `${value}`)
-      }
+    if (params?.isStatusSort) {
+      query.orderBy(
+        Database.raw(
+          `case estates.publish_status when ${PUBLISH_STATUS_APPROVED_BY_ADMIN} then 1 when ${PUBLISH_STATUS_BY_LANDLORD} then 2 when ${PUBLISH_STATUS_INIT} then 3 else 3 end`
+        )
+      )
     } else {
       query.orderBy('estates.id', 'desc')
     }
@@ -3781,7 +3783,7 @@ class EstateService {
           params: {
             ...(params || {}),
             is_no_build: true,
-            orderdByField: { 'estates.publish_status': 'desc' },
+            isStatusSort: true,
           },
         })
         estates = [...estates, ...(result?.data || [])]
@@ -3792,7 +3794,7 @@ class EstateService {
         params: {
           ...(params || {}),
           is_no_build: true,
-          orderdByField: { 'estates.publish_status': 'desc' },
+          isStatusSort: true,
         },
       })
 
