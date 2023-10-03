@@ -136,10 +136,17 @@ class EstateController {
 
         MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
-      // Run task to separate get coords and point of estate
-      QueueService.getEstateCoords(estate.id)
 
-      response.res(estate)
+      const estateId = estate.id
+      const estates = await EstateService.getEstatesByUserId({
+        limit: 1,
+        from: 0,
+        params: { estateId },
+      })
+
+      // Run task to separate get coords and point of estate
+      QueueService.getEstateCoords(estateId)
+      response.res(estates.data?.[0] || [])
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
