@@ -130,6 +130,7 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       ? incomePageNumbers
       : null;
   };
+
   return {
     tenant: {
       rental_space: `${tenant?.space_min || 0}-${tenant?.space_max || 1000}` + 'm²',
@@ -180,7 +181,6 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
             )
           );
         }
-        console.log(acc);
         return acc;
       }, []);
 
@@ -262,6 +262,14 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         wage: boolExpressions(t, member?.income_seizure),
         pageNumber: getCreditPage(),
         rentArrearsPageNumber: member['rent_arrears_doc'] && residencyStartPage,
+
+        //document
+        proofs: incomes.reduce((acc: any[], cur: any) => {
+          acc.push(...cur?.proofs?.map((item: any) => item?.file));
+          return acc;
+        }, []),
+        debt_proof: member.debt_proof,
+        rent_arrears_doc: member.rent_arrears_doc,
       };
     }),
   };
@@ -414,6 +422,41 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
           </View>
         </View>
       </Page>
+
+      {members
+        .reduce((acc: any[], cur: any) => {
+          if (cur.proofs?.length > 0) acc.push(...cur.proofs);
+          if (cur.debt_proof?.length > 0) acc.push(...cur.debt_proof);
+          if (cur.rent_arrears_doc) acc.push(cur.rent_arrears_doc);
+          return acc;
+        }, [])
+        .map((item: any, ind: number) => (
+          <Page size="A4" style={styles.page} key={ind} wrap={true}>
+            <View>
+              <View style={styles.headerWrapper}>
+                <Text style={styles.pdfHeader}>
+                  {getTranslation(props?.t, 'prospect.profile.pdf.file_name')}
+                </Text>
+                <Image src={'../pdf/img/BreezeLogo.png'} style={styles.image} />
+              </View>
+            </View>
+            <View style={styles.mainSection} fixed>
+              <Image
+                src={{
+                  uri: item,
+                  method: 'GET',
+                  headers: { 'Cache-Control': 'no-cache' },
+                  body: '',
+                }}
+                style={{
+                  objectFit: 'cover',
+                  height: '100%',
+                  marginBottom: '20px',
+                }}
+              />
+            </View>
+          </Page>
+        ))}
     </Document>
   );
 };
