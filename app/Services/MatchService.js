@@ -3333,7 +3333,7 @@ class MatchService {
         this.orWhere('matches.status', '>=', MATCH_STATUS_TOP)
         this.orWhere(function () {
           this.where('_e.is_not_show', true)
-          this.where('matches.status', '>=', MATCH_STATUS_KNOCK)
+          this.orWhere('matches.status', '>=', MATCH_STATUS_NEW)
         })
       })
 
