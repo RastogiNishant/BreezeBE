@@ -98,11 +98,11 @@ const boolExpressions = (t: TFunction, value: any) =>
   value === undefined || value === null
     ? '-'
     : getTranslation(
-        t,
-        value
-          ? 'landlord.property.tenant_pref.solvency.rent_arrears.yes.message'
-          : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
-      );
+      t,
+      value
+        ? 'landlord.property.tenant_pref.solvency.rent_arrears.yes.message'
+        : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
+    );
 
 const dateOfBirth = (day: any, age: any, place: any) =>
   day || age || place
@@ -137,11 +137,10 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       household_size: `${tenant?.members_count}` || '-',
       rooms_min_max: `${tenant?.rooms_min || 0}-${tenant?.rooms_max || 1000}`,
       rent_budget: `€${tenant?.budget_min || 0}-${tenant?.budget_max || 10000}`,
-      rent_duration: `${
-        tenant?.residency_duration_min
+      rent_duration: `${tenant?.residency_duration_min
           ? tenant?.residency_duration_min + '-' + tenant?.residency_duration_max
           : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
-      }`,
+        }`,
       children: `${tenant?.minors_count || '-'}`,
       income_level: tenant?.income_level
         ? Array.isArray(tenant.income_level) &&
@@ -155,11 +154,12 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         tenant?.parking_space === null || tenant?.parking_space === undefined
           ? '-'
           : getTranslation(
-              t,
-              tenant?.parking_space
-                ? 'prospect.profile.general.txt_parking_no'
-                : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
-            ),
+            t,
+            tenant?.parking_space
+              ? 'prospect.profile.general.txt_parking_no'
+              : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
+          ),
+      private_use: tenant?.private_use,
     },
 
     members: members?.map((member: any, index: number) => {
@@ -216,14 +216,14 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         surName:
           member?.secondname && member?.firstname && member?.sex
             ? [
-                member?.sex &&
-                  typeof member?.sex === 'number' &&
-                  getTranslation(t, SALUTATION[member?.sex - 1]),
-                member?.firstname,
-                member?.secondname,
-              ]
-                .filter(Boolean)
-                .join(' ')
+              member?.sex &&
+              typeof member?.sex === 'number' &&
+              getTranslation(t, SALUTATION[member?.sex - 1]),
+              member?.firstname,
+              member?.secondname,
+            ]
+              .filter(Boolean)
+              .join(' ')
             : '-',
         dateOfBirth: dateOfBirth(member?.birthday, member?.age, member?.birth_place),
         citizenship: member?.citizen || '-',
@@ -278,7 +278,6 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
 export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: any[] }) => {
   props?.members?.push({}, {});
   const { tenant, members } = mapDisplayValues(props?.tenant, props?.members, props?.t);
-
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -294,7 +293,7 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
           <MainHeader
             leftText={getTranslation(props?.t, 'prospect.rental_application.PROPERTYPREFERENCES')}
             rightText={getTranslation(props?.t, 'prospect.rental_application.HOUSEHOLD')}
-            // rightIcon={'../pdf/img/qrCode.png'}
+          // rightIcon={'../pdf/img/qrCode.png'}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rentalspace')}
@@ -309,7 +308,9 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.UseType')}
             rightValue={getTranslation(
               props.t,
-              'property.attribute.OCCUPATION_TYPE.Private_Use.message'
+              tenant?.private_use
+                ? 'prospect.profile.general.mixed_use.message'
+                : 'property.attribute.OCCUPATION_TYPE.Private_Use.message'
             )}
           />
           <PropertyLandlordDetails
