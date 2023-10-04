@@ -60,6 +60,11 @@ class BuildingService {
       .where('id', id)
       .where('user_id', user_id)
       .whereNot('status', STATUS_DELETE)
+      .with('categories')
+      .select(Database.raw(`DISTINCT(buildings.id)`))
+      .select(
+        Building.columns.filter((column) => column !== 'id').map((column) => `buildings.${column}`)
+      )
       .first()
   }
 
