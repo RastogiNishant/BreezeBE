@@ -129,38 +129,29 @@ const IncomeDetails = ({
         <View style={styles.rightSection}>
           {!!incomeDetails && incomeDetails.length
             ? incomeDetails?.map((each: any, ind: number) => {
-                return (
-                  <View style={styles.rowWrapper} key={ind}>
-                    <View style={[styles.textWrapper, styles.iconContainer]}>
-                      <Text style={[styles.rowText, styles.isBold, styles.isUnderline]}>
-                        {each?.monthlyIncome}
-                      </Text>
-                      {each.incomePageNumbers && (
-                        <View style={styles.iconContainer}>
-                          <Text style={styles.pageNumber}>
-                            {page} {each.incomePageNumbers.startPage}
-                            {each.incomePageNumbers.startPage !== each.incomePageNumbers.endPage &&
-                              ` - ${each.incomePageNumbers.endPage}`}
-                          </Text>
-                          <Image src={'../pdf/img/pageIcon.png'} style={styles.pageIcon} />
-                        </View>
-                      )}
-                    </View>
-                    <View style={styles.textWrapper}>
-                      <Text style={[styles.rowText, styles.isBold]}>{each?.incomeSource}</Text>
-                    </View>
-                    <View style={styles.textWrapper}>
-                      <Text style={[styles.rowText, styles.isBold]}>{each?.currentJob}</Text>
-                    </View>
-                    <View style={styles.textWrapper}>
-                      <Text style={[styles.rowText, styles.isBold]}>{each?.jobDuration}</Text>
-                    </View>
-                    <View style={styles.textWrapper}>
-                      <Text style={[styles.rowText, styles.isBold]}>{each?.companyDetails}</Text>
-                    </View>
+              return (
+                <View style={styles.rowWrapper} key={ind}>
+                  <View style={[styles.textWrapper, styles.iconContainer]}>
+                    <Text style={[styles.rowText, styles.isBold, styles.isUnderline]}>
+                      {each?.monthlyIncome}
+                    </Text>
+
                   </View>
-                );
-              })
+                  <View style={styles.textWrapper}>
+                    <Text style={[styles.rowText, styles.isBold]}>{each?.incomeSource}</Text>
+                  </View>
+                  <View style={styles.textWrapper}>
+                    <Text style={[styles.rowText, styles.isBold]}>{each?.currentJob}</Text>
+                  </View>
+                  <View style={styles.textWrapper}>
+                    <Text style={[styles.rowText, styles.isBold]}>{each?.jobDuration}</Text>
+                  </View>
+                  <View style={styles.textWrapper}>
+                    <Text style={[styles.rowText, styles.isBold]}>{each?.companyDetails}</Text>
+                  </View>
+                </View>
+              );
+            })
             : null}
         </View>
       </View>
