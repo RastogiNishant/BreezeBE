@@ -90,8 +90,7 @@ class SignUp extends Base {
             OPTION,
             `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_NEUTRAL}, ${GENDER_ANY}]`
           )
-        )
-        .required(getExceptionMessage('sex', REQUIRED)),
+        ),
       phone: phoneSchema,
       firstname: yup.string().when(['secondname'], (secondname, schema, { value }) => {
         if (!secondname) {
@@ -99,7 +98,6 @@ class SignUp extends Base {
             .string()
             .min(2, getExceptionMessage('secondname', MINLENGTH, 2))
             .max(254, getExceptionMessage('secondname', MAXLENGTH, 254))
-            .required()
         }
         return yup
           .string()

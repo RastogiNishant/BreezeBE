@@ -1676,7 +1676,7 @@ class EstateService {
       //estate.cert_category : inside estates
       //estate.wbs: outside estates
       if (inside_property) {
-        estates = estates.filter((estate) => estate.cert_category)
+        estates = estates.filter((estate) => estate?.cert_category?.length > 0)
       } else {
         estates = estates.filter((estate) => estate.wbs)
       }
@@ -1688,7 +1688,9 @@ class EstateService {
 
     if (tenant.income_level?.length && inside_property) {
       estates = estates.filter(
-        (estate) => !estate.cert_category || tenant.income_level.includes(estate.cert_category)
+        (estate) =>
+          estate?.cert_category?.length < 1 ||
+          tenant.income_level.some((level) => estate.cert_category.includes(level))
       )
       if (process.env.DEV === 'true') {
         Logger.info(`filterEstates after income level ${estates?.length}`)
@@ -3359,7 +3361,9 @@ class EstateService {
           page: -1,
           limit: -1,
         })
-      )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
+      )?.filter((estate) =>
+        is_social ? estate?.cert_category?.length : !estate?.cert_category?.length
+      ) || []
     estates = orderBy(estates, 'rooms_number', 'asc')
 
     let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
@@ -3367,21 +3371,24 @@ class EstateService {
 
     const yAxisKey = is_social ? `cert_category` : `floor`
     const yAxisEstates = is_social
-      ? groupBy(
-          estates.filter((estate) => estate.cert_category),
-          (estate) => estate.cert_category
-        )
+      ? this.groupEstatesByCertCategory(estates.filter((estate) => estate?.cert_category?.length))
       : groupBy(estates, (estate) => estate.floor)
 
     let buildingEstates = {}
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
       category_ids.forEach((cat_id) => {
-        const filteredEstates = estates.filter(
-          (estate) =>
-            estate[yAxisKey].toString() === axis.toString() &&
+        const filteredEstates = estates.filter((estate) => {
+          const yAxisKeyCondition =
+            yAxisKey === 'floor'
+              ? estate[yAxisKey].toString() === axis.toString()
+              : estate[yAxisKey]?.includes(axis)
+
+          return (
+            yAxisKeyCondition &&
             (cat_id != -1 ? estate.unit_category_id === cat_id : !estate.unit_category_id)
-        )
+          )
+        })
         if (filteredEstates?.length) {
           categoryEstates[cat_id] = filteredEstates
         }
@@ -3399,6 +3406,29 @@ class EstateService {
       xAxisCategories: category_ids,
       estates: buildingEstates,
     }
+  }
+
+  static groupEstatesByCertCategory(estates) {
+    // get unique cert categories
+    const uniqueCertCategories = []
+    estates.map((estate) => {
+      if (estate?.cert_category?.length) {
+        estate.cert_category.map((certCategory) => {
+          if (!uniqueCertCategories.includes(certCategory)) {
+            uniqueCertCategories.push(certCategory)
+          }
+        })
+      }
+    })
+
+    const groupedEstates = {}
+    uniqueCertCategories.forEach((certCategory) => {
+      groupedEstates[certCategory] = estates.filter(
+        (estate) => estate?.cert_category?.length && estate?.cert_category?.includes(certCategory)
+      )
+    })
+
+    return groupedEstates
   }
 
   static async getTenantEstates({ user_id, page, limit }) {
@@ -4019,7 +4049,7 @@ class EstateService {
       .where('user_id', user_id)
       .where('build_id', build_id)
       .whereNot('status', STATUS_DELETE)
-          if (exclude_letting_type_let) {
+    if (exclude_letting_type_let) {
       query.whereNot('letting_type', LETTING_TYPE_LET)
     }
     const estates = await query.fetch()

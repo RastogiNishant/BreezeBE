@@ -1142,7 +1142,7 @@ class UserService {
             `New Landlord Account Created:\r\n` +
             `==============================\r\n` +
             `Email: ${email}\r\n` +
-            `Name: ${firstname}\r\n` +
+            `Name: Dear Tenant\r\n` +
             `IP Address: ${ip}\r\n` +
             `IP Based Info:\r\n` +
             ` - City: ${ip_based_info.city || 'Not Specified'}\r\n` +
