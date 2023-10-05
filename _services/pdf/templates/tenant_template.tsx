@@ -94,15 +94,16 @@ const styles = StyleSheet.create({
   },
 });
 
+const ifFalsy = (value: any) => (value === null || value === undefined) && '-';
+
 const boolExpressions = (t: TFunction, value: any) =>
-  value === undefined || value === null
-    ? '-'
-    : getTranslation(
-      t,
-      value
-        ? 'landlord.property.tenant_pref.solvency.rent_arrears.yes.message'
-        : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
-    );
+  ifFalsy(value) ||
+  getTranslation(
+    t,
+    value
+      ? 'landlord.property.tenant_pref.solvency.rent_arrears.yes.message'
+      : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
+  );
 
 const dateOfBirth = (day: any, age: any, place: any) =>
   day || age || place
@@ -122,10 +123,10 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
   const getPageCounts = (incomeProofs: any[], nextPagesGap = 0) => {
     endPage = startPage + incomeProofs.length;
     const incomePageNumbers = {
-      startPage: ++startPage + 1, // First page belongs to details this is why we're adding 1 here
+      startPage: ++startPage + 1,
       endPage,
     };
-    startPage = endPage + nextPagesGap; // There will be always 2 documents after income, please change this number if more documents are added in between
+    startPage = endPage + nextPagesGap;
     return incomePageNumbers.endPage > 1 && incomePageNumbers.endPage >= incomePageNumbers.startPage
       ? incomePageNumbers
       : null;
@@ -133,44 +134,40 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
 
   return {
     tenant: {
-      rental_space: `${tenant?.space_min || 0}-${tenant?.space_max || 1000}` + 'm²',
-      household_size: `${tenant?.members_count}` || '-',
-      rooms_min_max: `${tenant?.rooms_min || 0}-${tenant?.rooms_max || 1000}`,
-      rent_budget: `€${tenant?.budget_min || 0}-${tenant?.budget_max || 10000}`,
-      rent_duration: `${tenant?.residency_duration_min
-          ? tenant?.residency_duration_min + '-' + tenant?.residency_duration_max
+      rental_space: `${tenant.space_min || 0}-${tenant.space_max || 1000}` + 'm²',
+      household_size: tenant.members_count || '-',
+      rooms_min_max: `${tenant.rooms_min || 0}-${tenant.rooms_max || 1000}`,
+      rent_budget: `€${tenant.budget_min || 0}-${tenant.budget_max || 10000}`,
+      rent_duration: `${
+        tenant.residency_duration_min
+          ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
           : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
-        }`,
-      children: `${tenant?.minors_count || '-'}`,
-      income_level: tenant?.income_level
+      }`,
+      children: tenant.minors_count || '-',
+      publicCertificate: tenant.is_public_certificate ? 1 : '-',
+      income_level: tenant.income_level
         ? Array.isArray(tenant.income_level) &&
           PUBLIC_CERTIFICATE_KEYS.includes(tenant.income_level[0])
           ? getTranslation(t, tenant.income_level[0])
           : tenant.income_level
         : '-',
-      pets: boolExpressions(t, tenant?.pets),
-      rent_start: tenant?.rent_start ? dayConverter(tenant?.rent_start) : '-',
-      parking:
-        tenant?.parking_space === null || tenant?.parking_space === undefined
-          ? '-'
-          : getTranslation(
-            t,
-            tenant?.parking_space
-              ? 'prospect.profile.general.txt_parking_no'
-              : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
-          ),
-      private_use: tenant?.private_use,
+      pets:
+        ifFalsy(tenant.pets) || tenant.pets === 2
+          ? `${boolExpressions(t, true)}, ${tenant.pets_species}`
+          : boolExpressions(t, false),
+      rent_start: tenant.rent_start ? dayConverter(tenant.rent_start) : '-',
+      parking: tenant.parking_space || '-',
+      mixed_use:
+        getTranslation(t, 'prospect.profile.general.mixed_use.message') +
+        (tenant.mixed_use_type_detail !== null ? `: ${tenant.mixed_use_type_detail}` : ''),
     },
 
-    members: members?.map((member: any, index: number) => {
-      const incomes = Array.isArray(member?.incomes) ? member?.incomes : [];
-
+    members: members.map((member: any, index: number) => {
+      const incomes = Array.isArray(member.incomes) ? member.incomes : [];
       const totalIncome = incomes.reduce((acc: number, cur: any) => acc + +cur['income'], 0);
-
       const nextPagesGap =
         (Array.isArray(member['debt_proof']) ? member.debt_proof.length : 0) +
         (member['rent_arrears_doc'] ? 1 : 0);
-
       const incomeSource = incomes.reduce((acc: string[], cur: any) => {
         if (cur?.income_type) {
           acc.push(
@@ -183,12 +180,10 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         }
         return acc;
       }, []);
-
       const currentJob = incomes.reduce((acc: string[], cur: any) => {
         cur['position'] && acc.push(cur['position']);
         return acc;
       }, []);
-
       const getCreditPage = () => {
         if (Array.isArray(member['debt_proof']) && member.debt_proof.length > 0) {
           creditStartPage +=
@@ -204,7 +199,6 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           };
         }
       };
-
       if (member['rent_arrears_doc']) residencyStartPage = creditEndPage + 1;
 
       return {
@@ -214,22 +208,22 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           'prospect.profile.adult.personal.txt_adult_ph.message'
         )} ${index + 1}`,
         surName:
-          member?.secondname && member?.firstname && member?.sex
+          member.secondname && member.firstname && member.sex
             ? [
-              member?.sex &&
-              typeof member?.sex === 'number' &&
-              getTranslation(t, SALUTATION[member?.sex - 1]),
-              member?.firstname,
-              member?.secondname,
-            ]
-              .filter(Boolean)
-              .join(' ')
+                member.sex &&
+                  typeof member.sex === 'number' &&
+                  getTranslation(t, SALUTATION[member.sex - 1]),
+                member.firstname,
+                member.secondname,
+              ]
+                .filter(Boolean)
+                .join(' ')
             : '-',
-        dateOfBirth: dateOfBirth(member?.birthday, member?.age, member?.birth_place),
-        citizenship: member?.citizen || '-',
-        currentAddress: member?.last_address || '-',
-        email: member?.email || '-',
-        phone: member?.phone || '-',
+        dateOfBirth: dateOfBirth(member.birthday, member.age, member.birth_place),
+        citizenship: member.citizen || '-',
+        currentAddress: member.last_address || '-',
+        email: member.email || '-',
+        phone: member.phone || '-',
 
         // Incomes
         monthlyIncome:
@@ -243,23 +237,23 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         incomePageNumbers: getPageCounts(incomes['proofs'] || [], nextPagesGap),
 
         // Solvency
-        score: (member?.credit_score && member?.credit_score + ' %') || '-',
+        score: (member.credit_score && member.credit_score + ' %') || '-',
         creditHistory:
-          member?.credit_history_status &&
+          member.credit_history_status &&
           getTranslation(t, CREDIT_HISTORY_STATUS[member.credit_history_status]),
-        creditScoreIssued: member?.credit_score_issued_at
+        creditScoreIssued: member.credit_score_issued_at
           ? dayConverter(member.credit_score_issued_at)
           : '',
         rentArrears:
-          (member?.rent_arrears_doc && boolExpressions(t, member?.rent_arrears_doc)) ||
-          (member?.rent_arrears_doc_submit_later &&
-            boolExpressions(t, member?.rent_arrears_doc_submit_later)) ||
+          (member.rent_arrears_doc && boolExpressions(t, member.rent_arrears_doc)) ||
+          (member.rent_arrears_doc_submit_later &&
+            boolExpressions(t, member.rent_arrears_doc_submit_later)) ||
           '-',
-        unpaidRental: boolExpressions(t, member?.unpaid_rental),
-        execution: boolExpressions(t, member?.unpaid_rental),
-        insolvency: boolExpressions(t, member?.insolvency_proceed),
-        cleanOut: boolExpressions(t, member?.clean_procedure),
-        wage: boolExpressions(t, member?.income_seizure),
+        unpaidRental: boolExpressions(t, member.unpaid_rental),
+        execution: boolExpressions(t, member.unpaid_rental),
+        insolvency: boolExpressions(t, member.insolvency_proceed),
+        cleanOut: boolExpressions(t, member.clean_procedure),
+        wage: boolExpressions(t, member.income_seizure),
         pageNumber: getCreditPage(),
         rentArrearsPageNumber: member['rent_arrears_doc'] && residencyStartPage,
 
@@ -275,9 +269,10 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
   };
 };
 
-export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: any[] }) => {
+export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any[] }) => {
   props?.members?.push({}, {});
-  const { tenant, members } = mapDisplayValues(props?.tenant, props?.members, props?.t);
+  const { tenant, members } = mapDisplayValues(props?.tenant || {}, props?.members || [], props?.t);
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -293,54 +288,49 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
           <MainHeader
             leftText={getTranslation(props?.t, 'prospect.rental_application.PROPERTYPREFERENCES')}
             rightText={getTranslation(props?.t, 'prospect.rental_application.HOUSEHOLD')}
-          // rightIcon={'../pdf/img/qrCode.png'}
+            // rightIcon={'../pdf/img/qrCode.png'}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rentalspace')}
-            leftValue={tenant?.rental_space}
+            leftValue={tenant.rental_space}
             rightIcon
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.HouseholdSize')}
-            rightValue={tenant?.household_size}
+            rightValue={tenant.household_size}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rooms')}
-            leftValue={tenant?.rooms_min_max}
+            leftValue={tenant.rooms_min_max}
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.UseType')}
-            rightValue={getTranslation(
-              props.t,
-              tenant?.private_use
-                ? 'prospect.profile.general.mixed_use.message'
-                : 'property.attribute.OCCUPATION_TYPE.Private_Use.message'
-            )}
+            rightValue={tenant.mixed_use}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rent_duration')}
             leftValue={
               <>
-                <Text style={{ fontWeight: 'bold' }}>{tenant?.rent_budget}, </Text>
-                <Text>{tenant?.rent_duration}</Text>
+                <Text style={{ fontWeight: 'bold' }}>{tenant.rent_budget}, </Text>
+                <Text>{tenant.rent_duration}</Text>
               </>
             }
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.Children')}
-            rightValue={tenant?.children}
+            rightValue={tenant.children}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.PublicCertificate')}
-            leftValue={tenant?.income_level}
+            leftValue={tenant.publicCertificate}
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.Petsintended')}
-            rightValue={tenant?.pets}
+            rightValue={tenant.pets}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(
               props?.t,
               'web.letting.tenant_profile.export.Rent_start.message'
             )}
-            leftValue={tenant?.rent_start.padStart(10, '0')}
+            leftValue={tenant.rent_start.padStart(10, '0')}
             rightLabel={getTranslation(
               props?.t,
               'prospect.rental_application.InterestatParking_Garage'
             )}
-            rightValue={tenant?.parking}
+            rightValue={tenant.parking}
           />
           <TenantProfile
             tenantHeader={getTranslation(props?.t, 'prospect.rental_application.PERSONAL')}
@@ -427,7 +417,8 @@ export const TenantDocument = (props: { t: TFunction, tenant?: any, members?: an
       {members
         .reduce((acc: any[], cur: any) => {
           if (cur.proofs?.length > 0) acc.push(...cur.proofs);
-          if (cur.debt_proof?.length > 0) acc.push(...cur.debt_proof);
+          if (Array.isArray(cur.debt_proof)) acc.push(...cur.debt_proof);
+          else if (cur.debt_proof?.length > 0) acc.push(cur.debt_proof);
           if (cur.rent_arrears_doc) acc.push(cur.rent_arrears_doc);
           return acc;
         }, [])
