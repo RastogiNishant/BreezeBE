@@ -4249,7 +4249,7 @@ class MatchService {
       .leftJoin(
         Database.raw(`
         (select estates.id as estate_id,
-          case when estates.cert_category is null or estates.cert_category='' then
+          case when estates.cert_category is null then
             null else 
             json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
             end
