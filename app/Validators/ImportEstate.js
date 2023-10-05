@@ -106,6 +106,20 @@ const {
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
   BUILDING_STATUS_FULLY_REFURBISHED,
+  //cert_category
+  CERT_CATEGORY_A,
+  CERT_CATEGORY_B,
+  CERT_CATEGORY_C,
+  CERT_CATEGORY_I,
+  CERT_CATEGORY_II,
+  CERT_CATEGORY_III,
+  CERT_CATEGORY_IV,
+  CERT_CATEGORY_100,
+  CERT_CATEGORY_140,
+  CERT_CATEGORY_160,
+  CERT_CATEGORY_180,
+  CERT_CATEGORY_220,
+  CERT_CATEGORY_NOT,
   // firing
   FIRING_OEL,
   FIRING_GAS,
@@ -276,6 +290,27 @@ class ImportEstate extends Base {
         ])
         .nullable(),
       description: yup.string().min(2).max(500).nullable(),
+      cert_category: yup
+        .array()
+        .of(
+          yup
+            .string()
+            .oneOf([
+              CERT_CATEGORY_A,
+              CERT_CATEGORY_B,
+              CERT_CATEGORY_C,
+              CERT_CATEGORY_I,
+              CERT_CATEGORY_II,
+              CERT_CATEGORY_III,
+              CERT_CATEGORY_IV,
+              CERT_CATEGORY_100,
+              CERT_CATEGORY_140,
+              CERT_CATEGORY_160,
+              CERT_CATEGORY_180,
+              CERT_CATEGORY_220,
+              CERT_CATEGORY_NOT,
+            ])
+        ),
       category: yup.string().min(2).max(20).nullable(),
       // TODO: add rooms schema
       rooms: yup.mixed(),
