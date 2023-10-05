@@ -194,6 +194,22 @@ const {
   CERT_CATEGORY_220,
 } = require('../constants')
 
+const certCategories = [
+  CERT_CATEGORY_A,
+  CERT_CATEGORY_B,
+  CERT_CATEGORY_C,
+  CERT_CATEGORY_NOT,
+  CERT_CATEGORY_I,
+  CERT_CATEGORY_II,
+  CERT_CATEGORY_III,
+  CERT_CATEGORY_IV,
+  CERT_CATEGORY_100,
+  CERT_CATEGORY_140,
+  CERT_CATEGORY_160,
+  CERT_CATEGORY_180,
+  CERT_CATEGORY_220,
+]
+
 const {
   exceptions: { SETTINGS_ERROR },
 } = require('../exceptions')
@@ -283,6 +299,16 @@ reverseExtractDate = (date) => {
     return `${match[2]}.${match[1]}.${match[3]}`
   }
   return date
+}
+
+const mapCertCategories = () => {
+  let certCategoryMap = {}
+  for (let count = 0; count < certCategories.length; count++) {
+    AVAILABLE_LANGUAGES.map((lang) => {
+      certCategoryMap[l.get(certCategories[count], lang)] = certCategories[count]
+    })
+  }
+  return certCategoryMap
 }
 
 class EstateAttributeTranslations {
@@ -485,6 +511,19 @@ class EstateAttributeTranslations {
     },
     stp_garage: (i) => parseInt(i) || 0,
     credit_score: toPercent,
+    cert_category: (content) => {
+      const certs = content.split(/[+,]/)
+      let certCategoryMap = mapCertCategories()
+      if (certs.length > 0) {
+        return certs.map((str) => {
+          str = trim(str)
+          if (certCategoryMap[str]) {
+            return certCategoryMap[str]
+          }
+        })
+      }
+      return null
+    },
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     budget: (i, o) => parseInt(i) || 0,
     number_floors: (i) => parseInt(i) || 1,
@@ -1022,38 +1061,7 @@ class EstateAttributeTranslations {
           ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
         ],
       },
-      cert_category: {
-        keys: [
-          CERT_CATEGORY_A,
-          CERT_CATEGORY_B,
-          CERT_CATEGORY_C,
-          CERT_CATEGORY_I,
-          CERT_CATEGORY_II,
-          CERT_CATEGORY_III,
-          CERT_CATEGORY_IV,
-          CERT_CATEGORY_100,
-          CERT_CATEGORY_140,
-          CERT_CATEGORY_160,
-          CERT_CATEGORY_180,
-          CERT_CATEGORY_220,
-          CERT_CATEGORY_NOT,
-        ],
-        values: [
-          CERT_CATEGORY_A,
-          CERT_CATEGORY_B,
-          CERT_CATEGORY_C,
-          CERT_CATEGORY_I,
-          CERT_CATEGORY_II,
-          CERT_CATEGORY_III,
-          CERT_CATEGORY_IV,
-          CERT_CATEGORY_100,
-          CERT_CATEGORY_140,
-          CERT_CATEGORY_160,
-          CERT_CATEGORY_180,
-          CERT_CATEGORY_220,
-          CERT_CATEGORY_NOT,
-        ],
-      },
+      /* ,*/
     }
     this.dataMap = dataMap
   }
