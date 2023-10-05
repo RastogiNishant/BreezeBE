@@ -144,6 +144,7 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
       }`,
       children: tenant.minors_count || '-',
+      publicCertificate: tenant.is_public_certificate ? 1 : '-',
       income_level: tenant.income_level
         ? Array.isArray(tenant.income_level) &&
           PUBLIC_CERTIFICATE_KEYS.includes(tenant.income_level[0])
@@ -269,7 +270,6 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
 };
 
 export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any[] }) => {
-  console.log(props);
   props?.members?.push({}, {});
   const { tenant, members } = mapDisplayValues(props?.tenant || {}, props?.members || [], props?.t);
 
@@ -316,7 +316,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.PublicCertificate')}
-            leftValue={tenant.income_level}
+            leftValue={tenant.publicCertificate}
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.Petsintended')}
             rightValue={tenant.pets}
           />
