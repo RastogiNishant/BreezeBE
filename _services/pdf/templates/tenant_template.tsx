@@ -113,6 +113,7 @@ const dateOfBirth = (day: any, age: any, place: any) =>
 const dayConverter = (day: string) =>
   dayjs(day).isValid() ? dayjs(day).format('DD.MM.YYYY') : day;
 
+
 const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
   let startPage = 0;
   let endPage = 0;
@@ -138,14 +139,12 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       household_size: tenant.members_count || '-',
       rooms_min_max: `${tenant.rooms_min || 0}-${tenant.rooms_max || 1000}`,
       rent_budget: `€${tenant.budget_min || 0}-${tenant.budget_max || 10000}`,
-      rent_duration: `${
-        tenant.residency_duration_min
-          ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
-          : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
-      }`,
+      rent_duration: `${tenant.residency_duration_min
+        ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
+        : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
+        }`,
       children: tenant.minors_count || '-',
-      publicCertificate: tenant.is_public_certificate ? 1 : '-',
-      income_level: tenant.income_level
+      income_level: tenant?.income_level
         ? Array.isArray(tenant.income_level) &&
           PUBLIC_CERTIFICATE_KEYS.includes(tenant.income_level[0])
           ? getTranslation(t, tenant.income_level[0])
@@ -200,7 +199,6 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         }
       };
       if (member['rent_arrears_doc']) residencyStartPage = creditEndPage + 1;
-
       return {
         // Personal
         adultNumber: `${getTranslation(
@@ -210,14 +208,14 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         surName:
           member.secondname && member.firstname && member.sex
             ? [
-                member.sex &&
-                  typeof member.sex === 'number' &&
-                  getTranslation(t, SALUTATION[member.sex - 1]),
-                member.firstname,
-                member.secondname,
-              ]
-                .filter(Boolean)
-                .join(' ')
+              member.sex &&
+              typeof member.sex === 'number' &&
+              getTranslation(t, SALUTATION[member.sex - 1]),
+              member.firstname,
+              member.secondname,
+            ]
+              .filter(Boolean)
+              .join(' ')
             : '-',
         dateOfBirth: dateOfBirth(member.birthday, member.age, member.birth_place),
         citizenship: member.citizen || '-',
@@ -288,7 +286,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           <MainHeader
             leftText={getTranslation(props?.t, 'prospect.rental_application.PROPERTYPREFERENCES')}
             rightText={getTranslation(props?.t, 'prospect.rental_application.HOUSEHOLD')}
-            // rightIcon={'../pdf/img/qrCode.png'}
+          // rightIcon={'../pdf/img/qrCode.png'}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rentalspace')}
@@ -300,8 +298,8 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rooms')}
             leftValue={tenant.rooms_min_max}
-            rightLabel={getTranslation(props?.t, 'prospect.rental_application.UseType')}
-            rightValue={tenant.mixed_use}
+            rightLabel={getTranslation(props?.t, 'prospect.rental_application.Children')}
+            rightValue={tenant.children}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rent_duration')}
@@ -311,12 +309,14 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
                 <Text>{tenant.rent_duration}</Text>
               </>
             }
-            rightLabel={getTranslation(props?.t, 'prospect.rental_application.Children')}
-            rightValue={tenant.children}
+            rightLabel={getTranslation(props?.t, 'prospect.rental_application.UseType')}
+            rightValue={tenant.mixed_use}
+
           />
+
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.PublicCertificate')}
-            leftValue={tenant.publicCertificate}
+            leftValue={tenant.income_level}
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.Petsintended')}
             rightValue={tenant.pets}
           />
