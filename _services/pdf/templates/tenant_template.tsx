@@ -113,7 +113,6 @@ const dateOfBirth = (day: any, age: any, place: any) =>
 const dayConverter = (day: string) =>
   dayjs(day).isValid() ? dayjs(day).format('DD.MM.YYYY') : day;
 
-
 const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
   let startPage = 0;
   let endPage = 0;
@@ -140,16 +139,19 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       rooms_min_max: `${tenant.rooms_min || 0}-${tenant.rooms_max || 1000}`,
       rent_budget: `€${tenant.budget_min || 0}-${tenant.budget_max || 10000}`,
       rent_duration: `${tenant.residency_duration_min
-        ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
-        : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
+          ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
+          : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
         }`,
       children: tenant.minors_count || '-',
-      income_level: tenant?.income_level
-        ? Array.isArray(tenant.income_level) &&
-          PUBLIC_CERTIFICATE_KEYS.includes(tenant.income_level[0])
-          ? getTranslation(t, tenant.income_level[0])
-          : tenant.income_level
-        : '-',
+      income_level:
+        tenant.wbs_certificate && Array.isArray(tenant.wbs_certificate)
+          ? tenant.wbs_certificate
+            .reduce((acc: string[], cur: any) => {
+              acc.push(getTranslation(t, cur.income_level));
+              return acc;
+            }, [])
+            .join(', ') || '-'
+          : '-',
       pets:
         ifFalsy(tenant.pets) || tenant.pets === 2
           ? `${boolExpressions(t, true)}, ${tenant.pets_species}`
@@ -268,6 +270,7 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
 };
 
 export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any[] }) => {
+  //console.log(props.tenant.wbs_certificate);
   props?.members?.push({}, {});
   const { tenant, members } = mapDisplayValues(props?.tenant || {}, props?.members || [], props?.t);
 
@@ -311,7 +314,6 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
             }
             rightLabel={getTranslation(props?.t, 'prospect.rental_application.UseType')}
             rightValue={tenant.mixed_use}
-
           />
 
           <PropertyLandlordDetails
