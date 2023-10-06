@@ -260,18 +260,27 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
 
         //document
         proofs: incomes.reduce((acc: any[], cur: any) => {
-          acc.push(...cur?.proofs?.map((item: any) => item?.file));
+          acc.push(
+            ...cur?.proofs?.map(
+              (item: any) => item.file && { file: item.file, name: item.proofFileName }
+            )
+          );
           return acc;
         }, []),
-        debt_proof: member.debt_proof,
-        rent_arrears_doc: member.rent_arrears_doc,
+        debt_proof: member.debt_proof && {
+          file: member.debt_proof,
+          name: member.debt_proof_file_name,
+        },
+        rent_arrears_doc: member.rent_arrears_doc && {
+          file: member.rent_arrears_doc,
+          name: member.rent_arrears_doc_file_name,
+        },
       };
     }),
   };
 };
 
 export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any[] }) => {
-  console.log(props.tenant.wbs_certificate);
   props?.members?.push({}, {});
   const { tenant, members } = mapDisplayValues(props?.tenant || {}, props?.members || [], props?.t);
 
@@ -426,7 +435,9 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           return acc;
         }, [])
         .map((item: any, ind: number) => {
-          console.log(item);
+          console.log('file Name: ', item.name);
+          console.log('url: ', item.file);
+
           return (
             <Page size="A4" style={styles.page} key={ind} wrap={true}>
               <View>
@@ -440,7 +451,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
               <View style={styles.mainSection} fixed>
                 <Image
                   src={{
-                    uri: item,
+                    uri: item.file,
                     method: 'GET',
                     headers: { 'Cache-Control': 'no-cache' },
                     body: null,
