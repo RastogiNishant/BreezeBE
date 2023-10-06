@@ -3371,7 +3371,10 @@ class EstateService {
 
     const yAxisKey = is_social ? `cert_category` : `floor`
     const yAxisEstates = is_social
-      ? this.groupEstatesByCertCategory(estates.filter((estate) => estate?.cert_category?.length))
+      ? groupBy(
+          estates.filter((estate) => estate.cert_category),
+          (estate) => estate?.cert_category?.join('+')
+        )
       : groupBy(estates, (estate) => estate.floor)
 
     let buildingEstates = {}
@@ -3382,7 +3385,7 @@ class EstateService {
           const yAxisKeyCondition =
             yAxisKey === 'floor'
               ? estate[yAxisKey].toString() === axis.toString()
-              : estate[yAxisKey]?.includes(axis)
+              : estate[yAxisKey]?.join('+') === axis.toString()
 
           return (
             yAxisKeyCondition &&
@@ -3406,29 +3409,6 @@ class EstateService {
       xAxisCategories: category_ids,
       estates: buildingEstates,
     }
-  }
-
-  static groupEstatesByCertCategory(estates) {
-    // get unique cert categories
-    const uniqueCertCategories = []
-    estates.map((estate) => {
-      if (estate?.cert_category?.length) {
-        estate.cert_category.map((certCategory) => {
-          if (!uniqueCertCategories.includes(certCategory)) {
-            uniqueCertCategories.push(certCategory)
-          }
-        })
-      }
-    })
-
-    const groupedEstates = {}
-    uniqueCertCategories.forEach((certCategory) => {
-      groupedEstates[certCategory] = estates.filter(
-        (estate) => estate?.cert_category?.length && estate?.cert_category?.includes(certCategory)
-      )
-    })
-
-    return groupedEstates
   }
 
   static async getTenantEstates({ user_id, page, limit }) {
