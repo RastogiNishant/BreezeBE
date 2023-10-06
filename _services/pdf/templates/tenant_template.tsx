@@ -105,6 +105,8 @@ const boolExpressions = (t: TFunction, value: any) =>
       : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
   );
 
+const upScaleBool = (value: any) => (value === 1 ? true : value === 2 ? false : null);
+
 const dateOfBirth = (day: any, age: any, place: any) =>
   day || age || place
     ? [dayConverter(day), age && `(${age}),`, place].filter(Boolean).join(' ')
@@ -250,11 +252,11 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           (member.rent_arrears_doc_submit_later &&
             boolExpressions(t, member.rent_arrears_doc_submit_later)) ||
           '-',
-        unpaidRental: boolExpressions(t, member.unpaid_rental),
-        execution: boolExpressions(t, member.unpaid_rental),
-        insolvency: boolExpressions(t, member.insolvency_proceed),
-        cleanOut: boolExpressions(t, member.clean_procedure),
-        wage: boolExpressions(t, member.income_seizure),
+        unpaidRental: boolExpressions(t, upScaleBool(member.unpaid_rental)),
+        execution: boolExpressions(t, upScaleBool(member.unpaid_rental)),
+        insolvency: boolExpressions(t, upScaleBool(member.insolvency_proceed)),
+        cleanOut: boolExpressions(t, upScaleBool(member.clean_procedure)),
+        wage: boolExpressions(t, upScaleBool(member.income_seizure)),
         pageNumber: getCreditPage(),
         rentArrearsPageNumber: member['rent_arrears_doc'] && residencyStartPage,
 
