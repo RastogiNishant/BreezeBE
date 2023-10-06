@@ -312,7 +312,7 @@ class TenantService extends BaseService {
     )
 
     if (hasUnconfirmedProofs) {
-      throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
+      //throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
     }
 
     const getConditionRule = (types = []) => {
@@ -327,25 +327,25 @@ class TenantService extends BaseService {
     const schema = yup.object().shape({
       private_use: yup.boolean().required(),
       pets: yup.number().oneOf([PETS_SMALL, PETS_NO]).required(),
-      credit_score: yup.number().when(['credit_score_submit_later'], {
-        is: (credit_score_submit_later) => {
-          return credit_score_submit_later
-        },
-        then: yup.number().notRequired().nullable(),
-        otherwise: yup.number().min(0).max(100).required(),
-      }),
+      credit_score: yup
+        .number()
+        .when(['credit_score_submit_later', 'credit_score_not_applicable'], {
+          is: (credit_score_submit_later, credit_score_not_applicable) => {
+            return credit_score_submit_later || credit_score_not_applicable
+          },
+          then: yup.number().notRequired().nullable(),
+          otherwise: yup.number().min(0).max(100).required(),
+        }),
       last_address: yup.string().required(),
       firstname: yup.string().required(),
       secondname: yup.string().required(),
-      debt_proof: yup
-        .string()
-        .when(['rent_proof_not_applicable', 'rent_arrears_doc_submit_later'], {
-          is: (rent_proof_not_applicable, rent_arrears_doc_submit_later) => {
-            return rent_proof_not_applicable || rent_arrears_doc_submit_later
-          },
-          then: yup.string().notRequired().nullable(),
-          otherwise: yup.string().required(),
-        }),
+      debt_proof: yup.array().when(['rent_proof_not_applicable', 'rent_arrears_doc_submit_later'], {
+        is: (rent_proof_not_applicable, rent_arrears_doc_submit_later) => {
+          return rent_proof_not_applicable || rent_arrears_doc_submit_later
+        },
+        then: yup.array().of(yup.string()).notRequired().nullable(),
+        otherwise: yup.array().of(yup.string()).required(),
+      }),
       birthday: yup.date().required(),
       birth_place: yup.string().required(),
       unpaid_rental: yup
@@ -410,6 +410,7 @@ class TenantService extends BaseService {
     }
 
     try {
+      console.log(data)
       await yup.array().of(schema).validate(data)
       tenant.status = STATUS_ACTIVE
 
