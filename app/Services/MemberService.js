@@ -792,7 +792,8 @@ class MemberService {
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where(function () {
-        this.orWhere('income_proofs.expire_date', '>=', startOf)
+        //we select where expire_date is equal to 4 months or before
+        this.orWhere('income_proofs.expire_date', '<=', startOf)
         this.orWhereNull('income_proofs.expire_date')
       })
       .where('income_proofs.status', STATUS_ACTIVE)
