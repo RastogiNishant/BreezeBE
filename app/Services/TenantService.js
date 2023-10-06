@@ -410,7 +410,6 @@ class TenantService extends BaseService {
     }
 
     try {
-      console.log(data)
       await yup.array().of(schema).validate(data)
       tenant.status = STATUS_ACTIVE
 
