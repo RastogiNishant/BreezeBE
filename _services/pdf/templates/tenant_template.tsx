@@ -105,6 +105,8 @@ const boolExpressions = (t: TFunction, value: any) =>
       : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
   );
 
+const upScaleBool = (value: any) => (value === 1 ? true : value === 2 ? false : null);
+
 const dateOfBirth = (day: any, age: any, place: any) =>
   day || age || place
     ? [dayConverter(day), age && `(${age}),`, place].filter(Boolean).join(' ')
@@ -138,19 +140,20 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       household_size: tenant.members_count || '-',
       rooms_min_max: `${tenant.rooms_min || 0}-${tenant.rooms_max || 1000}`,
       rent_budget: `€${tenant.budget_min || 0}-${tenant.budget_max || 10000}`,
-      rent_duration: `${tenant.residency_duration_min
+      rent_duration: `${
+        tenant.residency_duration_min
           ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
           : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
-        }`,
+      }`,
       children: tenant.minors_count || '-',
       income_level:
         tenant.wbs_certificate && Array.isArray(tenant.wbs_certificate)
           ? tenant.wbs_certificate
-            .reduce((acc: string[], cur: any) => {
-              acc.push(getTranslation(t, cur.income_level));
-              return acc;
-            }, [])
-            .join(', ') || '-'
+              .reduce((acc: string[], cur: any) => {
+                acc.push(getTranslation(t, cur.income_level));
+                return acc;
+              }, [])
+              .join(', ') || '-'
           : '-',
       pets:
         ifFalsy(tenant.pets) || tenant.pets === 2
@@ -210,14 +213,14 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         surName:
           member.secondname && member.firstname && member.sex
             ? [
-              member.sex &&
-              typeof member.sex === 'number' &&
-              getTranslation(t, SALUTATION[member.sex - 1]),
-              member.firstname,
-              member.secondname,
-            ]
-              .filter(Boolean)
-              .join(' ')
+                member.sex &&
+                  typeof member.sex === 'number' &&
+                  getTranslation(t, SALUTATION[member.sex - 1]),
+                member.firstname,
+                member.secondname,
+              ]
+                .filter(Boolean)
+                .join(' ')
             : '-',
         dateOfBirth: dateOfBirth(member.birthday, member.age, member.birth_place),
         citizenship: member.citizen || '-',
@@ -249,28 +252,37 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           (member.rent_arrears_doc_submit_later &&
             boolExpressions(t, member.rent_arrears_doc_submit_later)) ||
           '-',
-        unpaidRental: boolExpressions(t, member.unpaid_rental),
-        execution: boolExpressions(t, member.unpaid_rental),
-        insolvency: boolExpressions(t, member.insolvency_proceed),
-        cleanOut: boolExpressions(t, member.clean_procedure),
-        wage: boolExpressions(t, member.income_seizure),
+        unpaidRental: boolExpressions(t, upScaleBool(member.unpaid_rental)),
+        execution: boolExpressions(t, upScaleBool(member.unpaid_rental)),
+        insolvency: boolExpressions(t, upScaleBool(member.insolvency_proceed)),
+        cleanOut: boolExpressions(t, upScaleBool(member.clean_procedure)),
+        wage: boolExpressions(t, upScaleBool(member.income_seizure)),
         pageNumber: getCreditPage(),
         rentArrearsPageNumber: member['rent_arrears_doc'] && residencyStartPage,
 
         //document
         proofs: incomes.reduce((acc: any[], cur: any) => {
-          acc.push(...cur?.proofs?.map((item: any) => item?.file));
+          acc.push(
+            ...cur?.proofs?.map(
+              (item: any) => item.file && { file: item.file, name: item.proofFileName }
+            )
+          );
           return acc;
         }, []),
-        debt_proof: member.debt_proof,
-        rent_arrears_doc: member.rent_arrears_doc,
+        debt_proof: member.debt_proof && {
+          file: member.debt_proof,
+          name: member.debt_proof_file_name,
+        },
+        rent_arrears_doc: member.rent_arrears_doc && {
+          file: member.rent_arrears_doc,
+          name: member.rent_arrears_doc_file_name,
+        },
       };
     }),
   };
 };
 
 export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any[] }) => {
-  //console.log(props.tenant.wbs_certificate);
   props?.members?.push({}, {});
   const { tenant, members } = mapDisplayValues(props?.tenant || {}, props?.members || [], props?.t);
 
@@ -289,7 +301,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           <MainHeader
             leftText={getTranslation(props?.t, 'prospect.rental_application.PROPERTYPREFERENCES')}
             rightText={getTranslation(props?.t, 'prospect.rental_application.HOUSEHOLD')}
-          // rightIcon={'../pdf/img/qrCode.png'}
+            // rightIcon={'../pdf/img/qrCode.png'}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rentalspace')}
@@ -424,33 +436,38 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           if (cur.rent_arrears_doc) acc.push(cur.rent_arrears_doc);
           return acc;
         }, [])
-        .map((item: any, ind: number) => (
-          <Page size="A4" style={styles.page} key={ind} wrap={true}>
-            <View>
-              <View style={styles.headerWrapper}>
-                <Text style={styles.pdfHeader}>
-                  {getTranslation(props?.t, 'prospect.profile.pdf.file_name')}
-                </Text>
-                <Image src={'../pdf/img/BreezeLogo.png'} style={styles.image} />
+        .map((item: any, ind: number) => {
+          console.log('file Name: ', item.name);
+          console.log('url: ', item.file);
+
+          return (
+            <Page size="A4" style={styles.page} key={ind} wrap={true}>
+              <View>
+                <View style={styles.headerWrapper}>
+                  <Text style={styles.pdfHeader}>
+                    {getTranslation(props?.t, 'prospect.profile.pdf.file_name')}
+                  </Text>
+                  <Image src={'../pdf/img/BreezeLogo.png'} style={styles.image} />
+                </View>
               </View>
-            </View>
-            <View style={styles.mainSection} fixed>
-              <Image
-                src={{
-                  uri: item,
-                  method: 'GET',
-                  headers: { 'Cache-Control': 'no-cache' },
-                  body: '',
-                }}
-                style={{
-                  objectFit: 'cover',
-                  height: '100%',
-                  marginBottom: '20px',
-                }}
-              />
-            </View>
-          </Page>
-        ))}
+              <View style={styles.mainSection} fixed>
+                <Image
+                  src={{
+                    uri: item.file,
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache' },
+                    body: null,
+                  }}
+                  style={{
+                    objectFit: 'cover',
+                    height: '100%',
+                    marginBottom: '20px',
+                  }}
+                />
+              </View>
+            </Page>
+          );
+        })}
     </Document>
   );
 };
