@@ -3371,7 +3371,10 @@ class EstateService {
 
     const yAxisKey = is_social ? `cert_category` : `floor`
     const yAxisEstates = is_social
-      ? groupBy(estates, (estate) => estate?.cert_category?.join('+'))
+      ? groupBy(
+          estates.filter((estate) => estate.cert_category),
+          (estate) => estate?.cert_category?.join('+')
+        )
       : groupBy(estates, (estate) => estate.floor)
 
     let buildingEstates = {}
