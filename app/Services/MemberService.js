@@ -156,6 +156,7 @@ class MemberService {
               const proofs = await Promise.all(
                 income.proofs.map(async (proof) => {
                   if (!proof.file) return proof
+                  proof.proofFileName = proof.file
                   proof.file = await FileBucket.getProtectedUrl(proof.file)
                   return proof
                 })
@@ -221,6 +222,8 @@ class MemberService {
 
           member = {
             ...member,
+            rent_arrears_doc_file_name: member.rent_arrears_doc,
+            debt_proof_file_name: member.debt_proof,
             rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
             debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
             incomes,
@@ -792,7 +795,8 @@ class MemberService {
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where(function () {
-        this.orWhere('income_proofs.expire_date', '>=', startOf)
+        //we select where expire_date is equal to 4 months or before
+        this.orWhere('income_proofs.expire_date', '<=', startOf)
         this.orWhereNull('income_proofs.expire_date')
       })
       .where('income_proofs.status', STATUS_ACTIVE)

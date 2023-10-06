@@ -434,6 +434,7 @@ class MemberController {
    */
   //MERGED TENANT
   async addMemberIncomeProof({ request, auth, response }) {
+    //NOTE: expire_date here is the month when the income is earned.
     const { income_id, ...rest } = request.all()
     const user_id = auth.user.owner_id || auth.user.id
     const income = await MemberService.getIncomeByIdAndUser(income_id, auth.user)
