@@ -312,7 +312,7 @@ class TenantService extends BaseService {
     )
 
     if (hasUnconfirmedProofs) {
-      //throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
+      throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
     }
 
     const getConditionRule = (types = []) => {
