@@ -136,10 +136,17 @@ class EstateController {
 
         MailService.sendUnverifiedLandlordActivationEmailToAdmin(txt)
       }
-      // Run task to separate get coords and point of estate
-      QueueService.getEstateCoords(estate.id)
 
-      response.res(estate)
+      const estateId = estate.id
+      const estates = await EstateService.getEstatesByUserId({
+        limit: 1,
+        from: 0,
+        params: { estateId },
+      })
+
+      // Run task to separate get coords and point of estate
+      QueueService.getEstateCoords(estateId)
+      response.res(estates.data?.[0] || [])
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -233,7 +240,11 @@ class EstateController {
       let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
 
-      if (!landlord.toJSON().share && landlord.toJSON().status !== MATCH_STATUS_FINISH) {
+      if (
+        !landlord.toJSON().share &&
+        landlord.toJSON().is_not_show &&
+        landlord.toJSON().status !== MATCH_STATUS_FINISH
+      ) {
         members = (members || members.toJSON() || []).map((member) =>
           pick(member, Member.limitFieldsList)
         )
@@ -429,18 +440,29 @@ class EstateController {
 
   async extendBuilding({ request, auth, response }) {
     const { id, available_end_at, is_duration_later, min_invite_count } = request.all()
-
     try {
-      const building = await BuildingService.getByBuildingId({
+      const building = await BuildingService.get({
         user_id: auth.user.id,
-        building_id: id,
+        id,
       })
 
-      const estates = await EstateService.getEstatesByBuilding({
+      let estates = await EstateService.getEstatesByBuildingId({
         user_id: auth.user.id,
         build_id: id,
       })
+
+      estates = estates.map((estate) => {
+        estate.invite_count =
+          parseInt(estate['__meta__'].knocked_count) +
+          parseInt(estate['__meta__'].inviteBuddies_count) +
+          parseInt(estate['__meta__'].contact_requests_count)
+        estate.visit_count = parseInt(estate['__meta__'].visits_count)
+        estate.final_match_count = parseInt(estate['__meta__'].final_count)
+        return estate
+      })
+
       const estate_ids = estates.map((estate) => estate.id)
+
       await EstateService.extendEstate({
         user_id: auth.user.id,
         estate_id: estate_ids,
@@ -449,12 +471,17 @@ class EstateController {
         min_invite_count,
       })
 
-      response.res({ ...building.toJSON(), available_end_at, is_duration_later, min_invite_count })
+      response.res({
+        ...building.toJSON(),
+        estates,
+        available_end_at,
+        is_duration_later,
+        min_invite_count,
+      })
     } catch (e) {
       throw new HttpException(FAILED_EXTEND_ESTATE, 400)
     }
   }
-
   // /**
   //  *
   //  */

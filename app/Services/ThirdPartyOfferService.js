@@ -406,12 +406,14 @@ class ThirdPartyOfferService {
       .where('_t.user_id', tenant.user_id)
       .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
 
-    const categoryCounts = EstateService.calculateCategoryCounts(estates, tenant)
     const filteredEstates = await EstateService.filterEstates({
       tenant,
       estates,
       inside_property: false,
     })
+
+    const categoryCounts = EstateService.calculateCategoryCounts(filteredEstates, tenant)
+
     return {
       estates: filteredEstates,
       categoryCounts,

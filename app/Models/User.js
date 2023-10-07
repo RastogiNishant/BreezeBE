@@ -62,6 +62,7 @@ class User extends Model {
       'ip_based_info',
       'code',
       'frontend_used',
+      'show_proofs_of_paid_rent_from_former_landlords',
     ]
   }
 

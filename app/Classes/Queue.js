@@ -5,6 +5,7 @@ const defaultOptions = {
 }
 
 const {
+  SCHEDULED_EVERY_1M_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
@@ -39,6 +40,15 @@ class QueueEngine {
         },
         { connection: this.connection, concurrency: 10 }
       )
+
+      // Run every 1 min
+      this.commonQueue
+        .add(
+          SCHEDULED_EVERY_1M_JOB,
+          {},
+          { repeat: { cron: '*/1 * * * *' }, removeOnComplete: true, removeOnFail: true }
+        )
+        .catch(Logger.error)
 
       // Run every 5 min check for moving expire job
       this.commonQueue
@@ -124,11 +134,12 @@ class QueueEngine {
         )
         .catch(Logger.error)
 
+      //scheduled at 12th of the month at 00:00
       this.commonQueue
         .add(
           SCHEDULED_MONTHLY_JOB,
           {},
-          { repeat: { cron: '0 0 12 * * *' }, removeOnComplete: true, removeOnFail: true }
+          { repeat: { cron: '0 0 12 * *' }, removeOnComplete: true, removeOnFail: true }
         )
         .catch(Logger.error)
 

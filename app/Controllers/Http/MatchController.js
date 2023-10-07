@@ -6,7 +6,6 @@ const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
 const Admin = use('App/Models/Admin')
-const Visit = use('App/Models/Visit')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
@@ -615,8 +614,8 @@ class MatchController {
 
     estateData = estateData.sort((a, b) => (a?.status_at > b?.status_at ? -1 : 1))
 
-    const startIndex = (page - 1) * limit
-    const endIndex = startIndex + limit
+    const startIndex = ((page || 1) - 1) * (limit || 999)
+    const endIndex = startIndex + (limit || 999)
 
     estates = {
       total: estateData.length,
@@ -952,6 +951,9 @@ class MatchController {
       'status_at',
       'unread_count',
       'credit_score',
+      'email',
+      'phone',
+      'last_address',
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
@@ -1109,8 +1111,6 @@ class MatchController {
       isFinalMatch = true
     }
 
-    extraFields = ['email', 'phone', 'last_address', ...fields]
-
     const filter = isFinalMatch ? { final: true } : { commit: true }
 
     let finalCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
@@ -1142,6 +1142,20 @@ class MatchController {
       finalMatches,
       contact_requests,
     })
+  }
+
+  async notifyOutsideProspectToFillUpProfile({ request, auth, response }) {
+    const { id } = request.all()
+    try {
+      await require('../../Services/MarketPlaceService').sendManualReminder({
+        contactRequestId: id,
+        landlordId: auth.user.id,
+        lang: auth.user.lang,
+      })
+      response.res(true)
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
   }
 
   /**

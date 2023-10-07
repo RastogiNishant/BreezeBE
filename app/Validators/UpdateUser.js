@@ -130,6 +130,9 @@ class UpdateUser extends Base {
           address: yup.string().min(1).max(255, getExceptionMessage('address', MAXLENGTH, 255)),
         })
         .nullable(),
+      show_proofs_of_paid_rent_from_former_landlords: yup
+        .boolean()
+        .typeError(getExceptionMessage('show_proofs_of_paid_rent_from_former_landlords', BOOLEAN)),
     })
 }
 

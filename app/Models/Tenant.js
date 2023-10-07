@@ -195,6 +195,10 @@ class Tenant extends Model {
     return this.hasMany('App/Models/Member', 'user_id', 'user_id')
   }
 
+  certificates() {
+    return this.hasMany('App/Models/TenantCertificate', 'user_id', 'user_id')
+  }
+
   /**
    *
    */

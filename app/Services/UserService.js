@@ -179,6 +179,8 @@ class UserService {
           secondname: user?.secondname,
           is_verified: true,
         }
+
+        if (user.sex) memberInfo.sex = user.sex
         memberInfo.birthday = otherInfo?.birthday || null
         memberInfo.insolvency_proceed = otherInfo?.insolvency ? 1 : null
         memberInfo.credit_score = otherInfo?.credit_score || null
@@ -1140,7 +1142,7 @@ class UserService {
             `New Landlord Account Created:\r\n` +
             `==============================\r\n` +
             `Email: ${email}\r\n` +
-            `Name: ${firstname}\r\n` +
+            `Name: Dear Tenant\r\n` +
             `IP Address: ${ip}\r\n` +
             `IP Based Info:\r\n` +
             ` - City: ${ip_based_info.city || 'Not Specified'}\r\n` +

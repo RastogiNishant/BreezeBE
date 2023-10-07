@@ -3,6 +3,7 @@
 const moment = require('moment')
 const yup = require('yup')
 const { isEmpty } = require('lodash')
+const Logger = use('Logger')
 
 const Database = use('Database')
 const Member = use('App/Models/Member')
@@ -172,7 +173,7 @@ class TenantService extends BaseService {
       .leftJoin(
         Database.raw(`
     (select
-      user_id,
+      user_id as cert_user_id,
       array_agg(json_build_object(
         'city_id', city_id,
         'city', cities.city,
@@ -193,18 +194,20 @@ class TenantService extends BaseService {
       group by user_id
       ) as _tc
     `),
-        '_tc.user_id',
+        '_tc.cert_user_id',
         'tenants.user_id'
       )
       .where('tenants.user_id', userId)
       .first()
 
     const wbs_certificate = await Promise.map(
-      tenantWithCertificate.wbs_certificate || [],
+      tenantWithCertificate?.wbs_certificate || [],
       async (cert) => await this.getWithAbsoluteUrl(cert)
     )
 
-    tenantWithCertificate.wbs_certificate = wbs_certificate
+    if (tenantWithCertificate) {
+      tenantWithCertificate.wbs_certificate = wbs_certificate
+    }
 
     return tenantWithCertificate
   }
@@ -389,14 +392,12 @@ class TenantService extends BaseService {
         INCOME_TYPE_EMPLOYEE,
         INCOME_TYPE_CIVIL_SERVANT,
         INCOME_TYPE_FREELANCER,
-        INCOME_TYPE_HOUSE_WORK,
         INCOME_TYPE_WORKER,
       ]),
       company: getConditionRule([
         INCOME_TYPE_EMPLOYEE,
         INCOME_TYPE_CIVIL_SERVANT,
         INCOME_TYPE_FREELANCER,
-        INCOME_TYPE_HOUSE_WORK,
         INCOME_TYPE_WORKER,
       ]),
       employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME]),
