@@ -242,10 +242,16 @@ class TenantController {
 
   async requestCertificate({ request, auth, response }) {
     const { request_certificate_at, request_certificate_city_id } = request.all()
-    await TenantService.requestCertificate({
-      user_id: auth.user.id,
-      request_certificate_at,
+
+    const updateData = {
       request_certificate_city_id,
+      user_id: auth.user.id,
+    }
+
+    if (!request_certificate_city_id) Object.assign(updateData,{ request_certificate_at })
+
+    await TenantService.requestCertificate({
+      ...updateData,
     })
 
     let city = null
