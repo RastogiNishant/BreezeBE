@@ -1,4 +1,4 @@
-const Route = global.use('Route')
+const Route = use('Route')
 
 export const prefixAll = (prefix: string, routes: Array<any>) => {
   routes.forEach((route) => route.prefix(prefix))

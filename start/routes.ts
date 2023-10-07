@@ -3,7 +3,6 @@
 import { apiIndexRoutes, indexRoutes } from './routes/index'
 import { generateAdonisRoutes } from './routes/_helper'
 
-const use = globalThis.use
 const Route = use('Route')
 
 const API_BASE = '/api/v1'
@@ -12,7 +11,7 @@ generateAdonisRoutes(indexRoutes)
 generateAdonisRoutes(apiIndexRoutes, `${API_BASE}`)
 
 /**
- * refactor progresses until here, this file should not contain route definitions, routes
+ * refactor progressed until here, this file should not contain route definitions, routes
  * are defined in parallel to their endpoint urls in the subfolder routes e.g. index
  * contains routes * for / and /api/v1.
  * Furthermore estates.ts for /api/v1/estates and so on if there is a bigger
