@@ -1449,4 +1449,4 @@ const routeConfig = [...Route.list()]
 
 const fs = require('fs')
 
-fs.writeFileSync('./start/route_list._json', JSON.stringify(routeConfig, null, 2))
+fs.writeFileSync('./start/route_index', JSON.stringify(routeConfig, null, 2))
