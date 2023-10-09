@@ -363,7 +363,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
               props?.t,
               'prospect.rental_application.Companyname_address'
             )}
-            page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
+            //page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
             incomeDetails={Array.isArray(members) && members.length >= 1 && members.slice(0, 2)}
           />
           <Solvency
@@ -388,7 +388,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
             )}
             cleanOut={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question5')}
             wage={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question6')}
-            page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
+            // page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
             solvencyDetails={Array.isArray(members) && members.length >= 1 && members.slice(0, 2)}
           />
           <View style={styles.section}>
