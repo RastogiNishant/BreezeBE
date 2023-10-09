@@ -806,19 +806,19 @@ class MemberService {
       .select('_m.user_id')
       .fetch()
 
-    const promises = []
     const deactivatedUsers = []
-
+    let incomeProofsToDelete = []
     incomeProofs.rows.map(({ user_id, id }) => {
-      promises.push(IncomeProof.query().where('id', id).delete())
+      incomeProofsToDelete.push(id)
       if (!deactivatedUsers.includes(user_id)) {
         Event.fire('tenant::update', user_id)
         NoticeService.prospectAccountDeactivated(user_id)
         deactivatedUsers.push(user_id)
       }
     })
-
-    return await Promise.all(promises)
+    return await IncomeProof.query()
+      .whereIn('id', incomeProofsToDelete)
+      .update({ status: STATUS_DELETE })
   }
 
   static async createThumbnail() {
