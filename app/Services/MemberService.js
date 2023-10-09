@@ -296,8 +296,8 @@ class MemberService {
             minors_count > 0
               ? FAMILY_STATUS_WITH_CHILD
               : members_count < 2
-              ? FAMILY_STATUS_SINGLE
-              : FAMILY_STATUS_NO_CHILD
+                ? FAMILY_STATUS_SINGLE
+                : FAMILY_STATUS_NO_CHILD
 
           const updatingFields = {
             members_count,
@@ -795,7 +795,7 @@ class MemberService {
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where(function () {
-        this.orWhere('income_proofs.expire_date', '>=', startOf)
+        this.orWhere('income_proofs.expire_date', '<=', startOf)
         this.orWhereNull('income_proofs.expire_date')
       })
       .where('income_proofs.status', STATUS_ACTIVE)
