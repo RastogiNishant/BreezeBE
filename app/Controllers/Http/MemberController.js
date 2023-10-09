@@ -30,11 +30,11 @@ const {
   MEMBER_FILE_DEBT_PROOFS_DOC,
   MEMBER_FILE_PASSPORT_DOC,
   MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
-  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC,
+  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC
 } = require('../../constants')
 
 const {
-  exceptions: { ONLY_HOUSEHOLD_ADD_MEMBER },
+  exceptions: { ONLY_HOUSEHOLD_ADD_MEMBER }
 } = require('../../exceptions')
 /**
  *
@@ -95,7 +95,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: docMimes, isPublic: false },
+        { field: 'passport', mime: docMimes, isPublic: false }
       ])
       if (files.debt_proof) {
         files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
@@ -133,7 +133,7 @@ class MemberController {
           file: files.passport,
           type: MEMBER_FILE_TYPE_PASSPORT,
           status: STATUS_ACTIVE,
-          member_id: createdMember.id,
+          member_id: createdMember.id
         })
         await memberFile.save(trx)
       }
@@ -143,7 +143,7 @@ class MemberController {
           member: createdMember,
           id: createdMember.id,
           userId: user_id,
-          isExisting_user: !!existingUser,
+          isExisting_user: !!existingUser
         },
         trx
       )
@@ -162,7 +162,7 @@ class MemberController {
       if (existingUser) {
         MemberService.emitMemberInvitation({
           data: createdMember.toJSON(),
-          user_id: existingUser.id,
+          user_id: existingUser.id
         })
       }
 
@@ -188,7 +188,7 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: MEMBER_FILE_RENT_ARREARS_DOC, mime: docMimes, isPublic: false },
         { field: MEMBER_FILE_DEBT_PROOFS_DOC, mime: docMimes, isPublic: false },
-        { field: MEMBER_FILE_TYPE_PASSPORT, mime: docMimes, isPublic: false },
+        { field: MEMBER_FILE_TYPE_PASSPORT, mime: docMimes, isPublic: false }
       ])
     } catch (err) {
       throw new HttpException(err.message, 422)
@@ -201,7 +201,7 @@ class MemberController {
           file: files.passport,
           type: MEMBER_FILE_TYPE_PASSPORT,
           status: STATUS_ACTIVE,
-          member_id: id,
+          member_id: id
         })
         await memberFile.save(trx)
       }
@@ -348,7 +348,7 @@ class MemberController {
     const member = await MemberService.allowEditMemberByPermission(auth.user, id)
 
     const files = await File.saveRequestFiles(request, [
-      { field: 'company_logo', mime: imageMimes, isPublic: true },
+      { field: 'company_logo', mime: imageMimes, isPublic: true }
     ])
 
     const trx = await Database.beginTransaction()
@@ -385,7 +385,7 @@ class MemberController {
     const trx = await Database.beginTransaction()
     try {
       const files = await File.saveRequestFiles(request, [
-        { field: 'company_logo', mime: imageMimes, isPublic: true },
+        { field: 'company_logo', mime: imageMimes, isPublic: true }
       ])
 
       await Income.query()
@@ -443,7 +443,7 @@ class MemberController {
     }
 
     const files = await File.saveRequestFiles(request, [
-      { field: 'file', mime: docMimes, isPublic: false },
+      { field: 'file', mime: docMimes, isPublic: false }
     ])
     const incomeProof = await MemberService.addMemberIncomeProof({ ...rest, ...files }, income)
     Event.fire('tenant::update', user_id)
@@ -473,6 +473,7 @@ class MemberController {
     } else {
       throw new HttpException('Invalid income proof', 400)
     }
+    //mark it with STATUS_DELETE
     await IncomeProof.query().where('id', proof.id).update({ status: STATUS_DELETE })
     Event.fire('tenant::update', user_id)
     response.res(true)
@@ -546,7 +547,7 @@ class MemberController {
 
         response.res({
           members,
-          tenant: tenant.toJSON({ isShort: true }),
+          tenant: tenant.toJSON({ isShort: true })
         })
       } catch (e) {
         console.log(e)
