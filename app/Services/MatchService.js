@@ -247,6 +247,12 @@ class MatchService {
 
     //WBS certificate score
     if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'wbs certificate mismatch',
+        }
+      }
       return 0
     }
     const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
@@ -515,6 +521,20 @@ class MatchService {
 
     //WBS certificate score
     if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+      if (debug) {
+        return {
+          scoreT,
+          prospectBudgetScore,
+          roomsScore,
+          spaceScore,
+          floorScore,
+          rentStartScore,
+          aptTypeScore,
+          houseTypeScore,
+          amenitiesScore,
+          reason: 'wbs certificate mismatch',
+        }
+      }
       return 0
     }
 
@@ -3313,7 +3333,7 @@ class MatchService {
         this.orWhere('matches.status', '>=', MATCH_STATUS_TOP)
         this.orWhere(function () {
           this.where('_e.is_not_show', true)
-          this.where('matches.status', '>=', MATCH_STATUS_KNOCK)
+          this.orWhere('matches.status', '>=', MATCH_STATUS_NEW)
         })
       })
 
@@ -4229,7 +4249,7 @@ class MatchService {
       .leftJoin(
         Database.raw(`
         (select estates.id as estate_id,
-          case when estates.cert_category is null or estates.cert_category='' then
+          case when estates.cert_category is null then
             null else 
             json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
             end
@@ -4803,17 +4823,6 @@ class MatchService {
       match: matches?.[placeNumber],
       place_num: placeNumber + 1,
     }
-  }
-
-  static async getActiveMatchBetweenProspectAndLandlord(user_id, landlord_user_id) {
-    /* Check if there is an active match between the prospect and the landlord */
-    return await Match.query()
-      .where('user_id', user_id)
-      .where('status', MATCH_STATUS_INVITE)
-      .whereHas('estate', (query) => {
-        query.where('user_id', landlord_user_id)
-      })
-      .first()
   }
 }
 

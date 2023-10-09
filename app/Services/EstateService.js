@@ -614,6 +614,14 @@ class EstateService {
         status: STATUS_DRAFT,
       }
 
+      if (data?.min_invite_count === 0) {
+        createData.min_invite_count = null
+      }
+
+      if (data?.rent_end_at === 0) {
+        createData.rent_end_at = null
+      }
+
       if (request) {
         const files = await this.saveEnergyProof(request)
 
@@ -710,8 +718,7 @@ class EstateService {
       ...updateData,
     }
 
-    const { verified_address, construction_year, cover_thumb, ...omittedData } = updateData
-
+    const { verified_address, cover_thumb, ...omittedData } = updateData
     let insideTrx = !trx ? true : false
     trx = insideTrx ? await Database.beginTransaction() : trx
     try {
@@ -873,7 +880,17 @@ class EstateService {
     }
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
-    return query.orderBy('estates.id', 'desc')
+
+    if (params?.isStatusSort) {
+      query.orderBy(
+        Database.raw(
+          `case estates.publish_status when ${PUBLISH_STATUS_APPROVED_BY_ADMIN} then 1 when ${PUBLISH_STATUS_BY_LANDLORD} then 2 when ${PUBLISH_STATUS_INIT} then 3 else 3 end`
+        )
+      )
+    } else {
+      query.orderBy('estates.id', 'desc')
+    }
+    return query
   }
 
   /**
@@ -1659,7 +1676,7 @@ class EstateService {
       //estate.cert_category : inside estates
       //estate.wbs: outside estates
       if (inside_property) {
-        estates = estates.filter((estate) => estate.cert_category)
+        estates = estates.filter((estate) => estate?.cert_category?.length > 0)
       } else {
         estates = estates.filter((estate) => estate.wbs)
       }
@@ -1671,7 +1688,9 @@ class EstateService {
 
     if (tenant.income_level?.length && inside_property) {
       estates = estates.filter(
-        (estate) => !estate.cert_category || tenant.income_level.includes(estate.cert_category)
+        (estate) =>
+          estate?.cert_category?.length < 1 ||
+          tenant.income_level.some((level) => estate.cert_category.includes(level))
       )
       if (process.env.DEV === 'true') {
         Logger.info(`filterEstates after income level ${estates?.length}`)
@@ -3342,7 +3361,9 @@ class EstateService {
           page: -1,
           limit: -1,
         })
-      )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
+      )?.filter((estate) =>
+        is_social ? estate?.cert_category?.length : !estate?.cert_category?.length
+      ) || []
     estates = orderBy(estates, 'rooms_number', 'asc')
 
     let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
@@ -3352,7 +3373,7 @@ class EstateService {
     const yAxisEstates = is_social
       ? groupBy(
           estates.filter((estate) => estate.cert_category),
-          (estate) => estate.cert_category
+          (estate) => estate?.cert_category?.join('+')
         )
       : groupBy(estates, (estate) => estate.floor)
 
@@ -3360,11 +3381,17 @@ class EstateService {
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
       category_ids.forEach((cat_id) => {
-        const filteredEstates = estates.filter(
-          (estate) =>
-            estate[yAxisKey].toString() === axis.toString() &&
+        const filteredEstates = estates.filter((estate) => {
+          const yAxisKeyCondition =
+            yAxisKey === 'floor'
+              ? estate[yAxisKey].toString() === axis.toString()
+              : estate[yAxisKey]?.join('+') === axis.toString()
+
+          return (
+            yAxisKeyCondition &&
             (cat_id != -1 ? estate.unit_category_id === cat_id : !estate.unit_category_id)
-        )
+          )
+        })
         if (filteredEstates?.length) {
           categoryEstates[cat_id] = filteredEstates
         }
@@ -3766,6 +3793,7 @@ class EstateService {
           params: {
             ...(params || {}),
             is_no_build: true,
+            isStatusSort: true,
           },
         })
         estates = [...estates, ...(result?.data || [])]
@@ -3776,6 +3804,7 @@ class EstateService {
         params: {
           ...(params || {}),
           is_no_build: true,
+          isStatusSort: true,
         },
       })
 
@@ -3928,7 +3957,11 @@ class EstateService {
   }
 
   static async publishBuilding({ user_id, publishers, build_id, estate_ids }) {
-    const estates = await this.getEstatesByBuilding({ user_id, build_id })
+    const estates = await this.getEstatesByBuilding({
+      user_id,
+      build_id,
+      exclude_letting_type_let: true,
+    })
 
     const can_publish = estates.every((estate) => estate.can_publish)
     if (!can_publish) {
@@ -3991,14 +4024,99 @@ class EstateService {
     //TODO: publish estates here
   }
 
-  static async getEstatesByBuilding({ user_id, build_id }) {
-    return (
-      await Estate.query()
-        .where('user_id', user_id)
-        .where('build_id', build_id)
-        .whereNot('status', STATUS_DELETE)
-        .fetch()
-    ).toJSON()
+  static async getEstatesByBuilding({ user_id, build_id, exclude_letting_type_let }) {
+    let query = Estate.query()
+      .where('user_id', user_id)
+      .where('build_id', build_id)
+      .whereNot('status', STATUS_DELETE)
+    if (exclude_letting_type_let) {
+      query.whereNot('letting_type', LETTING_TYPE_LET)
+    }
+    const estates = await query.fetch()
+    return estates.toJSON()
+  }
+
+  static async getEstatesByBuildingId({ user_id, build_id, exclude_letting_type_let }) {
+    let query = Estate.query()
+      .where('user_id', user_id)
+      .where('build_id', build_id)
+      .whereNot('status', STATUS_DELETE)
+      .with('estateSyncListings')
+      .withCount('visits')
+      .with('final')
+      .withCount('inviteBuddies')
+      .withCount('knocked')
+      .withCount('contact_requests')
+      .select(
+        Database.raw(
+          `case when status='${STATUS_ACTIVE}' 
+  then true else false end
+  as "unpublishable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
+    not (
+      (available_start_at is null) is true or
+      ((is_duration_later is false or is_duration_later is null)
+        and (available_end_at is null) is true) or
+      (is_duration_later is true and min_invite_count < 1) or
+      ((available_end_at is not null) is true and available_end_at < NOW()) or
+      ((available_end_at is not null) is true and
+        (available_start_at is not null) is true and
+        available_start_at >= available_end_at)
+    ) and
+    letting_type <> '${LETTING_TYPE_LET}'
+    then true else false end
+    as "approvable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status='${PUBLISH_STATUS_BY_LANDLORD}'
+    then true else false end
+    as "declineable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}') and
+    not (
+      (available_start_at is null) is true or
+      ((is_duration_later is false or is_duration_later is null)
+        and (available_end_at is null) is true) or
+      (is_duration_later is true and min_invite_count < 1) or
+      ((available_end_at is not null) is true and available_end_at < NOW()) or
+      ((available_end_at is not null) is true and
+        (available_start_at is not null) is true and
+        available_start_at >= available_end_at)
+    ) and
+    letting_type <> '${LETTING_TYPE_LET}'
+    then true else false end
+    as "publishable"
+  `
+        ),
+        Database.raw(
+          `json_build_object(
+    'letting_type_is_let', (letting_type = '${LETTING_TYPE_LET}') is true,
+    'available_start_at_is_null', (available_start_at is null) is true,
+    'is_not_duration_later_but_available_end_at_is_null',
+      ((is_duration_later is false or is_duration_later is null)
+      and (available_end_at is null) is true) is true,
+    'is_duration_later_but_no_min_invite_count', 
+      (is_duration_later is true and min_invite_count < 1) is true,
+    'available_end_at_is_past', 
+      ((available_end_at is not null) is true and available_end_at < NOW()) is true,
+    'available_start_at_is_later_than_available_end_at',
+      ((available_end_at is not null) is true and
+      (available_start_at is not null) is true and
+      available_start_at >= available_end_at) is true
+  ) as non_publishable_approvable_reasons`
+        )
+      )
+    if (exclude_letting_type_let) {
+      query.whereNot('letting_type', LETTING_TYPE_LET)
+    }
+    const estates = await query.fetch()
+    return estates.toJSON()
   }
 
   static async unpublishBuilding({ user_id, build_id }) {
@@ -4010,11 +4128,17 @@ class EstateService {
 
     const trx = await Database.beginTransaction()
     try {
+      const buildingPublishStatus = estates.some(
+        (estate) => estate.publish_status === PUBLISH_STATUS_BY_LANDLORD
+      )
+        ? PUBLISH_STATUS_BY_LANDLORD
+        : PUBLISH_STATUS_INIT
+
       await BuildingService.updatePublishedMarketPlaceEstateIds(
         {
           id: build_id,
           user_id,
-          published: PUBLISH_STATUS_INIT,
+          published: buildingPublishStatus,
           marketplace_estate_ids: null,
         },
         trx

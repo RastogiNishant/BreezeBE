@@ -597,7 +597,7 @@ class CreateEstate extends Base {
           .integer()
           .when(['net_rent'], {
             is: (net_rent) => net_rent > 0,
-            then: yup.number().moreThan(yup.ref('net_rent')),
+            then: yup.number().min(yup.ref('net_rent')),
             otherwise: yup.number().integer(),
           })
           .nullable(),
@@ -710,6 +710,7 @@ class CreateEstate extends Base {
               .nullable()
           ),
         is_not_show: yup.boolean().nullable(),
+        skip_timeslots: yup.boolean().nullable(),
       })
       .concat(PublishInfo.schema())
 }

@@ -134,11 +134,12 @@ class QueueEngine {
         )
         .catch(Logger.error)
 
+      //scheduled at 12th of the month at 00:00
       this.commonQueue
         .add(
           SCHEDULED_MONTHLY_JOB,
           {},
-          { repeat: { cron: '0 0 12 * * *' }, removeOnComplete: true, removeOnFail: true }
+          { repeat: { cron: '0 0 12 * *' }, removeOnComplete: true, removeOnFail: true }
         )
         .catch(Logger.error)
 
