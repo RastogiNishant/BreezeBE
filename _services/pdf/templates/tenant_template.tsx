@@ -105,8 +105,6 @@ const boolExpressions = (t: TFunction, value: any) =>
       : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
   );
 
-const upScaleBool = (value: any) => (value === 1 ? true : value === 2 ? false : null);
-
 const dateOfBirth = (day: any, age: any, place: any) =>
   day || age || place
     ? [dayConverter(day), age && `(${age}),`, place].filter(Boolean).join(' ')
@@ -140,20 +138,19 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       household_size: tenant.members_count || '-',
       rooms_min_max: `${tenant.rooms_min || 0}-${tenant.rooms_max || 1000}`,
       rent_budget: `€${tenant.budget_min || 0}-${tenant.budget_max || 10000}`,
-      rent_duration: `${
-        tenant.residency_duration_min
-          ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
-          : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
-      }`,
+      rent_duration: `${tenant.residency_duration_min
+        ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
+        : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
+        }`,
       children: tenant.minors_count || '-',
       income_level:
         tenant.wbs_certificate && Array.isArray(tenant.wbs_certificate)
           ? tenant.wbs_certificate
-              .reduce((acc: string[], cur: any) => {
-                acc.push(getTranslation(t, cur.income_level));
-                return acc;
-              }, [])
-              .join(', ') || '-'
+            .reduce((acc: string[], cur: any) => {
+              acc.push(getTranslation(t, cur.income_level));
+              return acc;
+            }, [])
+            .join(', ') || '-'
           : '-',
       pets:
         ifFalsy(tenant.pets) || tenant.pets === 2
@@ -188,21 +185,7 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         cur['position'] && acc.push(cur['position']);
         return acc;
       }, []);
-      const getCreditPage = () => {
-        if (Array.isArray(member['debt_proof']) && member.debt_proof.length > 0) {
-          creditStartPage +=
-            incomes.reduce((acc: any[], cur: any) => cur['proofs'] && acc.push(cur['proofs']), [])
-              .length + 1;
-          creditEndPage =
-            member['debt_proof'].length > 1
-              ? creditStartPage + member['debt_proof'].length
-              : creditStartPage;
-          return {
-            startPage: creditStartPage,
-            endPage: creditEndPage,
-          };
-        }
-      };
+
       if (member['rent_arrears_doc']) residencyStartPage = creditEndPage + 1;
       return {
         // Personal
@@ -213,14 +196,14 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         surName:
           member.secondname && member.firstname && member.sex
             ? [
-                member.sex &&
-                  typeof member.sex === 'number' &&
-                  getTranslation(t, SALUTATION[member.sex - 1]),
-                member.firstname,
-                member.secondname,
-              ]
-                .filter(Boolean)
-                .join(' ')
+              member.sex &&
+              typeof member.sex === 'number' &&
+              getTranslation(t, SALUTATION[member.sex - 1]),
+              member.firstname,
+              member.secondname,
+            ]
+              .filter(Boolean)
+              .join(' ')
             : '-',
         dateOfBirth: dateOfBirth(member.birthday, member.age, member.birth_place),
         citizenship: member.citizen || '-',
@@ -252,12 +235,11 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           (member.rent_arrears_doc_submit_later &&
             boolExpressions(t, member.rent_arrears_doc_submit_later)) ||
           '-',
-        unpaidRental: boolExpressions(t, upScaleBool(member.unpaid_rental)),
-        execution: boolExpressions(t, upScaleBool(member.unpaid_rental)),
-        insolvency: boolExpressions(t, upScaleBool(member.insolvency_proceed)),
-        cleanOut: boolExpressions(t, upScaleBool(member.clean_procedure)),
-        wage: boolExpressions(t, upScaleBool(member.income_seizure)),
-        pageNumber: getCreditPage(),
+        unpaidRental: boolExpressions(t, member.unpaid_rental),
+        execution: boolExpressions(t, member.unpaid_rental),
+        insolvency: boolExpressions(t, member.insolvency_proceed),
+        cleanOut: boolExpressions(t, member.clean_procedure),
+        wage: boolExpressions(t, member.income_seizure),
         rentArrearsPageNumber: member['rent_arrears_doc'] && residencyStartPage,
 
         //document
@@ -301,7 +283,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           <MainHeader
             leftText={getTranslation(props?.t, 'prospect.rental_application.PROPERTYPREFERENCES')}
             rightText={getTranslation(props?.t, 'prospect.rental_application.HOUSEHOLD')}
-            // rightIcon={'../pdf/img/qrCode.png'}
+          // rightIcon={'../pdf/img/qrCode.png'}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rentalspace')}
@@ -381,7 +363,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
               props?.t,
               'prospect.rental_application.Companyname_address'
             )}
-            page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
+            //page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
             incomeDetails={Array.isArray(members) && members.length >= 1 && members.slice(0, 2)}
           />
           <Solvency
@@ -406,7 +388,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
             )}
             cleanOut={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question5')}
             wage={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question6')}
-            page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
+            // page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
             solvencyDetails={Array.isArray(members) && members.length >= 1 && members.slice(0, 2)}
           />
           <View style={styles.section}>
