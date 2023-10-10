@@ -14,7 +14,8 @@ const IncomeProof = use('App/Models/IncomeProof')
 const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
-const MemberService = use('App/Services/MemberService')
+//prevent circular dependency comment MemberService
+//const MemberService = use('App/Services/MemberService')
 const Promise = require('bluebird')
 const {
   MEMBER_FILE_TYPE_RENT,
@@ -65,12 +66,13 @@ const {
   INCOME_TYPE_CHILD_BENEFIT,
   HIRING_TYPE_FULL_TIME,
   DAY_FORMAT,
+  REQUIRED_INCOME_PROOFS_COUNT
 } = require('../constants')
 const { getOrCreateTenant } = require('./UserService')
 const HttpException = require('../Exceptions/HttpException')
 
 const {
-  exceptions: { USER_NOT_FOUND },
+  exceptions: { USER_NOT_FOUND }
 } = require('../exceptions')
 const BaseService = require('./BaseService')
 class TenantService extends BaseService {
@@ -90,7 +92,7 @@ class TenantService extends BaseService {
         MEMBER_FILE_TYPE_PASSPORT,
         MEMBER_FILE_TYPE_EXTRA_RENT,
         MEMBER_FILE_TYPE_EXTRA_DEBT,
-        MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+        MEMBER_FILE_TYPE_EXTRA_PASSPORT
       ].includes(fileType)
     ) {
       const passport = await MemberFile.query()
@@ -298,7 +300,7 @@ class TenantService extends BaseService {
         (([INCOME_TYPE_EMPLOYEE, INCOME_TYPE_WORKER, INCOME_TYPE_CIVIL_SERVANT].includes(
           i.income_type
         ) &&
-          parseInt(i.income_proofs_count) < 3) ||
+          parseInt(i.income_proofs_count) < REQUIRED_INCOME_PROOFS_COUNT) ||
           ([
             INCOME_TYPE_UNEMPLOYED,
             INCOME_TYPE_FREELANCER,
@@ -306,7 +308,7 @@ class TenantService extends BaseService {
             INCOME_TYPE_SELF_EMPLOYED,
             INCOME_TYPE_TRAINEE,
             INCOME_TYPE_OTHER_BENEFIT,
-            INCOME_TYPE_CHILD_BENEFIT,
+            INCOME_TYPE_CHILD_BENEFIT
           ].includes(i.income_type) &&
             parseInt(i.income_proofs_count) < 1))
     )
@@ -334,7 +336,7 @@ class TenantService extends BaseService {
             return credit_score_submit_later || credit_score_not_applicable
           },
           then: yup.number().notRequired().nullable(),
-          otherwise: yup.number().min(0).max(100).required(),
+          otherwise: yup.number().min(0).max(100).required()
         }),
       last_address: yup.string().required(),
       firstname: yup.string().required(),
@@ -344,7 +346,7 @@ class TenantService extends BaseService {
           return rent_proof_not_applicable || rent_arrears_doc_submit_later
         },
         then: yup.array().of(yup.string()).notRequired().nullable(),
-        otherwise: yup.array().of(yup.string()).required(),
+        otherwise: yup.array().of(yup.string()).required()
       }),
       birthday: yup.date().required(),
       birth_place: yup.string().required(),
@@ -384,7 +386,7 @@ class TenantService extends BaseService {
           INCOME_TYPE_SELF_EMPLOYED,
           INCOME_TYPE_TRAINEE,
           INCOME_TYPE_OTHER_BENEFIT,
-          INCOME_TYPE_CHILD_BENEFIT,
+          INCOME_TYPE_CHILD_BENEFIT
         ])
         .required(),
       income: yup.number().min(0).required(),
@@ -392,15 +394,15 @@ class TenantService extends BaseService {
         INCOME_TYPE_EMPLOYEE,
         INCOME_TYPE_CIVIL_SERVANT,
         INCOME_TYPE_FREELANCER,
-        INCOME_TYPE_WORKER,
+        INCOME_TYPE_WORKER
       ]),
       company: getConditionRule([
         INCOME_TYPE_EMPLOYEE,
         INCOME_TYPE_CIVIL_SERVANT,
         INCOME_TYPE_FREELANCER,
-        INCOME_TYPE_WORKER,
+        INCOME_TYPE_WORKER
       ]),
-      employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME]),
+      employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME])
     })
 
     let insideTrx = false
@@ -420,7 +422,7 @@ class TenantService extends BaseService {
         await trx.commit()
       }
 
-      MemberService.calcTenantMemberData(tenant.user_id)
+      require('./MemberService').calcTenantMemberData(tenant.user_id)
     } catch (e) {
       if (insideTrx) {
         await trx.rollback()
@@ -437,7 +439,7 @@ class TenantService extends BaseService {
     const trx = await Database.beginTransaction()
 
     try {
-      await MemberService.calcTenantMemberData(userId, trx)
+      await require('./MemberService').calcTenantMemberData(userId, trx)
       // Remove New matches
       await Database.table({ _m: 'matches' })
         .where({ '_m.user_id': userId, '_m.status': MATCH_STATUS_NEW })
