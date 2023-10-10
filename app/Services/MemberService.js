@@ -521,6 +521,7 @@ class MemberService {
       income.income_type === INCOME_TYPE_OTHER_BENEFIT ||
       income.income_type === INCOME_TYPE_CHILD_BENEFIT
     ) {
+      //these income types are not to be deletable...
       data.expire_date = null
     }
 
@@ -797,6 +798,8 @@ class MemberService {
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
+      //expire_date = null should not be deleted
+      .whereNotNull('income_proofs.expire_date')
       .where('income_proofs.status', STATUS_ACTIVE)
       .innerJoin({ _i: 'incomes' }, function () {
         this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
