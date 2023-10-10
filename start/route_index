@@ -474,6 +474,7 @@
       "POST"
     ],
     "middle": [
+      "auth:jwtAdministrator",
       "valid:Id"
     ],
     "handler": "Admin/PropertyController.publishBuilding"

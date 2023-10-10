@@ -16,7 +16,7 @@ export const administrationRoutes = {
   '/buildings': {
     [HTTP_METHODS.POST]: {
       controller: 'Admin/PropertyController.publishBuilding',
-      middleware: ['valid:Id']
+      middleware: ['auth:jwtAdministrator', 'valid:Id']
     }
   },
   // estate sync

@@ -3,6 +3,7 @@
 import { generateAdonisRoutes } from './routes/_helper'
 import { apiIndexRoutes, indexRoutes } from './routes/index'
 import { administrationRoutes } from './routes/administration'
+import { landlordRoutes } from './routes/landlord'
 
 const Route = use('Route')
 
@@ -11,6 +12,7 @@ const API_BASE = '/api/v1'
 generateAdonisRoutes(indexRoutes)
 generateAdonisRoutes(apiIndexRoutes, `${API_BASE}`)
 generateAdonisRoutes(administrationRoutes, `${API_BASE}/administration`)
+generateAdonisRoutes(landlordRoutes, `${API_BASE}/landlord`)
 
 /**
  * refactor progressed until here, this file should not contain route definitions, routes
@@ -61,33 +63,6 @@ Route.put('/api/v1/updateDeviceToken', 'AccountController.updateDeviceToken').mi
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
   'valid:DeviceToken'
 ])
-
-//Payment Methods
-Route.group(() => {
-  Route.post('', 'PaymentMethodController.post')
-  Route.get('', 'PaymentMethodController.get')
-  Route.put('', 'PaymentMethodController.update')
-})
-  .prefix('/api/v1/landlord/paymentMethod')
-  .middleware(['auth:jwtLandlord'])
-
-//Billing Address
-Route.group(() => {
-  Route.post('', 'BillingAddressController.addBillingAddress')
-  Route.get('', 'BillingAddressController.getUserBillingAddress')
-  Route.put('', 'BillingAddressController.updateBillingAddress')
-})
-  .prefix('/api/v1/landlord/billingAddress')
-  .middleware(['auth:jwtLandlord'])
-
-//Payment
-Route.group(() => {
-  Route.post('', 'PaymentController.processPayment')
-  Route.get('', 'PaymentController.getUserPayments')
-  Route.post('/paypal', 'PaymentController.processPaypal')
-})
-  .prefix('/api/v1/landlord/payment')
-  .middleware(['auth:jwtLandlord'])
 
 //Housekepper
 Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
@@ -927,21 +902,6 @@ Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary'
   'auth:jwtLandlord'
 ])
 
-// Landlord specific routes
-Route.group(() => {
-  Route.get('/visit', 'LandlordController.getLordVisits')
-  Route.post('/activate', 'LandlordController.activate')
-  Route.get('/invite-to-view-estate', 'EstateController.getInviteToView').middleware([
-    'LandlordOwnsThisEstate'
-  ])
-  Route.post('/invite-to-view-estate', 'EstateController.createInviteToViewCode').middleware([
-    'valid:LandlordInviteToView',
-    'LandlordOwnsThisEstate'
-  ])
-})
-  .prefix('/api/v1/landlord')
-  .middleware(['auth:jwtLandlord'])
-
 Route.group(() => {
   Route.post('/', 'FeedbackController.create').middleware([
     'auth:jwt,jwtLandlord',
@@ -1046,11 +1006,6 @@ Route.group(() => {
 })
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/notes')
-
-Route.get('/api/v1/landlord/:id/company', 'CompanyController.getCompanyByLandlord').middleware([
-  'auth:jwt',
-  'valid:Id'
-])
 
 /**
  * Landlord company contacts manage
