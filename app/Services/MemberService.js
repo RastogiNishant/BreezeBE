@@ -7,7 +7,7 @@ const Income = use('App/Models/Income')
 const MemberFile = use('App/Models/MemberFile')
 const IncomeProof = use('App/Models/IncomeProof')
 const { getHash } = require('../Libs/utils.js')
-const { pick } = require('lodash')
+const { pick, uniq } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
 const random = require('random')
@@ -52,7 +52,9 @@ const {
   WEBSOCKET_EVENT_MEMBER_INVITATION,
   VALID_INCOME_PROOFS_PERIOD,
   INCOME_TYPE_OTHER_BENEFIT,
-  INCOME_TYPE_CHILD_BENEFIT
+  INCOME_TYPE_CHILD_BENEFIT,
+  REQUIRED_INCOME_PROOFS_COUNT,
+  STATUS_DRAFT
 } = require('../constants')
 
 const {
@@ -519,6 +521,7 @@ class MemberService {
       income.income_type === INCOME_TYPE_OTHER_BENEFIT ||
       income.income_type === INCOME_TYPE_CHILD_BENEFIT
     ) {
+      //these income types are not to be deletable...
       data.expire_date = null
     }
 
@@ -794,10 +797,9 @@ class MemberService {
       .format('YYYY-MM-DD')
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
-      .where(function () {
-        //we select where expire_date is equal to 4 months or before
-        this.orWhere('income_proofs.expire_date', '<=', startOf)
-      })
+      .where('income_proofs.expire_date', '<=', startOf)
+      //expire_date = null should not be deleted
+      .whereNotNull('income_proofs.expire_date')
       .where('income_proofs.status', STATUS_ACTIVE)
       .innerJoin({ _i: 'incomes' }, function () {
         this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
@@ -806,19 +808,28 @@ class MemberService {
       .select('_m.user_id')
       .fetch()
 
-    const promises = []
-    const deactivatedUsers = []
-
-    incomeProofs.rows.map(({ user_id, id }) => {
-      promises.push(IncomeProof.query().where('id', id).delete())
-      if (!deactivatedUsers.includes(user_id)) {
+    let incomeProofsToDelete = []
+    let usersToDeactivate = []
+    incomeProofs.rows.map(async ({ user_id, id }) => {
+      incomeProofsToDelete.push(id)
+      if (!usersToDeactivate.includes(user_id)) {
         Event.fire('tenant::update', user_id)
         NoticeService.prospectAccountDeactivated(user_id)
-        deactivatedUsers.push(user_id)
+        usersToDeactivate.push(user_id)
       }
     })
-
-    return await Promise.all(promises)
+    const trx = await Database.beginTransaction()
+    try {
+      if (incomeProofsToDelete.length) {
+        await IncomeProof.query()
+          .whereIn('id', incomeProofsToDelete)
+          .update({ status: STATUS_DELETE }, trx)
+      }
+      await trx.commit()
+    } catch (err) {
+      console.log(err.message)
+      await trx.rollback()
+    }
   }
 
   static async createThumbnail() {

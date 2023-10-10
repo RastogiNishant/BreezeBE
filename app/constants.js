@@ -421,7 +421,7 @@ const constants = {
     'apt_balcony',
     'furnished',
     'bathtub',
-    'fitted_kitchen',
+    'fitted_kitchen'
   ],
 
   ESTATE_NOTIFICATION_FIELDS: [
@@ -431,7 +431,7 @@ const constants = {
     'rooms_number',
     'area',
     'floor',
-    'number_floors',
+    'number_floors'
   ],
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB: 'scheduledEvery37thMinuteHourlyJob',
@@ -684,7 +684,7 @@ const constants = {
     'action_at',
     'is_not_show',
     'unread_count',
-    'status_at',
+    'status_at'
   ],
 
   SMS_VERIFY_PREFIX: 'confirm_household_account',
@@ -758,7 +758,7 @@ const constants = {
     'gt',
     'lt',
     'gte',
-    'lte',
+    'lte'
   ],
 
   FILTER_CONSTRAINTS_DATE_MATCH_MODES: ['dateIs', 'dateIsNot', 'dateBefore', 'dateAfter'],
@@ -785,20 +785,20 @@ const constants = {
   URGENCIES: [
     {
       label: 'low_notification.message',
-      value: 1,
+      value: 1
     },
     {
       label: 'normal_notification.message',
-      value: 2,
+      value: 2
     },
     {
       label: 'high_notification.message',
-      value: 3,
+      value: 3
     },
     {
       label: 'urgent_notification.message',
-      value: 4,
-    },
+      value: 4
+    }
   ],
   TASK_STATUS_NEW: 1,
   TASK_STATUS_INPROGRESS: 2,
@@ -809,7 +809,7 @@ const constants = {
     id: 0,
     firstname: 'Breeze',
     secondname: 'Monster',
-    avatar: '/img/breezeLogo.png',
+    avatar: '/img/breezeLogo.png'
   },
 
   TASK_STATUS_ARCHIVED: 99,
@@ -855,7 +855,7 @@ const constants = {
     'cover',
     'coord_raw',
     'property_id',
-    'address',
+    'address'
   ],
   //whether we deactivate landlord at end of day of his/her deactivation day
   //or at the moment his deactivation arrives.
@@ -883,7 +883,7 @@ const constants = {
     '2023-10-03', //reformation day
     '2023-11-01', //all saints' day
     '2023-12-25', //christmas
-    '2023-12-26', //second day of christmas
+    '2023-12-26' //second day of christmas
   ],
   CHAT_TYPE_MESSAGE: 'message',
   CHAT_TYPE_BOT_MESSAGE: 'chatbot',
@@ -893,48 +893,48 @@ const constants = {
   DEFECT_TOPICS: [
     {
       key: 'tenant.property.defect_class.Heating.message',
-      text: 'Heating',
+      text: 'Heating'
     },
     {
       key: 'tenant.property.defect_class.Window.message',
-      text: 'Window',
+      text: 'Window'
     },
     {
       key: 'tenant.property.defect_class.Toilet.message',
-      text: 'Toilet',
+      text: 'Toilet'
     },
     {
       key: 'tenant.property.defect_class.Water tap.message',
-      text: 'Water tap',
+      text: 'Water tap'
     },
     {
       key: 'tenant.property.defect_class.Electricity.message',
-      text: 'Electricity',
+      text: 'Electricity'
     },
     {
       key: 'tenant.property.defect_class.Door.message',
-      text: 'Door',
+      text: 'Door'
     },
     {
       key: 'tenant.property.defect_class.Unit.message',
-      text: 'Unit',
+      text: 'Unit'
     },
     {
       key: 'tenant.property.defect_class.Bath_Shower.message',
-      text: 'Bath Shower',
+      text: 'Bath Shower'
     },
     {
       key: 'tenant.property.defect_class.Entrance.message',
-      text: 'Entrance',
+      text: 'Entrance'
     },
     {
       key: 'tenant.property.defect_class.Outside.message',
-      text: 'Outside',
+      text: 'Outside'
     },
     {
       key: 'tenant.property.defect_class.Kitchen.message',
-      text: 'Kitchen',
-    },
+      text: 'Kitchen'
+    }
   ],
 
   ESTATE_FLOOR_DIRECTION_NA: 1,
@@ -1051,27 +1051,27 @@ const constants = {
 
   GENERAL_PERCENT: {
     let: 49.9,
-    void: 37.5,
+    void: 37.5
   },
   LEASE_CONTRACT_PERCENT: {
     let: 16.7,
-    void: 12.5,
+    void: 12.5
   },
   PROPERTY_DETAILS_PERCENT: {
     let: 16.7,
-    void: 12.5,
+    void: 12.5
   },
   TENANT_PREFERENCES_PERCENT: {
     let: 0,
-    void: 12.5,
+    void: 12.5
   },
   VISIT_SLOT_PERCENT: {
     let: 0,
-    void: 12.5,
+    void: 12.5
   },
   IMAGE_DOC_PERCENT: {
     let: 16.7,
-    void: 12.5,
+    void: 12.5
   },
 
   ESTATE_COMPLETENESS_BREAKPOINT: 80,
@@ -1108,7 +1108,7 @@ Estates: [ESTATES]
     'High quality entrance hall',
     'Mirror',
     'Marble',
-    'House entrance door not lockable',
+    'House entrance door not lockable'
   ],
   APARTMENT_AMENITIES_ORDER: [
     'Furnished',
@@ -1137,7 +1137,7 @@ Estates: [ESTATES]
     'Low barrier cut',
     'Stucco',
     'Washing machine not placeable',
-    'Poor cut',
+    'Poor cut'
   ],
   VINCINITY_AMENITIES_ORDER: [
     'Preferred city location',
@@ -1154,7 +1154,7 @@ Estates: [ESTATES]
     'Sidewalk paving',
     'Polluted by traffic noise',
     'Odorous',
-    'Heavily neglected',
+    'Heavily neglected'
   ],
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT: 'Breeze: Prospect requests from ',
   SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT: 'Breeze: Interessentenanfragen vom ',
@@ -1167,7 +1167,7 @@ Estates: [ESTATES]
     'Wohnung',
     'Haus',
     'Möbliertes Wohnen / Wohnen auf Zeit',
-    'Zimmer',
+    'Zimmer'
   ],
 
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING: {
@@ -1180,7 +1180,7 @@ Estates: [ESTATES]
       'housewife_husband',
       'pensioner',
       'self',
-      'trainee',
+      'trainee'
     ],
     credit_score: 95,
     budget: 30,
@@ -1189,21 +1189,22 @@ Estates: [ESTATES]
     max_age: 65,
     pets_allowed: 2, // PETS_SMALL
     family_size_min: 1,
-    family_size_max: 2,
+    family_size_max: 2
   },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler', 'gewobag'],
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
     ohnemakler: {
       name: 'Ohne-makler.net',
       url: 'https://www.ohne-makler.net/',
-      logo: 'https://www.ohne-makler.net/static/img/logo-dark%402x.png',
+      logo: 'https://www.ohne-makler.net/static/img/logo-dark%402x.png'
     },
     gewobag: {
       name: 'Gewobag',
       url: 'https://www.gewobag.de/',
-      logo: 'APP_URL/img/gewobag.png',
-    },
+      logo: 'APP_URL/img/gewobag.png'
+    }
   },
+  REQUIRED_INCOME_PROOFS_COUNT: 3,
   VALID_INCOME_PROOFS_PERIOD: 4,
   MATCH_PERCENT_PASS: 40,
   GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL: ' wohnungshelden@breeze4me.net',
@@ -1226,7 +1227,7 @@ Estates: [ESTATES]
     { level: 'E', value: 160 },
     { level: 'F', value: 200 },
     { level: 'G', value: 250 },
-    { level: 'H', value: 250 },
+    { level: 'H', value: 250 }
   ],
 
   ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
@@ -1234,16 +1235,16 @@ Estates: [ESTATES]
   ESTATE_SYNC_TITLE_TEMPLATES: {
     germany: {
       key: 'rooms_number Zimmer area m² apartmentType in city',
-      lang: 'de',
+      lang: 'de'
     },
     deutschland: {
       key: 'rooms_number Zimmer area m² apartmentType in city',
-      lang: 'de',
+      lang: 'de'
     },
     others: {
       key: 'rooms_number Rooms area m² apartmentType in city',
-      lang: 'en',
-    },
+      lang: 'en'
+    }
   },
   THIRD_PARTY_PUBLISHERS: ['immowelt', 'immobilienscout-24', 'ebay-kleinanzeigen'],
   ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT: 'immowelt',
@@ -1265,7 +1266,7 @@ Estates: [ESTATES]
     development: 'https://development.d2x826avxkg7om.amplifyapp.com',
     staging: 'https://staging.d2x826avxkg7om.amplifyapp.com',
     preprod: 'https://preprod.d2x826avxkg7om.amplifyapp.com',
-    production: 'https://master.d2x826avxkg7om.amplifyapp.com',
+    production: 'https://master.d2x826avxkg7om.amplifyapp.com'
   },
 
   LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT: 'Landlord Request to Publish an Estate',
@@ -1326,7 +1327,7 @@ Estates: [ESTATES]
     development: 'https://api-dev-new.breeze4me.de/api/v1/estate-sync-is24',
     staging: 'https://api-staging.breeze4me.de/api/v1/estate-sync-is24',
     preprod: 'https://api-preprod.breeze4me.de/api/v1/estate-sync-is24',
-    production: 'https://api.breeze4me.de/api/v1/estate-sync-is24',
+    production: 'https://api.breeze4me.de/api/v1/estate-sync-is24'
   },
 
   WEB_APP_URL: {
@@ -1334,13 +1335,13 @@ Estates: [ESTATES]
     development: 'https://app-dev.breeze4me.de',
     staging: 'https://app-staging.breeze4me.de',
     preprod: 'https://app-preprod.breeze4me.de',
-    production: 'https://app.breeze4me.de',
+    production: 'https://app.breeze4me.de'
   },
 
   COUNTRIES: [
     { country: 'Germany', other_name: 'Deutschland', country_code: 'de' },
     { country: 'Austria', other_name: 'Österreich', country_code: 'at' },
-    { country: 'Switzerland', other_name: 'Schweiz', country_code: 'ch' },
+    { country: 'Switzerland', other_name: 'Schweiz', country_code: 'ch' }
   ],
 
   RENT_DURATION_LONG: 'long',
@@ -1355,7 +1356,7 @@ Estates: [ESTATES]
   MARKETPLACE_LIST: {
     immowelt: 'landlord.web.my-properties.txt_immowelt',
     'immobilienscout-24': 'landlord.web.my-properties.txt_immobilienscout24',
-    'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen',
+    'ebay-kleinanzeigen': 'landlord.web.my-properties.txt_ebaykleinanzeigen'
   },
 
   SHORTENURL_LENGTH: 10,
@@ -1402,7 +1403,7 @@ Estates: [ESTATES]
     FITTED_KITCHEN: 'fitted_kitchen',
     BARRIER_FREE: 'landlord.property.details.building_amenities.barrier_free',
     ELEVATOR: 'elevator',
-    BALCONY: 'apt_balcony',
+    BALCONY: 'apt_balcony'
   },
   UNIT_SHEET: 1,
   BUILDING_SHEET: 2,
@@ -1415,7 +1416,7 @@ Estates: [ESTATES]
   IS24_PUBLISHING_STATUS_NO_STATUS: 0,
   IS24_PUBLISHING_STATUS_INIT: 1,
   IS24_PUBLISHING_STATUS_POSTED: 2,
-  IS24_PUBLISHING_STATUS_PUBLISHED: 3,
+  IS24_PUBLISHING_STATUS_PUBLISHED: 3
 }
 
 module.exports = constants
