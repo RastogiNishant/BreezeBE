@@ -1875,6 +1875,12 @@ class EstateService {
       .select('estates.*')
       .withCount('knocked')
       .select(Database.raw(`_m.prospect_score AS match`))
+      .select(
+        Database.raw(
+          'CAST(COALESCE(estates.rooms_number, 0) + COALESCE(estates.bedrooms_number, 0) + COALESCE(estates.bathrooms_number, 0) as INTEGER) as rooms_max'
+        )
+      )
+      .select(Database.raw('1 as rooms_min'))
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
           .onIn('_m.user_id', [userId])
@@ -1954,6 +1960,7 @@ class EstateService {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
+
     if (tenant.isActive()) {
       query = this.getActiveMatchesQuery({ userId, build_id })
     } else {
@@ -2435,20 +2442,20 @@ class EstateService {
   }
 
   static async landlordTenantDetailInfo(user_id, estate_id, tenant_id) {
-      return Estate.query()
-        .select(['estates.*', '_m.share', '_m.status'])
-        .with('user')
-        .innerJoin({ _m: 'matches' }, function () {
-          this.on('_m.estate_id', 'estates.id').on('_m.user_id', tenant_id)
-          //.on('_m.status', MATCH_STATUS_FINISH)
-        })
-        .leftJoin({ _mb: 'members' }, function () {
-          this.on('_mb.user_id', '_m.user_id')
-        })
-        .where('estates.id', estate_id)
-        .where('estates.user_id', user_id)
-        .orderBy('_mb.id')
-        .first()
+    return Estate.query()
+      .select(['estates.*', '_m.share', '_m.status'])
+      .with('user')
+      .innerJoin({ _m: 'matches' }, function () {
+        this.on('_m.estate_id', 'estates.id').on('_m.user_id', tenant_id)
+        //.on('_m.status', MATCH_STATUS_FINISH)
+      })
+      .leftJoin({ _mb: 'members' }, function () {
+        this.on('_mb.user_id', '_m.user_id')
+      })
+      .where('estates.id', estate_id)
+      .where('estates.user_id', user_id)
+      .orderBy('_mb.id')
+      .first()
   }
 
   /**
@@ -3567,7 +3574,9 @@ class EstateService {
         from,
         to
       )
+      console.log('thirdPartyOffers', thirdPartyOffers.length)
       estates = [...estates, ...thirdPartyOffers]
+      console.log('estates', estates.length)
     }
 
     return {
