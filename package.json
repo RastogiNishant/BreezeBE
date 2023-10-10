@@ -18,7 +18,7 @@
     "start-dev": "NODE_OPTIONS='--trace-warnings --max-old-space-size=8192' nodemon --ignore 'tmp/*.*' -e ts,js server.ts",
     "start:track": "NODE_OPTIONS='--trace-warnings --max-old-space-size=8192' nodemon -e ts,js server.ts",
     "dev": "DEBUG=query DEV=true adonis serve --dev",
-    "dev:win10": "set NO_LOCALIZATION_PULL=true && set DEBUG=query && set DEV=true && adonis serve --dev",
+    "dev:win10": "set NO_LOCALIZATION_PULL=true && set DEBUG=query && set DEV=true && nodemon -e ts,js server.ts --dev",
     "test": "NODE_ENV=test ts-node ace test",
     "ace": "ts-node ace",
     "clear": "ts-node ace app:clear",
