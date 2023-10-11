@@ -89,6 +89,7 @@ const INVITE_CODE_STRING_LENGTH = 8
 
 const {
   exceptions: {
+    ERROR_TENANT_NOT_MATCH_WITH_ESTATE,
     ESTATE_NOT_EXISTS,
     SOME_IMAGE_NOT_EXIST,
     WRONG_PARAMS,
@@ -236,12 +237,16 @@ class EstateController {
         estate_id,
         tenant_id
       )
+
+      if (!landlord) {
+        throw new HttpException(ERROR_TENANT_NOT_MATCH_WITH_ESTATE, 422)
+      }
+
       let tenant = await TenantService.getTenantWithCertificates(tenant_id)
       let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
 
-      if (
-        !landlord.toJSON().share &&
+      if (!landlord.toJSON().share &&
         landlord.toJSON().is_not_show &&
         landlord.toJSON().status !== MATCH_STATUS_FINISH
       ) {
@@ -250,7 +255,6 @@ class EstateController {
         )
         tenant = tenant.toJSON({ isShort: true })
       }
-
       const result = {
         ...landlord.toJSON(),
         company: company,
