@@ -16,12 +16,16 @@ class UnitCategory extends Model {
       'rent',
       'income_level',
       'household_size',
-      'property_id',
+      'property_id'
     ]
   }
 
   estates() {
     this.hasMany('App/Models/Estate', 'id', 'unit_category_id').whereNot('status', STATUS_DELETE)
+  }
+
+  building() {
+    this.belongsTo('App/Models/Building', 'build_id', 'id')
   }
 }
 

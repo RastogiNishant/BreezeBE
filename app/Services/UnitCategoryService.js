@@ -8,7 +8,7 @@ const Promise = require('bluebird')
 const {
   IS24_PUBLISHING_STATUS_INIT,
   IS24_PUBLISHING_STATUS_POSTED,
-  IS24_PUBLISHING_STATUS_PUBLISHED,
+  IS24_PUBLISHING_STATUS_PUBLISHED
 } = require('../constants')
 
 class UnitCategoryService {
@@ -102,6 +102,14 @@ class UnitCategoryService {
         .where('id', buildingId)
         .update({ is24_publish_status: IS24_PUBLISHING_STATUS_PUBLISHED })
     }
+  }
+
+  static async getAllByUserId(user_id) {
+    const categories = await UnitCategory.query()
+      .leftJoin('buildings', 'unit_categories.build_id', 'buildings.id')
+      .where('buildings.user_id', user_id)
+      .fetch()
+    return categories.toJSON() || []
   }
 }
 
