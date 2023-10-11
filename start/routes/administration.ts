@@ -100,6 +100,12 @@ export const administrationRoutes = {
       middleware: ['auth:jwtAdministrator']
     }
   },
+  '/utilities/estates/:id/percent': {
+    [HTTP_METHODS.GET]: {
+      controller: 'Admin/AppController.calculateEstatePercent',
+      middleware: ['auth:jwtAdministrator', 'valid:Id']
+    }
+  },
   //feature (Controllers should be moved to app/Controllers/Http/Admin)
   '/feature/': {
     [HTTP_METHODS.POST]: {

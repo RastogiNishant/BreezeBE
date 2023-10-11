@@ -903,6 +903,18 @@
     "handler": "Admin/UserController.updateUser"
   },
   {
+    "route": "/api/v1/administration/utilities/estates/:id/percent",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/AppController.calculateEstatePercent"
+  },
+  {
     "route": "/api/v1/administration/utilities/matchscore/:id/:estate_id",
     "method": [
       "HEAD",
