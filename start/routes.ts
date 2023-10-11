@@ -1,7 +1,9 @@
 'use strict'
 
-import { apiIndexRoutes, indexRoutes } from './routes/index'
 import { generateAdonisRoutes } from './routes/_helper'
+import { apiIndexRoutes, indexRoutes } from './routes/index'
+import { administrationRoutes } from './routes/administration'
+import { landlordRoutes } from './routes/landlord'
 
 const Route = use('Route')
 
@@ -9,6 +11,8 @@ const API_BASE = '/api/v1'
 
 generateAdonisRoutes(indexRoutes)
 generateAdonisRoutes(apiIndexRoutes, `${API_BASE}`)
+generateAdonisRoutes(administrationRoutes, `${API_BASE}/administration`)
+generateAdonisRoutes(landlordRoutes, `${API_BASE}/landlord`)
 
 /**
  * refactor progressed until here, this file should not contain route definitions, routes
@@ -19,192 +23,6 @@ generateAdonisRoutes(apiIndexRoutes, `${API_BASE}`)
  * e.g. estates.rooms.ts for all room related endpoints
  */
 
-/** New Administrator Endpoints */
-Route.group(() => {
-  //acivation
-  Route.put('/activation', 'Admin/UserController.updateActivationStatus').middleware([
-    'auth:jwtAdministrator',
-    'valid:UpdateUserValidationStatus'
-  ])
-
-  //verify users
-  Route.post('/verifyUsers', 'Admin/UserController.verifyUsers').middleware([
-    'auth:jwtAdministrator',
-    'valid:Ids,UserVerify'
-  ])
-
-  //users
-  Route.get('/users/', 'Admin/UserController.getUsers').middleware([
-    'auth:jwtAdministrator',
-    'pagination'
-  ])
-  Route.get('/users/:user_id', 'Admin/UserController.getUser').middleware(['auth:jwtAdministrator']) //this is missing on Admin/UserController
-  Route.post('/users/:user_id', 'Admin/UserController.updateUser').middleware([
-    'auth:jwtAdministrator'
-  ]) //this is missing on Admin/UserController. Note: this should be **put**
-
-  //feature (Controllers should be moved to app/Controllers/Http/Admin)
-  Route.post('/feature/', 'FeatureController.createFeature').middleware([
-    'auth:jwtAdministrator',
-    'valid:CreateFeature'
-  ])
-  Route.put('/feature/', 'FeatureController.updateFeature').middleware([
-    'auth:jwtAdministrator',
-    'valid:CreateFeature,Id'
-  ])
-  Route.delete('/feature/', 'FeatureController.removeFeature').middleware([
-    'auth:jwtAdministrator',
-    'valid:Ids'
-  ])
-
-  Route.post('/image/compress', 'ImageController.compressImage').middleware([
-    'auth:jwtAdministrator'
-  ])
-  Route.post('/image/check', 'ImageController.checkFormat').middleware(['auth:jwtAdministrator'])
-
-  Route.post('/image/compress_pdf', 'ImageController.testCompressPDF').middleware(['auth:jwt'])
-
-  //admin plan
-  //Controllers should be moved to app/Controllers/Http/Admin
-  Route.get('/plan/:id', 'PlanController.getPlan').middleware(['auth:jwtAdministrator', 'valid:Id'])
-  Route.get('/plan/', 'PlanController.getPlanAll').middleware(['auth:jwtAdministrator'])
-  Route.post('/plan/', 'PlanController.createPlan').middleware([
-    'auth:jwtAdministrator',
-    'valid:CreatePlan'
-  ])
-  Route.put('/plan/:id', 'PlanController.updatePlan').middleware([
-    'auth:jwtAdministrator',
-    'valid:CreatePlan,Id'
-  ])
-  Route.delete('/plan/', 'PlanController.deletePlan').middleware([
-    'auth:jwtAdministrator',
-    'valid:Ids'
-  ])
-
-  //admin authentication
-  Route.post('/auth/login', 'Admin/AuthController.login').middleware(['guest', 'valid:AdminLogin'])
-
-  Route.get('/me', 'Admin/AuthController.me').middleware(['auth:jwtAdministrator'])
-
-  Route.get('/landlords', 'Admin/UserController.getLandlords').middleware([
-    'auth:jwtAdministrator',
-    'valid:Pagination,AdminGetsLandlords'
-  ])
-
-  Route.post('/users', 'Admin/UserController.addUser').middleware([
-    'auth:jwtAdministrator',
-    'valid:AdminAddUser'
-  ])
-
-  Route.get('/predefinedMessage/:id', 'Admin/PredefinedMessageController.get').middleware([
-    'auth:jwtAdministrator',
-    'valid:Id'
-  ])
-  Route.get('/predefinedMessage', 'Admin/PredefinedMessageController.getAll').middleware([
-    'auth:jwtAdministrator'
-  ])
-  Route.post('/predefinedMessage', 'Admin/PredefinedMessageController.create').middleware([
-    'auth:jwtAdministrator',
-    'valid:CreatePredefinedMessage'
-  ])
-  Route.put('/predefinedMessage/:id', 'Admin/PredefinedMessageController.update').middleware([
-    'auth:jwtAdministrator',
-    'valid:CreatePredefinedMessage,Id'
-  ])
-  Route.delete('/predefinedMessage/:id', 'Admin/PredefinedMessageController.delete').middleware([
-    'auth:jwtAdministrator',
-    'valid:Id'
-  ])
-
-  Route.get(
-    '/predefinedMessageChoice/:id',
-    'Admin/PredefinedMessageChoiceController.get'
-  ).middleware(['auth:jwtAdministrator', 'valid:Id'])
-  Route.get(
-    '/predefinedMessageChoice',
-    'Admin/PredefinedMessageChoiceController.getAll'
-  ).middleware(['auth:jwtAdministrator', 'valid:PredefinedMessageChoiceFilter'])
-  Route.post(
-    '/predefinedMessageChoice',
-    'Admin/PredefinedMessageChoiceController.create'
-  ).middleware(['auth:jwtAdministrator', 'valid:CreatePredefinedMessageChoice'])
-  Route.put(
-    '/predefinedMessageChoice/:id',
-    'Admin/PredefinedMessageChoiceController.update'
-  ).middleware(['auth:jwtAdministrator', 'valid:CreatePredefinedMessageChoice,Id'])
-  Route.delete(
-    '/predefinedMessageChoice/:id',
-    'Admin/PredefinedMessageChoiceController.delete'
-  ).middleware(['auth:jwtAdministrator', 'valid:Id'])
-
-  //estates
-  Route.get('/estates', 'Admin/PropertyController.getProperties').middleware([
-    'auth:jwtAdministrator',
-    'pagination'
-  ])
-  Route.put('/estates/publish-status', 'Admin/PropertyController.updatePublishStatus').middleware([
-    'auth:jwtAdministrator',
-    'valid:AdminUpdatePublishStatus'
-  ])
-  Route.get('/estates/:id/images', 'Admin/PropertyController.getAllPropertyImages').middleware([
-    'auth:jwtAdministrator',
-    'valid:Id'
-  ])
-  Route.get('/estates/:id', 'Admin/PropertyController.getSingle').middleware([
-    'auth:jwtAdministrator',
-    'valid:Id'
-  ])
-  Route.get('/app/tenant', 'Admin/AppController.createTenantLink').middleware([
-    'auth:jwtAdministrator'
-  ])
-
-  Route.post('/notifications', 'Admin/NotificationController.sendNotification').middleware([
-    'auth:jwtAdministrator'
-  ])
-
-  /** Estate Sync */
-  Route.get('/estate-sync/targets', 'Admin/EstateSyncController.getTargets').middleware([
-    'auth:jwtAdministrator'
-  ])
-
-  Route.post('/estate-sync/targets', 'Admin/EstateSyncController.addTarget').middleware([
-    'auth:jwtAdministrator',
-    'valid:AddEstateSyncTarget'
-  ])
-
-  Route.delete('/estate-sync/targets/:id', 'Admin/EstateSyncController.deleteTarget').middleware([
-    'auth:jwtAdministrator',
-    'valid:Id'
-  ])
-
-  Route.post('/estate-sync', 'Admin/EstateSyncController.initialize').middleware([
-    'auth:jwtAdministrator',
-    'valid:InitializeEstateSync'
-  ])
-
-  Route.get('/prospects', 'Admin/UserController.getProspects').middleware(['auth:jwtAdministrator'])
-  Route.get('/prospects/:id', 'Admin/UserController.getProspect').middleware([
-    'auth:jwtAdministrator',
-    'valid:Id'
-  ])
-
-  Route.get(
-    '/utilities/matchscore/:id/:estate_id',
-    'Admin/AppController.calculateMatchScore'
-  ).middleware(['auth:jwtAdministrator', 'valid:Id,EstateId'])
-
-  Route.get(
-    '/utilities/estates/:id/percent',
-    'Admin/AppController.calculateEstatePercent'
-  ).middleware(['auth:jwtAdministrator', 'valid:Id'])
-
-  Route.post('/buildings', 'Admin/PropertyController.publishBuilding').middleware([
-    'auth:jwtAdministrator',
-    'valid:AdminPublishBuilding'
-  ])
-}).prefix('api/v1/administration')
-
-/** End administration */
 Route.get(
   '/api/v1/estate-by-hash/:hash',
   'EstateViewInvitationController.getEstateByHash'
@@ -245,33 +63,6 @@ Route.put('/api/v1/updateDeviceToken', 'AccountController.updateDeviceToken').mi
   'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
   'valid:DeviceToken'
 ])
-
-//Payment Methods
-Route.group(() => {
-  Route.post('', 'PaymentMethodController.post')
-  Route.get('', 'PaymentMethodController.get')
-  Route.put('', 'PaymentMethodController.update')
-})
-  .prefix('/api/v1/landlord/paymentMethod')
-  .middleware(['auth:jwtLandlord'])
-
-//Billing Address
-Route.group(() => {
-  Route.post('', 'BillingAddressController.addBillingAddress')
-  Route.get('', 'BillingAddressController.getUserBillingAddress')
-  Route.put('', 'BillingAddressController.updateBillingAddress')
-})
-  .prefix('/api/v1/landlord/billingAddress')
-  .middleware(['auth:jwtLandlord'])
-
-//Payment
-Route.group(() => {
-  Route.post('', 'PaymentController.processPayment')
-  Route.get('', 'PaymentController.getUserPayments')
-  Route.post('/paypal', 'PaymentController.processPaypal')
-})
-  .prefix('/api/v1/landlord/payment')
-  .middleware(['auth:jwtLandlord'])
 
 //Housekepper
 Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
@@ -1111,21 +902,6 @@ Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary'
   'auth:jwtLandlord'
 ])
 
-// Landlord specific routes
-Route.group(() => {
-  Route.get('/visit', 'LandlordController.getLordVisits')
-  Route.post('/activate', 'LandlordController.activate')
-  Route.get('/invite-to-view-estate', 'EstateController.getInviteToView').middleware([
-    'LandlordOwnsThisEstate'
-  ])
-  Route.post('/invite-to-view-estate', 'EstateController.createInviteToViewCode').middleware([
-    'valid:LandlordInviteToView',
-    'LandlordOwnsThisEstate'
-  ])
-})
-  .prefix('/api/v1/landlord')
-  .middleware(['auth:jwtLandlord'])
-
 Route.group(() => {
   Route.post('/', 'FeedbackController.create').middleware([
     'auth:jwt,jwtLandlord',
@@ -1230,11 +1006,6 @@ Route.group(() => {
 })
   .middleware(['auth:jwtLandlord'])
   .prefix('api/v1/notes')
-
-Route.get('/api/v1/landlord/:id/company', 'CompanyController.getCompanyByLandlord').middleware([
-  'auth:jwt',
-  'valid:Id'
-])
 
 /**
  * Landlord company contacts manage
