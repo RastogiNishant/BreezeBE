@@ -193,7 +193,15 @@ Route.group(() => {
     'Admin/AppController.calculateMatchScore'
   ).middleware(['auth:jwtAdministrator', 'valid:Id,EstateId'])
 
-  Route.post('/buildings', 'Admin/PropertyController.publishBuilding').middleware(['valid:Id'])
+  Route.get(
+    '/utilities/estates/:id/percent',
+    'Admin/AppController.calculateEstatePercent'
+  ).middleware(['auth:jwtAdministrator', 'valid:Id'])
+
+  Route.post('/buildings', 'Admin/PropertyController.publishBuilding').middleware([
+    'auth:jwtAdministrator',
+    'valid:AdminPublishBuilding'
+  ])
 }).prefix('api/v1/administration')
 
 /** End administration */
