@@ -13,19 +13,15 @@ class PaymentMethodService {
    *s
    */
   static async update(paymentMethodId, userId, data) {
-
     const paymentMethod = await PaymentMethod.query()
-      .where({ user_id: userId,  id: paymentMethodId})
+      .where({ user_id: userId, id: paymentMethodId })
       .first()
     if (!paymentMethod) {
       throw new AppException('PaymentMethod does not exists')
     }
-    await PaymentMethod
-      .query()
-      .where('user_id', userId)
-      .update({ is_primary: false })
+    await PaymentMethod.query().where('user_id', userId).update({ is_primary: false })
 
-    await paymentMethod.updateItem({'is_primary': true})
+    await paymentMethod.updateItem({ is_primary: true })
 
     return paymentMethod
   }

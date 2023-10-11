@@ -25,7 +25,7 @@ class EstatePermissionController {
           message: `These ids don't have ${
             role === ROLE_PROPERTY_MANAGER ? 'Property manager' : 'landlord'
           } roles`,
-          ids: exceptIds,
+          ids: exceptIds
         }
         throw new HttpException(data, 400)
       }
@@ -76,7 +76,7 @@ class EstatePermissionController {
 
       const landLords = (await UserService.getByEmailWithRole(emails, ROLE_LANDLORD)).toJSON({
         isOwner: true,
-        publicOnly: true,
+        publicOnly: true
       })
 
       const exceptIds = difference(
@@ -87,7 +87,7 @@ class EstatePermissionController {
       if (exceptIds && exceptIds.length) {
         const data = {
           message: "These emails don't have landlord roles",
-          ids: exceptIds,
+          ids: exceptIds
         }
         throw new HttpException(data, 400)
       }
@@ -199,7 +199,7 @@ class EstatePermissionController {
     const { page, limit, ...params } = request.all()
     const filter = {
       property_manager_id: auth.user.id,
-      ...params,
+      ...params
     }
     const result = await EstatePermission.query()
       .where(function () {
@@ -218,7 +218,7 @@ class EstatePermissionController {
     const { page, limit, ...params } = request.all()
     const filter = {
       landlord_id: auth.user.id,
-      ...params,
+      ...params
     }
     const result = await await EstatePermission.query()
       .where(function () {
@@ -229,7 +229,7 @@ class EstatePermissionController {
       .with('propertyManager')
       .orderBy('id', 'desc')
       .paginate(page, limit)
-      
+
     response.res(result)
   }
 

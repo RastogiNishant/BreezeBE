@@ -7,7 +7,7 @@ class PdfRentalController {
   async generatePdf({ request, auth, response }) {
     const tenantData = {
       tenant: await TenantService.getTenantWithCertificates(auth.user.id),
-      members: await MemberService.getMembers(auth.user.id, true),
+      members: await MemberService.getMembers(auth.user.id, true)
     }
 
     const pdfServerPort = (parseInt(process.env.PORT) || 3000) + 1
@@ -18,9 +18,9 @@ class PdfRentalController {
       { data: tenantData },
       {
         headers: {
-          'Accept-Language': auth.user.lang,
+          'Accept-Language': auth.user.lang
         },
-        responseType: 'stream',
+        responseType: 'stream'
       }
     )
 

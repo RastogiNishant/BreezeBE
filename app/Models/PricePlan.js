@@ -13,7 +13,7 @@ class PricePlan extends Model {
       'description',
       'mode',
       'status',
-      'type',
+      'type'
     ]
   }
 }

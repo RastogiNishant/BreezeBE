@@ -12,7 +12,7 @@ class Bill extends Model {
       'invoice_id',
       'bill_id', // subscription_item in invoice.created. it will be used to create an invoice again for usage
       'price_id',
-      'status',
+      'status'
     ]
   }
 }

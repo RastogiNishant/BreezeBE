@@ -9,10 +9,10 @@ const {
   BASIC_LANDLORD_MEMBER,
   BASIC_PLAN_MIN_CONNECT_COUNT,
   PREMIUM_PLAN_MIN_CONNECT_COUNT,
-  MEMBER_TRIAL_PERIOD,
+  MEMBER_TRIAL_PERIOD
 } = require('../constants')
 const {
-  exceptions: { ERROR_PREMIUM_MEMBER_PLAN_SELECT, ERROR_PLAN_SELECT },
+  exceptions: { ERROR_PREMIUM_MEMBER_PLAN_SELECT, ERROR_PLAN_SELECT }
 } = require('../exceptions')
 
 class UserNeedPlan {

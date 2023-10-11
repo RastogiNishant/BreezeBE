@@ -18,7 +18,7 @@ class CreateAdmin extends Command {
     admin.merge({
       password,
       email,
-      fullname,
+      fullname
     })
     await admin.save()
   }

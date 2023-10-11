@@ -9,7 +9,7 @@ const { id } = require('../Libs/schemas.js')
 const {
   TIMESLOT_STATUS_CONFIRM,
   TIMESLOT_STATUS_REJECT,
-  TIMESLOT_STATUS_DELAY,
+  TIMESLOT_STATUS_DELAY
 } = require('../constants')
 
 const delay = yup.number().integer().positive().max(360)
@@ -25,7 +25,7 @@ class UpdateVisitStatusLord extends Base {
       delay: yup.lazy((value, values) => {
         const status = get(values, 'parent.status')
         return status === TIMESLOT_STATUS_DELAY ? delay.required() : delay.nullable()
-      }),
+      })
     })
 }
 

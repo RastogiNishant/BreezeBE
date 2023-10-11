@@ -9,7 +9,7 @@ class MatchMoveToNewEstate extends Base {
     yup.object().shape({
       estate_id: id.required(),
       user_id: id.required(),
-      new_estate_id: id.required(),
+      new_estate_id: id.required()
     })
 }
 

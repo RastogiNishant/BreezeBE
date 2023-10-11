@@ -7,7 +7,7 @@ const Base = require('./Base')
 class ExportExcel extends Base {
   static schema = () =>
     yup.object().shape({
-      exclude_online: yup.boolean(),
+      exclude_online: yup.boolean()
     })
 }
 

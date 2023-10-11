@@ -20,12 +20,12 @@ const {
   GENDER_NEUTRAL,
   OUTSIDE_LANDLORD_INVITE_TYPE,
   OUTSIDE_TENANT_INVITE_TYPE,
-  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE
 } = require('../constants')
 
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID },
+  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID }
 } = require('../exceptions')
 
 class SignUp extends Base {
@@ -57,7 +57,7 @@ class SignUp extends Base {
               .matches(
                 /^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/,
                 getExceptionMessage('address', MATCH)
-              ),
+              )
           }),
           transport: yup
             .string()
@@ -72,7 +72,7 @@ class SignUp extends Base {
           time: yup
             .number()
             .integer()
-            .oneOf([15, 30, 45, 60], getExceptionMessage('time', OPTION, `[15, 30, 45, 60]`)),
+            .oneOf([15, 30, 45, 60], getExceptionMessage('time', OPTION, `[15, 30, 45, 60]`))
         })
         .nullable(),
       password: yup
@@ -142,7 +142,7 @@ class SignUp extends Base {
         .oneOf([
           OUTSIDE_LANDLORD_INVITE_TYPE,
           OUTSIDE_TENANT_INVITE_TYPE,
-          OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+          OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE
         ]),
       ip: yup
         .string()
@@ -156,8 +156,8 @@ class SignUp extends Base {
         city: yup.string().nullable(),
         postal: yup.string().nullable(),
         latitude: yup.string().nullable(),
-        longitude: yup.string().nullable(),
-      }),
+        longitude: yup.string().nullable()
+      })
     })
 }
 

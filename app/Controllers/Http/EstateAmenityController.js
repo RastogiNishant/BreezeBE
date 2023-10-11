@@ -10,7 +10,7 @@ const {
   STATUS_DELETE,
   ESTATE_CUSTOM_AMENITIES_MAX_COUNT,
   ESTATE_CUSTOM_AMENITIES_EXCEED_MAX_ERROR,
-  ESTATE_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH,
+  ESTATE_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH
 } = require('../../constants')
 const { reverse } = require('lodash')
 
@@ -95,7 +95,7 @@ class EstateAmenityController {
           estate_id,
           option_id,
           status: STATUS_ACTIVE,
-          location,
+          location
         })
         await newEstateAmenity.save(trx)
         newEstateAmenityId = newEstateAmenity.id
@@ -112,7 +112,7 @@ class EstateAmenityController {
       return response.res({
         newEstateAmenityId,
         total: amenities.length,
-        amenities: amenities,
+        amenities: amenities
       })
     } catch (err) {
       await trx.rollback()

@@ -9,7 +9,7 @@ class MatchAction extends Base {
     yup.object().shape({
       estate_id: id.required(),
       user_id: id.required(),
-      action: yup.string().oneOf(['like', 'dislike', 'knock']).required(),
+      action: yup.string().oneOf(['like', 'dislike', 'knock']).required()
     })
 }
 

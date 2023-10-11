@@ -10,7 +10,7 @@ class Notifications {
   constructor(settings, Sentry) {
     this.Sentry = Sentry
     admin.initializeApp({
-      credential: admin.credential.cert(settings),
+      credential: admin.credential.cert(settings)
     })
   }
 
@@ -66,7 +66,7 @@ class Notifications {
       //contentAvailable: true,
       ttl: 30,
       priority: 'high',
-      topic: 'com.breeze',
+      topic: 'com.breeze'
     }
 
     return admin

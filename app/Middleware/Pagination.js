@@ -9,7 +9,7 @@ const { wrapValidationError } = require('../Libs/utils.js')
 const schema = yup.object().shape({
   page: yup.number().positive().default(1),
   size: yup.number().positive().default(PAGE_SIZE),
-  order: yup.mixed().default('id'),
+  order: yup.mixed().default('id')
 })
 
 class Pagination {
@@ -17,7 +17,7 @@ class Pagination {
     const result = await schema
       .validate(request.only(['page', 'size', 'order']), {
         abortEarly: false,
-        stripUnknown: true,
+        stripUnknown: true
       })
       .catch((e) => {
         throw wrapValidationError(e)

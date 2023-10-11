@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED },
+  exceptionKeys: { REQUIRED }
 } = require('../exceptions')
 
 class PostImportLastActivity extends Base {
@@ -16,7 +16,7 @@ class PostImportLastActivity extends Base {
       action: yup
         .string()
         .oneOf(['import', 'export'])
-        .required(getExceptionMessage('action', REQUIRED)),
+        .required(getExceptionMessage('action', REQUIRED))
     })
 }
 

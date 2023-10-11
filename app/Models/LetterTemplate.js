@@ -14,7 +14,7 @@ class LetterTemplate extends Model {
       'created_at',
       'updated_at',
       'status',
-      'greeting_option',
+      'greeting_option'
     ]
   }
 

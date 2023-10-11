@@ -25,7 +25,7 @@ class UserPremiumPlan extends Model {
   }
   plan() {
     return this.belongsTo('App/Models/Plan', 'plan_id', 'id')
-  }  
+  }
 }
 
 module.exports = UserPremiumPlan

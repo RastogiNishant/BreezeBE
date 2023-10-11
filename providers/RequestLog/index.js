@@ -22,7 +22,7 @@ var grayLog = new graylog2.graylog({
   // (optional, default: os.hostname())
   facility: 'Node.js', // the facility for these log messages
   // (optional, default: "Node.js")
-  bufferSize: 1350, // max UDP packet size, should never exceed the
+  bufferSize: 1350 // max UDP packet size, should never exceed the
   // MTU of your system (optional, default: 1400)
 })
 
@@ -158,7 +158,7 @@ class Logger {
           headers,
           ip,
           user,
-          res,
+          res
         })
       } catch (e) {
         console.log(e)

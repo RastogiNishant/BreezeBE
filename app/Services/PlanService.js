@@ -9,7 +9,7 @@ class PlanService {
   static async createPlan(data, trx) {
     return await Plan.createItem(
       {
-        ...data,
+        ...data
       },
       trx
     )
@@ -23,7 +23,7 @@ class PlanService {
     return await Plan.query()
       .where({ id: data.id })
       .update({
-        ...data,
+        ...data
       })
       .transacting(trx)
   }

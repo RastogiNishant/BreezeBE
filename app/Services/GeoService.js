@@ -12,7 +12,7 @@ const {
   POINT_TYPE_ZONE,
   TRANSPORT_TYPE_CAR,
   TRANSPORT_TYPE_WALK,
-  TRANSPORT_TYPE_SOCIAL,
+  TRANSPORT_TYPE_SOCIAL
 } = require('../constants')
 
 const MAX_TIME_DIST = 3600
@@ -158,7 +158,7 @@ class GeoService {
         lon,
         type: POINT_TYPE_ZONE,
         dist_type: distType,
-        dist_min: distMin,
+        dist_min: distMin
       })
       .first()
 
@@ -175,7 +175,7 @@ class GeoService {
       dist_min: distMin,
       type: POINT_TYPE_ZONE,
       data: { data: polygon },
-      zone: GeoService.getPointsQuery(polygon),
+      zone: GeoService.getPointsQuery(polygon)
     })
     await newPoint.save()
 
@@ -231,7 +231,7 @@ class GeoService {
           { name: getAddr(items[0].name, buildNum, zip), last: false },
           ...items[0].zip
             .map((i) => ({ name: getAddr(items[0].name, buildNum, i, 'Berlin'), last: true }))
-            .slice(0, size - 1),
+            .slice(0, size - 1)
         ]
       }
     }
@@ -258,7 +258,7 @@ class GeoService {
       items.reduce(
         (n, v) => ({
           ...n,
-          [v.name]: true,
+          [v.name]: true
         }),
         {}
       )

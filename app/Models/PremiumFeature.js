@@ -23,9 +23,9 @@ class PremiumFeature extends Model {
   /**
    *
    */
-   static get traits() {
+  static get traits() {
     return ['NoTimestamp']
-  }  
+  }
 }
 
 module.exports = PremiumFeature

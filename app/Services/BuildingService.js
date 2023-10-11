@@ -7,7 +7,7 @@ const EstateFilters = require('../Classes/EstateFilters')
 const Filter = require('../Classes/Filter')
 const Database = use('Database')
 const {
-  exceptions: { NO_BUILDING_ID_EXIST },
+  exceptions: { NO_BUILDING_ID_EXIST }
 } = require('../exceptions')
 const { PUBLISH_STATUS_INIT, STATUS_DELETE } = require('../constants')
 class BuildingService {
@@ -169,12 +169,12 @@ class BuildingService {
     const build_id = (buildings || []).map((building) => building.id)
     const estates = await require('./EstateService').getEstatesByUserId({
       user_ids: [user_id],
-      params: { ...params, build_id, isStatusSort: true },
+      params: { ...params, build_id, isStatusSort: true }
     })
 
     buildings = buildings.map((building) => ({
       ...building,
-      estates: (estates?.data || []).filter((estate) => estate.build_id === building.id),
+      estates: (estates?.data || []).filter((estate) => estate.build_id === building.id)
     }))
     return buildings
   }

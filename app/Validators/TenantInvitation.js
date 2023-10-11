@@ -5,7 +5,7 @@ const Base = require('./Base')
 const { id } = require('../Libs/schemas.js')
 const {
   exceptionKeys: { MATCH, MAXLENGTH },
-  getExceptionMessage,
+  getExceptionMessage
 } = require('../exceptions')
 const { phoneSchema } = require('../Libs/schemas.js')
 const {
@@ -14,7 +14,7 @@ const {
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
-  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT
 } = require('../constants')
 
 class TenantInvitation extends Base {
@@ -86,7 +86,7 @@ class TenantInvitation extends Base {
               ESTATE_FLOOR_DIRECTION_STRAIGHT,
               ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
               ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
-              null,
+              null
             ]),
           surname: yup.string().nullable(),
           phone: phoneSchema.nullable(),
@@ -97,10 +97,10 @@ class TenantInvitation extends Base {
             .nullable()
             .when('phone', {
               is: (phone) => !phone,
-              then: yup.string().required(),
-            }),
+              then: yup.string().required()
+            })
         })
-      ),
+      )
     })
 }
 

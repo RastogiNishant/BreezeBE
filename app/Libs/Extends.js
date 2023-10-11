@@ -22,7 +22,7 @@ const extendsRequest = () => {
   Request.macro('uploadImagesS3', async function (files) {
     const fileSettings = {
       types: ['image', 'video'],
-      size: '50mb',
+      size: '50mb'
     }
 
     let resultFiles = {}
@@ -39,7 +39,7 @@ const extendsRequest = () => {
         fileName = fileNameBlocks.join('.')
         resultFiles[requestVarName] = await Drive.disk('s3').put(fileName, file.stream, {
           ACL: 'public-read',
-          ContentType: file.headers['content-type'],
+          ContentType: file.headers['content-type']
         })
       })
     })
@@ -88,5 +88,5 @@ module.exports = {
   extendsValidator,
   extendsRequest,
   extendsResponse,
-  extendsView,
+  extendsView
 }

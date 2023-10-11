@@ -4,7 +4,7 @@ const HttpException = require('../Exceptions/HttpException')
 const { TRANSPORT_TYPE_CAR } = require('../constants')
 const GeoService = use('App/Services/GeoService')
 const {
-  exceptions: { LAT_LON_NOT_PROVIDED },
+  exceptions: { LAT_LON_NOT_PROVIDED }
 } = require('../exceptions')
 
 class PointService {

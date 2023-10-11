@@ -7,7 +7,7 @@ class EstateViewInvitedEmail extends Model {
   estateViewInvite() {
     return this.belongsTo('App/Model/EstateViewInvite', 'estate_view_invite_id', 'id')
   }
-  
+
   static get traits() {
     return ['NoTimestamp']
   }

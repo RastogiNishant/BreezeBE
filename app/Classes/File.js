@@ -41,7 +41,7 @@ class File {
     gif: File.IMAGE_GIF,
     tiff: File.IMAGE_TIFF,
     webp: File.IMAGE_WEBP,
-    heic: File.IMAGE_HEIC,
+    heic: File.IMAGE_HEIC
   }
 
   static SUPPORTED_IMAGE_FORMAT = Object.keys(File.IMAGE_MIME_TYPE)
@@ -50,7 +50,7 @@ class File {
     try {
       const options = {
         width: parseInt(process.env.THUMB_WIDTH || '100'),
-        jpegOptions: { force: true, quality: 90 },
+        jpegOptions: { force: true, quality: 90 }
       }
       const thumbnail = await imageThumbnail(buffer, options)
       return thumbnail
@@ -67,7 +67,7 @@ class File {
 
       const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.pdf`
       await exec({
-        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}`,
+        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}`
       })
       const data = await fsPromise.readFile(outputFileName)
       fsPromise.unlink(outputFileName)
@@ -118,7 +118,7 @@ class File {
 
       let command = `convert ${filePath} ${outputFileName}`
       await exec({
-        cmd: `${command}`,
+        cmd: `${command}`
       })
 
       const data = await fsPromise.readFile(outputFileName)
@@ -161,7 +161,7 @@ class File {
         img_data = await heicConvert({
           buffer: inputBuffer, // the HEIC file buffer
           format: 'JPEG', // output format
-          quality: 0.1, // the jpeg compression quality, between 0 and 1
+          quality: 0.1 // the jpeg compression quality, between 0 and 1
         })
 
         ext = `jpg`
@@ -174,7 +174,7 @@ class File {
 
         if (img_data) {
           img_data = await imagemin.buffer(img_data, {
-            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })],
+            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })]
           })
         } else {
           try {
@@ -182,8 +182,8 @@ class File {
               await imagemin([file.tmpPath], {
                 plugins: [
                   imageminPngquant({ quality: [0.6, 0.8] }),
-                  imageminMozjpeg({ quality: 80 }),
-                ],
+                  imageminMozjpeg({ quality: 80 })
+                ]
               })
             )?.[0]?.data
           } catch (e) {
@@ -217,13 +217,13 @@ class File {
           fileName: filename,
           dir: dir,
           options: options,
-          disk: disk,
+          disk: disk
         })
       }
 
       return {
         filePathName: filePathName,
-        thumbnailFilePathName: thumbnailFilePathName,
+        thumbnailFilePathName: thumbnailFilePathName
       }
     } catch (e) {
       throw new AppException(e, 400)
@@ -300,7 +300,7 @@ class File {
     const saveFile = async ({ field, mime = null, isPublic = true }) => {
       const file = request.file(field, {
         size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
+        extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT
       })
       if (!file) {
         return null
@@ -338,7 +338,7 @@ class File {
                   v.thumbnailFilePathName.length > 1
                     ? v.thumbnailFilePathName
                     : v.thumbnailFilePathName[0],
-                ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0],
+                ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0]
               }
             : n,
         {}
@@ -444,13 +444,13 @@ class File {
       AWS.config.update({
         accessKeyId: Env.get('S3_KEY'),
         secretAccessKey: Env.get('S3_SECRET'),
-        region: Env.get('S3_REGION'),
+        region: Env.get('S3_REGION')
       })
       const s3 = new AWS.S3()
       const params = {
         Bucket: GEWOBAG_FTP_BUCKET,
         Delimiter: '/',
-        Prefix: 'live/',
+        Prefix: 'live/'
       }
       const objects = await s3.listObjects(params).promise()
       if (!objects?.Contents) {
@@ -470,13 +470,13 @@ class File {
           xmls = [...xmls, xml]
           filesLastModified = {
             ...filesLastModified,
-            [objects.Contents[i].Key]: objects.Contents[i].LastModified,
+            [objects.Contents[i].Key]: objects.Contents[i].LastModified
           }
         }
       }
       return {
         xml: xmls,
-        filesLastModified,
+        filesLastModified
       }
     } catch (err) {
       console.log('getGewobagUploadedContent', err)

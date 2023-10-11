@@ -43,7 +43,7 @@ class FillWbs extends Command {
               alpha2: 'de',
               other_name: 'Deutschland',
               city: wbs.city,
-              wbs_link: wbs.wbs_link,
+              wbs_link: wbs.wbs_link
             })
           }
         },

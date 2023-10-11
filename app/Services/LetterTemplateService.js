@@ -22,7 +22,7 @@ class LetterTemplateService {
     let letterTemplate = {
       ...omit(data, ['company_address']),
       user_id: user.id,
-      company_id: user.company_id,
+      company_id: user.company_id
     }
     const files = await this.saveLogoToAWS(request)
     if (files && files.logo) {
@@ -51,7 +51,7 @@ class LetterTemplateService {
 
     const { ...data } = request.all()
     let letterTemplate = {
-      ...omit(data, ['company_address']),
+      ...omit(data, ['company_address'])
     }
 
     const files = await this.saveLogoToAWS(request)
@@ -103,7 +103,7 @@ class LetterTemplateService {
   static async saveLogoToAWS(request) {
     const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
     const files = await File.saveRequestFiles(request, [
-      { field: 'logo', mime: imageMimes, isPublic: true },
+      { field: 'logo', mime: imageMimes, isPublic: true }
     ])
 
     return files

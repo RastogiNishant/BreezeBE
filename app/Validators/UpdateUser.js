@@ -20,7 +20,7 @@ const {
   COMPANY_SIZE_SMALL,
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
-  GENDER_NEUTRAL,
+  GENDER_NEUTRAL
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -34,8 +34,8 @@ const {
     EMAIL,
     MATCH,
     ARRAY,
-    CURRENT_PASSWORD_REQUIRED,
-  },
+    CURRENT_PASSWORD_REQUIRED
+  }
 } = require('../exceptions')
 
 class UpdateUser extends Base {
@@ -49,7 +49,7 @@ class UpdateUser extends Base {
         .max(36, getExceptionMessage('password', MAXLENGTH, 36))
         .when(['email'], {
           is: (email) => !_.isEmpty(email),
-          then: yup.string().required(getExceptionMessage(undefined, CURRENT_PASSWORD_REQUIRED)),
+          then: yup.string().required(getExceptionMessage(undefined, CURRENT_PASSWORD_REQUIRED))
         }),
       file: yup.mixed(),
       sex: yup
@@ -126,13 +126,19 @@ class UpdateUser extends Base {
                 `[${GENDER_MALE},${GENDER_FEMALE},${GENDER_NEUTRAL}, ${GENDER_ANY}]`
               )
             ),
-          full_name: yup.string().min(2).max(255, getExceptionMessage('full_name', MAXLENGTH, 255)),
-          address: yup.string().min(1).max(255, getExceptionMessage('address', MAXLENGTH, 255)),
+          full_name: yup
+            .string()
+            .min(2)
+            .max(255, getExceptionMessage('full_name', MAXLENGTH, 255)),
+          address: yup
+            .string()
+            .min(1)
+            .max(255, getExceptionMessage('address', MAXLENGTH, 255))
         })
         .nullable(),
       show_proofs_of_paid_rent_from_former_landlords: yup
         .boolean()
-        .typeError(getExceptionMessage('show_proofs_of_paid_rent_from_former_landlords', BOOLEAN)),
+        .typeError(getExceptionMessage('show_proofs_of_paid_rent_from_former_landlords', BOOLEAN))
     })
 }
 

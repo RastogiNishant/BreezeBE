@@ -6,7 +6,7 @@ const Base = require('./Base')
 class UserVerify extends Base {
   static schema = () =>
     yup.object().shape({
-      is_verify: yup.boolean().required(),
+      is_verify: yup.boolean().required()
     })
 }
 
