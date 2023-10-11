@@ -1138,11 +1138,12 @@ class UserService {
       if (sendVerification) {
         await UserService.sendConfirmEmail(user, from_web)
         if (role === ROLE_LANDLORD) {
+          const lang = await UserService.getUserLang([user.id])
           const text =
             `New Landlord Account Created:\r\n` +
             `==============================\r\n` +
             `Email: ${email}\r\n` +
-            `Name: Dear Tenant\r\n` +
+            `Name: ${l.get('start.account.verification.salutation', lang)}\r\n` +
             `IP Address: ${ip}\r\n` +
             `IP Based Info:\r\n` +
             ` - City: ${ip_based_info.city || 'Not Specified'}\r\n` +
