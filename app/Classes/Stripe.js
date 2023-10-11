@@ -12,18 +12,18 @@ class Stripe {
     CHARGE_REFUNDED: 'charge.refunded',
     INVOICE_CREATED: 'invoice.created',
     INVOICE_PAID: 'invoice.paid',
-    PAYMENT_INTENT_SUCCEEDED: 'payment_intent.succeeded',
+    PAYMENT_INTENT_SUCCEEDED: 'payment_intent.succeeded'
   }
 
   static STRIPE_EXCEPTIONS = {
-    NOT_VALID_PARAM: 'Stripe params are not valid',
+    NOT_VALID_PARAM: 'Stripe params are not valid'
   }
 
   static STRIPE_STATUS = {
     SUCCESS: 'succeeded',
     PAID: 'paid',
     COMPLETE: 'complete',
-    PENDING: 'pending',
+    PENDING: 'pending'
   }
 
   static async verifyWebhook(data, signature) {
@@ -53,7 +53,7 @@ class Stripe {
   static async getPrices() {
     return await stripe.prices.list({
       limit: 30,
-      active: true,
+      active: true
     })
   }
 
@@ -66,7 +66,7 @@ class Stripe {
       client_reference_id: user_id,
       automatic_tax: { enabled: true },
       payment_method_collection: 'always',
-      mode,
+      mode
     })
   }
 
@@ -80,13 +80,13 @@ class Stripe {
     return await stripe.subscriptions.create({
       customer,
       items,
-      collection_method: 'charge_automatically',
+      collection_method: 'charge_automatically'
     })
   }
 
   static async updateSubscription({ id, items }) {
     return await stripe.subscriptions.update(id, {
-      items,
+      items
     })
   }
 
@@ -114,7 +114,7 @@ class Stripe {
     return await stripe.invoices.create({
       customer,
       collection_method: 'charge_automatically',
-      pending_invoice_items_behavior: 'exclude',
+      pending_invoice_items_behavior: 'exclude'
     })
   }
 
@@ -123,7 +123,7 @@ class Stripe {
       customer,
       price,
       invoice,
-      quantity,
+      quantity
     })
   }
 
@@ -152,7 +152,7 @@ class Stripe {
       confirmation_method: 'automatic',
       payment_method: customerObject.invoice_settings?.default_payment_method,
       confirm: true,
-      currency: 'eur',
+      currency: 'eur'
       //automatic_payment_methods: { enabled: true },
     })
   }
@@ -185,7 +185,7 @@ class Stripe {
     const paymentMethod = await this.getPaymentMethod(paymentIntent)
     if (paymentMethod) {
       await this.updateCustomer(customer, {
-        invoice_settings: { custom_fields: '', default_payment_method: paymentMethod },
+        invoice_settings: { custom_fields: '', default_payment_method: paymentMethod }
       })
     }
   }

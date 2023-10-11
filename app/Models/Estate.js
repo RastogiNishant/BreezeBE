@@ -57,7 +57,7 @@ const {
   PUBLISH_TYPE_ONLINE_MARKET,
   TASK_COMMON_TYPE,
   STATUS_EMAIL_VERIFY,
-  PUBLISH_STATUS_INIT,
+  PUBLISH_STATUS_INIT
 } = require('../constants')
 
 class Estate extends Model {
@@ -181,7 +181,7 @@ class Estate extends Model {
       'cert_category',
       'can_publish',
       'unit_category_id',
-      'skip_timeslots',
+      'skip_timeslots'
     ]
   }
 
@@ -205,7 +205,7 @@ class Estate extends Model {
       'house_number',
       'country',
       'build_id',
-      'cert_category',
+      'cert_category'
     ]
   }
 
@@ -224,8 +224,8 @@ class Estate extends Model {
         EQUIPMENT_WHEELCHAIR_ACCESSIBLE,
         EQUIPMENT_BIKE_ROOM,
         EQUIPMENT_GUEST_WC,
-        EQUIPMENT_WG_SUITABLE,
-      ],
+        EQUIPMENT_WG_SUITABLE
+      ]
     }
   }
 
@@ -293,7 +293,7 @@ class Estate extends Model {
         'heating_type',
         'marketing_type',
         'parking_space_type',
-        'use_type',
+        'use_type'
       ].map((field) => {
         if (
           instance.dirty &&
@@ -359,7 +359,7 @@ class Estate extends Model {
       const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
       let estateInfo = {
         hash,
-        share_link,
+        share_link
       }
       await Database.table('estates')
         .where('id', id)
@@ -450,7 +450,7 @@ class Estate extends Model {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_INVITE,
       MATCH_STATUS_VISIT,
-      MATCH_STATUS_SHARE,
+      MATCH_STATUS_SHARE
     ])
   }
 
@@ -488,7 +488,7 @@ class Estate extends Model {
   decided() {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_TOP,
-      MATCH_STATUS_COMMIT,
+      MATCH_STATUS_COMMIT
     ])
   }
   final() {
@@ -515,14 +515,14 @@ class Estate extends Model {
   visited() {
     return this.hasMany('App/Models/Match').whereIn('status', [
       MATCH_STATUS_VISIT,
-      MATCH_STATUS_SHARE,
+      MATCH_STATUS_SHARE
     ])
   }
 
   contact_requests() {
     return this.hasMany('App/Models/EstateSyncContactRequest').whereIn('status', [
       STATUS_EMAIL_VERIFY,
-      STATUS_DRAFT,
+      STATUS_DRAFT
     ])
   }
   /**
@@ -576,7 +576,7 @@ class Estate extends Model {
         available_end_at:
           this.available_end_at ||
           moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
-        notify_sent: null,
+        notify_sent: null
       },
       trx,
       true
@@ -617,7 +617,7 @@ class Estate extends Model {
     prospect_duration_min,
     prospect_duration_max,
     vacant_date,
-    rent_end_at,
+    rent_end_at
   }) {
     if (!vacant_date || !rent_end_at) {
       return false

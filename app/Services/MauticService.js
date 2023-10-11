@@ -11,7 +11,7 @@ const {
   ROLE_LANDLORD,
   ROLE_USER,
   STATUS_ACTIVE,
-  USER_ACTIVATION_STATUS_ACTIVATED,
+  USER_ACTIVATION_STATUS_ACTIVATED
 } = require('../constants')
 
 const checkLandlordProfileStatus = ({ contactPoints, name, stockSize, type }) => {
@@ -44,7 +44,7 @@ const getUserData = async (user, mauticPrevData = {}) => {
     email: user.email,
     phone: user.phone,
     role: user.role,
-    signup_date: user.created_at,
+    signup_date: user.created_at
   }
 
   if (user.status === STATUS_ACTIVE) {
@@ -65,7 +65,7 @@ const getUserData = async (user, mauticPrevData = {}) => {
           name: company.name,
           contactPoints: companyContacts.rows,
           stockSize: company.size,
-          type: company.type,
+          type: company.type
         })
         if (profileStatus) {
           // landload profile is activated.
@@ -115,8 +115,8 @@ const getMauticContact = async (mauticId) => {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: MAUTIC_AUTH_TOKEN,
-      },
+        Authorization: MAUTIC_AUTH_TOKEN
+      }
     })
     const data = await response.json()
 
@@ -150,8 +150,8 @@ class MauticService {
         body,
         headers: {
           'Content-Type': 'application/json',
-          Authorization: MAUTIC_AUTH_TOKEN,
-        },
+          Authorization: MAUTIC_AUTH_TOKEN
+        }
       })
 
       const data = await response.json()
@@ -185,8 +185,8 @@ class MauticService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: MAUTIC_AUTH_TOKEN,
-        },
+          Authorization: MAUTIC_AUTH_TOKEN
+        }
       })
     } catch (err) {
       console.log('Mautic segment adding Failed : Contact Id = ' + contactId, err)
@@ -209,7 +209,7 @@ class MauticService {
         ...mauticPrevData,
         ...userData,
         ...payload,
-        overwriteWithBlank: false,
+        overwriteWithBlank: false
       }
       if (payload.invited_count) {
         body.invited_count = mauticPrevData?.invited_count ? mauticPrevData?.invited_count + 1 : 1
@@ -248,8 +248,8 @@ class MauticService {
         body: JSON.stringify(body),
         headers: {
           'Content-Type': 'application/json',
-          Authorization: MAUTIC_AUTH_TOKEN,
-        },
+          Authorization: MAUTIC_AUTH_TOKEN
+        }
       })
     } catch (err) {
       //TODO: implement logging here (graylog)

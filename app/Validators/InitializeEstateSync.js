@@ -15,14 +15,11 @@ class InitializeEstateSync extends Base {
           lastName: yup.string().required(),
           mobilePhone: yup.string(),
           phone: yup.string(),
-          website: yup.string(),
+          website: yup.string()
         })
         .required(),
       is24key: yup.string().required('is24key is required.').typeError('is24key is required.'),
-      is24secret: yup
-        .string()
-        .required('is24secret is required.')
-        .typeError('is24key is required.'),
+      is24secret: yup.string().required('is24secret is required.').typeError('is24key is required.')
     })
 }
 

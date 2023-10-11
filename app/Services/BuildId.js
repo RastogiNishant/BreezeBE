@@ -7,7 +7,7 @@ const Base = require('./Base')
 class BuildId extends Base {
   static schema = () =>
     yup.object().shape({
-      build_id: id.required(),
+      build_id: id.required()
     })
 }
 

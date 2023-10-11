@@ -9,7 +9,7 @@ const {
   extendsValidator,
   extendsRequest,
   extendsResponse,
-  extendsView,
+  extendsView
 } = require('../app/Libs/Extends.js')
 const { GLOBAL_CACHE_KEY, GLOBAL_CACHE_OPTION } = require('../app/constants.js')
 

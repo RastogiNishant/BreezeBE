@@ -8,7 +8,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_PASSPORT_DOC,
-  MEMBER_FILE_EXTRA_PASSPORT_DOC,
+  MEMBER_FILE_EXTRA_PASSPORT_DOC
 } = require('../constants')
 
 class ExtraFileType extends Base {
@@ -20,9 +20,9 @@ class ExtraFileType extends Base {
           MEMBER_FILE_TYPE_EXTRA_DEBT,
           MEMBER_FILE_TYPE_EXTRA_RENT,
           MEMBER_FILE_PASSPORT_DOC,
-          MEMBER_FILE_EXTRA_PASSPORT_DOC,
+          MEMBER_FILE_EXTRA_PASSPORT_DOC
         ])
-        .required(),
+        .required()
     })
 }
 

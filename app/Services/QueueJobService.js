@@ -55,7 +55,7 @@ const {
   GEWOBAG_CONTACT_REQUEST_RECIPIENT_EMAIL,
   PUBLISH_STATUS_INIT,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
-  PUBLISH_STATUS_DECLINED_BY_ADMIN,
+  PUBLISH_STATUS_DECLINED_BY_ADMIN
 } = require('../constants')
 const Promise = require('bluebird')
 const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
@@ -131,7 +131,7 @@ class QueueJobService {
         user_id: estate.user_id,
         id: estate.id,
         coord,
-        address: estate.address,
+        address: estate.address
       })
     } else {
       if (!oldCoord) {
@@ -141,7 +141,7 @@ class QueueJobService {
         user_id: estate.user_id,
         id: estate.id,
         coord: null,
-        address: estate.address,
+        address: estate.address
       })
     }
   }
@@ -195,7 +195,7 @@ class QueueJobService {
         await require('./EstateService').publishEstate({
           estate: estates[i],
           performed_by: estates[i].user_id,
-          is_queue: true,
+          is_queue: true
         })
         i++
       }
@@ -209,7 +209,7 @@ class QueueJobService {
     const estates = (await QueueJobService.fetchToExpireEstates()).rows.map((i) => {
       return {
         id: i.id,
-        available_start_at: i.available_start_at,
+        available_start_at: i.available_start_at
       }
     })
     if (isEmpty(estates)) {
@@ -428,7 +428,7 @@ class QueueJobService {
       try {
         await User.query().where('id', userId).update(
           {
-            activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
+            activation_status: USER_ACTIVATION_STATUS_DEACTIVATED
           },
           trx
         )
@@ -550,10 +550,10 @@ class QueueJobService {
             location: estate.city,
             tel: prospect.phone,
             email: prospect.email,
-            enquiry: message,
-          },
-        },
-      },
+            enquiry: message
+          }
+        }
+      }
     }
     const xmlmessage = toXML(obj)
     let recipient = ``
@@ -605,7 +605,7 @@ class QueueJobService {
           email_direct: 'anfragen@gewobag.interessentenanfragen.de',
           datum: moment(new Date()).format(GERMAN_DATE_FORMAT),
           makler_id: '',
-          regi_id: '',
+          regi_id: ''
         },
         objekt: {
           portal_obj_id: estate.id,
@@ -623,15 +623,15 @@ class QueueJobService {
             ort: '',
             tel: prospect.phone,
             email: prospect.email,
-            anfrage: GEWOBAG_EMAIL_CONTENT,
-          },
-        },
-      },
+            anfrage: GEWOBAG_EMAIL_CONTENT
+          }
+        }
+      }
     }
     try {
       const xmlOptions = {
         header: true,
-        indent: '  ',
+        indent: '  '
       }
       const attachment = Buffer.from(toXML(object, xmlOptions))
       const recipient =
@@ -650,7 +650,7 @@ class QueueJobService {
           SEND_EMAIL_TO_WOHNUNGSHELDEN_SUBJECT +
           moment(new Date()).utcOffset(2).format(GERMAN_DATE_TIME_FORMAT),
         attachment: attachment.toString('base64'),
-        from: GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL,
+        from: GEWOBAG_CONTACT_REQUEST_SENDER_EMAIL
       })
     } catch (err) {
       console.log(err.message)

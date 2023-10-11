@@ -59,7 +59,7 @@ class SanitizeYup {
             : { values: { ...n.values, [k]: v }, queryParams: n.queryParams },
         {
           values: {},
-          queryParams: {},
+          queryParams: {}
         }
       )
       request.params = queryParams

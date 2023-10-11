@@ -16,9 +16,9 @@ class MatchStageCountTenant extends Base {
 
         return yup.object().shape({
           decide: yup.boolean(),
-          visit: yup.boolean(),
+          visit: yup.boolean()
         })
-      }),
+      })
     })
 }
 

@@ -21,11 +21,11 @@ class PredefinedMessageChoiceService {
   }
 
   static async getAll(filter) {
-
-    const columns = PredefinedMessageChoice.columns.map(c => `predefined_message_choices.${c}`)
+    const columns = PredefinedMessageChoice.columns.map((c) => `predefined_message_choices.${c}`)
     let query = PredefinedMessageChoice.query()
       .select(columns)
-      .whereNot('predefined_message_choices.status', STATUS_DELETE).orderBy('predefined_message_choices.id')
+      .whereNot('predefined_message_choices.status', STATUS_DELETE)
+      .orderBy('predefined_message_choices.id')
 
     if (filter.predefined_message_id) {
       query.where('predefined_message_id', filter.predefined_message_id)
@@ -39,18 +39,27 @@ class PredefinedMessageChoiceService {
 
     if (filter.include_reason) {
       query.innerJoin({ _pdm: 'predefined_messages' }, function () {
-        this.on('_pdm.id', 'predefined_message_choices.predefined_message_id').onNotIn('_pdm.status', [STATUS_DELETE]).on('_pdm.step', 1)
+        this.on('_pdm.id', 'predefined_message_choices.predefined_message_id')
+          .onNotIn('_pdm.status', [STATUS_DELETE])
+          .on('_pdm.step', 1)
       })
       predefinedMessageChoiceList = (await query.fetch()).rows
 
-      const nextPredefinedMesasageIds = predefinedMessageChoiceList.map(choice => choice.next_predefined_message_id)
-      const allReasons = (await PredefinedMessageChoice.query()
-        .whereIn('predefined_message_id', nextPredefinedMesasageIds)
-        .whereNot('status', STATUS_DELETE)
-        .orderBy('predefined_message_choices.predefined_message_id').fetch()).rows
+      const nextPredefinedMesasageIds = predefinedMessageChoiceList.map(
+        (choice) => choice.next_predefined_message_id
+      )
+      const allReasons = (
+        await PredefinedMessageChoice.query()
+          .whereIn('predefined_message_id', nextPredefinedMesasageIds)
+          .whereNot('status', STATUS_DELETE)
+          .orderBy('predefined_message_choices.predefined_message_id')
+          .fetch()
+      ).rows
 
-      predefinedMessageChoiceList = predefinedMessageChoiceList.map(choice => {
-        let choiceReasons = allReasons.filter(r => r.predefined_message_id === choice.next_predefined_message_id)
+      predefinedMessageChoiceList = predefinedMessageChoiceList.map((choice) => {
+        let choiceReasons = allReasons.filter(
+          (r) => r.predefined_message_id === choice.next_predefined_message_id
+        )
         return {
           ...choice.toJSON(),
           reasons: choiceReasons

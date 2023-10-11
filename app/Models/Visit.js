@@ -13,7 +13,7 @@ class Visit extends Model {
       'tenant_status',
       'lord_status',
       'created_at',
-      'updated_at',
+      'updated_at'
     ]
   }
 }

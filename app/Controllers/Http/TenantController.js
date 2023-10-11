@@ -24,7 +24,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
-  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
@@ -63,7 +63,7 @@ class TenantController {
         MEMBER_FILE_TYPE_EXTRA_PASSPORT,
         MEMBER_FILE_TYPE_EXTRA_RENT,
         MEMBER_FILE_TYPE_EXTRA_DEBT,
-        MEMBER_FILE_TYPE_INCOME,
+        MEMBER_FILE_TYPE_INCOME
       ].includes(file_type)
     ) {
       if (!file_id) {
@@ -150,12 +150,12 @@ class TenantController {
         filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
           has_notification_sent: false,
-          only_count: true,
+          only_count: true
         })
       } else {
         filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
-          has_notification_sent: false,
+          has_notification_sent: false
         })
       }
 
@@ -190,7 +190,7 @@ class TenantController {
     let members = await MemberService.getMembers(auth.user.id, true)
     response.res({
       tenant,
-      members,
+      members
     })
   }
 
@@ -236,7 +236,7 @@ class TenantController {
     response.res({
       phone: phoneVerifiedCount,
       id: idVerifiedCount,
-      income: incomeCounts,
+      income: incomeCounts
     })
   }
 
@@ -245,13 +245,13 @@ class TenantController {
 
     const updateData = {
       request_certificate_city_id,
-      user_id: auth.user.id,
+      user_id: auth.user.id
     }
 
-    if (!request_certificate_city_id) Object.assign(updateData,{ request_certificate_at })
+    if (!request_certificate_city_id) Object.assign(updateData, { request_certificate_at })
 
     await TenantService.requestCertificate({
-      ...updateData,
+      ...updateData
     })
 
     let city = null
@@ -262,7 +262,7 @@ class TenantController {
     //TODO: need to send wbs link from city table. coming soon
     response.res({
       request_certificate_at,
-      city,
+      city
     })
   }
 
@@ -274,7 +274,7 @@ class TenantController {
         {
           user_id: auth.user.id,
           request_certificate_at: null,
-          request_certificate_city_id: null,
+          request_certificate_city_id: null
         },
         trx
       )

@@ -58,7 +58,7 @@ class OrderService {
           date: moment.utc(data.created * 1000).format(DATE_FORMAT),
           start_at,
           end_at,
-          livemode: data.livemode,
+          livemode: data.livemode
         },
         trx
       )

@@ -24,7 +24,7 @@ class PaymentAccountService {
           account_id,
           payment_method: PAYMENT_METHOD_STRIPE,
           livemode,
-          date: date || moment.utc(new Date()).format(DATE_FORMAT),
+          date: date || moment.utc(new Date()).format(DATE_FORMAT)
         },
         trx
       )

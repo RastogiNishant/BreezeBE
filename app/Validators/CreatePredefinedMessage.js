@@ -10,7 +10,7 @@ const {
   PREDEFINED_LAST,
   STATUS_ACTIVE,
   STATUS_DRAFT,
-  STATUS_DELETE,
+  STATUS_DELETE
 } = require('../constants')
 
 class CreatePredefinedMessage extends Base {
@@ -24,12 +24,12 @@ class CreatePredefinedMessage extends Base {
           PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE,
           PREDEFINED_MSG_OPEN_ENDED,
           PREDEFINED_NOT_A_QUESTION,
-          PREDEFINED_LAST,
+          PREDEFINED_LAST
         ])
         .required(),
       variable_to_update: yup.string(),
       step: yup.number().integer().required(),
-      status: yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_DELETE]),
+      status: yup.number().oneOf([STATUS_ACTIVE, STATUS_DRAFT, STATUS_DELETE])
     })
 }
 

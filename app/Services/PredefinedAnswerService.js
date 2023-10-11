@@ -13,7 +13,7 @@ class PredefinedAnswerService {
     if (data.predefined_message_choice_id) {
       await this.hasPermissionToChoice({
         predefined_message_id: data.predefined_message_id,
-        predefined_message_choice_id: data.predefined_message_choice_id,
+        predefined_message_choice_id: data.predefined_message_choice_id
       })
     }
 
@@ -26,7 +26,7 @@ class PredefinedAnswerService {
     if (data.predefined_message_choice_id) {
       await this.hasPermissionToChoice({
         predefined_message_id: data.predefined_message_id,
-        predefined_message_choice_id: data.predefined_message_choice_id,
+        predefined_message_choice_id: data.predefined_message_choice_id
       })
     }
 
@@ -50,7 +50,7 @@ class PredefinedAnswerService {
 
     await PredefinedMessageChoiceService.getWithPredefinedMessageId({
       id: predefined_message_choice_id,
-      predefined_message_id: predefined_message_id,
+      predefined_message_id: predefined_message_id
     })
   }
 

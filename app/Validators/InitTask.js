@@ -14,7 +14,7 @@ class InitTask extends Base {
       task_id: yup.number().nullable(),
       answer: yup.mixed(),
       prev_predefined_message_id: yup.string(),
-      attachments: yup.array().of(yup.string()).nullable(),
+      attachments: yup.array().of(yup.string()).nullable()
     })
 }
 

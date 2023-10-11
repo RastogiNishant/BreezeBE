@@ -48,7 +48,7 @@ const {
   LETTING_STATUS_TERMINATED,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
-  STATUS_OFFLINE_ACTIVE,
+  STATUS_OFFLINE_ACTIVE
 } = require('../../constants')
 const { createDynamicLink } = require('../../Libs/utils')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
@@ -57,7 +57,7 @@ const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
 const {
   exceptions: { UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE },
-  exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE_CODE },
+  exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE_CODE }
 } = require('../../exceptions')
 
 class MatchController {
@@ -85,7 +85,7 @@ class MatchController {
         user_id: auth.user.id,
         knock_anyway,
         share_profile,
-        buddy,
+        buddy
       })
       logEvent(request, LOG_TYPE_KNOCKED, auth.user.id, { estate_id, role: ROLE_USER }, false)
       Event.fire('mautic:syncContact', auth.user.id, { knocked_count: 1 })
@@ -118,7 +118,7 @@ class MatchController {
         estateId: estate_id,
         userId: user_id,
         newEstateId: new_estate_id,
-        landlordId: auth.user.id,
+        landlordId: auth.user.id
       })
       return response.res(true)
     } catch (e) {
@@ -284,7 +284,7 @@ class MatchController {
         estate_id: estate_id,
         user_id: auth.user.id,
         properties: properties,
-        prices: prices,
+        prices: prices
       })
       response.res(true)
     } catch (e) {
@@ -299,7 +299,7 @@ class MatchController {
         estate_id: estate_id,
         user_id: auth.user.id,
         properties: null,
-        prices: null,
+        prices: null
       })
       response.res(true)
     } catch (e) {
@@ -334,7 +334,7 @@ class MatchController {
 
     await MatchService.updateVisitStatusLandlord(estate_id, user_id, {
       lord_status: status,
-      lord_delay: delay || 0,
+      lord_delay: delay || 0
     })
 
     return response.res(true)
@@ -357,7 +357,7 @@ class MatchController {
       return response.res({
         estate_id,
         user_id,
-        followupsMade: isNull(meta) ? [] : JSON.stringify(meta),
+        followupsMade: isNull(meta) ? [] : JSON.stringify(meta)
       })
     } catch (err) {
       throw new HttpException(err.message, 422)
@@ -372,7 +372,7 @@ class MatchController {
 
     await MatchService.updateVisitStatus(estate_id, auth.user.id, {
       tenant_status: status,
-      tenant_delay: delay,
+      tenant_delay: delay
     })
 
     return response.res(true)
@@ -391,7 +391,7 @@ class MatchController {
       const { tenantId } = await MatchService.share({
         landlord_id: userId,
         estate_id,
-        code,
+        code
       })
       logEvent(
         request,
@@ -439,7 +439,7 @@ class MatchController {
         {
           estateId: estate_id,
           tenantId: user_id,
-          landlordId: auth.user.id,
+          landlordId: auth.user.id
         },
         trx
       )
@@ -622,7 +622,7 @@ class MatchController {
       lastPage: Math.ceil(estateData.length / limit),
       page,
       perPage: limit,
-      data: estateData.slice(startIndex, endIndex),
+      data: estateData.slice(startIndex, endIndex)
     }
 
     if (filters?.dislike) {
@@ -631,14 +631,14 @@ class MatchController {
         data: estates.data.concat(trashEstates.toJSON(params)),
         perPage: 9999,
         page: 1,
-        lastPage: 1,
+        lastPage: 1
       }
       estates.total = estates.data.length
     }
 
     return response.res({
       ...estates,
-      tab: currentTab,
+      tab: currentTab
     })
   }
 
@@ -669,7 +669,7 @@ class MatchController {
     const fields = TENANT_MATCH_FIELDS
 
     return response.res({
-      ...estates.toJSON({ isShort: true, fields }),
+      ...estates.toJSON({ isShort: true, fields })
     })
   }
 
@@ -697,7 +697,7 @@ class MatchController {
     const fields = TENANT_MATCH_FIELDS
 
     estates = {
-      ...estates.toJSON({ isShort: true, fields }),
+      ...estates.toJSON({ isShort: true, fields })
     }
 
     if (estates?.data) {
@@ -766,7 +766,7 @@ class MatchController {
         } else {
           groupedEstates.push({
             id,
-            [match_status]: 1,
+            [match_status]: 1
           })
         }
       })
@@ -786,7 +786,7 @@ class MatchController {
         { value: MATCH_STATUS_SHARE, key: 'sharedVisits' },
         { value: MATCH_STATUS_VISIT, key: 'visits' },
         { value: MATCH_STATUS_INVITE, key: 'invites' },
-        { value: MATCH_STATUS_KNOCK, key: 'matches' },
+        { value: MATCH_STATUS_KNOCK, key: 'matches' }
       ]
 
       const counts = {}
@@ -851,7 +851,7 @@ class MatchController {
       counts.contact_requests =
         await require('../../Services/EstateService').getEstatePendingKnockRequestCount({
           user_id: user.id,
-          excludeIds,
+          excludeIds
         })
 
       return response.res(counts)
@@ -897,7 +897,7 @@ class MatchController {
 
     return response.res({
       ...data,
-      tab: currentTab,
+      tab: currentTab
     })
   }
 
@@ -918,7 +918,7 @@ class MatchController {
         ? { id: estate_id }
         : {
             id: estate_id,
-            'estates.user_id': user.id,
+            'estates.user_id': user.id
           }
 
     const estate = await EstateService.getQuery(query).with('slots').first()
@@ -953,7 +953,7 @@ class MatchController {
       'credit_score',
       'email',
       'phone',
-      'last_address',
+      'last_address'
     ]
 
     let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
@@ -984,7 +984,7 @@ class MatchController {
     const contact_request_count = (
       await require('../../Services/MarketPlaceService')
         .getPendingKnockRequestCountQuery({
-          estate_id,
+          estate_id
         })
         .count()
     )?.[0]?.count
@@ -992,7 +992,7 @@ class MatchController {
     const contact_requests_data = (
       await require('../../Services/MarketPlaceService')
         .getPendingKnockRequestQuery({
-          estate_id,
+          estate_id
         })
         .paginate(page, limit || 10)
     ).toJSON()
@@ -1000,14 +1000,14 @@ class MatchController {
     const contact_requests = {
       ...contact_requests_data,
       total: contact_request_count,
-      lastPage: Math.ceil(contact_request_count / contact_requests_data.perPage),
+      lastPage: Math.ceil(contact_request_count / contact_requests_data.perPage)
     }
 
     data = {
       ...data,
       total: matchCount[0].count,
       lastPage: Math.ceil(matchCount[0].count / data.perPage),
-      ...knockedFactorCounts,
+      ...knockedFactorCounts
     }
     const matches = data
 
@@ -1038,7 +1038,7 @@ class MatchController {
       ...data,
       total: buddyCount[0].count,
       lastPage: Math.ceil(buddyCount[0].count / data.perPage),
-      ...buddyFactorCounts,
+      ...buddyFactorCounts
     }
 
     const buddies = data
@@ -1057,7 +1057,7 @@ class MatchController {
     data = {
       ...data,
       total: inviteCount[0].count,
-      lastPage: Math.ceil(inviteCount[0].count / data.perPage),
+      lastPage: Math.ceil(inviteCount[0].count / data.perPage)
     }
 
     const invites = data
@@ -1076,7 +1076,7 @@ class MatchController {
     data = {
       ...data,
       total: visitCount[0].count,
-      lastPage: Math.ceil(visitCount[0].count / data.perPage),
+      lastPage: Math.ceil(visitCount[0].count / data.perPage)
     }
 
     const visits = data
@@ -1096,7 +1096,7 @@ class MatchController {
     data = {
       ...data,
       total: topCount[0].count,
-      lastPage: Math.ceil(topCount[0].count / data.perPage),
+      lastPage: Math.ceil(topCount[0].count / data.perPage)
     }
 
     const top = data
@@ -1128,7 +1128,7 @@ class MatchController {
     data = {
       ...data,
       total: finalCount[0].count,
-      lastPage: Math.ceil(finalCount[0].count / data.perPage),
+      lastPage: Math.ceil(finalCount[0].count / data.perPage)
     }
 
     const finalMatches = data
@@ -1140,7 +1140,7 @@ class MatchController {
       visits,
       top,
       finalMatches,
-      contact_requests,
+      contact_requests
     })
   }
 
@@ -1150,7 +1150,7 @@ class MatchController {
       await require('../../Services/MarketPlaceService').sendManualReminder({
         contactRequestId: id,
         landlordId: auth.user.id,
-        lang: auth.user.lang,
+        lang: auth.user.lang
       })
       response.res(true)
     } catch (e) {
@@ -1188,7 +1188,7 @@ class MatchController {
       user_id: auth.user.id,
       params,
       page: page || -1,
-      limit: limit || -1,
+      limit: limit || -1
     })
   }
 
@@ -1199,22 +1199,22 @@ class MatchController {
       letting_status: [
         LETTING_STATUS_TERMINATED,
         LETTING_STATUS_VACANCY,
-        LETTING_STATUS_NEW_RENOVATED,
+        LETTING_STATUS_NEW_RENOVATED
       ],
-      status: [STATUS_ACTIVE, STATUS_EXPIRE],
+      status: [STATUS_ACTIVE, STATUS_EXPIRE]
     })
     const finalMatchCount = await MatchService.getCountMatchList(auth.user.id, {
       letting_type: [LETTING_TYPE_LET],
       letting_status: [LETTING_STATUS_STANDARD],
-      status: [STATUS_DRAFT],
+      status: [STATUS_DRAFT]
     })
     const prepareCount = await MatchService.getCountMatchList(auth.user.id, {
       letting_status: [
         LETTING_STATUS_TERMINATED,
         LETTING_STATUS_VACANCY,
-        LETTING_STATUS_NEW_RENOVATED,
+        LETTING_STATUS_NEW_RENOVATED
       ],
-      status: [STATUS_DRAFT],
+      status: [STATUS_DRAFT]
     })
 
     response.res({
@@ -1222,8 +1222,8 @@ class MatchController {
       counts: {
         match: inLetMatchCount[0].count,
         final: finalMatchCount[0].count,
-        preparation: prepareCount[0].count,
-      },
+        preparation: prepareCount[0].count
+      }
     })
   }
 
@@ -1234,7 +1234,7 @@ class MatchController {
       estate_id,
       query,
       buddy,
-      invite,
+      invite
     })
     response.res(result)
   }

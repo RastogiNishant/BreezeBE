@@ -25,7 +25,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   LETTING_STATUS_NEW_RENOVATED,
-  MATCH_STATUS_NEW,
+  MATCH_STATUS_NEW
 } = require('../constants')
 const Filter = require('./Filter')
 
@@ -33,19 +33,19 @@ class EstateFilters extends Filter {
   static lettingTypeString = {
     let: LETTING_TYPE_LET,
     void: LETTING_TYPE_VOID,
-    na: LETTING_TYPE_NA,
+    na: LETTING_TYPE_NA
   }
   static lettingStatusString = {
     new_renovated: LETTING_STATUS_NEW_RENOVATED,
     standard: LETTING_STATUS_STANDARD,
     vacancy: LETTING_STATUS_VACANCY,
-    terminated: LETTING_STATUS_TERMINATED,
+    terminated: LETTING_STATUS_TERMINATED
   }
 
   static statusStringToValMap = {
     online: STATUS_ACTIVE,
     offline: STATUS_DRAFT,
-    expired: STATUS_EXPIRE,
+    expired: STATUS_EXPIRE
   }
 
   static floorDirectionStringToValMap = {
@@ -54,7 +54,7 @@ class EstateFilters extends Filter {
     right: ESTATE_FLOOR_DIRECTION_RIGHT,
     straight: ESTATE_FLOOR_DIRECTION_STRAIGHT,
     straight_left: ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
-    straight_right: ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+    straight_right: ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT
   }
 
   static propertyTypeStringToValMap = {
@@ -62,7 +62,7 @@ class EstateFilters extends Filter {
     room: PROPERTY_TYPE_ROOM,
     house: PROPERTY_TYPE_HOUSE,
     site: PROPERTY_TYPE_SITE,
-    office: PROPERTY_TYPE_OFFICE,
+    office: PROPERTY_TYPE_OFFICE
   }
   static possibleStringParams = [
     'address',
@@ -75,7 +75,7 @@ class EstateFilters extends Filter {
     'completeness',
     'customUpdatedAt',
     'customVacantDate',
-    'unitCategory',
+    'unitCategory'
   ]
   globalSearchFields = ['property_id', 'address', 'six_char_code']
 
@@ -94,7 +94,7 @@ class EstateFilters extends Filter {
       customUpdatedAt: 'updated_at',
       customVacantDate: 'vacant_date',
       completeness: 'percent',
-      unitCategory: 'name',
+      unitCategory: 'name'
     }
 
     this.matchFilter(EstateFilters.possibleStringParams, params)
@@ -279,7 +279,7 @@ class EstateFilters extends Filter {
     return directions.reduce(
       (directions, direction) => [
         ...directions,
-        EstateFilters.floorDirectionStringToValMap[toLower(direction.replace(/\./g, ''))],
+        EstateFilters.floorDirectionStringToValMap[toLower(direction.replace(/\./g, ''))]
       ],
       []
     )
@@ -289,7 +289,7 @@ class EstateFilters extends Filter {
     return propertyTypes.reduce(
       (propertyTypes, propertyType) => [
         ...propertyTypes,
-        EstateFilters.propertyTypeStringToValMap[toLower(propertyType)],
+        EstateFilters.propertyTypeStringToValMap[toLower(propertyType)]
       ],
       []
     )

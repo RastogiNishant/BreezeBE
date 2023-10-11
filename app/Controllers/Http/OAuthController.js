@@ -25,11 +25,11 @@ const {
   SIGN_IN_METHOD_APPLE,
   STATUS_EMAIL_VERIFY,
   STATUS_ACTIVE,
-  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 const {
-  exceptions: { INVALID_TOKEN, USER_NOT_EXIST, USER_UNIQUE, INVALID_USER_ROLE },
+  exceptions: { INVALID_TOKEN, USER_NOT_EXIST, USER_UNIQUE, INVALID_USER_ROLE }
 } = require('../../../app/exceptions')
 class OAuthController {
   /**
@@ -156,7 +156,7 @@ class OAuthController {
         ip_based_info,
         invite_type,
         data1,
-        data2,
+        data2
       },
       method
     )
@@ -170,14 +170,14 @@ class OAuthController {
         member_id,
         firstname: payload.firstname,
         secondname: payload.secondname,
-        owner_id: user.id,
+        owner_id: user.id
       })
     }
 
     if (user && user.role === ROLE_LANDLORD) {
       QueueService.getTenantMatchProperties({
         userId: user.id,
-        has_notification_sent: false,
+        has_notification_sent: false
       })
     }
     return user
@@ -200,7 +200,7 @@ class OAuthController {
             email: user.email,
             invite_type,
             data1,
-            data2,
+            data2
           },
           trx
         )
@@ -227,7 +227,7 @@ class OAuthController {
     logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
       method,
       role: user.role,
-      email: user.email,
+      email: user.email
     })
 
     return token

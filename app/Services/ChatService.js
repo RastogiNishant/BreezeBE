@@ -21,10 +21,10 @@ const {
   STATUS_DELETE,
   LETTING_TYPE_LET,
   TASK_STATUS_NEW,
-  TASK_STATUS_INPROGRESS,
+  TASK_STATUS_INPROGRESS
 } = require('../constants')
 const {
-  exceptions: { MESSAGE_ATTACHMENT_WRONG_FORMAT },
+  exceptions: { MESSAGE_ATTACHMENT_WRONG_FORMAT }
 } = require('../exceptions')
 const { min, isBoolean, isArray, groupBy } = require('lodash')
 const Task = use('App/Models/Task')
@@ -39,7 +39,7 @@ class ChatService {
         .where({
           type: CHAT_TYPE_LAST_READ_MARKER,
           sender_id: user_id,
-          task_id,
+          task_id
         })
         .delete()
         .transacting(trx)
@@ -48,7 +48,7 @@ class ChatService {
         {
           type: CHAT_TYPE_LAST_READ_MARKER,
           sender_id: user_id,
-          task_id,
+          task_id
         },
         trx
       )
@@ -233,7 +233,7 @@ class ChatService {
       .update({
         text: message,
         attachments: attachments ? JSON.stringify(attachments) : null,
-        edit_status: CHAT_EDIT_STATUS_EDITED,
+        edit_status: CHAT_EDIT_STATUS_EDITED
       })
 
     if (!trx) {
@@ -284,14 +284,14 @@ class ChatService {
               user_id: sender_id,
               url: await File.getProtectedUrl(attachment),
               uri: attachment,
-              thumb: thumb,
+              thumb: thumb
             }
           }
 
           return {
             url: attachment,
             uri: attachment,
-            thumb: thumb,
+            thumb: thumb
           }
         })
       )

@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, NUMBER },
+  exceptionKeys: { REQUIRED, NUMBER }
 } = require('../exceptions')
 
 class ConfirmEmail extends Base {
@@ -15,7 +15,7 @@ class ConfirmEmail extends Base {
         .typeError(getExceptionMessage('user_id', NUMBER))
         .positive()
         .required(getExceptionMessage('user_id', REQUIRED)),
-      from_web: yup.number().typeError(getExceptionMessage('from_web', NUMBER)),
+      from_web: yup.number().typeError(getExceptionMessage('from_web', NUMBER))
     })
 }
 

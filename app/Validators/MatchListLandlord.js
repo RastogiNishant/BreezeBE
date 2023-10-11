@@ -16,7 +16,7 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   INCOME_TYPE_OTHER_BENEFIT,
-  INCOME_TYPE_CHILD_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT
 } = require('../constants')
 
 class MatchListLandlord extends Base {
@@ -43,7 +43,7 @@ class MatchListLandlord extends Base {
               INCOME_TYPE_SELF_EMPLOYED,
               INCOME_TYPE_TRAINEE,
               INCOME_TYPE_OTHER_BENEFIT,
-              INCOME_TYPE_CHILD_BENEFIT,
+              INCOME_TYPE_CHILD_BENEFIT
             ])
         ),
       phone_verified: yup.boolean(),
@@ -60,9 +60,9 @@ class MatchListLandlord extends Base {
           invite: yup.boolean(),
           visit: yup.boolean(),
           top: yup.boolean(),
-          commit: yup.boolean(),
+          commit: yup.boolean()
         })
-      }),
+      })
     })
 }
 

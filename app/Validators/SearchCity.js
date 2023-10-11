@@ -11,7 +11,7 @@ class SearchCity extends Base {
         .string()
         .required()
         .matches(/^[^!@#$%^&*+=<>:;|~]*$/, 'must not have any symbols')
-        .min(3),
+        .min(3)
     })
 }
 

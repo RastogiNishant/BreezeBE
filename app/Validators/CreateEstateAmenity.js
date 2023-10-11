@@ -3,7 +3,7 @@ const Base = require('./Base')
 const yup = require('yup')
 const {
   ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH,
-  ESTATE_AMENITY_LOCATIONS,
+  ESTATE_AMENITY_LOCATIONS
 } = require('../constants')
 const { id } = require('../Libs/schemas')
 class CreateEstateAmenity extends Base {
@@ -20,11 +20,11 @@ class CreateEstateAmenity extends Base {
             (val) => val && val.length >= 1 && val.length <= ESTATE_CUSTOM_AMENITY_MAX_STRING_LENGTH
           )
           .typeError('Custom amenity must have at least 1 character.')
-          .required('Custom amenity name is required.'),
+          .required('Custom amenity name is required.')
       }),
       option_id: yup.number().when('type', {
         is: 'amenity',
-        then: yup.number().integer().positive().required('Estate amenity is required.'),
+        then: yup.number().integer().positive().required('Estate amenity is required.')
       }),
       estate_id: yup.number().integer().positive().required('Estate Id is required'),
       location: yup
@@ -32,9 +32,9 @@ class CreateEstateAmenity extends Base {
         .oneOf(ESTATE_AMENITY_LOCATIONS)
         .when('type', {
           is: 'amenity',
-          then: yup.string().required('Location is required'),
+          then: yup.string().required('Location is required')
         }),
-      sequence_order: yup.number(),
+      sequence_order: yup.number()
     })
 }
 

@@ -11,7 +11,7 @@ const {
   TASK_SYSTEM_TYPE,
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_UNREAD,
-  TASK_ORDER_BY_URGENCY,
+  TASK_ORDER_BY_URGENCY
 } = require('../constants')
 class TenantTaskFilter extends Base {
   static schema = () =>
@@ -26,12 +26,12 @@ class TenantTaskFilter extends Base {
               TASK_STATUS_NEW,
               TASK_STATUS_INPROGRESS,
               TASK_STATUS_UNRESOLVED,
-              TASK_STATUS_RESOLVED,
+              TASK_STATUS_RESOLVED
             ])
         ),
       type: yup.number().oneOf([TASK_SYSTEM_TYPE, TASK_COMMON_TYPE]).nullable(),
       query: yup.string().min(1).nullable(),
-      orderby: yup.string().oneOf([TASK_ORDER_BY_UNREAD, TASK_ORDER_BY_URGENCY]).nullable(),
+      orderby: yup.string().oneOf([TASK_ORDER_BY_UNREAD, TASK_ORDER_BY_URGENCY]).nullable()
     })
 }
 

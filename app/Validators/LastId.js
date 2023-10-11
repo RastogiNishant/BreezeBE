@@ -10,7 +10,7 @@ class LastId extends Base {
       lastId: yup
         .number()
         .transform((v) => (v === '' || Number.isNaN(v) ? null : v))
-        .nullable(),
+        .nullable()
     })
 }
 

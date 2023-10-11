@@ -50,11 +50,11 @@ const {
   CERT_CATEGORY_140,
   CERT_CATEGORY_160,
   CERT_CATEGORY_180,
-  CERT_CATEGORY_220,
+  CERT_CATEGORY_220
 } = require('../constants')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER },
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER }
 } = require('../exceptions')
 
 class UpdateTenant extends Base {
@@ -105,7 +105,7 @@ class UpdateTenant extends Base {
               APARTMENT_TYPE_TERRACES,
               APARTMENT_TYPE_HOLIDAY,
               APARTMENT_TYPE_GALLERY,
-              APARTMENT_TYPE_ATTIC,
+              APARTMENT_TYPE_ATTIC
             ])
         )
         .nullable(),
@@ -125,7 +125,7 @@ class UpdateTenant extends Base {
               HOUSE_TYPE_COUNTRY,
               HOUSE_TYPE_BUNGALOW,
               HOUSE_TYPE_VILLA,
-              HOUSE_TYPE_GARDENHOUSE,
+              HOUSE_TYPE_GARDENHOUSE
             ])
         )
         .nullable(),
@@ -184,12 +184,12 @@ class UpdateTenant extends Base {
               CERT_CATEGORY_160,
               CERT_CATEGORY_180,
               CERT_CATEGORY_220,
-              CERT_CATEGORY_NOT,
+              CERT_CATEGORY_NOT
             ])
         )
         .nullable(),
       is_public_certificate: yup.boolean().nullable(),
-      only_count: yup.boolean().nullable(),
+      only_count: yup.boolean().nullable()
     })
 }
 

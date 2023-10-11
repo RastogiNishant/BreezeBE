@@ -8,11 +8,11 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
-  WEBSOCKET_TASK_REDIS_KEY,
+  WEBSOCKET_TASK_REDIS_KEY
 } = require('../../constants')
 const WebSocket = use('App/Classes/Websocket')
 const {
-  exceptions: { MESSAGE_NOT_SAVED },
+  exceptions: { MESSAGE_NOT_SAVED }
 } = require('../../exceptions')
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
@@ -34,12 +34,12 @@ class TaskController extends BaseController {
     this.subscribe({
       channel: WEBSOCKET_TASK_REDIS_KEY,
       estateId: this.estateId,
-      taskId: this.taskId,
+      taskId: this.taskId
     })
     this.unsubscribe({
       channel: WEBSOCKET_TASK_REDIS_KEY,
       estateId: this.estateId,
-      taskId: this.taskId,
+      taskId: this.taskId
     })
   }
 
@@ -52,7 +52,7 @@ class TaskController extends BaseController {
       }
       let previousMessages = await ChatService.getPreviousMessages({
         task_id: this.taskId,
-        lastId,
+        lastId
       })
       previousMessages = await super.getItemsWithAbsoluteUrl(previousMessages.toJSON())
       if (this.topic) {
@@ -60,7 +60,7 @@ class TaskController extends BaseController {
           'previousMessages',
           {
             messages: previousMessages,
-            topic: this.socket.topic,
+            topic: this.socket.topic
           },
           [this.socket.id]
         )
@@ -92,8 +92,8 @@ class TaskController extends BaseController {
           message,
           attachments,
           edit_status: CHAT_EDIT_STATUS_EDITED,
-          topic: this.socket.topic,
-        },
+          topic: this.socket.topic
+        }
       })
     } catch (err) {
       this.emitError(err.message)
@@ -118,8 +118,8 @@ class TaskController extends BaseController {
         estateId: this.estateId,
         data: {
           id,
-          socket: this.socket.topic,
-        },
+          socket: this.socket.topic
+        }
       })
     } catch (err) {
       this.emitError(err.message)
@@ -140,9 +140,9 @@ class TaskController extends BaseController {
               id: lastChat.id,
               type: data?.type,
               user: lastChat.sender_id,
-              created_at: lastChat.created_at,
-            },
-          },
+              created_at: lastChat.created_at
+            }
+          }
         })
       } else {
         this.emitError(MESSAGE_NOT_SAVED)
@@ -169,16 +169,16 @@ class TaskController extends BaseController {
             id: this.user.id,
             firstname: this.user.firstname,
             secondname: this.user.secondname,
-            avatar: this.user.avatar,
-          },
+            avatar: this.user.avatar
+          }
         },
         sender: {
           userId: this.user.id,
           firstname: this.user.firstname,
           secondname: this.user.secondname,
-          avatar: this.user.avatar,
+          avatar: this.user.avatar
         },
-        topic: this.socket.topic,
+        topic: this.socket.topic
       }
 
       const recipientTopic =
@@ -194,20 +194,20 @@ class TaskController extends BaseController {
         topic: this.socket.topic,
         urgency: task?.urgency,
         estate_id: this.estateId,
-        user_id: this.user.id,
+        user_id: this.user.id
       }
 
       if (this.user.role === ROLE_LANDLORD) {
         WebSocket.publishToTenant({
           event: 'taskMessageReceived',
           userId: this.tenant_user_id,
-          data: messageReceivedData,
+          data: messageReceivedData
         })
       } else {
         WebSocket.publishToLandlord({
           event: 'taskMessageReceived',
           userId: this.estate_user_id,
-          data: messageReceivedData,
+          data: messageReceivedData
         })
       }
 
@@ -220,8 +220,8 @@ class TaskController extends BaseController {
         estateId: this.estateId,
         data: {
           ...data,
-          broadcast_all: true,
-        },
+          broadcast_all: true
+        }
       })
 
       console.log('instance here=', this instanceof BaseController)

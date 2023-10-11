@@ -19,7 +19,7 @@ const {
   PROPERTY_TYPE_ROOM,
   PROPERTY_TYPE_SITE,
   STATUS_DELETE,
-  STATUS_DRAFT,
+  STATUS_DRAFT
 } = require('../constants')
 
 const energyPassVariables = {
@@ -31,12 +31,12 @@ const energyPassVariables = {
   stromwert: 'electricity',
   waermewert: 'heating',
   mitwarmwasser: 'consumption_including_hot_water',
-  endenergiebedarf: 'total_demand_value',
+  endenergiebedarf: 'total_demand_value'
 }
 
 const certificateType = {
   BEDARF: 'By Demand',
-  VERBRAUCH: 'By Consumption',
+  VERBRAUCH: 'By Consumption'
 }
 
 class OpenImmoReader {
@@ -236,11 +236,11 @@ class OpenImmoReader {
         properties[index].images[k] = {
           tmpPath: `${this.dir}/${image.daten[0].pfad[0]}`,
           headers: {
-            'content-type': image.format[0],
+            'content-type': image.format[0]
           },
           file_name: `${image.daten[0].pfad[0]}`,
           type: FILE_TYPE_UNASSIGNED,
-          format: image.format[0],
+          format: image.format[0]
         }
       })
     })
@@ -276,7 +276,7 @@ class OpenImmoReader {
       'heating_type',
       'marketing_type',
       'parking_space_type',
-      'use_type',
+      'use_type'
     ]
     properties.map((property) => {
       fields.map((field) => {
@@ -304,7 +304,7 @@ class OpenImmoReader {
       'country',
       'furnished',
       'gender',
-      'property_type',
+      'property_type'
     ]
     properties.map((property) => {
       fields.map((field) => {

@@ -10,7 +10,7 @@ class InvitationIds extends Base {
         .array()
         .of(yup.number().integer().positive())
         .max(50, 'only can invite up to 50')
-        .required(),
+        .required()
     })
 }
 

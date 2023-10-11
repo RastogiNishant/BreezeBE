@@ -7,7 +7,7 @@ const { id } = require('../Libs/schemas.js')
 const { phoneSchema } = require('../Libs/schemas.js')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID },
+  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH, INVALID }
 } = require('../exceptions')
 
 class HosekeeperSignUp extends Base {
@@ -35,8 +35,8 @@ class HosekeeperSignUp extends Base {
         city: yup.string().nullable(),
         postal: yup.string().nullable(),
         latitude: yup.string().nullable(),
-        longitude: yup.string().nullable(),
-      }),
+        longitude: yup.string().nullable()
+      })
     })
 }
 

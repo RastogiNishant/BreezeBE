@@ -5,7 +5,7 @@ const Model = require('./BaseModel')
 const Database = use('Database')
 const {
   INVITATION_LINK_RETRIEVAL_CODE_CHARACTERS,
-  INVITATION_LINK_RETRIEVAL_CODE_LENGTH,
+  INVITATION_LINK_RETRIEVAL_CODE_LENGTH
 } = require('../constants')
 
 class InvitationLinkCode extends Model {
@@ -35,7 +35,7 @@ class InvitationLinkCode extends Model {
     await Database.table('invitation_link_codes').insert({
       current_tenant_id,
       code: randomString,
-      link: shortLink,
+      link: shortLink
     })
     return randomString
   }

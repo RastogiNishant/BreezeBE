@@ -11,7 +11,7 @@ class BillService {
       invoice_id,
       bill_id: item?.subscription_item,
       price_id: item?.price?.id,
-      status: PAID_PENDING_STATUS,
+      status: PAID_PENDING_STATUS
     }))
 
     await Bill.createMany(bills, trx)

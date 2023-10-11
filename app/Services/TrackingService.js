@@ -47,8 +47,8 @@ const logEvent = async (
     ip,
     event_properties,
     user_properties: {
-      smartlook_visitor_url,
-    },
+      smartlook_visitor_url
+    }
   }
 
   amplitudeClient.logEvent(event).catch((e) => console.log({ e }))

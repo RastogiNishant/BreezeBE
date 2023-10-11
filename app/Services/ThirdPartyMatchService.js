@@ -7,7 +7,7 @@ const {
   MATCH_STATUS_NEW,
   MAX_SEARCH_ITEMS,
   STATUS_ACTIVE,
-  STATUS_EXPIRE,
+  STATUS_EXPIRE
 } = require('../constants')
 const moment = require('moment')
 const { isEmpty, groupBy } = require('lodash')
@@ -23,14 +23,13 @@ const Logger = use('Logger')
 class ThirdPartyMatchService {
   static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
     Logger.info(`createNewMatches start ${new Date().toISOString()}`)
-    const { estates, categoryCounts } = await ThirdPartyOfferService.searchTenantEstatesQuery(
-      tenant
-    )
+    const { estates, categoryCounts } =
+      await ThirdPartyOfferService.searchTenantEstatesQuery(tenant)
 
     if (only_count) {
       return {
         categoryCounts,
-        count: estates?.length,
+        count: estates?.length
       }
     }
 
@@ -49,7 +48,7 @@ class ThirdPartyMatchService {
       estate = {
         ...estate,
         options: amenities,
-        ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+        ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING
       }
       const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
         tenant,
@@ -68,7 +67,7 @@ class ThirdPartyMatchService {
         percent: i.percent,
         status: MATCH_STATUS_NEW,
         landlord_score: i.landlord_score,
-        prospect_score: i.prospect_score,
+        prospect_score: i.prospect_score
       })) || []
     const oldMatches = await this.getOldMatches(tenant.user_id)
     Logger.info(
@@ -90,7 +89,7 @@ class ThirdPartyMatchService {
 
     return {
       count: matches?.length,
-      matches,
+      matches
     }
   }
 
@@ -126,7 +125,7 @@ class ThirdPartyMatchService {
     estate = {
       ...estate,
       options: amenities,
-      ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+      ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING
     }
     while (idx < tenants.length) {
       const tenant = tenants[idx]
@@ -139,7 +138,7 @@ class ThirdPartyMatchService {
         estate_id: estate.id,
         percent,
         landlord_score,
-        prospect_score,
+        prospect_score
       })
       idx++
     }
@@ -151,7 +150,7 @@ class ThirdPartyMatchService {
         percent: i.percent,
         status: MATCH_STATUS_NEW,
         landlord_score: i.landlord_score,
-        prospect_score: i.prospect_score,
+        prospect_score: i.prospect_score
       })) || []
 
     await this.updateMatches({ matches, has_notification_sent }, trx)
@@ -202,7 +201,7 @@ class ThirdPartyMatchService {
   static async upsertSingleMatch(match, trx) {
     const thirdPartyMatch = await this.getNewMatch({
       user_id: match.user_id,
-      estate_id: match.estate_id,
+      estate_id: match.estate_id
     })
 
     if (thirdPartyMatch) {

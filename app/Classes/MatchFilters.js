@@ -19,7 +19,7 @@ const {
   DOC_CREDIT_SCORE_LABEL,
   STATUS_DELETE,
   INCOME_TYPE_OTHER_BENEFIT,
-  INCOME_TYPE_CHILD_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT
 } = require('../constants')
 const Filter = require('./Filter')
 const Database = use('Database')
@@ -49,8 +49,8 @@ class MatchFilters extends Filter {
         self_employeed: INCOME_TYPE_SELF_EMPLOYED,
         trainee: INCOME_TYPE_TRAINEE,
         other_benefit: INCOME_TYPE_OTHER_BENEFIT,
-        child_benefit: INCOME_TYPE_CHILD_BENEFIT,
-      },
+        child_benefit: INCOME_TYPE_CHILD_BENEFIT
+      }
     }
 
     Filter.TableInfo = {
@@ -58,14 +58,14 @@ class MatchFilters extends Filter {
       updated_at: 'matches',
       firstname: '_u',
       secondname: '_u',
-      total_work_exp: '_me',
+      total_work_exp: '_me'
     }
 
     Filter.paramToField = {
       status: 'updated_at',
       tenant: ['firstname', 'secondname'],
       age: 'any(_m.members_age)',
-      knocked_at: `to_char(knocked_at,'YYYY-MM-DD')`,
+      knocked_at: `to_char(knocked_at,'YYYY-MM-DD')`
     }
 
     this.matchFilter(['income', 'status', 'tenant', 'age', 'total_work_exp', 'knocked_at'], params)
