@@ -282,7 +282,8 @@ const ESTATE_PERCENTAGE_VARIABLE = {
     {
       key: 'minors',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false
+      is_custom: false,
+      isBoolean: true
     },
     {
       key: 'pets_allowed',
@@ -292,24 +293,27 @@ const ESTATE_PERCENTAGE_VARIABLE = {
     {
       key: 'is_new_tenant_transfer',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false
+      is_custom: false,
+      isBoolean: true
     },
     {
       key: 'budget',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false
+      is_custom: false,
+      isNumber: true
     },
     {
       key: 'credit_score',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false
+      is_custom: false,
+      isNumber: true
     },
-    /*
     {
       key: 'rent_arrears',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: true
-    },*/
+      is_custom: false,
+      isBoolean: true
+    },
     {
       key: 'income_sources',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
@@ -3233,6 +3237,19 @@ class EstateService {
 
     if (estate['amenities'] && estate['amenities'].length) {
       percent += PROPERTY_DETAILS_PERCENT_VAL / (property_detail.length + 1)
+      debugArr.push({
+        key: 'amenities',
+        value: estate['amenities'],
+        score: PROPERTY_DETAILS_PERCENT_VAL / (property_detail.length + 1),
+        percent
+      })
+    } else {
+      debugArr.push({
+        key: 'amenities',
+        value: estate['amenities'],
+        score: 0,
+        percent
+      })
     }
 
     const tenant_preference = ESTATE_PERCENTAGE_VARIABLE.tenant_preference.filter((g) =>
@@ -3241,22 +3258,29 @@ class EstateService {
     tenant_preference.length &&
       tenant_preference
         .filter((t) => !t.is_custom)
-        .map(({ key }) => {
-          percent += estate[key] ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length : 0
-          console.log(
+        .map(({ key, isBoolean, isNumber }) => {
+          let score = 0
+          if (isBoolean) {
+            score =
+              estate[key] === true || estate[key] === false
+                ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length
+                : 0
+          } else if (isNumber) {
+            score = Number(estate[key])
+              ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length
+              : 0
+          } else {
+            score = estate[key] ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length : 0
+          }
+          percent += score
+          debugArr.push({
             key,
-            estate[key],
-            estate[key] ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length : 0,
+            value: estate[key],
+            score,
             percent
-          )
+          })
         })
 
-    if (
-      tenant_preference.length &&
-      (estate['rent_arrears'] === true || estate['rent_arrears'] === false)
-    ) {
-      percent += TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length
-    }
     let visit_slots = ESTATE_PERCENTAGE_VARIABLE.visit_slots.filter((g) =>
       g.mandatory.includes(let_type)
     )
@@ -3264,13 +3288,14 @@ class EstateService {
       visit_slots
         .filter((v) => !v.is_custom)
         .map(({ key }) => {
+          //add 1 to denominator to compensate for estates.slots
           percent += estate[key] ? VISIT_SLOT_PERCENT_VAL / visit_slots.length : 0
-          console.log(
+          debugArr.push({
             key,
-            estate[key],
-            estate[key] ? VISIT_SLOT_PERCENT_VAL / visit_slots.length : 0,
+            value: estate[key],
+            score: estate[key] ? VISIT_SLOT_PERCENT_VAL / visit_slots.length : 0,
             percent
-          )
+          })
         })
 
     if (
@@ -3281,48 +3306,69 @@ class EstateService {
       estate.slots.find((slot) => slot.start_at >= moment.utc(new Date()).format(DATE_FORMAT))
     ) {
       percent += VISIT_SLOT_PERCENT_VAL / visit_slots.length
-      console.log(VISIT_SLOT_PERCENT_VAL, visit_slots.length, percent)
+      debugArr.push({
+        key: 'slots',
+        value: estate['slots'],
+        score: VISIT_SLOT_PERCENT_VAL / visit_slots.length,
+        percent
+      })
+    } else {
+      debugArr.push({
+        key: 'slots',
+        value: estate['slots'],
+        score: 0,
+        percent
+      })
     }
-    console.log({ percent })
+
     let views = ESTATE_PERCENTAGE_VARIABLE.views.filter((g) => g.mandatory.includes(let_type))
-    console.log(
-      { views, IMAGE_DOC_PERCENT_VAL },
-      views.length,
-      IMAGE_DOC_PERCENT_VAL / views.length
-    )
     views.length &&
       views
         .filter((v) => !v.is_custom)
         .map(({ key }) => {
           percent += estate[key] ? IMAGE_DOC_PERCENT_VAL / views.length : 0
-          console.log(
+          debugArr.push({
             key,
-            estate[key],
-            estate[key] ? IMAGE_DOC_PERCENT_VAL / views.length : 0,
+            value: estate[key],
+            score: estate[key] ? IMAGE_DOC_PERCENT_VAL / views.length : 0,
             percent
-          )
+          })
         })
 
     if (views.length) {
-      percent += sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
+      let score = sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
         ? IMAGE_DOC_PERCENT_VAL / views.length
         : 0
-      console.log(
-        sum((estate?.rooms || []).map((room) => room?.images?.length || 0)),
-        'room image',
+      percent += score
+      debugArr.push({
+        key: 'room_image',
+        value: estate['rooms'],
+        score,
         percent
-      )
-      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
+      })
+      score = (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
         ? IMAGE_DOC_PERCENT_VAL / views.length
         : 0
-      console.log('file type plan', percent)
-      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
+      percent += score
+      debugArr.push({
+        key: 'house plan',
+        value: estate['files'],
+        score,
+        percent
+      })
+      score = (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
         ? IMAGE_DOC_PERCENT_VAL / views.length
         : 0
-      console.log('file type external', percent)
+      percent += score
+      debugArr.push({
+        key: 'external',
+        value: estate['files'],
+        score,
+        percent
+      })
     }
     if (debug) return debugArr
-    return Math.ceil(percent)
+    return percent >= 100 ? 100 : Math.ceil(percent)
   }
 
   static async updatePercentAndIsPublished(
