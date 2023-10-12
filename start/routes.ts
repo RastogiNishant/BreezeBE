@@ -155,6 +155,7 @@ Route.group(() => {
 Route.group(() => {
   Route.put('/', 'TenantController.updateTenant').middleware(['valid:UpdateTenant'])
   Route.post('/activate', 'TenantController.activateTenant')
+  Route.post('/deactive', 'TenantController.deactivateTenant')
   Route.post('/buddy/accept', 'TenantController.acceptBuddyInvite')
   Route.get('/map', 'TenantController.getTenantMap')
   Route.get('/all', 'TenantController.getAllTenants')
