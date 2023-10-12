@@ -13,7 +13,7 @@ class PdfRentalController {
     const pdfServerPort = (parseInt(process.env.PORT) || 3000) + 1
     const url = `http:\\\\localhost:${pdfServerPort}\\pdf`
 
-    const { data: pdfStream } = await axios.post(
+    const axiosResponse = await axios.post(
       url,
       { data: tenantData },
       {
@@ -27,7 +27,16 @@ class PdfRentalController {
     response.implicitEnd = false
     response.header('Content-type', 'application/pdf')
 
-    pdfStream.pipe(response.response)
+    const contentDisposition = axiosResponse.headers['content-disposition']
+    if (contentDisposition) {
+      const match = /filename="(.+)"/.exec(contentDisposition)
+      if (match && match[1]) {
+        const filename = match[1]
+        response.header('Content-Disposition', `attachment; filename="${filename}"`)
+      }
+    }
+
+    axiosResponse.data.pipe(response.response)
   }
 }
 
