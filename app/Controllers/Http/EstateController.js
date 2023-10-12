@@ -249,7 +249,7 @@ class EstateController {
 
       if (
         !landlord.toJSON().share &&
-        landlord.toJSON().is_not_show &&
+        !landlord.toJSON().is_not_show &&
         landlord.toJSON().status !== MATCH_STATUS_FINISH
       ) {
         members = (members || members.toJSON() || []).map((member) =>
