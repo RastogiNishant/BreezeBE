@@ -44,7 +44,7 @@ const {
   ROOM_TYPE_STAIRS,
   ROOM_TYPE_GARDEN,
   ROOM_TYPE_LOGGIA,
-  FILE_LIMIT_LENGTH,
+  FILE_LIMIT_LENGTH
 } = require('../constants')
 const {
   exceptions: {
@@ -53,8 +53,8 @@ const {
     IMAGE_COUNT_LIMIT,
     INVALID_ROOM,
     FAILED_TO_ADD_FILE,
-    CURRENT_IMAGE_COUNT,
-  },
+    CURRENT_IMAGE_COUNT
+  }
 } = require('../exceptions')
 
 const schema = require('../Validators/CreateRoom').schema()
@@ -135,7 +135,7 @@ class RoomService {
         const name = room.name.split(' ')[0]
         updateRooms.push({
           ...room,
-          name: `${name} ${index + 1}`,
+          name: `${name} ${index + 1}`
         })
       })
     })
@@ -209,10 +209,10 @@ class RoomService {
         File.IMAGE_TIFF,
         File.IMAGE_WEBP,
         File.IMAGE_HEIC,
-        File.IMAGE_GIF,
+        File.IMAGE_GIF
       ]
       const files = await File.saveRequestFiles(request, [
-        { field: 'file', mime: imageMimes, isPublic: true },
+        { field: 'file', mime: imageMimes, isPublic: true }
       ])
 
       if (!files?.file) {
@@ -228,7 +228,7 @@ class RoomService {
           disk: 's3public',
           url: path,
           file_name: original_file_names[index],
-          room_id: room.id,
+          room_id: room.id
         }
       })
       const images = await this.addManyImages(data, trx)
@@ -328,7 +328,7 @@ class RoomService {
       if (room.type !== undefined) {
         room = {
           ...room,
-          estate_id,
+          estate_id
         }
         rooms.push(room)
       }
@@ -352,7 +352,7 @@ class RoomService {
     const room = await Room.createItem(
       {
         ...roomData,
-        estate_id,
+        estate_id
       },
       trx
     )
@@ -385,7 +385,7 @@ class RoomService {
           newRoomsInfo.push({
             ...room,
             name: index ? `${room.name} ${index + 1}` : room.name,
-            order: !room?.order ? index + 1 : room.order,
+            order: !room?.order ? index + 1 : room.order
           })
         })
       })
@@ -445,7 +445,7 @@ class RoomService {
           ROOM_TYPE_PROPERTY_ENTRANCE,
           ROOM_TYPE_STAIRS,
           ROOM_TYPE_GARDEN,
-          ROOM_TYPE_LOGGIA,
+          ROOM_TYPE_LOGGIA
         ]
 
         const oldRoomsByRoomTypes = roomTypes.map((type) =>
@@ -469,7 +469,7 @@ class RoomService {
               orderIndex: oldRoomLength
                 ? oldRoomsByRoomTypes[index][oldRoomLength - 1].order
                 : ROOM_DEFAULT_ORDER,
-              rooms: newRoomByType.slice(oldRoomsByRoomTypes[index].length, newRoomByType.length),
+              rooms: newRoomByType.slice(oldRoomsByRoomTypes[index].length, newRoomByType.length)
             }
           } else if (newRoomByType.length < oldRoomsByRoomTypes[index].length) {
             const oldRoomsNoImages =
@@ -479,7 +479,7 @@ class RoomService {
               type: oldRoomsByRoomTypes[index][0].type,
               rooms: oldRoomsNoImages.map((r) => {
                 return { id: r.id, name: r.name }
-              }),
+              })
             }
           }
           return {}
@@ -496,7 +496,7 @@ class RoomService {
                 order:
                   element.orderIndex === ROOM_DEFAULT_ORDER
                     ? ROOM_DEFAULT_ORDER
-                    : element.orderIndex + index,
+                    : element.orderIndex + index
               })
             })
           } else if (element && element.operation === 'delete') {
@@ -565,7 +565,7 @@ class RoomService {
         url: image.url,
         file_name: image.file_name,
         room_id: room.id,
-        disk: 's3public',
+        disk: 's3public'
       })
     })
 

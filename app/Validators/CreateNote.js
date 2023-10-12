@@ -8,7 +8,7 @@ class CreateNote extends Base {
   static schema = () =>
     yup.object().shape({
       note: yup.string().required(),
-      tenant_id : id.required()
+      tenant_id: id.required()
     })
 }
 

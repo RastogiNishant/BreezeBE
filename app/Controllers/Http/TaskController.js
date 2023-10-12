@@ -8,7 +8,7 @@ const {
   URGENCY_LOW,
   URGENCY_HIGH,
   URGENCY_SUPER,
-  URGENCY_NORMAL,
+  URGENCY_NORMAL
 } = require('../../constants')
 const OutsideLandlordService = require('../../Services/OutsideLandlordService')
 const TaskService = use('App/Services/TaskService')
@@ -70,7 +70,7 @@ class TaskController {
           role: auth.user.role,
           email: auth.user.email,
           page,
-          limit,
+          limit
         })
       )
     } catch (e) {
@@ -91,7 +91,7 @@ class TaskController {
           query,
           orderby,
           page,
-          limit,
+          limit
         })
       )
     } catch (e) {
@@ -139,7 +139,7 @@ class TaskController {
       low_urgency_count,
       normal_urgency_count,
       high_urgency_count,
-      super_urgency_count,
+      super_urgency_count
     })
   }
 
@@ -152,7 +152,7 @@ class TaskController {
     const estateAllTasks = await TaskService.getEstateAllTasks({
       user_id: auth.user.id,
       id,
-      params,
+      params
     })
 
     let archivedCount = null
@@ -160,7 +160,7 @@ class TaskController {
       archivedCount = await TaskService.count({
         estate_id: id,
         status: params.archived_status,
-        role: ROLE_LANDLORD,
+        role: ROLE_LANDLORD
       })
     }
 
@@ -171,7 +171,7 @@ class TaskController {
         ? undefined
         : archivedCount && archivedCount.length
         ? archivedCount[0].count
-        : 0,
+        : 0
     }
     response.res(estate)
   }
@@ -187,7 +187,7 @@ class TaskController {
         user_id: auth.user.id,
         params,
         page: params?.filter_by_unread_message ? -1 : params.page || -1,
-        limit: params?.filter_by_unread_message ? -1 : params.limit || -1,
+        limit: params?.filter_by_unread_message ? -1 : params.limit || -1
       })
 
       const totalCountResult = await EstateService.getTotalLetCount(auth.user.id, params, false)
@@ -202,7 +202,7 @@ class TaskController {
       const result = {
         total: totalCountResult.length || 0,
         filtered: filterCountResultCount || 0,
-        estates,
+        estates
       }
 
       response.res(result)
@@ -232,7 +232,7 @@ class TaskController {
       await OutsideLandlordService.cancelInvitation({
         landlord_id: auth.user.id,
         email: auth.user.email,
-        task_id: id,
+        task_id: id
       })
     )
   }
@@ -244,7 +244,7 @@ class TaskController {
         user_id: auth.user.id,
         task_id: id,
         email: auth.user.email,
-        estate_id,
+        estate_id
       })
     )
   }

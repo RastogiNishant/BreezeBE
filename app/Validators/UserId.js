@@ -6,13 +6,13 @@ const Base = require('./Base')
 
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED },
+  exceptionKeys: { REQUIRED }
 } = require('../exceptions')
 
 class UserId extends Base {
   static schema = () =>
     yup.object().shape({
-      user_id: id.required(getExceptionMessage('user_id', REQUIRED)),
+      user_id: id.required(getExceptionMessage('user_id', REQUIRED))
     })
 }
 

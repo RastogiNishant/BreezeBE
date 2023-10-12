@@ -13,17 +13,17 @@ const UserService = use('App/Services/UserService')
 
 const AppType = {
   ANDROID: DEVICE_TYPE_ANDROID,
-  IOS: DEVICE_TYPE_IOS,
+  IOS: DEVICE_TYPE_IOS
 }
 
 const EnvironmentType = {
   SANDBOX: 'sandbox',
-  PROD: 'prod',
+  PROD: 'prod'
 }
 
 const AppService = {
   GOOGLE: 'google',
-  APPLE: 'apple',
+  APPLE: 'apple'
 }
 const timeZone = 'Europe/Berlin'
 
@@ -33,7 +33,7 @@ google.options({
     null,
     process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
     [process.env.GOOGLE_AUTH_PUBLISHER]
-  ),
+  )
 })
 
 const iapTestMode = process.env.IAP_TEST_MODE === 'true'
@@ -48,11 +48,11 @@ iap.config({
 
   googleServiceAccount: {
     clientEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    privateKey: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
+    privateKey: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
   },
 
   /* Configurations all platforms */
-  test: iapTestMode, // For Apple and Google Play to force Sandbox validation only
+  test: iapTestMode // For Apple and Google Play to force Sandbox validation only
   // verbose: true, // Output debug logs to stdout stream
 })
 
@@ -136,7 +136,7 @@ class TenantPremiumPlanService {
         startDate: startDate,
         endDate: endDate,
         isCancelled: isCancelled,
-        fake: false,
+        fake: false
       }
 
       let newPurchase = null
@@ -146,7 +146,7 @@ class TenantPremiumPlanService {
       if (!tenantPremiumPlan) {
         newPurchase = await UserPremiumPlan.createItem(
           {
-            ...purchase,
+            ...purchase
           },
           trx
         )
@@ -170,7 +170,7 @@ class TenantPremiumPlanService {
         await androidGoogleApi.purchases.subscriptions.acknowledge({
           packageName: androidPackageName,
           subscriptionId: productId,
-          token: receipt.purchaseToken,
+          token: receipt.purchaseToken
         })
       }
       return newPurchase

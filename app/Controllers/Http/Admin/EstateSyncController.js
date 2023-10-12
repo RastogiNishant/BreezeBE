@@ -20,14 +20,14 @@ class EstateSyncController {
     const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
     const is24result = await estateSync.put('account/credentials/immobilienscout-24', {
       key: is24key,
-      secret: is24secret,
+      secret: is24secret
     })
     if (is24result.success) {
       const contactResult = await estateSync.post('contacts', contact)
       if (contactResult.success) {
         await EstateSyncCredential.createItem({
           type: ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE,
-          estate_sync_contact_id: contactResult.data.id,
+          estate_sync_contact_id: contactResult.data.id
         })
       }
     }
@@ -57,7 +57,7 @@ class EstateSyncController {
       case 'ebay-kleinanzeigen':
         data = {
           type,
-          credentials,
+          credentials
         }
         if (type === 'immowelt') {
           data['autoCollectRequests'] = true
@@ -67,7 +67,7 @@ class EstateSyncController {
         data = {
           type: 'immobilienscout-24',
           redirectUrl: process.env.ESTATE_SYNC_IS24_OAUTH_TOKEN_REDIRECT,
-          autoCollectRequests: true,
+          autoCollectRequests: true
         }
         break
       default:
@@ -79,7 +79,7 @@ class EstateSyncController {
         await EstateSyncTarget.createItem({
           estate_sync_credential_id: breezeEstateSync.id,
           publishing_provider: type,
-          estate_sync_target_id: result.data.id,
+          estate_sync_target_id: result.data.id
         })
         return response.res(result.data)
       } else {

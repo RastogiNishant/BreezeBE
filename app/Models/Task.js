@@ -27,7 +27,7 @@ class Task extends Model {
       'landlord_identify_key',
       'landlord_id',
       'type',
-      'due_date',
+      'due_date'
     ]
   }
   static get readonly() {

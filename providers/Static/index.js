@@ -18,7 +18,7 @@ class Static {
 
     return Promise.props({
       agreement: convertToJSON(AgreementService.getLatestActive),
-      terms: convertToJSON(AgreementService.getActiveTerms),
+      terms: convertToJSON(AgreementService.getActiveTerms)
     })
   }
 

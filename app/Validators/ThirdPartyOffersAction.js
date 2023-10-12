@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED },
+  exceptionKeys: { REQUIRED }
 } = require('../exceptions')
 
 class ThirdPartyOffersAction extends Base {
@@ -17,12 +17,12 @@ class ThirdPartyOffersAction extends Base {
         .required(getExceptionMessage('action', REQUIRED)),
       comment: yup.string().when('action', {
         is: 'comment',
-        then: yup.string().required(getExceptionMessage('comment', REQUIRED)),
+        then: yup.string().required(getExceptionMessage('comment', REQUIRED))
       }),
       message: yup.string().when('action', {
         is: 'contact',
-        then: yup.string().required(getExceptionMessage('message', REQUIRED)),
-      }),
+        then: yup.string().required(getExceptionMessage('message', REQUIRED))
+      })
     })
   }
 }

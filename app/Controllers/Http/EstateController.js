@@ -247,8 +247,9 @@ class EstateController {
       let members = await MemberService.getMembers(tenant_id, true)
       const company = await CompanyService.getUserCompany(auth.user.id)
 
-      if (!landlord.toJSON().share &&
-        landlord.toJSON().is_not_show &&
+      if (
+        !landlord.toJSON().share &&
+        !landlord.toJSON().is_not_show &&
         landlord.toJSON().status !== MATCH_STATUS_FINISH
       ) {
         members = (members || members.toJSON() || []).map((member) =>

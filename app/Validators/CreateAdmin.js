@@ -8,7 +8,7 @@ class CreateAdmin extends Base {
     yup.object().shape({
       email: yup.string().email().lowercase().required(),
       password: yup.string().required(),
-      fullname: yup.string(),
+      fullname: yup.string()
     })
   }
 }

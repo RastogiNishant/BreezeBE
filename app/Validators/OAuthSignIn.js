@@ -8,11 +8,11 @@ const {
   ROLE_PROPERTY_MANAGER,
   OUTSIDE_LANDLORD_INVITE_TYPE,
   OUTSIDE_TENANT_INVITE_TYPE,
-  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+  OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE
 } = require('../constants')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, INVALID, NUMBER },
+  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, INVALID, NUMBER }
 } = require('../exceptions')
 
 class OAuthSignIn extends Base {
@@ -48,7 +48,7 @@ class OAuthSignIn extends Base {
         .oneOf([
           OUTSIDE_LANDLORD_INVITE_TYPE,
           OUTSIDE_TENANT_INVITE_TYPE,
-          OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE,
+          OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE
         ]),
       ip: yup
         .string()
@@ -61,8 +61,8 @@ class OAuthSignIn extends Base {
         city: yup.string().nullable(),
         postal: yup.string().nullable(),
         latitude: yup.string().nullable(),
-        longitude: yup.string().nullable(),
-      }),
+        longitude: yup.string().nullable()
+      })
     })
 }
 

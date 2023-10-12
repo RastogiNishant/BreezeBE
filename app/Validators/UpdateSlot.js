@@ -6,7 +6,7 @@ const Base = require('./Base')
 const { DATE_FORMAT } = require('../constants')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, STRING, SHOULD_BE_AFTER },
+  exceptionKeys: { REQUIRED, OPTION, STRING, SHOULD_BE_AFTER }
 } = require('../exceptions')
 
 const transformTime = (value) => {
@@ -64,7 +64,7 @@ class UpdateSlot extends Base {
         .number()
         .oneOf([5, 10, 15, null], getExceptionMessage('slot_length', OPTION, `[5,10,15,null]`))
         .nullable(true)
-        .notRequired(),
+        .notRequired()
     })
 }
 

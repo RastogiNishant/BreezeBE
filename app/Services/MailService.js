@@ -29,7 +29,7 @@ const {
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   ESTATE_NO_IMAGE_COVER_URL,
-  MARKETPLACE_LIST,
+  MARKETPLACE_LIST
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
@@ -43,7 +43,7 @@ class MailService {
       to: trim(user.email, ' '),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -77,8 +77,8 @@ class MailService {
         forgot_label: l.get('prospect.email_forgot.password.subject.message', lang),
         forgot_prefix: l.get('prospect.email_forgot.password.intro.message', lang),
         forgot_link_txt: l.get('prospect.email_forgot.password.CTA.message', lang),
-        forgot_suffix: l.get('prospect.email_forgot.password.final.message', lang),
-      },
+        forgot_suffix: l.get('prospect.email_forgot.password.final.message', lang)
+      }
     }
 
     return sgMail.send(msg).then(
@@ -100,7 +100,7 @@ class MailService {
       to: trim(email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -126,8 +126,8 @@ class MailService {
         enviromental_responsibility: l.get(
           'email_signature.enviromental.responsibility.message',
           lang
-        ),
-      },
+        )
+      }
     }
 
     return sgMail.send(msg).then(
@@ -157,7 +157,7 @@ class MailService {
       to: trim(email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -185,8 +185,8 @@ class MailService {
           lang
         ),
         username: l.get('prospect.settings.user_details.txt_type_username', lang),
-        username_val: email,
-      },
+        username_val: email
+      }
     }
     return sgMail.send(msg).then(
       () => {
@@ -211,12 +211,12 @@ class MailService {
       from: {
         // Use the email address or domain you verified above
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
 
       subject: `Invitation to add your properties to this estate`,
       text: `Here is the link is ${shortLink}`,
-      html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`,
+      html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`
     }
     return sgMail.send(msg).then(
       () => {
@@ -238,13 +238,13 @@ class MailService {
       to: trim(email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
         subject: 'Confirm your email',
-        link: `${process.env.APP_URL}/account/change_email?code=${code}&user_id=${user_id}`,
-      },
+        link: `${process.env.APP_URL}/account/change_email?code=${code}&user_id=${user_id}`
+      }
     }
 
     return sgMail.send(msg).then(
@@ -273,7 +273,7 @@ class MailService {
       to: trim(email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -309,8 +309,8 @@ class MailService {
         forgot_label: l.get('prospect.email_forgot.password.subject.message', lang),
         forgot_prefix: l.get('prospect.email_forgot.password.intro.message', lang),
         forgot_link_txt: l.get('prospect.email_forgot.password.CTA.message', lang),
-        forgot_suffix: l.get('prospect.email_forgot.password.final.message', lang),
-      },
+        forgot_suffix: l.get('prospect.email_forgot.password.final.message', lang)
+      }
     }
 
     return sgMail.send(msg).then(
@@ -342,7 +342,7 @@ class MailService {
       to: trim(email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -370,8 +370,8 @@ class MailService {
           lang
         ),
         username: l.get('prospect.settings.user_details.txt_type_username', lang),
-        username_val: user.email,
-      },
+        username_val: user.email
+      }
     }
 
     return sgMail.send(msg).then(
@@ -395,11 +395,11 @@ class MailService {
       to: values.email,
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       subject: `You are invited to view this ${values.code}`,
       text: `Invited to view this Estate: ${values.code}`,
-      html: `<h3> code: <b>${values.code}</b></h3>`,
+      html: `<h3> code: <b>${values.code}</b></h3>`
     }
 
     return sgMail.send(msg).then(
@@ -421,7 +421,7 @@ class MailService {
       to: ADMIN_NOTIFY_EMAIL,
       from: FROM_ONBOARD_EMAIL, // Use the email address or domain you verified above
       subject: subject,
-      text: txt,
+      text: txt
     }
 
     return sgMail.send(msg).then(
@@ -451,7 +451,7 @@ class MailService {
       to: trim(email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -477,8 +477,8 @@ class MailService {
         enviromental_responsibility: l.get(
           'email_signature.enviromental.responsibility.message',
           lang
-        ),
-      },
+        )
+      }
     }
 
     return sgMail.send(msg).then(
@@ -513,7 +513,7 @@ class MailService {
       to: trim(email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -539,8 +539,8 @@ class MailService {
         enviromental_responsibility: l.get(
           'email_signature.enviromental.responsibility.message',
           lang
-        ),
-      },
+        )
+      }
     }
 
     return sgMail.send(msg).then(
@@ -567,7 +567,7 @@ class MailService {
         to: trim(link.email),
         from: {
           email: FromEmail,
-          name: FromName,
+          name: FromName
         },
         templateId: templateId,
         dynamic_template_data: {
@@ -593,8 +593,8 @@ class MailService {
           enviromental_responsibility: l.get(
             'email_signature.enviromental.responsibility.message',
             lang
-          ),
-        },
+          )
+        }
       }
     })
 
@@ -619,12 +619,12 @@ class MailService {
       house_number: task?.property_address?.house_number,
       zip: task?.property_address?.postcode,
       city: task?.property_address?.city,
-      country: task?.property_address?.country,
+      country: task?.property_address?.country
     })
     const shortMsg = `<b>${task.address_detail || ``}, ${address}</b>: \n 
                       <b>${l.get(task.title, lang)}</b>:<br/>${
-      l.get(task.description, lang) || ``
-    } `
+                        l.get(task.description, lang) || ``
+                      } `
 
     const intro = l
       .get('landlord.email_connect_invitation.intro.message', lang)
@@ -638,7 +638,7 @@ class MailService {
       to: trim(task.email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -664,8 +664,8 @@ class MailService {
         enviromental_responsibility: l.get(
           'email_signature.enviromental.responsibility.message',
           lang
-        ),
-      },
+        )
+      }
     }
 
     return sgMail.send(msg).then(
@@ -692,7 +692,7 @@ class MailService {
       house_number: estate?.house_number,
       zip: estate?.postcode,
       city: estate?.city,
-      country: estate?.country,
+      country: estate?.country
     })
     const intro = l
       .get('landlord.email_property_published.intro.message', lang)
@@ -712,7 +712,7 @@ class MailService {
       to: trim(estate.email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -738,8 +738,8 @@ class MailService {
         enviromental_responsibility: l.get(
           'email_signature.enviromental.responsibility.message',
           lang
-        ),
-      },
+        )
+      }
     }
     return sgMail.send(msg).then(
       () => {
@@ -762,10 +762,10 @@ class MailService {
       to: FromEmail,
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       subject: subject,
-      text: textMessage,
+      text: textMessage
     }
 
     if (htmlMessage) {
@@ -790,12 +790,12 @@ class MailService {
       to: recipient,
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       subject:
         SEND_EMAIL_TO_OHNEMAKLER_SUBJECT +
         moment.utc().add(2, 'hours').format(GERMAN_DATE_TIME_FORMAT),
-      text: textMessage,
+      text: textMessage
     }
     if (sendToBCC) {
       msg.bcc = [sendToBCC]
@@ -820,7 +820,7 @@ class MailService {
     bcc = null,
     subject,
     attachment,
-    from,
+    from
   }) {
     const message = {
       to: recipient,
@@ -833,9 +833,9 @@ class MailService {
           filename: 'Anfrage.xml',
           type: 'application/xml',
           disposition: 'attachment',
-          content_id: 'breeze-attachment',
-        },
-      ],
+          content_id: 'breeze-attachment'
+        }
+      ]
     }
     if (bcc) {
       message.bcc = bcc
@@ -917,7 +917,7 @@ class MailService {
         to: trim(email),
         from: {
           email: FromEmail,
-          name: FromName,
+          name: FromName
         },
         templateId: templateId,
         dynamic_template_data: {
@@ -944,8 +944,8 @@ class MailService {
           enviromental_responsibility: l.get(
             'email_signature.enviromental.responsibility.message',
             lang
-          ),
-        },
+          )
+        }
       }
 
       return sgMail.send(messages).then(
@@ -1006,7 +1006,7 @@ class MailService {
         to: trim(email),
         from: {
           email: FromEmail,
-          name: FromName,
+          name: FromName
         },
         templateId: templateId,
         dynamic_template_data: {
@@ -1033,8 +1033,8 @@ class MailService {
           enviromental_responsibility: l.get(
             'email_signature.enviromental.responsibility.message',
             lang
-          ),
-        },
+          )
+        }
       }
 
       return sgMail.send(messages).then(
@@ -1058,10 +1058,10 @@ class MailService {
       to: recipient,
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       subject,
-      text,
+      text
     }
 
     return sgMail.send(message).then(
@@ -1077,9 +1077,9 @@ class MailService {
     )
   }
 
-  static async sendToSupportLandlordPublishedOneEstate({ landlord }) { }
+  static async sendToSupportLandlordPublishedOneEstate({ landlord }) {}
 
-  static async sendToSupportLandlordConnectedOneEstate() { }
+  static async sendToSupportLandlordConnectedOneEstate() {}
 
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
@@ -1088,7 +1088,7 @@ class MailService {
       to: trim(email),
       from: {
         email: FromEmail,
-        name: FromName,
+        name: FromName
       },
       templateId: templateId,
       dynamic_template_data: {
@@ -1113,8 +1113,8 @@ class MailService {
         enviromental_responsibility: l.get(
           'email_signature.enviromental.responsibility.message',
           lang
-        ),
-      },
+        )
+      }
     }
     return sgMail.send(msg).then(
       () => {
@@ -1131,7 +1131,6 @@ class MailService {
       }
     )
   }
-
 }
 
 module.exports = MailService

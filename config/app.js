@@ -71,7 +71,7 @@ module.exports = {
     | response.send('Hello', { ignoreEtag: true })
     |
     */
-    etag: false,
+    etag: false
   },
 
   views: {
@@ -84,7 +84,7 @@ module.exports = {
     | production to optimize view loading time.
     |
     */
-    cache: Env.get('CACHE_VIEWS', true),
+    cache: Env.get('CACHE_VIEWS', true)
   },
 
   static: {
@@ -123,13 +123,13 @@ module.exports = {
     | that exists will be served. Example: ['html', 'htm'].
     |
     */
-    extensions: false,
+    extensions: false
   },
 
   locales: {
     loader: 'file',
 
-    locale: 'en',
+    locale: 'en'
   },
 
   /**
@@ -141,22 +141,22 @@ module.exports = {
     console: {
       driver: 'console',
       name: 'adonis-app',
-      level: 'info',
+      level: 'info'
     },
 
     file: {
       driver: 'file',
       name: 'adonis-app',
       filename: '/tmp/adonis.log',
-      level: 'info',
+      level: 'info'
     },
 
     notfound: {
       driver: 'file',
       name: 'adonis-app',
       filename: 'notfound.log',
-      level: 'info',
-    },
+      level: 'info'
+    }
   },
 
   /*
@@ -173,17 +173,17 @@ module.exports = {
     httpOnly: true,
     sameSite: false,
     path: '/',
-    maxAge: 7200,
+    maxAge: 7200
   },
 
   settings: {
     gameInviteNotificationTTL: 60, // 60 second while invite valid
-    gamePlayTTL: 20 * 60, // 20 min, until game finish
+    gamePlayTTL: 20 * 60 // 20 min, until game finish
   },
 
   httpLog: {
     env: null, // All env
-    excludeRoutes: [],
+    excludeRoutes: []
   },
 
   firebase: {
@@ -197,36 +197,36 @@ module.exports = {
     token_uri: 'https://oauth2.googleapis.com/token',
     auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
     client_x509_cert_url:
-      'https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-i7t6y%40breeze-87b50.iam.gserviceaccount.com',
+      'https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-i7t6y%40breeze-87b50.iam.gserviceaccount.com'
   },
 
   sms: {
     id: Env.get('TWILIO_ID'),
     secret: Env.get('TWILIO_TOKEN'),
     from: Env.get('TWILIO_FROM'),
-    disable: Env.get('SMS_DISABLED', false),
+    disable: Env.get('SMS_DISABLED', false)
   },
 
   images: {
     avatar: {
       width: 429,
-      height: 429,
-    },
+      height: 429
+    }
   },
 
   geo: {
-    apiKey: Env.get('GEO_API_KEY'),
+    apiKey: Env.get('GEO_API_KEY')
   },
 
   product: {
     googleAccountEmail: Env.get('GOOGLE_SERVICE_ACCOUNT_EMAIL'),
     googleAccountPrivateKey: Env.get('GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY'),
     appleShareSecret: Env.get('APPLE_SHARED_SECRET'),
-    iapTestMode: Env.get('IAP_TEST_MODE'),
+    iapTestMode: Env.get('IAP_TEST_MODE')
   },
 
   localize: {
     projectId: '1793da5d3fb996546d6ea103110e9c4b',
-    accessToken: 'f9181d4a284578d5793f11080375cc610a5d12be5cac4e333311e3e4d529e52f',
-  },
+    accessToken: 'f9181d4a284578d5793f11080375cc610a5d12be5cac4e333311e3e4d529e52f'
+  }
 }

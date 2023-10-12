@@ -9,7 +9,7 @@ class GetNotifications extends Base {
     yup.object().shape({
       estate_id: yup.number(),
       date_from: yup.date(),
-      date_to: yup.date(),
+      date_to: yup.date()
     })
 }
 

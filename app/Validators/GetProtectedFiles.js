@@ -7,7 +7,7 @@ const { id } = require('../Libs/schemas.js')
 const {
   MEMBER_FILE_TYPE_RENT,
   MEMBER_FILE_TYPE_DEBT,
-  MEMBER_FILE_TYPE_INCOME,
+  MEMBER_FILE_TYPE_INCOME
 } = require('../constants')
 
 class GetProtectedFiles extends Base {
@@ -18,7 +18,7 @@ class GetProtectedFiles extends Base {
       member_id: id.required(),
       file_type: yup
         .string()
-        .oneOf([MEMBER_FILE_TYPE_RENT, MEMBER_FILE_TYPE_DEBT, MEMBER_FILE_TYPE_INCOME]),
+        .oneOf([MEMBER_FILE_TYPE_RENT, MEMBER_FILE_TYPE_DEBT, MEMBER_FILE_TYPE_INCOME])
     })
 }
 

@@ -13,7 +13,7 @@ class CreateUnitCategory extends Base {
       area: yup.string().max(255).nullable(),
       rent: yup.string().max(255).nullable(),
       income_level: yup.string().max(255).nullable(),
-      household_size: yup.string().max(255).nullable(),
+      household_size: yup.string().max(255).nullable()
     })
 }
 

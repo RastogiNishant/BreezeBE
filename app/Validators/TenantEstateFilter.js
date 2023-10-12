@@ -19,7 +19,7 @@ class TenantEstateFilter extends Base {
           })
         )
         .nullable(),
-      limit: yup.number().integer().min(0).max(500),
+      limit: yup.number().integer().min(0).max(500)
     })
 }
 

@@ -6,7 +6,7 @@ const yup = require('yup')
 class CreateFile extends Base {
   static schema = () => {
     return yup.object().shape({
-      file: yup.mixed(),
+      file: yup.mixed()
     })
   }
 }

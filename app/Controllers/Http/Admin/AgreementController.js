@@ -22,7 +22,7 @@ class AgreementController {
     const data = request.all()
     const agreement = await Agreement.createItem({
       ...data,
-      status: STATUS_DRAFT,
+      status: STATUS_DRAFT
     })
     Static.init()
 
@@ -67,7 +67,7 @@ class AgreementController {
     const data = request.all()
     const term = await Term.createItem({
       ...data,
-      status: STATUS_DRAFT,
+      status: STATUS_DRAFT
     })
     Static.init()
     response.res(term)

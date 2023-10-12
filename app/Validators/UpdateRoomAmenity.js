@@ -12,7 +12,7 @@ class UpdateRoomAmenity extends Base {
         .required('action is required and must be either update or reorder.'),
       id: id.when('action', {
         is: 'update',
-        then: id.required('id must be set'),
+        then: id.required('id must be set')
       }),
       amenity_ids: yup.array().when('action', {
         is: 'reorder',
@@ -20,12 +20,12 @@ class UpdateRoomAmenity extends Base {
           .array()
           .of(yup.number().integer())
           .required()
-          .typeError('amenity_ids must be an array of integers.'),
+          .typeError('amenity_ids must be an array of integers.')
       }),
       amenity: yup.string().when('action', {
         is: 'update',
-        then: yup.string().min(3).max(22).required('amenity is required.'),
-      }),
+        then: yup.string().min(3).max(22).required('amenity is required.')
+      })
     })
 }
 

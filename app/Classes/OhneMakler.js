@@ -47,7 +47,7 @@ const {
   FIRING_ELECTRIC,
   FIRING_GROUND_HEAT,
   FIRING_GAS,
-  THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
+  THIRD_PARTY_OFFER_PROVIDER_INFORMATION
 } = require('../constants')
 const { isEmpty, groupBy } = require('lodash')
 const moment = require('moment')
@@ -57,7 +57,7 @@ class OhneMakler {
     Wohnung: PROPERTY_TYPE_APARTMENT,
     Haus: PROPERTY_TYPE_HOUSE,
     'Möbliertes Wohnen / Wohnen auf Zeit': PROPERTY_TYPE_SHORT_TERM,
-    Zimmer: PROPERTY_TYPE_ROOM,
+    Zimmer: PROPERTY_TYPE_ROOM
   }
 
   buildingStatus = {
@@ -70,7 +70,7 @@ class OhneMakler {
     Erstbezug: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
     modernisiert: BUILDING_STATUS_MODERNIZED,
     renoviert: BUILDING_STATUS_PART_FULLY_RENOVATED,
-    Neuwertig: BUILDING_STATUS_NEW,
+    Neuwertig: BUILDING_STATUS_NEW
   }
 
   heatingType = {
@@ -78,7 +78,7 @@ class OhneMakler {
     Ofenheizung: HEATING_TYPE_OVEN,
     Sonstiges: HEATING_TYPE_MISC,
     Fußbodenheizung: HEATING_TYPE_UNDERFLOOR,
-    Etagenheizung: HEATING_TYPE_FLOOR,
+    Etagenheizung: HEATING_TYPE_FLOOR
   }
 
   firing = {
@@ -89,141 +89,141 @@ class OhneMakler {
     Öl: FIRING_OEL,
     Strom: FIRING_ELECTRIC,
     Erdwärme: FIRING_GROUND_HEAT,
-    Gas: FIRING_GAS,
+    Gas: FIRING_GAS
   }
 
   houseType = {
     Mehrfamilienhaus: {
       type: 'house_type',
-      value: HOUSE_TYPE_HIGH_RISE,
+      value: HOUSE_TYPE_HIGH_RISE
     },
     Dachgeschosswohnung: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_ATTIC,
+      value: APARTMENT_TYPE_ATTIC
     },
     Reihenhaus: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_TERRACES,
+      value: APARTMENT_TYPE_TERRACES
     },
     Penthouse: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_PENTHOUSE,
+      value: APARTMENT_TYPE_PENTHOUSE
     },
     Maisonette: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_MAISONETTE,
+      value: APARTMENT_TYPE_MAISONETTE
     },
     Etagenwohnung: {
       type: 'property_type',
-      value: PROPERTY_TYPE_APARTMENT,
+      value: PROPERTY_TYPE_APARTMENT
     },
     Bauernhof: {
       type: 'house_type',
-      value: HOUSE_TYPE_GARDENHOUSE,
+      value: HOUSE_TYPE_GARDENHOUSE
     },
     Studio: {
       type: 'apartment_type',
-      value: APARTMENT_TYPE_LOFT,
+      value: APARTMENT_TYPE_LOFT
     },
     Einfamilienhaus: {
       type: 'house_type',
-      value: HOUSE_TYPE_DETACHED_HOUSE,
+      value: HOUSE_TYPE_DETACHED_HOUSE
     },
     Doppelhaushälfte: {
       type: 'house_type',
-      value: HOUSE_TYPE_SEMIDETACHED_HOUSE,
-    },
+      value: HOUSE_TYPE_SEMIDETACHED_HOUSE
+    }
   }
 
   apartmentType = {
     Stadthaus: {
       type: 'house_type',
-      value: HOUSE_TYPE_COUNTRY,
+      value: HOUSE_TYPE_COUNTRY
     },
     Bauernhaus: {
       type: 'house_type',
-      value: HOUSE_TYPE_GARDENHOUSE,
+      value: HOUSE_TYPE_GARDENHOUSE
     },
     Zweifamilienhaus: {
       type: 'house_type',
-      value: HOUSE_TYPE_2FAMILY_HOUSE,
+      value: HOUSE_TYPE_2FAMILY_HOUSE
     },
     Appartement: {
       type: 'property_type',
-      value: PROPERTY_TYPE_APARTMENT,
+      value: PROPERTY_TYPE_APARTMENT
     },
     Dachgeschosswohnung: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_ATTIC,
+      value: APARTMENT_TYPE_ATTIC
     },
     'Loft, Studio, Atelier': {
       type: 'apartment_type',
-      value: APARTMENT_TYPE_LOFT,
+      value: APARTMENT_TYPE_LOFT
     },
     Penthouse: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_PENTHOUSE,
+      value: APARTMENT_TYPE_PENTHOUSE
     },
     Maisonette: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_MAISONETTE,
+      value: APARTMENT_TYPE_MAISONETTE
     },
     'Laube, Datsche, Gartenhaus': {
       type: 'house_type',
-      value: HOUSE_TYPE_GARDENHOUSE,
+      value: HOUSE_TYPE_GARDENHOUSE
     },
     Einfamilienhaus: {
       type: 'house_type',
-      value: HOUSE_TYPE_DETACHED_HOUSE,
+      value: HOUSE_TYPE_DETACHED_HOUSE
     },
     Souterrainwohnung: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_SOUTERRAIN,
+      value: APARTMENT_TYPE_SOUTERRAIN
     },
     Doppelhaushälfte: {
       type: 'house_type',
-      value: HOUSE_TYPE_SEMIDETACHED_HOUSE,
+      value: HOUSE_TYPE_SEMIDETACHED_HOUSE
     },
     Reihenendhaus: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_TERRACES,
+      value: APARTMENT_TYPE_TERRACES
     },
     Erdgeschosswohnung: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_GROUND,
+      value: APARTMENT_TYPE_GROUND
     },
     Mehrfamilienhaus: {
       type: 'house_type',
-      value: HOUSE_TYPE_HIGH_RISE,
+      value: HOUSE_TYPE_HIGH_RISE
     },
     Terrassenwohnung: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_TERRACES,
+      value: APARTMENT_TYPE_TERRACES
     },
     Zimmer: {
       type: 'property_type',
-      value: PROPERTY_TYPE_ROOM,
+      value: PROPERTY_TYPE_ROOM
     },
     Wohnung: {
       type: 'property_type',
-      value: PROPERTY_TYPE_APARTMENT,
+      value: PROPERTY_TYPE_APARTMENT
     },
     Reihenhaus: {
       type: 'apt_type',
-      value: APARTMENT_TYPE_TERRACES,
+      value: APARTMENT_TYPE_TERRACES
     },
     Haus: {
       type: 'property_type',
-      value: PROPERTY_TYPE_HOUSE,
+      value: PROPERTY_TYPE_HOUSE
     },
     Bungalow: {
       type: 'house_type',
-      value: HOUSE_TYPE_BUNGALOW,
+      value: HOUSE_TYPE_BUNGALOW
     },
     Etagenwohnung: {
       type: 'property_type',
-      value: PROPERTY_TYPE_APARTMENT,
-    },
+      value: PROPERTY_TYPE_APARTMENT
+    }
   }
 
   static amenities = {
@@ -238,7 +238,7 @@ class OhneMakler {
     apt_wainscoting: 'Terrasse',
     garden: 'Garten',
     apt_fireplace: 'Kamin',
-    room_winter_roof_garden: 'Dachterrasse',
+    room_winter_roof_garden: 'Dachterrasse'
   }
 
   map = {
@@ -271,7 +271,7 @@ class OhneMakler {
     expiration_date: 'available_end_at',
     duration_rent_min: 'duration_rent_min',
     duration_rent_max: 'duration_rent_max',
-    energietraeger: 'firing',
+    energietraeger: 'firing'
     //visit_from
     //visit_to
   }
@@ -368,9 +368,9 @@ class OhneMakler {
               picture: {
                 picture_url:
                   'https://cdn4.vectorstock.com/i/1000x1000/21/23/isolated-avatar-man-and-house-design-vector-25982123.jpg',
-                picture_title: 'Außenansicht ',
-              },
-            },
+                picture_title: 'Außenansicht '
+              }
+            }
           ])
       if (!isEmpty(estate.ausstattung)) {
         newEstate.amenities = estate.ausstattung.split(', ')
@@ -419,7 +419,7 @@ class OhneMakler {
       newEstate.property_type = this.parseItemType({ type: 'propertyType', key: estate.objektart })
       newEstate.building_status = this.parseItemType({
         key: estate.condition,
-        type: 'buildingStatus',
+        type: 'buildingStatus'
       })
       newEstate.heating_type = this.parseItemType({ type: 'heatingType', key: estate.heizung })
       newEstate.firing = this.parseItemType({ type: 'firing', key: estate.energietraeger })

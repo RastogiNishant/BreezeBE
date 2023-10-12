@@ -13,7 +13,7 @@ class LetterTemplate {
       title: yup.string(),
       body: yup.string(),
       logo: yup.mixed(),
-      greeting_option: yup.number().oneOf(LETTER_GREETING_STYLE),
+      greeting_option: yup.number().oneOf(LETTER_GREETING_STYLE)
     })
 }
 

@@ -19,7 +19,7 @@ class EstatePermissionFilter extends Base {
         } else {
           return yup.number().oneOf([PROPERTY_MANAGE_REQUEST, PROPERTY_MANAGE_ALLOWED])
         }
-      }),
+      })
     })
 }
 

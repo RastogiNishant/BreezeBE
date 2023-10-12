@@ -22,7 +22,7 @@ class PaymentService {
       amount: paymentData.amount,
       currency: 'eur',
       payment_method_types: ['card'],
-      payment_method: paymentData.payment_method,
+      payment_method: paymentData.payment_method
       // description: 'Letting plan Charge',
       // metadata: {
       //   order_id: '1003',

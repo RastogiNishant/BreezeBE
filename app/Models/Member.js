@@ -6,7 +6,7 @@ const {
   MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
-  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT
 } = require('../constants')
 const Model = require('./BaseModel')
 
@@ -52,7 +52,7 @@ class Member extends Model {
       'rent_proof_not_applicable',
       'credit_score_not_applicable',
       'marital_status',
-      'citizen',
+      'citizen'
     ]
   }
 
@@ -127,7 +127,7 @@ class Member extends Model {
       'rent_proof_not_applicable',
       'credit_score_not_applicable',
       'marital_status',
-      'citizen',
+      'citizen'
     ]
   }
 }

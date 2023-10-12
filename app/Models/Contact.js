@@ -14,7 +14,7 @@ class Contact extends Model {
       'phone',
       'region',
       'avatar',
-      'status',
+      'status'
     ]
   }
 

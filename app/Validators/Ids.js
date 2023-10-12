@@ -3,7 +3,7 @@
 const yup = require('yup')
 const {
   getExceptionMessage,
-  exceptionKeys: { ARRAY },
+  exceptionKeys: { ARRAY }
 } = require('../exceptions')
 
 const Base = require('./Base')
@@ -14,7 +14,7 @@ class Ids extends Base {
         .array()
         .of(yup.number().integer().positive())
         .required()
-        .typeError(getExceptionMessage('ids', ARRAY)),
+        .typeError(getExceptionMessage('ids', ARRAY))
     })
 }
 

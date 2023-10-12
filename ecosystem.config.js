@@ -14,8 +14,8 @@ module.exports = {
       watch: false,
       exec_mode: 'cluster',
       env: {
-        NODE_ENV: 'production',
-      },
+        NODE_ENV: 'production'
+      }
     },
     // Dev instance
     {
@@ -29,8 +29,8 @@ module.exports = {
       watch: false,
       exec_mode: 'cluster',
       env: {
-        NODE_ENV: 'development',
-      },
+        NODE_ENV: 'development'
+      }
     },
     // Staging instance
     {
@@ -44,8 +44,8 @@ module.exports = {
       watch: false,
       exec_mode: 'cluster',
       env: {
-        NODE_ENV: 'staging',
-      },
-    },
-  ],
+        NODE_ENV: 'staging'
+      }
+    }
+  ]
 }

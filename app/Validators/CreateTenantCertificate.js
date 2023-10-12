@@ -8,7 +8,7 @@ class CreateTenantCertificate extends Base {
       city_id: yup.number().positive().required(),
       income_level: yup.string().max(100).required(),
       expired_at: yup.date().required(),
-      file: yup.mixed(),
+      file: yup.mixed()
     })
   }
 }

@@ -43,7 +43,7 @@ class FillCitizen extends Command {
             await Citizen.createItem({
               citizen_key: citizen.citizen_key,
               en_name: citizen.en_name,
-              de_name: citizen.de_name,
+              de_name: citizen.de_name
             })
           }
         },

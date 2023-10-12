@@ -9,8 +9,8 @@ const {
     ERROR_NO_AUTHENTICATE,
     WRONG_PARAMS,
     NO_ESTATE_EXIST,
-    ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE,
-  },
+    ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE
+  }
 } = require('../exceptions')
 class EstateCanEdit {
   async handle({ auth, request }, next) {

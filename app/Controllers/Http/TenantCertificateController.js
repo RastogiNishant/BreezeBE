@@ -42,7 +42,7 @@ class TenantCertificateController {
         {
           user_id: auth.user.id,
           request_certificate_at: null,
-          request_certificate_city_id: null,
+          request_certificate_city_id: null
         },
         trx
       )

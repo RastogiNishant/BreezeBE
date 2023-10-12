@@ -9,8 +9,8 @@ const {
     ERROR_NO_AUTHENTICATE,
     WRONG_PARAMS,
     NO_ESTATE_EXIST,
-    ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE,
-  },
+    ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE
+  }
 } = require('../exceptions')
 const BuildingService = use('App/Services/BuildingService')
 class BuildCanEdit {
@@ -33,7 +33,7 @@ class BuildCanEdit {
 
     const estates = await EstateService.getEstatesByBuilding({
       user_id: auth.user.id,
-      build_id: id,
+      build_id: id
     })
 
     if (!estates?.length) {

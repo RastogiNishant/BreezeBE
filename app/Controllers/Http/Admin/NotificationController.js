@@ -15,9 +15,9 @@ class NotificationController {
         type: 13,
         data: {
           estate_id: estate.id,
-          estate_address: estate.address,
+          estate_address: estate.address
         },
-        image: File.getPublicUrl(estate.cover),
+        image: File.getPublicUrl(estate.cover)
       }
       await NotificationsService.prospectLikedButNotKnocked([notice])
     })

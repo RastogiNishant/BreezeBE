@@ -15,7 +15,7 @@ class Order extends Model {
       'start_at',
       'end_at',
       'status',
-      'livemode',
+      'livemode'
     ]
   }
 }
