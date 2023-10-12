@@ -73,7 +73,11 @@ class File {
       fsPromise.unlink(outputFileName)
       return data
     } catch (e) {
-      throw new AppException(e.message, e.status || 500)
+      if (e?.message) {
+        throw new AppException(e.message, e.status || 500)
+      } else {
+        throw new AppException('Unable to compress PDF, ghostscript installed?', e?.status || 500)
+      }
     }
   }
 
