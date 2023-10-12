@@ -711,6 +711,7 @@ class MemberService {
       Event.fire('tenant::update', invitorUserId)
       Event.fire('tenant::update', user.id)
       await NoticeService.prospectHouseholdInvitationAccepted(invitorUserId)
+      await this.emitMemberInvitation({ user_id: invitorUserId, data: member })
       return true
     } catch (e) {
       console.log({ e })
@@ -778,6 +779,7 @@ class MemberService {
       await trx.commit()
       Event.fire('tenant::update', invitorUserId)
       Event.fire('tenant::update', user.id)
+      await this.emitMemberInvitation({ user_id: invitorUserId, data: member })
       return true
     } catch (e) {
       console.log({ e })
