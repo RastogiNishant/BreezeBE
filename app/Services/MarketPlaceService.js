@@ -511,7 +511,6 @@ class MarketPlaceService {
     }
     const lang = prospects?.[0]?.lang || DEFAULT_LANG
     uri += `&lang=${lang}&is_invited_by_landlord=${contact.is_invited_by_landlord}`
-    console.log({ uri })
     const shortLink = await createDynamicLink(
       `${process.env.DEEP_LINK}?type=${OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE}${uri}`
     )
