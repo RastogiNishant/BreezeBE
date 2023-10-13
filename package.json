@@ -103,7 +103,7 @@
     "moment": "^2.24.0",
     "moment-timezone": "^0.5.40",
     "nanoid": "^4.0.2",
-    "newrelic": "^11.1.0",
+    "newrelic": "^10.6.2",
     "node-async-exec": "^1.2.0",
     "node-fetch": "^2.6.7",
     "node-geocoder": "^3.27.0",
@@ -140,7 +140,7 @@
     "concurrently": "^6.0.0",
     "husky": "^8.0.0",
     "jsonwebtoken": "^8.5.1",
-    "lint-staged": "^14.0.1",
+    "lint-staged": "^13.3.0",
     "prettier": "^3.0.3"
   }
 }
