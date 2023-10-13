@@ -562,41 +562,9 @@ class MarketPlaceService {
       }
 
       //we update all contact requests with this email to the newly registered email.
-      let query = await EstateSyncContactRequest.query()
+      await EstateSyncContactRequest.query()
         .where('email', email)
         .update({ email: user.email, status: STATUS_EMAIL_VERIFY, user_id: user.id })
-
-      /*
-      //add knocked matches to all contact requests done by this user
-      const prospect = await require('./MatchService')
-        .getProspectForScoringQuery()
-        .where('tenants.user_id', user.id)
-        .first()
-
-      //we bypass match filter
-      const estatesToMatch = await EstateSyncContactRequest.query()
-        .where('email', user.email)
-        .fetch()
-
-      const matches = []
-      await Promise.map(estatesToMatch.toJSON() || [], async ({ estate_id }) => {
-        const estate = await require('./MatchService')
-          .getEstateForScoringQuery()
-          .where('id', estate_id)
-          .first()
-        const { landlord_score, prospect_score, percent } =
-          await require('./MatchService').calculateMatchPercent(prospect, estate)
-        matches.push({
-          landlord_score,
-          prospect_score,
-          percent,
-          status: MATCH_STATUS_TOP,
-          user_id: user.id,
-          estate_id,
-          status_at: moment().utc().format()
-        })
-      })
-      await require('./MatchService').upsertBulkMatches(matches)*/
     } catch (e) {
       throw new HttpException(e.message, e.status, e.code || 0)
     }
