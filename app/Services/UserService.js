@@ -145,8 +145,9 @@ class UserService {
         data2: userData?.data2
       })
     }
-
-    if (otherInfo && !userData?.birthday && otherInfo?.birthday) {
+    //userData.birthday is default 1970-01-01.
+    //So we can apply his birthday from marketplace if it is set there
+    if (otherInfo && otherInfo?.birthday) {
       userData.birthday = otherInfo.birthday
     }
     const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
@@ -448,6 +449,7 @@ class UserService {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
+      console.log({ code_for_confirm_email: code })
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { expire: 3600 })
       const lang = await UserService.getUserLang([user.id])
       const forgotLink = await UserService.getForgotShortLink(from_web)
@@ -513,7 +515,7 @@ class UserService {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
     if (code !== userCode) {
-      //throw new AppException(INVALID_CONFIRM_CODE)
+      throw new AppException(INVALID_CONFIRM_CODE)
     }
 
     // TODO: check user status active is allow
