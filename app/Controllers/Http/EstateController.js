@@ -1170,6 +1170,8 @@ class EstateController {
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
+      .with('category')
+      .with('building')
       .with('files')
 
     if (exclude_online) {
