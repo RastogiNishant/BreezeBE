@@ -638,13 +638,16 @@ class NoticeService {
     const notices = []
     const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
 
-    let i = 0
-    while (i < Object.keys(groupMatches).length) {
-      const estate_id = Object.keys(groupMatches)[i]
+    let groupIdx = 0,
+      isNoticeCreated = false
+    while (groupIdx < Object.keys(groupMatches).length) {
+      const estate_id = Object.keys(groupMatches)[groupIdx]
       const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
       if (!Object.keys(freeTimeSlots).length) {
         const estate = await require('./EstateService').getActiveById(estate_id)
-        if (estate) {
+
+        if (!isNoticeCreated && estate) {
+          isNoticeCreated = true
           notices.push({
             user_id: estate.user_id,
             type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
@@ -653,7 +656,7 @@ class NoticeService {
           })
         }
       }
-      i++
+      groupIdx++
     }
 
     if (notices.length) {
