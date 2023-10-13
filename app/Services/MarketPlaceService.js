@@ -623,7 +623,7 @@ class MarketPlaceService {
         })
         contatRequestEmail = descryptedResult.email
       }
-
+      //pending knocks are created during user creation from deeplink
       const pendingKnocks = (
         await EstateSyncContactRequest.query()
           .with('estate')
@@ -645,6 +645,7 @@ class MarketPlaceService {
 
           if (!hasMatch) {
             if (!knock.is_invited_by_landlord) {
+              //user knocked on marketplace we knock him on ours.
               await require('./MatchService').knockEstate(
                 {
                   estate_id: knock.estate_id,
