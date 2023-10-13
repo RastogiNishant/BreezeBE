@@ -5118,6 +5118,18 @@
     "handler": "TenantController.requestCertificate"
   },
   {
+    "route": "/api/v1/users/tenant/deactive",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.deactivateTenant"
+  },
+  {
     "route": "/api/v1/users/tenant/detail",
     "method": [
       "HEAD",

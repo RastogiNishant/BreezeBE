@@ -4,6 +4,9 @@ import { generateAdonisRoutes } from './routes/_helper'
 import { apiIndexRoutes, indexRoutes } from './routes/index'
 import { administrationRoutes } from './routes/administration'
 import { landlordRoutes } from './routes/landlord'
+import { userRoutes } from './routes/users'
+import { galleryRoutes } from './routes/gallery'
+import { estateSyncRoutes } from './routes/estateSync'
 
 const Route = use('Route')
 
@@ -12,7 +15,10 @@ const API_BASE = '/api/v1'
 generateAdonisRoutes(indexRoutes)
 generateAdonisRoutes(apiIndexRoutes, `${API_BASE}`)
 generateAdonisRoutes(administrationRoutes, `${API_BASE}/administration`)
+generateAdonisRoutes(estateSyncRoutes, `${API_BASE}/estate-sync`)
+generateAdonisRoutes(galleryRoutes, `${API_BASE}/gallery`)
 generateAdonisRoutes(landlordRoutes, `${API_BASE}/landlord`)
+generateAdonisRoutes(userRoutes, `${API_BASE}/users`)
 
 /**
  * refactor progressed until here, this file should not contain route definitions, routes
@@ -23,176 +29,12 @@ generateAdonisRoutes(landlordRoutes, `${API_BASE}/landlord`)
  * e.g. estates.rooms.ts for all room related endpoints
  */
 
-Route.get(
-  '/api/v1/estate-by-hash/:hash',
-  'EstateViewInvitationController.getEstateByHash'
-).middleware(['EstateFoundByHash'])
-// get pertinent information for an invitation to view estate based on code
-Route.get(
-  '/api/v1/estate-view-invitation/:code',
-  'EstateViewInvitationController.getByCode'
-).middleware(['ViewEstateInvitationCodeExist'])
-
-Route.post(
-  '/api/v1/invited-signup/:code',
-  'AccountController.signupProspectWithViewEstateInvitation'
-).middleware([
-  'ViewEstateInvitationCodeExist',
-  'valid:SignupAfterViewEstateInvitation',
-  'ProspectHasNotRegisterYet'
-])
-
-Route.post(
-  '/api/v1/hash-invited-signup/:hash',
-  'AccountController.signupProspectWithHash'
-).middleware([
-  'EstateFoundByHash',
-  'valid:SignupAfterViewEstateInvitation',
-  'ProspectHasNotRegisterYet'
-])
-
-Route.post('/api/v1/signup', 'AccountController.signup').middleware(['guest', 'valid:SignUp'])
-Route.post('/api/v1/login', 'AccountController.login').middleware(['guest', 'valid:SignIn'])
-Route.post('/api/v1/logout', 'AccountController.logout').middleware([
-  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager,jwtAdministrator'
-])
-Route.get('/api/v1/closeAccount', 'AccountController.closeAccount').middleware([
-  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager'
-])
-Route.put('/api/v1/updateDeviceToken', 'AccountController.updateDeviceToken').middleware([
-  'auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager',
-  'valid:DeviceToken'
-])
-
-//Housekepper
-Route.post('/api/v1/housekeeperSignup', 'AccountController.housekeeperSignup').middleware([
-  'guest',
-  'valid:HosekeeperSignUp'
-])
-Route.post('/api/v1/confirmsms', 'AccountController.checkSignUpConfirmBySMS').middleware([
-  'guest',
-  'valid:ConfirmSMS'
-])
-
-//landlord estatesync
-Route.group(() => {
-  Route.get('/', 'EstateSyncController.getPublishers')
-  Route.post('/api-key', 'EstateSyncController.createApiKey').middleware([
-    'valid:AddEstateSyncApiKey'
-  ])
-  Route.put('/api-key', 'EstateSyncController.updateApiKey').middleware([
-    'valid:AddEstateSyncApiKey'
-  ])
-  Route.delete('/api-key', 'EstateSyncController.deleteApiKey')
-  Route.post('/:type', 'EstateSyncController.createPublisher').middleware([
-    'valid:AddEstateSyncTarget'
-  ])
-  Route.delete('/:publisher', 'EstateSyncController.removePublisher').middleware([
-    'valid:EstateSyncPublisher'
-  ])
-})
-  .prefix('/api/v1/estate-sync')
-  .middleware(['auth:jwtLandlord'])
-
-Route.get('/api/v1/estate-sync-is24', 'EstateSyncController.redirectToWebApp')
-
-Route.group(() => {
-  Route.post('/', 'AccountController.sendCodeForgotPassword').middleware([
-    'guest',
-    'valid:ResetEmailRequest',
-    'UserWithEmailExists'
-  ])
-  Route.post('/setPassword', 'AccountController.setPasswordForgotPassword').middleware([
-    'guest',
-    'valid:SetPassword'
-  ])
-}).prefix('/api/v1/forgotPassword')
-
-Route.get('/api/v1/me', 'AccountController.me').middleware([
-  'auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper'
-])
-
-Route.get('/api/v1/confirm_email', 'AccountController.confirmEmail').middleware([
-  'valid:ConfirmEmail,Code'
-])
-
-Route.put('/api/v1/users', 'AccountController.updateProfile').middleware([
-  'auth:jwt,jwtLandlord',
-  'valid:UpdateUser',
-  'userCanValidlyChangeEmail'
-])
-
-Route.post('/api/v1/users/reconfirm', 'AccountController.resendUserConfirm').middleware([
-  'valid:ConfirmEmail'
-])
-
-Route.group(() => {
-  Route.get('/', 'AccountController.onboard').middleware(['auth:jwt,jwtLandlord'])
-  Route.get('/profile', 'AccountController.onboardProfile').middleware(['auth:jwt,jwtLandlord'])
-  Route.get('/dashboard', 'AccountController.onboardDashboard').middleware(['auth:jwt,jwtLandlord'])
-  Route.get('/selection', 'AccountController.onboardSelection').middleware(['auth:jwt,jwtLandlord'])
-  Route.get('/verification', 'AccountController.onboardLandlordVerification').middleware([
-    'auth:jwt,jwtLandlord'
-  ])
-}).prefix('/api/v1/onboarding')
-
-Route.put('/api/v1/users/avatar', 'AccountController.updateAvatar').middleware([
-  'auth:jwt,jwtLandlord'
-])
-Route.put('/api/v1/users/password', 'AccountController.changePassword').middleware([
-  'auth:jwt,jwtLandlord',
-  'valid:ChangePassword'
-])
 Route.group(() => {
   Route.get('/tenant/:id', 'AccountController.getTenantProfile').middleware([
     'auth:jwtLandlord',
     'valid:Id'
   ])
 }).prefix('/api/v1/profile')
-
-// Tenant params and preferences
-
-Route.group(() => {
-  Route.put('/', 'TenantController.updateTenant').middleware(['valid:UpdateTenant'])
-  Route.post('/activate', 'TenantController.activateTenant')
-  Route.post('/deactive', 'TenantController.deactivateTenant')
-  Route.post('/buddy/accept', 'TenantController.acceptBuddyInvite')
-  Route.get('/map', 'TenantController.getTenantMap')
-  Route.get('/all', 'TenantController.getAllTenants')
-  Route.put('/certificate/request', 'TenantController.requestCertificate').middleware([
-    'valid:RequestCertificate'
-  ])
-  Route.delete('/certificate/request', 'TenantController.removeRequestCertificate')
-  Route.get('/certificate', 'TenantCertificateController.getAll')
-  Route.post('/certificate', 'TenantCertificateController.addCertificate').middleware([
-    'valid:CreateTenantCertificate'
-  ])
-  Route.delete('/certificate/:id', 'TenantCertificateController.deleteCertificate').middleware([
-    'valid:Id'
-  ])
-  Route.get('/certificate/:id', 'TenantCertificateController.get').middleware(['valid:Id'])
-  Route.put('/certificate/:id', 'TenantCertificateController.updateCertificate').middleware([
-    'valid:Id,CreateTenantCertificate'
-  ])
-  Route.put('/certificate/:id/image', 'TenantCertificateController.updateImage').middleware([
-    'valid:Id,CreateFile'
-  ])
-  Route.delete('/certificate/:id/image', 'TenantCertificateController.deleteImage').middleware([
-    'valid:Id,Uri'
-  ])
-  Route.get('/detail', 'TenantController.detail')
-})
-  .prefix('/api/v1/users/tenant')
-  .middleware(['auth:jwt'])
-
-// Common app references
-Route.get('/api/v1/references', 'CommonController.getReferences')
-
-// Auth google
-Route.get('/auth/google', 'OAuthController.googleAuth')
-Route.get('/auth/google/mobile', 'OAuthController.tokenAuth').middleware(['valid:OAuthSignIn'])
-
-Route.get('/auth/apple/mobile', 'OAuthController.tokenAuthApple').middleware(['valid:OAuthSignIn'])
 
 //Room Custom Amenities
 Route.group(() => {
@@ -222,16 +64,6 @@ Route.group(() => {
 })
   .prefix('/api/v1/estates/:estate_id/rooms/:room_id')
   .middleware(['auth:jwtLandlord'])
-
-//Unassigned media
-Route.group(() => {
-  Route.get('/:id', 'GalleryController.getAll').middleware(['valid:Pagination,Id'])
-  Route.post('/', 'EstateController.addFile').middleware(['valid:EstateAddFile'])
-  Route.post('/assign', 'GalleryController.assign').middleware(['valid:GalleryAssign'])
-  Route.delete('/:id', 'GalleryController.removeFile').middleware(['valid:Id,EstateId'])
-})
-  .prefix('/api/v1/gallery')
-  .middleware(['auth:jwtLandlord,jwtAdministrator'])
 
 // Estate management
 Route.group(() => {
