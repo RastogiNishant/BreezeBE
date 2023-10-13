@@ -465,6 +465,20 @@ class TenantService extends BaseService {
     }
   }
 
+  static async deactivateTenantIfActivated(tenant) {
+    const trx = await Database.beginTransaction()
+    try {
+      await Tenant.query()
+        .update({ status: STATUS_DRAFT })
+        .where({ user_id: tenant.user_id })
+        .transacting(trx)
+      await trx.commit()
+    } catch (e) {
+      await trx.rollback()
+      console.log({ e })
+    }
+  }
+
   /**
    * Get user saved zone
    */

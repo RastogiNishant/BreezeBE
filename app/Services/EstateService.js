@@ -731,7 +731,7 @@ class EstateService {
       }),
       ...updateData
     }
-
+    updateData = omit(updateData, 'category')
     const { verified_address, cover_thumb, ...omittedData } = updateData
     let insideTrx = !trx ? true : false
     trx = insideTrx ? await Database.beginTransaction() : trx
@@ -779,7 +779,6 @@ class EstateService {
           }
         }
       }
-
       await estate.updateItemWithTrx(updateData, trx)
 
       if (estate.build_id) {

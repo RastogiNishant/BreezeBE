@@ -512,17 +512,20 @@ class EstateAttributeTranslations {
     stp_garage: (i) => parseInt(i) || 0,
     credit_score: toPercent,
     cert_category: (content) => {
-      const certs = content.split(/[+,]/)
+      const certs = String(content).split(/[+,]/)
       let certCategoryMap = mapCertCategories()
+      let cert_category = []
       if (certs.length > 0) {
-        return certs.map((str) => {
-          str = trim(str)
-          if (certCategoryMap[str]) {
-            return certCategoryMap[str]
-          }
-        })
+        cert_category = certs
+          .map((str) => {
+            str = trim(str)
+            if (certCategoryMap[str]) {
+              return certCategoryMap[str]
+            }
+          })
+          .filter((c) => c !== undefined)
       }
-      return null
+      return cert_category
     },
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     budget: (i, o) => parseInt(i) || 0,

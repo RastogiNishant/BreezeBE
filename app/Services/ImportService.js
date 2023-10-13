@@ -112,7 +112,6 @@ class ImportService {
             }
           }
         }
-
         await ImportService.updateImportBySixCharCode({ estate, data }, trx)
       } else {
         if (!data.address) {
@@ -374,6 +373,8 @@ class ImportService {
       } else {
         estate_data.is_coord_changed = true
       }
+
+      //TODO: add build_id and unit_category_id:
 
       await require('./EstateService').updateEstate(
         {

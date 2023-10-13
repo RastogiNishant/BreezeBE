@@ -24,7 +24,8 @@ const {
   MEMBER_FILE_TYPE_EXTRA_RENT,
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
-  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID
+  NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
+  LOG_TYPE_DEACTIVATED_PROFILE,
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
@@ -183,6 +184,18 @@ class TenantController {
     }
 
     response.res(true)
+  }
+
+  async deactivateTenant({ auth, response, request }) {
+    const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
+    try {
+      await TenantService.deactivateTenantIfActivated(tenant)
+      logEvent(request, LOG_TYPE_DEACTIVATED_PROFILE, auth.user.id, {}, false)
+      response.res(true)
+    } catch (e) {
+      console.log(`deactivateTenant controller error ${auth.user.id} ${e.message}`)
+      throw new HttpException(e.message, 400, e.code)
+    }
   }
 
   async detail({ request, auth, response }) {

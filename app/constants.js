@@ -707,6 +707,7 @@ const constants = {
   LOG_TYPE_SIGN_IN_LOW_VALUE: 'sign_in_low_value',
   LOG_TYPE_SIGN_IN_INACTIVE: 'sign_in_inactive',
   LOG_TYPE_ACTIVATED_PROFILE: 'activated_profile',
+  LOG_TYPE_DEACTIVATED_PROFILE: 'deactivated_profile',
   LOG_TYPE_KNOCKED: 'knocked',
   LOG_TYPE_VISITED: 'visited',
 

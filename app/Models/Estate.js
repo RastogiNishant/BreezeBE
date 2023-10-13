@@ -537,7 +537,7 @@ class Estate extends Model {
   }
 
   building() {
-    return this.hasOne('App/Models/Building')
+    return this.belongsTo('App/Models/Building', 'build_id', 'id')
   }
 
   /**
