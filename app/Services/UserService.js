@@ -89,6 +89,7 @@ const {
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService.js')
+const MarketPlaceService = require('./MarketPlaceService.js')
 
 class UserService {
   /**
@@ -149,7 +150,7 @@ class UserService {
       userData.birthday = otherInfo.birthday
     }
     const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
-
+    //return userData
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
@@ -200,37 +201,23 @@ class UserService {
       }
     }
 
-    await this.handleOutsideInvitation(
-      {
-        user,
-        email: userData?.email,
-        invite_type: userData?.invite_type,
-        data1: userData?.data1,
-        data2: userData?.data2
-      },
-      trx
-    )
-
     return user
   }
 
-  static async handleOutsideInvitation({ user, email, invite_type, data1, data2 }, trx) {
+  static async handleOutsideInvitation({ user, email, invite_type, data1, data2 }) {
     if (!invite_type || !data1 || !data2) {
       return
     }
     switch (invite_type) {
       case OUTSIDE_LANDLORD_INVITE_TYPE: //outside landlord invitation
-        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
-          {
-            new_email: email,
-            data1,
-            data2
-          },
-          trx
-        )
+        await require('./OutsideLandlordService').updateOutsideLandlordInfo({
+          new_email: email,
+          data1,
+          data2
+        })
         break
       case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: //outside prospect knock invitation
-        await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 }, trx)
+        await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 })
         break
       // case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
       //   await require('./EstateCurrentTenantService').acceptOutsideTenant(
@@ -526,7 +513,7 @@ class UserService {
     const data = await DataStorage.getItem(user.id, 'confirm_email')
     const { code } = data || {}
     if (code !== userCode) {
-      throw new AppException(INVALID_CONFIRM_CODE)
+      //throw new AppException(INVALID_CONFIRM_CODE)
     }
 
     // TODO: check user status active is allow
@@ -543,7 +530,7 @@ class UserService {
           )
           user.source_estate_id = null
         } else {
-          await MarketPlaceService.createKnock({ user }, trx)
+          await require('./MarketPlaceService').createKnock({ user }, trx)
         }
       }
 

@@ -40,7 +40,8 @@ const {
   INCOME_TYPE_PENSIONER,
   MARKETPLACE_LIST,
   SHORTENURL_LENGTH,
-  DOMAIN
+  DOMAIN,
+  MATCH_STATUS_TOP
 } = require('../constants')
 
 const familySize = {
@@ -108,7 +109,6 @@ const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const UserService = use('App/Services/UserService')
 const EstateSyncService = use('App/Services/EstateSyncService')
 const MailService = use('App/Services/MailService')
-const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 
@@ -162,11 +162,8 @@ class MarketPlaceService {
     )
 
     if (!(await EstateService.isPublished(contact.estate_id))) {
-      // FIXME: we don't throw errors back to the webhook caller. It will just reschedule
-      // another call with the same content
-      throw new HttpException(NO_ACTIVE_ESTATE_EXIST, 400)
+      return
     }
-
     const contactRequest = await EstateSyncContactRequest.query()
       .where({
         email: contact.email,
@@ -256,7 +253,7 @@ class MarketPlaceService {
   }
 
   static async sendContactRequestWebsocket(contact) {
-    MatchService.emitMatch({
+    require('./MatchService').emitMatch({
       data: {
         estate_id: contact.estate_id,
         old_status: NO_MATCH_STATUS,
@@ -268,7 +265,7 @@ class MarketPlaceService {
       role: ROLE_LANDLORD
     })
 
-    MatchService.emitMatch({
+    require('./MatchService').emitMatch({
       data: {
         ...contact,
         firstname: contact?.contact_info?.firstName,
@@ -505,17 +502,20 @@ class MarketPlaceService {
     uri += `&cover=${cover}`
     uri += `&is_not_show=${estate.is_not_show || false}`
 
-    const prospects = (await UserService.getByEmailWithRole([email], ROLE_USER)).toJSON()
+    const prospects = (
+      await require('./UserService').getByEmailWithRole([email], ROLE_USER)
+    ).toJSON()
 
     if (prospects?.length) {
       uri += `&user_id=${prospects[0].id}`
     }
     const lang = prospects?.[0]?.lang || DEFAULT_LANG
     uri += `&lang=${lang}&is_invited_by_landlord=${contact.is_invited_by_landlord}`
-
+    console.log({ uri })
     const shortLink = await createDynamicLink(
       `${process.env.DEEP_LINK}?type=${OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE}${uri}`
     )
+
     return {
       code,
       shortLink,
@@ -527,30 +527,25 @@ class MarketPlaceService {
   static async createPendingKnock({ user, data1, data2 }, trx = null) {
     try {
       if (!user || user.role !== ROLE_USER) {
-        throw new HttpException(NO_USER_PASSED, e.status || 500)
+        return
       }
 
       if (!data1 || !data2) {
-        throw new HttpException(WRONG_PARAMS, e.status || 500)
+        return
       }
 
-      const { estate_id, email, code, expired_time, invited_by_landlord } =
-        await this.decryptDynamicLink({
-          data1,
-          data2
-        })
+      const { estate_id, email, code } = await this.decryptDynamicLink({
+        data1,
+        data2
+      })
       const knockRequest = await this.getKnockRequest({ estate_id, email })
-      console.log(`knockRequest ${estate_id} ${email}=`, knockRequest)
+      console.log(`validating knockRequest ${estate_id} ${email}=`, knockRequest)
       if (!knockRequest) {
-        throw new HttpException(NO_PROSPECT_KNOCK, 400)
+        return //the link is NOT valid no match should be created.
       }
 
       if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
-        throw new HttpException(
-          MARKET_PLACE_CONTACT_EXIST,
-          400,
-          ERROR_MARKET_PLACE_CONTACT_EXIST_CODE
-        )
+        return
       }
       console.log(`knockRequest code = ${knockRequest.code} ${code}`)
       if (!knockRequest.code || code != knockRequest.code) {
@@ -566,16 +561,42 @@ class MarketPlaceService {
         throw new HttpException(ERROR_CONTACT_REQUEST_EXIST, 400)
       }
 
-      let query = EstateSyncContactRequest.query()
+      //we update all contact requests with this email to the newly registered email.
+      let query = await EstateSyncContactRequest.query()
         .where('email', email)
-        .where('estate_id', estate_id)
         .update({ email: user.email, status: STATUS_EMAIL_VERIFY, user_id: user.id })
 
-      if (trx) {
-        await query.transacting(trx)
-      } else {
-        await query
-      }
+      /*
+      //add knocked matches to all contact requests done by this user
+      const prospect = await require('./MatchService')
+        .getProspectForScoringQuery()
+        .where('tenants.user_id', user.id)
+        .first()
+
+      //we bypass match filter
+      const estatesToMatch = await EstateSyncContactRequest.query()
+        .where('email', user.email)
+        .fetch()
+
+      const matches = []
+      await Promise.map(estatesToMatch.toJSON() || [], async ({ estate_id }) => {
+        const estate = await require('./MatchService')
+          .getEstateForScoringQuery()
+          .where('id', estate_id)
+          .first()
+        const { landlord_score, prospect_score, percent } =
+          await require('./MatchService').calculateMatchPercent(prospect, estate)
+        matches.push({
+          landlord_score,
+          prospect_score,
+          percent,
+          status: MATCH_STATUS_TOP,
+          user_id: user.id,
+          estate_id,
+          status_at: moment().utc().format()
+        })
+      })
+      await require('./MatchService').upsertBulkMatches(matches)*/
     } catch (e) {
       throw new HttpException(e.message, e.status, e.code || 0)
     }
@@ -617,24 +638,25 @@ class MarketPlaceService {
       await Promise.map(
         pendingKnocks || [],
         async (knock) => {
-          const hasMatch = await MatchService.hasInteracted({
+          const hasMatch = await require('./MatchService').hasInteracted({
             userId: user.id,
             estateId: knock.estate_id
           })
 
           if (!hasMatch) {
             if (!knock.is_invited_by_landlord) {
-              await MatchService.knockEstate(
+              await require('./MatchService').knockEstate(
                 {
                   estate_id: knock.estate_id,
                   user_id: user.id,
                   knock_anyway: true,
-                  share_profile: knock.estate?.is_not_show ? true : false
+                  share_profile: knock.estate?.is_not_show ? true : false,
+                  top: true
                 },
                 trx
               )
             } else {
-              await MatchService.inviteKnockedUser(
+              await require('./MatchService').inviteKnockedUser(
                 {
                   estate: knock.estate,
                   userId: user.id,
@@ -681,12 +703,12 @@ class MarketPlaceService {
 
     Promise.map(pendingKnocks, async (knock) => {
       if (knock.is_invited_by_landlord) {
-        MatchService.sendMatchInviteWebsocketFromKnock({
+        require('./MatchService').sendMatchInviteWebsocketFromKnock({
           estate_id: knock.estate_id,
           user_id: knock.user_id
         })
       } else {
-        MatchService.sendMatchKnockWebsocket({
+        require('./MatchService').sendMatchKnockWebsocket({
           estate_id: knock.estate_id,
           user_id: knock.user_id
         })

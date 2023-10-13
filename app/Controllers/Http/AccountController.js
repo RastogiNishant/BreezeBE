@@ -35,6 +35,7 @@ const {
   ROLE_USER
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
+const MarketPlaceService = require('../../Services/MarketPlaceService')
 
 class AccountController {
   /**
@@ -68,6 +69,14 @@ class AccountController {
           has_notification_sent: false
         })
       }
+
+      await UserService.handleOutsideInvitation({
+        user,
+        email,
+        invite_type,
+        data1,
+        data2
+      })
 
       response.res(user)
     } catch (e) {
