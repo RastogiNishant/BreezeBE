@@ -24,7 +24,7 @@ class FileSerializer extends BaseSerializer {
       file_name,
       relativeUrl: url,
       thumb,
-      file_format,
+      file_format
     }
   }
 }

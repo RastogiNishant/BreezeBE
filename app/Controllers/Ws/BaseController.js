@@ -5,7 +5,7 @@ const { isNull } = require('lodash')
 const {
   BREEZE_BOT_USER,
   WEBSOCKET_LANDLORD_REDIS_KEY,
-  WEBSOCKET_TENANT_REDIS_KEY,
+  WEBSOCKET_TENANT_REDIS_KEY
 } = require('../../constants')
 const TaskService = use('App/Services/TaskService')
 const ChatService = use('App/Services/ChatService')
@@ -14,7 +14,7 @@ const Database = use('Database')
 const Logger = use('Logger')
 const WebSocket = use('App/Classes/Websocket')
 const {
-  exceptions: { MESSAGE_NOT_SAVED },
+  exceptions: { MESSAGE_NOT_SAVED }
 } = require('../../exceptions')
 class BaseController {
   constructor({ socket, auth, request, channel }) {
@@ -61,15 +61,15 @@ class BaseController {
             userId: this.user.id,
             firstname: this.user.firstname,
             secondname: this.user.secondname,
-            avatar: this.user.avatar,
+            avatar: this.user.avatar
           },
-          topic: this.socket.topic,
+          topic: this.socket.topic
         })
       } else if (this.topic && sender == 0) {
         this.topic.broadcast(event, {
           message,
           sender: BREEZE_BOT_USER,
-          topic: this.socket.topic,
+          topic: this.socket.topic
         })
       }
     } catch (err) {
@@ -89,9 +89,9 @@ class BaseController {
               userId: this.user.id,
               firstname: this.user.firstname,
               secondname: this.user.secondname,
-              avatar: this.user.avatar,
+              avatar: this.user.avatar
             },
-            topic: this.socket.topic,
+            topic: this.socket.topic
           },
           [this.socket.id]
         )
@@ -101,7 +101,7 @@ class BaseController {
           {
             message,
             sender: BREEZE_BOT_USER,
-            topic: this.socket.topic,
+            topic: this.socket.topic
           },
           [this.socket.id]
         )
@@ -124,7 +124,7 @@ class BaseController {
       return await ChatService.markLastRead({
         user_id: this.user.id,
         task_id: taskId,
-        role: this.user.role,
+        role: this.user.role
       })
     } catch (err) {
       this.emitError(err.message)
@@ -185,14 +185,14 @@ class BaseController {
             return {
               url: await File.getProtectedUrl(attachment),
               uri: attachment,
-              thumb: thumb,
+              thumb: thumb
             }
           }
 
           return {
             url: attachment,
             uri: attachment,
-            thumb: thumb,
+            thumb: thumb
           }
         })
       )

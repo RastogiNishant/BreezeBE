@@ -5,7 +5,7 @@ const Base = require('./Base')
 
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED },
+  exceptionKeys: { REQUIRED }
 } = require('../exceptions')
 const { THIRD_PARTY_PUBLISHERS } = require('../constants')
 
@@ -15,7 +15,7 @@ class EstateSyncPublisher extends Base {
       publisher: yup
         .string()
         .oneOf(THIRD_PARTY_PUBLISHERS)
-        .required(getExceptionMessage('publisher id', REQUIRED)),
+        .required(getExceptionMessage('publisher id', REQUIRED))
     })
 }
 

@@ -6,7 +6,7 @@ const {
   ROLE_LANDLORD,
   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
   STATUS_DELETE,
-  USER_ACTIVATION_STATUS_ACTIVATED,
+  USER_ACTIVATION_STATUS_ACTIVATED
 } = require('../constants')
 
 const Model = require('./BaseModel')
@@ -62,7 +62,7 @@ class User extends Model {
       'ip_based_info',
       'code',
       'frontend_used',
-      'show_proofs_of_paid_rent_from_former_landlords',
+      'show_proofs_of_paid_rent_from_former_landlords'
     ]
   }
 
@@ -115,7 +115,7 @@ class User extends Model {
   static getTenDigitCode() {
     return randomstring.generate({
       length: 10,
-      charset: 'alphanumeric',
+      charset: 'alphanumeric'
     })
   }
 

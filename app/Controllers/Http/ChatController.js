@@ -4,7 +4,7 @@ const ChatService = use('App/Services/ChatService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ROLE_LANDLORD } = require('../../constants')
 const {
-  exceptions: { NO_TASK_FOUND },
+  exceptions: { NO_TASK_FOUND }
 } = require('../../exceptions')
 class ChatController {
   async getByTaskId({ request, auth, response }) {
@@ -19,7 +19,7 @@ class ChatController {
       id: data.task_id,
       estate_id: data.estate_id,
       prospect_id: auth.user.role === ROLE_LANDLORD ? data.prospect_id : auth.user.id,
-      user: auth.user,
+      user: auth.user
     })
 
     if (!task) {
@@ -31,13 +31,13 @@ class ChatController {
           task_id: data.task_id || task.id,
           lastId,
           page: data.page,
-          limit: data.limit,
+          limit: data.limit
         })
       ).rows
     )
     response.res({
       task,
-      chats: previousMessages || [],
+      chats: previousMessages || []
     })
   }
 

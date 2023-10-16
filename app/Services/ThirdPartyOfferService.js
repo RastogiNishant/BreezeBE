@@ -25,13 +25,13 @@ const {
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
   PETS_NO,
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
-  DATE_FORMAT,
+  DATE_FORMAT
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
 const {
-  exceptions: { MARKET_PLACE_CONTACT_EXIST, CANNOT_KNOCK_ON_DISLIKED_ESTATE },
+  exceptions: { MARKET_PLACE_CONTACT_EXIST, CANNOT_KNOCK_ON_DISLIKED_ESTATE }
 } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException')
 const { groupBy } = require('lodash')
@@ -47,7 +47,7 @@ class ThirdPartyOfferService {
 
   static async setOhneMaklerChecksum(checksum) {
     return await DataStorage.setItem('ohne-makler-checksum', checksum, '', {
-      expire: 7 * 24 * 60 * 60,
+      expire: 7 * 24 * 60 * 60
     })
   }
 
@@ -127,7 +127,7 @@ class ThirdPartyOfferService {
       Bucket: process.env.S3_PUBLIC_BUCKET,
       CopySource: bucketName + '/' + imageInfo.file_name,
       Key: filePathName,
-      ACL: 'public-read',
+      ACL: 'public-read'
     }
     try {
       await s3.copyObject(params).promise()
@@ -147,7 +147,7 @@ class ThirdPartyOfferService {
     return await gewobagFiles.toJSON().reduce(
       (files, file) => ({
         ...files,
-        [file.key]: moment(new Date(file.ftp_last_update)).utc().format(),
+        [file.key]: moment(new Date(file.ftp_last_update)).utc().format()
       }),
       {}
     )
@@ -163,7 +163,7 @@ class ThirdPartyOfferService {
     AWS.config.update({
       accessKeyId: Env.get('S3_KEY'),
       secretAccessKey: Env.get('S3_SECRET'),
-      region: Env.get('S3_REGION'),
+      region: Env.get('S3_REGION')
     })
     const s3 = new AWS.S3()
     await Promise.map(
@@ -207,7 +207,7 @@ class ThirdPartyOfferService {
             ? moment(new Date(estate.vacant_date)).format(DATE_FORMAT)
             : null,
           wbs: estate.wbs,
-          zip: estate.zip,
+          zip: estate.zip
         }
         //amenities:
         //parse this to boolean... openimmo standard for pets is boolean
@@ -218,48 +218,48 @@ class ThirdPartyOfferService {
         const amenityKeys = {
           balconies_number: {
             type: 'numeric',
-            value: 'Balkon',
+            value: 'Balkon'
           },
           barrier_free: {
             type: 'boolean',
-            value: 'Barrierefrei',
+            value: 'Barrierefrei'
           },
           basement: {
             type: 'boolean',
-            value: 'Keller',
+            value: 'Keller'
           },
           chimney: {
             type: 'boolean',
-            value: 'Kamin',
+            value: 'Kamin'
           },
           garden: {
             type: 'boolean',
-            value: 'Garten',
+            value: 'Garten'
           },
           guest_toilet: {
             type: 'boolean',
-            value: 'Gäste-WC',
+            value: 'Gäste-WC'
           },
           pets_allowed: {
             type: 'boolean',
-            value: l.get('web.letting.property.import.Pets_Allowed.message', 'de'),
+            value: l.get('web.letting.property.import.Pets_Allowed.message', 'de')
           },
           sauna: {
             type: 'boolean',
-            value: 'Sauna',
+            value: 'Sauna'
           },
           swimmingpool: {
             type: 'boolean',
-            value: 'Pool / Schwimmbad',
+            value: 'Pool / Schwimmbad'
           },
           terraces_number: {
             type: 'numeric',
-            value: 'Terrasse',
+            value: 'Terrasse'
           },
           wintergarten: {
             type: 'boolean',
-            value: 'Wintergarten',
-          },
+            value: 'Wintergarten'
+          }
         }
         let amenities = []
         for (const [key, value] of Object.entries(amenityKeys)) {
@@ -283,9 +283,9 @@ class ThirdPartyOfferService {
               {
                 picture: {
                   picture_url: imageUrl,
-                  picture_title: '',
-                },
-              },
+                  picture_title: ''
+                }
+              }
             ]
           }
         }
@@ -339,7 +339,7 @@ class ThirdPartyOfferService {
         estate = {
           ...estate,
           options: amenities,
-          ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+          ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING
         }
         const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
         estate.match = prospect_score
@@ -347,7 +347,7 @@ class ThirdPartyOfferService {
         estate['__meta__'] = {
           knocked_count: estate.knocked_count,
           like_count: estate.like_count,
-          dislike_count: estate.dislike_count,
+          dislike_count: estate.dislike_count
         }
         estate.rooms = null
         return estate
@@ -409,14 +409,14 @@ class ThirdPartyOfferService {
     const filteredEstates = await EstateService.filterEstates({
       tenant,
       estates,
-      inside_property: false,
+      inside_property: false
     })
 
     const categoryCounts = EstateService.calculateCategoryCounts(filteredEstates, tenant)
 
     return {
       estates: filteredEstates,
-      categoryCounts,
+      categoryCounts
     }
   }
 
@@ -509,19 +509,19 @@ class ThirdPartyOfferService {
           user_id: userId,
           knocked: true,
           liked: null,
-          knocked_at: moment().utc().format(),
+          knocked_at: moment().utc().format()
         }
         const estate = await ThirdPartyOffer.query().where('id', id).first()
         if (estate.source === THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER) {
           QueueService.contactOhneMakler({
             third_party_offer_id: id,
             userId,
-            message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+            message: SEND_EMAIL_TO_OHNEMAKLER_CONTENT
           })
         } else if (estate.source === THIRD_PARTY_OFFER_SOURCE_GEWOBAG) {
           QueueService.contactGewobag({
             third_party_offer_id: id,
-            userId,
+            userId
           })
         }
         break
@@ -530,7 +530,7 @@ class ThirdPartyOfferService {
           third_party_offer_id: id,
           user_id: userId,
           knocked: false,
-          liked: false,
+          liked: false
         }
         break
     }
@@ -624,7 +624,7 @@ class ThirdPartyOfferService {
           estate = {
             ...estate,
             options: amenities,
-            ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+            ...OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING
           }
           const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
           estate.match = prospect_score

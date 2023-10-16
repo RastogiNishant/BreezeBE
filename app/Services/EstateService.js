@@ -13,7 +13,7 @@ const {
   isArray,
   sum,
   trim,
-  uniq,
+  uniq
 } = require('lodash')
 const { props, Promise } = require('bluebird')
 const Database = use('Database')
@@ -123,7 +123,7 @@ const {
   MAX_FLOOR_COUNT,
   FURNISHED_GERMAN_NAME,
   PUBLISH_TYPE_ONLINE_MARKET,
-  MAXIMUM_EXPIRE_PERIOD,
+  MAXIMUM_EXPIRE_PERIOD
 } = require('../constants')
 
 const {
@@ -138,7 +138,7 @@ const {
     ERROR_PROPERTY_INVALID_STATUS,
     ERROR_PROPERTY_NOT_PUBLISHED,
     ERROR_PUBLISH_BUILDING,
-    BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY,
+    BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY
   },
   exceptionCodes: {
     ERROR_PROPERTY_AREADY_PUBLISHED_CODE,
@@ -147,8 +147,8 @@ const {
     ERROR_PROPERTY_INVALID_STATUS_CODE,
     ERROR_PROPERTY_NOT_PUBLISHED_CODE,
     ERROR_PUBLISH_BUILDING_CODE,
-    ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE,
-  },
+    ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE
+  }
 } = require('../../app/exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -159,192 +159,206 @@ const UnitCategoryService = require('./UnitCategoryService')
 const MAX_DIST = 10000
 
 const ESTATE_PERCENTAGE_VARIABLE = {
-  genenral: [
+  general: [
     {
       key: 'address',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'property_type',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'area',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isNumber: true
     },
     {
       key: 'rooms_number',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isNumber: true
     },
     {
       key: 'floor',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      zeroIsValid: true
     },
     {
       key: 'floor_direction',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
-    },
+      is_custom: false
+    }
   ],
   lease_price: [
     {
       key: 'net_rent',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isNumber: true
     },
     {
       key: 'deposit',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isNumber: true
     },
     {
       key: 'parking_space',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isNumber: true
     },
     {
       key: 'extra_costs',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+      isNumber: true
     },
     {
       key: 'heating_costs',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
-    },
+      isNumber: true
+    }
   ],
   property_detail: [
     {
       key: 'construction_year',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'house_type',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'building_status',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'apt_type',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'heating_type',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'energy_efficiency',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
-      key: 'firing_type',
+      key: 'firing',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
-    },
+      is_custom: false
+    }
   ],
   tenant_preference: [
     {
       key: 'min_age',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'max_age',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'household_type',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'minors',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isBoolean: true
     },
     {
       key: 'pets_allowed',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'is_new_tenant_transfer',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isBoolean: true
     },
     {
       key: 'budget',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isNumber: true
     },
     {
       key: 'credit_score',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isNumber: true
     },
     {
       key: 'rent_arrears',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
+      isBoolean: true
     },
     {
       key: 'income_sources',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
-    },
+      is_custom: false
+    }
   ],
   visit_slots: [
     {
       key: 'available_start_at',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'available_end_at',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
+      is_custom: false
     },
     {
       key: 'slot',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: true,
-    },
+      is_custom: true
+    }
   ],
   views: [
     {
       key: 'inside_view',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: true,
+      is_custom: true
     },
     {
       key: 'outside_view',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: true,
+      is_custom: true
     },
     {
       key: 'floor_plan',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: true,
+      is_custom: true
     },
     {
       key: 'energy_proof',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
-    },
-  ],
+      is_custom: false
+    }
+  ]
 }
 /**
  *
@@ -563,11 +577,11 @@ class EstateService {
       FileBucket.IMAGE_JPG,
       FileBucket.IMAGE_JPEG,
       FileBucket.IMAGE_PNG,
-      FileBucket.IMAGE_PDF,
+      FileBucket.IMAGE_PDF
     ]
     try {
       const files = await FileBucket.saveRequestFiles(request, [
-        { field: 'energy_proof', mime: imageMimes, isPublic: true },
+        { field: 'energy_proof', mime: imageMimes, isPublic: true }
       ])
 
       return files
@@ -607,11 +621,19 @@ class EstateService {
           'phone_number',
           'email',
           'salutation_int',
-          'rooms',
+          'rooms'
         ]),
         user_id: userId,
         property_id: propertyId,
-        status: STATUS_DRAFT,
+        status: STATUS_DRAFT
+      }
+
+      if (data?.min_invite_count === 0) {
+        createData.min_invite_count = null
+      }
+
+      if (data?.rent_end_at === 0) {
+        createData.rent_end_at = null
       }
 
       if (request) {
@@ -621,7 +643,7 @@ class EstateService {
           createData = {
             ...createData,
             energy_proof: files.energy_proof,
-            energy_proof_original_file: files.original_energy_proof,
+            energy_proof_original_file: files.original_energy_proof
           }
         }
       }
@@ -635,7 +657,7 @@ class EstateService {
         {
           ...createData,
           is_coord_changed,
-          percent: this.calculatePercent(createData),
+          percent: this.calculatePercent(createData)
         },
         trx
       )
@@ -644,7 +666,7 @@ class EstateService {
         QueueService.sendEmailToSupportForLandlordUpdate({
           type: COMPLETE_CERTAIN_PERCENT,
           landlordId: userId,
-          estateIds: [estate.id],
+          estateIds: [estate.id]
         })
       }
       // we can't get hash when we use transaction because that record won't be created before commiting the transaction
@@ -656,7 +678,7 @@ class EstateService {
       const estateData = await estate.toJSON({ isOwner: true })
       return {
         hash: estateHash?.hash || null,
-        ...estateData,
+        ...estateData
       }
     } catch (e) {
       Logger.error(`Creating estate error = ${userId} e.message`)
@@ -684,9 +706,9 @@ class EstateService {
         'letting_type',
         'cover_thumb',
         'can_publish',
-        'status',
+        'status'
       ]),
-      status: STATUS_DRAFT,
+      status: STATUS_DRAFT
     }
 
     if (data?.min_invite_count === 0) {
@@ -705,11 +727,11 @@ class EstateService {
 
     updateData = {
       ...estate.toJSON({
-        extraFields: ['verified_address', 'cover_thumb'],
+        extraFields: ['verified_address', 'cover_thumb']
       }),
-      ...updateData,
+      ...updateData
     }
-
+    updateData = omit(updateData, 'category')
     const { verified_address, cover_thumb, ...omittedData } = updateData
     let insideTrx = !trx ? true : false
     trx = insideTrx ? await Database.beginTransaction() : trx
@@ -723,12 +745,12 @@ class EstateService {
           energy_proof_original_file: null,
           percent: this.calculatePercent({
             ...omittedData,
-            energy_proof: null,
+            energy_proof: null
           }),
           can_publish: this.isAllInfoAvailable({
             ...omittedData,
-            energy_proof: null,
-          }),
+            energy_proof: null
+          })
         }
       } else {
         const files = await this.saveEnergyProof(request)
@@ -736,24 +758,24 @@ class EstateService {
           updateData = {
             ...updateData,
             percent: this.calculatePercent({
-              ...omittedData,
+              ...omittedData
             }),
             can_publish: this.isAllInfoAvailable({
-              ...omittedData,
+              ...omittedData
             }),
 
             energy_proof: files.energy_proof,
-            energy_proof_original_file: files.original_energy_proof,
+            energy_proof_original_file: files.original_energy_proof
           }
         } else {
           updateData = {
             ...updateData,
             percent: this.calculatePercent({
-              ...omittedData,
+              ...omittedData
             }),
             can_publish: this.isAllInfoAvailable({
-              ...omittedData,
-            }),
+              ...omittedData
+            })
           }
         }
       }
@@ -769,9 +791,9 @@ class EstateService {
             estate: {
               ...estate.toJSON(),
               can_publish: this.isAllInfoAvailable({
-                ...omittedData,
-              }),
-            },
+                ...omittedData
+              })
+            }
           },
           trx
         )
@@ -783,7 +805,7 @@ class EstateService {
         QueueService.sendEmailToSupportForLandlordUpdate({
           type: COMPLETE_CERTAIN_PERCENT,
           landlordId: user_id,
-          estateIds: [estate.id],
+          estateIds: [estate.id]
         })
       }
       if (data.delete_energy_proof && energy_proof) {
@@ -796,7 +818,7 @@ class EstateService {
 
       return {
         ...estate.toJSON(),
-        updateData,
+        updateData
       }
     } catch (e) {
       if (insideTrx) {
@@ -818,7 +840,7 @@ class EstateService {
         {
           user_id,
           url: estate.energy_proof,
-          file_name: estate.energy_proof_original_file,
+          file_name: estate.energy_proof_original_file
         },
         trx
       )
@@ -827,7 +849,7 @@ class EstateService {
     const estateData = {
       user_id,
       energy_proof: galleries[0].url,
-      energy_proof_original_file: galleries[0].file_name,
+      energy_proof_original_file: galleries[0].file_name
     }
     await Estate.query().where('id', estate_id).update(estateData).transacting(trx)
     return galleries.map((gallery) => gallery.id)
@@ -873,7 +895,17 @@ class EstateService {
     }
     const Filter = new EstateFilters(params, query)
     query = Filter.process()
-    return query.orderBy('estates.id', 'desc')
+
+    if (params?.isStatusSort) {
+      query.orderBy(
+        Database.raw(
+          `case estates.publish_status when ${PUBLISH_STATUS_APPROVED_BY_ADMIN} then 1 when ${PUBLISH_STATUS_BY_LANDLORD} then 2 when ${PUBLISH_STATUS_INIT} then 3 else 3 end`
+        )
+      )
+    } else {
+      query.orderBy('estates.id', 'desc')
+    }
+    return query
   }
 
   /**
@@ -947,7 +979,7 @@ class EstateService {
           file_name,
           estate_id: estate.id,
           type,
-          file_format,
+          file_format
         },
         trx
       )
@@ -978,7 +1010,7 @@ class EstateService {
         file_name: gallery.file_name,
         disk: 's3public',
         estate_id,
-        type,
+        type
       }
     })
     await File.createMany(files, trx)
@@ -1117,7 +1149,7 @@ class EstateService {
             (await this.getFiles({
               estate_id: room?.estate_id || estate_id,
               type: [FILE_TYPE_PLAN, FILE_TYPE_EXTERNAL],
-              orderBy: [{ key: 'type', order: 'asc' }],
+              orderBy: [{ key: 'type', order: 'asc' }]
             })) || []
 
           if (addImage) {
@@ -1231,7 +1263,7 @@ class EstateService {
       estateId = Array.isArray(estateId) ? estateId : [estateId]
       const likes = estateId.map((id) => ({
         user_id: userId,
-        estate_id: id,
+        estate_id: id
       }))
 
       await this.upsertBulkLikes(likes, trx)
@@ -1327,7 +1359,7 @@ class EstateService {
     try {
       const dislikes = estate_id.map((id) => ({
         user_id,
-        estate_id: id,
+        estate_id: id
       }))
 
       await this.upsertBulkDislikes(dislikes, trx)
@@ -1433,7 +1465,7 @@ class EstateService {
     return {
       estates: filteredEstates,
       groupedEstates: estates,
-      categoryCounts,
+      categoryCounts
     }
   }
 
@@ -1460,7 +1492,7 @@ class EstateService {
       fieldName: 'rooms_number',
       start: 0,
       end: MAX_ROOM_COUNT,
-      interval: ROOM_INTERVAL_COUNT,
+      interval: ROOM_INTERVAL_COUNT
     })
 
     const area = this.calculateCounts({
@@ -1468,7 +1500,7 @@ class EstateService {
       fieldName: 'area',
       start: 0,
       end: MAX_SPACE_COUNT,
-      interval: SPACE_INTERVAL_COUNT,
+      interval: SPACE_INTERVAL_COUNT
     })
 
     const net_rent = this.calculateCounts({
@@ -1476,7 +1508,7 @@ class EstateService {
       fieldName: 'net_rent',
       start: 0,
       end: tenant.income ?? MAX_RENT_COUNT,
-      interval: RENT_INTERVAL_COUNT,
+      interval: RENT_INTERVAL_COUNT
     })
 
     const number_floors = this.calculateCounts({
@@ -1484,14 +1516,14 @@ class EstateService {
       fieldName: 'number_floors',
       start: 0,
       end: MAX_FLOOR_COUNT,
-      interval: FLOOR_INTERVAL_COUNT,
+      interval: FLOOR_INTERVAL_COUNT
     })
 
     return {
       rooms_number,
       area,
       net_rent,
-      number_floors,
+      number_floors
     }
   }
 
@@ -1502,7 +1534,7 @@ class EstateService {
       counts[categoryKey] = Object.keys(insideMatchCounts[categoryKey]).map((key) => ({
         [key]:
           (insideMatchCounts?.[categoryKey]?.[key] || 0) +
-          (outsideMatchCounts?.[categoryKey]?.[key] || 0),
+          (outsideMatchCounts?.[categoryKey]?.[key] || 0)
       }))
     })
     return counts
@@ -1659,7 +1691,7 @@ class EstateService {
       //estate.cert_category : inside estates
       //estate.wbs: outside estates
       if (inside_property) {
-        estates = estates.filter((estate) => estate.cert_category)
+        estates = estates.filter((estate) => estate?.cert_category?.length > 0)
       } else {
         estates = estates.filter((estate) => estate.wbs)
       }
@@ -1671,7 +1703,9 @@ class EstateService {
 
     if (tenant.income_level?.length && inside_property) {
       estates = estates.filter(
-        (estate) => !estate.cert_category || tenant.income_level.includes(estate.cert_category)
+        (estate) =>
+          estate?.cert_category?.length < 1 ||
+          tenant.income_level.some((level) => estate.cert_category.includes(level))
       )
       if (process.env.DEV === 'true') {
         Logger.info(`filterEstates after income level ${estates?.length}`)
@@ -1842,6 +1876,12 @@ class EstateService {
       .select('estates.*')
       .withCount('knocked')
       .select(Database.raw(`_m.prospect_score AS match`))
+      .select(
+        Database.raw(
+          'CAST(COALESCE(estates.rooms_number, 0) + COALESCE(estates.bedrooms_number, 0) + COALESCE(estates.bathrooms_number, 0) as INTEGER) as rooms_max'
+        )
+      )
+      .select(Database.raw('1 as rooms_min'))
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
           .onIn('_m.user_id', [userId])
@@ -1921,6 +1961,7 @@ class EstateService {
       throw new AppException('Tenant geo invalid')
     }
     let query = null
+
     if (tenant.isActive()) {
       query = this.getActiveMatchesQuery({ userId, build_id })
     } else {
@@ -1932,7 +1973,7 @@ class EstateService {
       estates =
         (await query.paginate(page, limit)).toJSON({
           isShort: false,
-          role: ROLE_USER,
+          role: ROLE_USER
         })?.data || []
     } else {
       estates = (await query.fetch()).toJSON({ isShort: false, role: ROLE_USER })
@@ -2034,7 +2075,7 @@ class EstateService {
             estate_id: estate.id,
             estate_sync_property_id: null,
             performed_by,
-            publishers,
+            publishers
           },
           trx
         )
@@ -2049,7 +2090,7 @@ class EstateService {
         delDislikes: Database.table('dislikes')
           .where({ estate_id: estate.id })
           .delete()
-          .transacting(trx),
+          .transacting(trx)
       })
 
       const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
@@ -2079,7 +2120,7 @@ class EstateService {
           available_end_at:
             this.available_end_at ||
             moment(this.available_start_at).add(MAXIMUM_EXPIRE_PERIOD, 'days').format(DATE_FORMAT),
-          notify_sent: null,
+          notify_sent: null
         })
         .transacting(trx)
 
@@ -2092,7 +2133,7 @@ class EstateService {
         QueueService.sendEmailToSupportForLandlordUpdate({
           type: PUBLISH_ESTATE,
           landlordId: estate.user_id,
-          estateIds: [estate.id],
+          estateIds: [estate.id]
         })
         Event.fire('mautic:syncContact', estate.user_id, { published_property: 1 })
       }
@@ -2122,7 +2163,7 @@ class EstateService {
       await estate.updateItemWithTrx(
         {
           status: STATUS_DRAFT,
-          publish_status: PUBLISH_STATUS_INIT,
+          publish_status: PUBLISH_STATUS_INIT
         },
         trx,
         true
@@ -2132,7 +2173,7 @@ class EstateService {
         building = await EstateService.updateBuildingPublishStatus(
           {
             building_id: estate.build_id,
-            action: 'deactivate',
+            action: 'deactivate'
           },
           trx
         )
@@ -2142,7 +2183,7 @@ class EstateService {
       await this.handleOffline({
         estates: [estate],
         building,
-        event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED,
+        event: WEBSOCKET_EVENT_ESTATE_DEACTIVATED
       })
     } catch (e) {
       await trx.rollback()
@@ -2160,7 +2201,7 @@ class EstateService {
         {
           status: STATUS_OFFLINE_ACTIVE,
           publish_status: PUBLISH_STATUS_INIT,
-          publish_type: PUBLISH_TYPE_OFFLINE_MARKET,
+          publish_type: PUBLISH_TYPE_OFFLINE_MARKET
         },
         true
       )
@@ -2201,7 +2242,7 @@ class EstateService {
       await estate.updateItemWithTrx(
         {
           status: STATUS_EXPIRE,
-          publish_status: PUBLISH_STATUS_INIT,
+          publish_status: PUBLISH_STATUS_INIT
         },
         trx,
         true
@@ -2218,7 +2259,7 @@ class EstateService {
         {
           building,
           estates: [estate],
-          event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED,
+          event: WEBSOCKET_EVENT_ESTATE_UNPUBLISHED
         },
         trx
       )
@@ -2237,14 +2278,14 @@ class EstateService {
       building_status: building?.status,
       status: estates?.[0]?.status,
       publish_status: estates?.[0]?.publish_status,
-      property_id: estates?.[0]?.property_id,
+      property_id: estates?.[0]?.property_id
     }
 
     const EstateSyncService = require('./EstateSyncService')
     await EstateSyncService.emitWebsocketEventToLandlord({
       event,
       user_id: estates?.[0].user_id,
-      data,
+      data
     })
 
     if (estates?.length) {
@@ -2260,7 +2301,7 @@ class EstateService {
     estate_id,
     available_end_at,
     is_duration_later,
-    min_invite_count,
+    min_invite_count
   }) {
     estate_id = Array.isArray(estate_id) ? estate_id : [estate_id]
     return await EstateService.getQuery()
@@ -2277,7 +2318,7 @@ class EstateService {
     available_end_at,
     is_duration_later,
     min_invite_count,
-    notify_on_green_matches,
+    notify_on_green_matches
   }) {
     estate_id = Array.isArray(estate_id) ? estate_id : [estate_id]
     return await EstateService.getQuery()
@@ -2289,7 +2330,7 @@ class EstateService {
         is_duration_later,
         min_invite_count,
         notify_on_green_matches,
-        status: STATUS_DRAFT,
+        status: STATUS_DRAFT
       })
   }
 
@@ -2373,7 +2414,7 @@ class EstateService {
         outside_view_has_media,
         document_view_has_media,
         unassigned_view_has_media,
-        deposit_multiplier,
+        deposit_multiplier
       }
     })
     delete result?.rows
@@ -2391,12 +2432,12 @@ class EstateService {
         perPage: limit,
         lastPage:
           parseInt(parseInt(count?.[0]?.count || 0) / limit) +
-          (parseInt(count?.[0]?.count || 0) % limit > 0 ? 1 : 0),
+          (parseInt(count?.[0]?.count || 0) % limit > 0 ? 1 : 0)
       }
     }
     result = {
       ...result,
-      pages,
+      pages
     }
     return result
   }
@@ -2415,7 +2456,7 @@ class EstateService {
       .where('estates.id', estate_id)
       .where('estates.user_id', user_id)
       .orderBy('_mb.id')
-      .firstOrFail()
+      .first()
   }
 
   /**
@@ -2534,7 +2575,7 @@ class EstateService {
         street: estate.properties.street,
         address: estate.properties.formatted,
         coord: { lat: estate.properties.lat, lon: estate.properties.lon },
-        house_number: estate.properties.housenumber,
+        house_number: estate.properties.housenumber
       }
     })
     const coords = estates.map((estate) => `${estate.coord.lat},${estate.coord.lon}`)
@@ -2544,7 +2585,7 @@ class EstateService {
           .leftJoin({ _ect: 'estate_current_tenants' }, function () {
             this.on('_ect.estate_id', 'estates.id').onNotIn('_ect.status', [
               STATUS_DELETE,
-              STATUS_EXPIRE,
+              STATUS_EXPIRE
             ])
           })
           .select(
@@ -2587,7 +2628,7 @@ class EstateService {
     })
     return {
       ...existingEstates,
-      ...notGroupExistingEstates,
+      ...notGroupExistingEstates
     }
   }
 
@@ -2606,7 +2647,7 @@ class EstateService {
       'bath_options',
       'kitchen_options',
       'equipment',
-      'verified_address',
+      'verified_address'
     ])
     return filteredCounts
   }
@@ -2623,7 +2664,7 @@ class EstateService {
       'bath_options',
       'kitchen_options',
       'equipment',
-      'verified_address',
+      'verified_address'
     ])
     return estateCount
   }
@@ -2784,8 +2825,8 @@ class EstateService {
             mostUrgency: mostUrgency?.urgency || null,
             mostUrgencyCount: mostUrgency
               ? countBy(r[0].activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
-              : 0,
-          },
+              : 0
+          }
         }
       })
     )
@@ -2875,7 +2916,7 @@ class EstateService {
       not_connected_count,
       pending_count,
       unread_count,
-      connected_count,
+      connected_count
     }
   }
 
@@ -2926,7 +2967,7 @@ class EstateService {
         status: STATUS_DRAFT,
         letting_type: LETTING_TYPE_LET,
         letting_status: LETTING_STATUS_STANDARD,
-        publish_status: PUBLISH_STATUS_INIT,
+        publish_status: PUBLISH_STATUS_INIT
       })
       .transacting(trx)
   }
@@ -2993,7 +3034,7 @@ class EstateService {
       return {
         ...estate,
         canChangeLettingType:
-          isMatchCountValidToChangeLettingType || estate.current_tenant ? false : true,
+          isMatchCountValidToChangeLettingType || estate.current_tenant ? false : true
       }
     })
   }
@@ -3065,7 +3106,7 @@ class EstateService {
         user_id,
         filename,
         type: IMPORT_TYPE_OPENIMMO,
-        entity: IMPORT_ENTITY_ESTATES,
+        entity: IMPORT_ENTITY_ESTATES
       })
       await trx.commit()
       return result
@@ -3087,8 +3128,8 @@ class EstateService {
       data: {
         id,
         coord,
-        address,
-      },
+        address
+      }
     })
   }
 
@@ -3098,12 +3139,12 @@ class EstateService {
     let typeAssigned = {
       external: ['external'],
       documents: ['plan', 'energy_certificate', 'custom', 'doc'],
-      unassigned: ['unassigned'],
+      unassigned: ['unassigned']
     }
     let ret = {
       external: [],
       documents: { plan: [], energy_certificate: [], custom: [] },
-      unassigned: [],
+      unassigned: []
     }
     //return files
     files.toJSON().map((file) => {
@@ -3116,11 +3157,11 @@ class EstateService {
     return ret
   }
 
-  static calculatePercent(estate) {
+  static calculatePercent(estate, debug = false) {
     delete estate.verified_address
-    delete estate.construction_year
     delete estate.cover_thumb
     let percent = 0
+    let debugArr = []
     const is_let = estate.letting_type === LETTING_TYPE_LET ? true : false
     const let_type = is_let ? LETTING_TYPE_LET : LETTING_TYPE_VOID
 
@@ -3142,14 +3183,26 @@ class EstateService {
 
     const IMAGE_DOC_PERCENT_VAL = is_let ? IMAGE_DOC_PERCENT.let : IMAGE_DOC_PERCENT.void
 
-    const general = ESTATE_PERCENTAGE_VARIABLE.genenral.filter((g) =>
-      g.mandatory.includes(let_type)
-    )
+    const general = ESTATE_PERCENTAGE_VARIABLE.general.filter((g) => g.mandatory.includes(let_type))
     general.length &&
       general
         .filter((g) => !g.is_custom)
-        .map(({ key }) => {
-          percent += estate[key] ? GENERAL_PERCENT_VAL / general.length : 0
+        .map(({ key, isNumber, zeroIsValid }) => {
+          let score = 0
+          if (isNumber) {
+            score = Number(estate[key]) ? GENERAL_PERCENT_VAL / general.length : 0
+          } else if (zeroIsValid) {
+            score = !isNull(estate[key]) ? GENERAL_PERCENT_VAL / general.length : 0
+          } else {
+            score = estate[key] ? GENERAL_PERCENT_VAL / general.length : 0
+          }
+          percent += score
+          debugArr.push({
+            key,
+            value: estate[key],
+            score,
+            percent
+          })
         })
     const lease_price = ESTATE_PERCENTAGE_VARIABLE.lease_price.filter((g) =>
       g.mandatory.includes(let_type)
@@ -3157,8 +3210,20 @@ class EstateService {
     lease_price.length &&
       lease_price
         .filter((l) => !l.is_custom)
-        .map(({ key }) => {
-          percent += estate[key] ? LEASE_CONTRACT_PERCENT_VAL / lease_price.length : 0
+        .map(({ key, isNumber }) => {
+          let score = 0
+          if (isNumber) {
+            score = Number(estate[key]) ? LEASE_CONTRACT_PERCENT_VAL / lease_price.length : 0
+          } else {
+            score = estate[key] ? LEASE_CONTRACT_PERCENT_VAL / lease_price.length : 0
+          }
+          percent += score
+          debugArr.push({
+            key,
+            value: estate[key],
+            score,
+            percent
+          })
         })
 
     const property_detail = ESTATE_PERCENTAGE_VARIABLE.property_detail.filter((g) =>
@@ -3168,11 +3233,31 @@ class EstateService {
       property_detail
         .filter((p) => !p.is_custom)
         .map(({ key }) => {
-          percent += estate[key] ? PROPERTY_DETAILS_PERCENT_VAL / property_detail.length : 0
+          //we add one more to property_detail.length to accomodate amenities below
+          percent += estate[key] ? PROPERTY_DETAILS_PERCENT_VAL / (property_detail.length + 1) : 0
+          debugArr.push({
+            key,
+            value: estate[key],
+            score: estate[key] ? PROPERTY_DETAILS_PERCENT_VAL / (property_detail.length + 1) : 0,
+            percent
+          })
         })
 
     if (estate['amenities'] && estate['amenities'].length) {
-      percent += PROPERTY_DETAILS_PERCENT_VAL / property_detail.length
+      percent += PROPERTY_DETAILS_PERCENT_VAL / (property_detail.length + 1)
+      debugArr.push({
+        key: 'amenities',
+        value: estate['amenities'],
+        score: PROPERTY_DETAILS_PERCENT_VAL / (property_detail.length + 1),
+        percent
+      })
+    } else {
+      debugArr.push({
+        key: 'amenities',
+        value: estate['amenities'],
+        score: 0,
+        percent
+      })
     }
 
     const tenant_preference = ESTATE_PERCENTAGE_VARIABLE.tenant_preference.filter((g) =>
@@ -3181,19 +3266,44 @@ class EstateService {
     tenant_preference.length &&
       tenant_preference
         .filter((t) => !t.is_custom)
-        .map(({ key }) => {
-          percent += estate[key] ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length : 0
+        .map(({ key, isBoolean, isNumber }) => {
+          let score = 0
+          if (isBoolean) {
+            score =
+              estate[key] === true || estate[key] === false
+                ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length
+                : 0
+          } else if (isNumber) {
+            score = Number(estate[key])
+              ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length
+              : 0
+          } else {
+            score = estate[key] ? TENANT_PREFERENCES_PERCENT_VAL / tenant_preference.length : 0
+          }
+          percent += score
+          debugArr.push({
+            key,
+            value: estate[key],
+            score,
+            percent
+          })
         })
 
     let visit_slots = ESTATE_PERCENTAGE_VARIABLE.visit_slots.filter((g) =>
       g.mandatory.includes(let_type)
     )
-
     visit_slots.length &&
       visit_slots
         .filter((v) => !v.is_custom)
         .map(({ key }) => {
+          //add 1 to denominator to compensate for estates.slots
           percent += estate[key] ? VISIT_SLOT_PERCENT_VAL / visit_slots.length : 0
+          debugArr.push({
+            key,
+            value: estate[key],
+            score: estate[key] ? VISIT_SLOT_PERCENT_VAL / visit_slots.length : 0,
+            percent
+          })
         })
 
     if (
@@ -3204,29 +3314,69 @@ class EstateService {
       estate.slots.find((slot) => slot.start_at >= moment.utc(new Date()).format(DATE_FORMAT))
     ) {
       percent += VISIT_SLOT_PERCENT_VAL / visit_slots.length
+      debugArr.push({
+        key: 'slots',
+        value: estate['slots'],
+        score: VISIT_SLOT_PERCENT_VAL / visit_slots.length,
+        percent
+      })
+    } else {
+      debugArr.push({
+        key: 'slots',
+        value: estate['slots'],
+        score: 0,
+        percent
+      })
     }
-    let views = ESTATE_PERCENTAGE_VARIABLE.views.filter((g) => g.mandatory.includes(let_type))
 
+    let views = ESTATE_PERCENTAGE_VARIABLE.views.filter((g) => g.mandatory.includes(let_type))
     views.length &&
       views
         .filter((v) => !v.is_custom)
         .map(({ key }) => {
           percent += estate[key] ? IMAGE_DOC_PERCENT_VAL / views.length : 0
+          debugArr.push({
+            key,
+            value: estate[key],
+            score: estate[key] ? IMAGE_DOC_PERCENT_VAL / views.length : 0,
+            percent
+          })
         })
 
     if (views.length) {
-      percent += sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
+      let score = sum((estate?.rooms || []).map((room) => room?.images?.length || 0))
         ? IMAGE_DOC_PERCENT_VAL / views.length
         : 0
-      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
+      percent += score
+      debugArr.push({
+        key: 'room_image',
+        value: estate['rooms'],
+        score,
+        percent
+      })
+      score = (estate?.files || []).find((f) => f.type === FILE_TYPE_PLAN)
         ? IMAGE_DOC_PERCENT_VAL / views.length
         : 0
-      percent += (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
+      percent += score
+      debugArr.push({
+        key: 'house plan',
+        value: estate['files'],
+        score,
+        percent
+      })
+      score = (estate?.files || []).find((f) => f.type === FILE_TYPE_EXTERNAL)
         ? IMAGE_DOC_PERCENT_VAL / views.length
         : 0
+      percent += score
+      debugArr.push({
+        key: 'external',
+        value: estate['files'],
+        score,
+        percent
+      })
     }
-
-    return Math.ceil(percent)
+    if (debug) return debugArr
+    return percent >= 100 ? 100 : Math.ceil(percent)
   }
 
   static async updatePercentAndIsPublished(
@@ -3237,7 +3387,7 @@ class EstateService {
       files = null,
       amenities = null,
       deleted_slots_ids = null,
-      deleted_files_ids = null,
+      deleted_files_ids = null
     },
     trx = null
   ) {
@@ -3257,7 +3407,7 @@ class EstateService {
     delete estate.cover_thumb
 
     let percentData = {
-      ...estate.toJSON({ extraFields: ['verified_address', 'construction_year', 'cover_thumb'] }),
+      ...estate.toJSON({ extraFields: ['verified_address', 'construction_year', 'cover_thumb'] })
     }
 
     if (slots) {
@@ -3300,21 +3450,21 @@ class EstateService {
       QueueService.sendEmailToSupportForLandlordUpdate({
         type: COMPLETE_CERTAIN_PERCENT,
         landlordId: estate.user_id,
-        estateIds: [estate.id],
+        estateIds: [estate.id]
       })
     }
 
     estate = {
       ...estate,
       percent,
-      can_publish: isAvailablePublish,
+      can_publish: isAvailablePublish
     }
     if (estate?.build_id) {
       await BuildingService.updateCanPublish(
         {
           user_id: estate.user_id,
           build_id: estate.build_id,
-          estate,
+          estate
         },
         trx
       )
@@ -3340,9 +3490,11 @@ class EstateService {
           userId: user_id,
           build_id,
           page: -1,
-          limit: -1,
+          limit: -1
         })
-      )?.filter((estate) => (is_social ? estate.cert_category : !estate.cert_category)) || []
+      )?.filter((estate) =>
+        is_social ? estate?.cert_category?.length : !estate?.cert_category?.length
+      ) || []
     estates = orderBy(estates, 'rooms_number', 'asc')
 
     let category_ids = uniq(estates.map((estate) => estate.unit_category_id))
@@ -3352,7 +3504,7 @@ class EstateService {
     const yAxisEstates = is_social
       ? groupBy(
           estates.filter((estate) => estate.cert_category),
-          (estate) => estate.cert_category
+          (estate) => estate?.cert_category?.join('+')
         )
       : groupBy(estates, (estate) => estate.floor)
 
@@ -3360,11 +3512,17 @@ class EstateService {
     Object.keys(yAxisEstates).forEach((axis) => {
       let categoryEstates = {}
       category_ids.forEach((cat_id) => {
-        const filteredEstates = estates.filter(
-          (estate) =>
-            estate[yAxisKey].toString() === axis.toString() &&
+        const filteredEstates = estates.filter((estate) => {
+          const yAxisKeyCondition =
+            yAxisKey === 'floor'
+              ? estate[yAxisKey].toString() === axis.toString()
+              : estate[yAxisKey]?.join('+') === axis.toString()
+
+          return (
+            yAxisKeyCondition &&
             (cat_id != -1 ? estate.unit_category_id === cat_id : !estate.unit_category_id)
-        )
+          )
+        })
         if (filteredEstates?.length) {
           categoryEstates[cat_id] = filteredEstates
         }
@@ -3380,7 +3538,7 @@ class EstateService {
         is_social ? a.localeCompare(b) : b - a
       ),
       xAxisCategories: category_ids,
-      estates: buildingEstates,
+      estates: buildingEstates
     }
   }
 
@@ -3417,14 +3575,16 @@ class EstateService {
         from,
         to
       )
+      console.log('thirdPartyOffers', thirdPartyOffers.length)
       estates = [...estates, ...thirdPartyOffers]
+      console.log('estates', estates.length)
     }
 
     return {
       estates,
       page,
       limit,
-      count: totalCount,
+      count: totalCount
     }
   }
 
@@ -3595,7 +3755,7 @@ class EstateService {
           'cover_thumb',
           'verified_address',
           'created_at',
-          'updated_at',
+          'updated_at'
         ]),
         property_id: `${property_id}-${duplicatedCount + 1}`,
         status: STATUS_DRAFT,
@@ -3606,7 +3766,7 @@ class EstateService {
         repair_needed: false,
         construction_year: originalEstateData?.construction_year
           ? `${originalEstateData?.construction_year}-01-01`
-          : null,
+          : null
       }
 
       const newEstate = await this.createEstate({ data: estateData, userId: user_id }, false, trx)
@@ -3616,14 +3776,14 @@ class EstateService {
           const newRoom = await RoomService.createRoom(
             {
               estate_id: newEstate.id,
-              roomData: omit(room, ['id', 'estate_id', 'images', 'created_at', 'updated_at']),
+              roomData: omit(room, ['id', 'estate_id', 'images', 'created_at', 'updated_at'])
             },
             trx
           )
           const newImages = room.images.map((image) => ({
             ...omit(image, ['id', 'relativeUrl', 'thumb']),
             url: image.relativeUrl,
-            room_id: newRoom.id,
+            room_id: newRoom.id
           }))
           await RoomService.addManyImages(newImages, trx)
         },
@@ -3633,13 +3793,13 @@ class EstateService {
       const newFiles = (originalEstateData.files || []).map((file) => ({
         ...omit(file, ['id', 'relativeUrl', 'thumb']),
         url: file.relativeUrl,
-        estate_id: newEstate.id,
+        estate_id: newEstate.id
       }))
       await this.addManyFiles(newFiles, trx)
 
       const newAmenities = (originalEstateData.amenities || []).map((amenity) => ({
         ...omit(amenity, ['room_id', 'id', 'option']),
-        estate_id: newEstate.id,
+        estate_id: newEstate.id
       }))
 
       await Amenity.createMany(newAmenities, trx)
@@ -3648,7 +3808,7 @@ class EstateService {
       const estates = await require('./EstateService').getEstatesByUserId({
         limit: 1,
         from: 0,
-        params: { id: newEstate.id },
+        params: { id: newEstate.id }
       })
       return estates.data?.[0]
     } catch (e) {
@@ -3667,7 +3827,7 @@ class EstateService {
       .innerJoin({ _ect: 'estate_sync_contact_requests' }, function () {
         this.on('estates.id', '_ect.estate_id').onIn('_ect.status', [
           STATUS_DRAFT,
-          STATUS_EMAIL_VERIFY,
+          STATUS_EMAIL_VERIFY
         ])
       })
       .whereIn('estates.status', [STATUS_ACTIVE, STATUS_EXPIRE])
@@ -3682,7 +3842,7 @@ class EstateService {
     let estate = await this.getEstateWithDetails({
       id,
       user_id: user_id ?? null,
-      role: role ?? null,
+      role: role ?? null
     })
 
     if (!estate) {
@@ -3693,7 +3853,7 @@ class EstateService {
     estate = estate.toJSON({
       isShort: true,
       role: role ?? null,
-      extraFields: ['landlord_type', 'hash', 'property_type'],
+      extraFields: ['landlord_type', 'hash', 'property_type']
     })
 
     let match
@@ -3703,7 +3863,7 @@ class EstateService {
 
     estate = {
       ...estate,
-      match: match?.prospect_score,
+      match: match?.prospect_score
     }
 
     estate = await EstateService.assignEstateAmenities(estate)
@@ -3737,7 +3897,7 @@ class EstateService {
     const buildEstateCount = await EstateService.buildEstateCount({ user_id, params })
     const noBuildEstateCount = await EstateService.noBuildEstateCount({
       user_id,
-      params,
+      params
     })
 
     const total = buildEstateCount + noBuildEstateCount
@@ -3747,7 +3907,7 @@ class EstateService {
       user_id,
       limit,
       from: (page - 1) * limit,
-      params,
+      params
     })
 
     let estates = buildEstates
@@ -3766,7 +3926,8 @@ class EstateService {
           params: {
             ...(params || {}),
             is_no_build: true,
-          },
+            isStatusSort: true
+          }
         })
         estates = [...estates, ...(result?.data || [])]
       }
@@ -3776,7 +3937,8 @@ class EstateService {
         params: {
           ...(params || {}),
           is_no_build: true,
-        },
+          isStatusSort: true
+        }
       })
 
       estates = [...estates, ...(result?.data || [])]
@@ -3787,9 +3949,9 @@ class EstateService {
         total,
         lastPage: Math.ceil(total / limit) || 1,
         page,
-        perPage: limit,
+        perPage: limit
       },
-      estates,
+      estates
     }
   }
 
@@ -3813,7 +3975,7 @@ class EstateService {
       max_age,
       credit_score,
       rent_arrears,
-      family_size_max,
+      family_size_max
     }
     Logger.info(
       `isTenantPreferenceUpdated= ${estateDetails.id} ${checkIfIsValid(tenantPreferenceObject)}`
@@ -3846,7 +4008,7 @@ class EstateService {
       building_status,
       construction_year,
       energy_efficiency,
-      deposit_multiplier,
+      deposit_multiplier
     } = estateDetails ?? {}
 
     let locationObject
@@ -3873,7 +4035,7 @@ class EstateService {
         property_type,
         building_status,
         construction_year,
-        energy_efficiency,
+        energy_efficiency
       }
     } else {
       // when contract end is added, below things are mandatory to publish
@@ -3889,7 +4051,7 @@ class EstateService {
         house_number,
         depositCheck,
         rooms_number,
-        property_type,
+        property_type
       }
     }
     Logger.info(`isLocationRentUnitUpdated= ${estateDetails.id} ${checkIfIsValid(locationObject)}`)
@@ -3920,7 +4082,7 @@ class EstateService {
       await require('./EstateService').getEstatesByUserId({
         limit: 1,
         from: 0,
-        params: { build_id },
+        params: { build_id }
       })
     ).data
 
@@ -3931,7 +4093,7 @@ class EstateService {
     const estates = await this.getEstatesByBuilding({
       user_id,
       build_id,
-      exclude_letting_type_let: true,
+      exclude_letting_type_let: true
     })
 
     const can_publish = estates.every((estate) => estate.can_publish)
@@ -3968,7 +4130,7 @@ class EstateService {
           id: build_id,
           user_id,
           published: PUBLISH_STATUS_BY_LANDLORD,
-          marketplace_estate_ids: availableCategories,
+          marketplace_estate_ids: availableCategories
         },
         trx
       )
@@ -3979,7 +4141,7 @@ class EstateService {
             estate,
             publishers,
             performed_by: user_id,
-            is_build_publish: true,
+            is_build_publish: true
           },
           trx
         )
@@ -4007,6 +4169,89 @@ class EstateService {
     return estates.toJSON()
   }
 
+  static async getEstatesByBuildingId({ user_id, build_id, exclude_letting_type_let }) {
+    let query = Estate.query()
+      .where('user_id', user_id)
+      .where('build_id', build_id)
+      .whereNot('status', STATUS_DELETE)
+      .with('estateSyncListings')
+      .withCount('visits')
+      .with('final')
+      .withCount('inviteBuddies')
+      .withCount('knocked')
+      .withCount('contact_requests')
+      .select(
+        Database.raw(
+          `case when status='${STATUS_ACTIVE}' 
+  then true else false end
+  as "unpublishable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status='${PUBLISH_STATUS_BY_LANDLORD}' and
+    not (
+      (available_start_at is null) is true or
+      ((is_duration_later is false or is_duration_later is null)
+        and (available_end_at is null) is true) or
+      (is_duration_later is true and min_invite_count < 1) or
+      ((available_end_at is not null) is true and available_end_at < NOW()) or
+      ((available_end_at is not null) is true and
+        (available_start_at is not null) is true and
+        available_start_at >= available_end_at)
+    ) and
+    letting_type <> '${LETTING_TYPE_LET}'
+    then true else false end
+    as "approvable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status='${PUBLISH_STATUS_BY_LANDLORD}'
+    then true else false end
+    as "declineable"`
+        ),
+        Database.raw(
+          `case when status in ('${STATUS_DRAFT}', '${STATUS_EXPIRE}') and
+    publish_status not in ('${PUBLISH_STATUS_BY_LANDLORD}') and
+    not (
+      (available_start_at is null) is true or
+      ((is_duration_later is false or is_duration_later is null)
+        and (available_end_at is null) is true) or
+      (is_duration_later is true and min_invite_count < 1) or
+      ((available_end_at is not null) is true and available_end_at < NOW()) or
+      ((available_end_at is not null) is true and
+        (available_start_at is not null) is true and
+        available_start_at >= available_end_at)
+    ) and
+    letting_type <> '${LETTING_TYPE_LET}'
+    then true else false end
+    as "publishable"
+  `
+        ),
+        Database.raw(
+          `json_build_object(
+    'letting_type_is_let', (letting_type = '${LETTING_TYPE_LET}') is true,
+    'available_start_at_is_null', (available_start_at is null) is true,
+    'is_not_duration_later_but_available_end_at_is_null',
+      ((is_duration_later is false or is_duration_later is null)
+      and (available_end_at is null) is true) is true,
+    'is_duration_later_but_no_min_invite_count', 
+      (is_duration_later is true and min_invite_count < 1) is true,
+    'available_end_at_is_past', 
+      ((available_end_at is not null) is true and available_end_at < NOW()) is true,
+    'available_start_at_is_later_than_available_end_at',
+      ((available_end_at is not null) is true and
+      (available_start_at is not null) is true and
+      available_start_at >= available_end_at) is true
+  ) as non_publishable_approvable_reasons`
+        )
+      )
+    if (exclude_letting_type_let) {
+      query.whereNot('letting_type', LETTING_TYPE_LET)
+    }
+    const estates = await query.fetch()
+    return estates.toJSON()
+  }
+
   static async unpublishBuilding({ user_id, build_id }) {
     const estates = await this.getEstatesByBuilding({ user_id, build_id })
 
@@ -4026,8 +4271,8 @@ class EstateService {
         {
           id: build_id,
           user_id,
-          published: buildingPublishStatus,
-          marketplace_estate_ids: null,
+          published: PUBLISH_STATUS_INIT,
+          marketplace_estate_ids: null
         },
         trx
       )
@@ -4036,7 +4281,7 @@ class EstateService {
         .where('build_id', build_id)
         .update({
           status: STATUS_EXPIRE,
-          publish_status: PUBLISH_STATUS_INIT,
+          publish_status: PUBLISH_STATUS_INIT
         })
         .transacting(trx)
       if (estates?.length) {
@@ -4066,7 +4311,7 @@ class EstateService {
         .where('build_id', build_id)
         .update({
           status: STATUS_DRAFT,
-          publish_status: PUBLISH_STATUS_INIT,
+          publish_status: PUBLISH_STATUS_INIT
         })
         .transacting(trx)
 

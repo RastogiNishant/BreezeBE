@@ -6,7 +6,7 @@ const Base = require('./Base')
 
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED },
+  exceptionKeys: { REQUIRED }
 } = require('../exceptions')
 
 class WebOnboardContact extends Base {
@@ -18,8 +18,8 @@ class WebOnboardContact extends Base {
           return is_onboard
         },
         then: yup.string().min(10).required(),
-        otherwise: null,
-      }),
+        otherwise: null
+      })
     })
 }
 

@@ -7,7 +7,7 @@ class UnitSubscription extends Base {
   static schema = () =>
     yup.object().shape({
       product_id: yup.string().required(),
-      quantity: yup.number().positive(),
+      quantity: yup.number().positive()
     })
 }
 

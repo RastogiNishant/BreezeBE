@@ -47,8 +47,8 @@ module.exports = {
       'application/json',
       'application/json-patch+json',
       'application/vnd.api+json',
-      'application/csp-report',
-    ],
+      'application/csp-report'
+    ]
   },
 
   /*
@@ -60,7 +60,7 @@ module.exports = {
   |
   */
   raw: {
-    types: ['text/*'],
+    types: ['text/*']
   },
 
   /*
@@ -72,7 +72,7 @@ module.exports = {
   |
   */
   form: {
-    types: ['application/x-www-form-urlencoded'],
+    types: ['application/x-www-form-urlencoded']
   },
 
   /*
@@ -128,7 +128,7 @@ module.exports = {
     |
     */
 
-    processManually: ['/api/v1/users/avatar', '/api/v1/users', '/api/v1/me'],
+    processManually: ['/api/v1/users/avatar', '/api/v1/users', '/api/v1/me']
 
     /*
     |--------------------------------------------------------------------------
@@ -148,5 +148,5 @@ module.exports = {
     | }
     |
     */
-  },
+  }
 }

@@ -12,7 +12,7 @@ class CreateBuilding extends Base {
       zip: yup.string().max(8).required(),
       city: yup.string().min(1).max(255).required(),
       country: yup.string().min(1).max(255).required(),
-      extra_address: yup.string().min(1).max(255),
+      extra_address: yup.string().min(1).max(255)
     })
 }
 

@@ -4,7 +4,7 @@ const Base = require('./Base')
 class ProfessionQuery extends Base {
   static schema = () =>
     yup.object().shape({
-      query: yup.string().trim().min(2).required(),
+      query: yup.string().trim().min(2).required()
     })
 }
 

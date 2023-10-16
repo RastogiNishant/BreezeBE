@@ -36,10 +36,10 @@ const {
   PROPERTY_HANDLE_FINISHED,
   WEBSOCKET_TENANT_REDIS_KEY,
   WEBSOCKET_LANDLORD_REDIS_KEY,
-  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN
 } = require('../constants')
 const {
-  exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE },
+  exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE }
 } = require('../exceptions')
 const BuildingService = require('./BuildingService')
 const UnitCategoryService = require('./UnitCategoryService')
@@ -92,8 +92,8 @@ class ImportService {
               error: [`${six_char_code} is an invalid Breeze ID`],
               line,
               property_id: data.property_id,
-              address: data.address,
-            },
+              address: data.address
+            }
           }
         }
 
@@ -104,15 +104,14 @@ class ImportService {
               error: [
                 l
                   .get('landlord.web.my-properties.import.txt_online_id_not_editable', lang)
-                  .replace('{{property_id}}', data.property_id),
+                  .replace('{{property_id}}', data.property_id)
               ],
               line,
               property_id: data.property_id,
-              address: data.address,
-            },
+              address: data.address
+            }
           }
         }
-
         await ImportService.updateImportBySixCharCode({ estate, data }, trx)
       } else {
         if (!data.address) {
@@ -122,8 +121,8 @@ class ImportService {
               error: [`address is empty`],
               line,
               address: data.address,
-              property_id: data.property_id,
-            },
+              property_id: data.property_id
+            }
           }
         }
 
@@ -151,7 +150,7 @@ class ImportService {
           await EstateCurrentTenantService.addCurrentTenant(
             {
               data,
-              estate_id: estate.id,
+              estate_id: estate.id
             },
             trx
           )
@@ -167,7 +166,7 @@ class ImportService {
               error: [`Tenant info igonored because this property has not rented yet`],
               line,
               address: data.address,
-              property_id: data.property_id,
+              property_id: data.property_id
             })
           }
         }
@@ -210,7 +209,7 @@ class ImportService {
     const { errors, data } = await ImportService.readBuddyFile(filePath)
     const result = await Promise.map(data, (i) => ImportService.createSingleBuddy(i, userId))
     return {
-      success: result.length,
+      success: result.length
     }
   }
   /**
@@ -225,9 +224,9 @@ class ImportService {
     try {
       this.emitImported({
         data: {
-          message: PREPARING_TO_UPLOAD,
+          message: PREPARING_TO_UPLOAD
         },
-        user_id,
+        user_id
       })
 
       Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name} ${lang}`)
@@ -266,7 +265,7 @@ class ImportService {
                 buildings,
                 unitCategories,
                 userId: user_id,
-                lang,
+                lang
               })
 
             if (singleErrors) {
@@ -283,9 +282,9 @@ class ImportService {
                 total: (data?.unit?.length || 0) + (errors?.length || 0),
                 result: estateResult,
                 errors: singleErrors || [],
-                warnings: singleWarnings || [],
+                warnings: singleWarnings || []
               },
-              user_id,
+              user_id
             })
             return estateResult
           }
@@ -312,13 +311,13 @@ class ImportService {
         data: {
           last_activity: {
             file: filePath?.clientName || null,
-            created_at: moment().utc().format(),
+            created_at: moment().utc().format()
           },
           errors: [...errors, ...createErrors],
           success: result.length - createErrors.length,
-          warnings: [...warnings],
+          warnings: [...warnings]
         },
-        event: WEBSOCKET_EVENT_IMPORT_EXCEL,
+        event: WEBSOCKET_EVENT_IMPORT_EXCEL
       })
     }
   }
@@ -350,7 +349,7 @@ class ImportService {
         'surname',
         'phone_number',
         'email',
-        'salutation_int',
+        'salutation_int'
       ])
 
       if (!estate) {
@@ -363,7 +362,7 @@ class ImportService {
       }
 
       const estateCurrentTenants = await EstateCurrentTenantService.getActiveByEstateIds([
-        estate.id,
+        estate.id
       ])
 
       //Recalculating address by disconnected connect (no tenants connected) and unpublished match units (no prospects associated)
@@ -375,10 +374,12 @@ class ImportService {
         estate_data.is_coord_changed = true
       }
 
+      //TODO: add build_id and unit_category_id:
+
       await require('./EstateService').updateEstate(
         {
           data: { ...estate_data, id: estate.id },
-          user_id,
+          user_id
         },
         trx
       )
@@ -387,7 +388,7 @@ class ImportService {
           {
             data,
             estate_id: estate.id,
-            user_id,
+            user_id
           },
           trx
         )
@@ -397,7 +398,7 @@ class ImportService {
           await EstateCurrentTenantService.deleteByEstate(
             {
               estate_ids: [estate.id],
-              user_id,
+              user_id
             },
             trx
           )
@@ -431,7 +432,7 @@ class ImportService {
     filename,
     type = IMPORT_TYPE_EXCEL,
     entity = IMPORT_ENTITY_ESTATES,
-    status,
+    status
   }) {
     return await Import.createItem({ user_id, filename, type, entity, status })
   }
@@ -468,12 +469,12 @@ class ImportService {
     let ret = {
       excel: {
         imported: {},
-        exported: {},
+        exported: {}
       },
       openimmo: {
         imported: {},
-        exported: {},
-      },
+        exported: {}
+      }
     }
     if (importActivity) {
       importActivity.rows.map((row) => {

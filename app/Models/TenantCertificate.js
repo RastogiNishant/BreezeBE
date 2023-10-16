@@ -11,7 +11,7 @@ class TenantCertificate extends Model {
       'attachments',
       'expired_at',
       'created_at',
-      'updated_at',
+      'updated_at'
     ]
   }
 

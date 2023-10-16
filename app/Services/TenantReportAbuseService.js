@@ -4,7 +4,7 @@ const TenantReportAbuse = use('App/Models/TenantReportAbuse')
 class TenantReportAbuseService {
   static async reportTenantAbuse(params) {
     return TenantReportAbuse.createItem({
-      ...params,
+      ...params
     })
   }
 

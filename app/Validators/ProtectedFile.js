@@ -10,7 +10,7 @@ const {
   MEMBER_FILE_TYPE_INCOME,
   MEMBER_FILE_TYPE_DEBT,
   MEMBER_FILE_TYPE_RENT,
-  MEMBER_FILE_TYPE_EXTRA_PASSPORT,
+  MEMBER_FILE_TYPE_EXTRA_PASSPORT
 } = require('../constants')
 
 class ProtectedFile extends Base {
@@ -27,7 +27,7 @@ class ProtectedFile extends Base {
           MEMBER_FILE_TYPE_EXTRA_PASSPORT,
           MEMBER_FILE_TYPE_INCOME,
           MEMBER_FILE_TYPE_DEBT,
-          MEMBER_FILE_TYPE_RENT,
+          MEMBER_FILE_TYPE_RENT
         ])
         .required(),
       file_id: id
@@ -36,9 +36,9 @@ class ProtectedFile extends Base {
             return [MEMBER_FILE_TYPE_DEBT, MEMBER_FILE_TYPE_RENT].includes(file_type)
           },
           then: yup.number().positive(),
-          otherwise: yup.number().positive().required(),
+          otherwise: yup.number().positive().required()
         })
-        .nullable(),
+        .nullable()
     })
 }
 

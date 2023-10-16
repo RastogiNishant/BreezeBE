@@ -32,7 +32,7 @@ const {
   MATCH_STATUS_SHARE,
   MATCH_STATUS_COMMIT,
   MATCH_STATUS_FINISH,
-  MATCH_STATUS_TOP,
+  MATCH_STATUS_TOP
 } = require('../constants')
 const { id } = require('../Libs/schemas.js')
 
@@ -47,9 +47,9 @@ class MatchFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES).required(),
-              value: yup.string().nullable(),
+              value: yup.string().nullable()
             })
-          ),
+          )
         })
         .nullable(),
       match_status: yup
@@ -64,7 +64,7 @@ class MatchFilter extends Base {
               MATCH_STATUS_SHARE,
               MATCH_STATUS_TOP,
               MATCH_STATUS_COMMIT,
-              MATCH_STATUS_FINISH,
+              MATCH_STATUS_FINISH
             ])
         ),
       buddy: yup.boolean(),
@@ -75,7 +75,7 @@ class MatchFilter extends Base {
           value: yup
             .array()
             .of(yup.string().oneOf([LOW_MATCH_ICON, MEDIUM_MATCH_ICON, SUPER_MATCH_ICON]))
-            .nullable(),
+            .nullable()
         })
         .nullable(),
       has_child: yup
@@ -87,7 +87,7 @@ class MatchFilter extends Base {
             .of(
               yup.string().oneOf([MATCH_HOUSEHOLD_HAS_CHILD_LABEL, MATCH_HOUSEHOLD_NO_CHILD_LABEL])
             )
-            .nullable(),
+            .nullable()
         })
         .nullable(),
       age: yup
@@ -97,9 +97,9 @@ class MatchFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.number().positive().nullable(),
+              value: yup.number().positive().nullable()
             })
-          ),
+          )
         })
         .nullable(),
       income: yup
@@ -109,9 +109,9 @@ class MatchFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.number().nullable(),
+              value: yup.number().nullable()
             })
-          ),
+          )
         })
         .nullable(),
       income_sources: yup
@@ -134,10 +134,10 @@ class MatchFilter extends Base {
                   INCOME_TYPE_SELF_EMPLOYED_LABEL,
                   INCOME_TYPE_TRAINEE_LABEL,
                   INCOME_TYPE_OTHER_BENEFIT,
-                  INCOME_TYPE_CHILD_BENEFIT,
+                  INCOME_TYPE_CHILD_BENEFIT
                 ])
             )
-            .nullable(),
+            .nullable()
         })
         .nullable(),
       total_work_exp: yup
@@ -147,9 +147,9 @@ class MatchFilter extends Base {
           constraints: yup.array().of(
             yup.object().shape({
               matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_MATCH_MODES),
-              value: yup.number().nullable(),
+              value: yup.number().nullable()
             })
-          ),
+          )
         })
         .nullable(),
       doc_type: yup
@@ -163,7 +163,7 @@ class MatchFilter extends Base {
                 .string()
                 .oneOf([DOC_INCOME_PROOF_LABEL, DOC_RENT_ARREARS_LABEL, DOC_CREDIT_SCORE_LABEL])
             )
-            .nullable(),
+            .nullable()
         })
         .nullable(),
       knocked_at: yup.object().shape({
@@ -171,10 +171,10 @@ class MatchFilter extends Base {
         constraints: yup.array().of(
           yup.object().shape({
             matchMode: yup.string().oneOf(FILTER_CONSTRAINTS_DATE_MATCH_MODES).required(),
-            value: yup.date().typeError('please enter a valid date').nullable(),
+            value: yup.date().typeError('please enter a valid date').nullable()
           })
-        ),
-      }),
+        )
+      })
     })
 }
 

@@ -45,7 +45,6 @@ class Payment extends Model {
   static get Serializer() {
     return 'App/Serializers/PaymentSerializer'
   }
-
 }
 
 module.exports = Payment

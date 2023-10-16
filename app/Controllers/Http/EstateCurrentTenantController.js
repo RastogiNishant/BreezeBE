@@ -12,7 +12,7 @@ class EstateCurrentTenantController {
     const estateCurrentTenant = await EstateCurrentTenantService.addCurrentTenant({
       data,
       estate_id,
-      user_id: auth.user.id,
+      user_id: auth.user.id
     })
     response.res(estateCurrentTenant)
   }
@@ -24,7 +24,7 @@ class EstateCurrentTenantController {
         data,
         id,
         estate_id,
-        user_id: auth.user.id,
+        user_id: auth.user.id
       })
       response.res(estateCurrentTenant)
     } catch (e) {
@@ -40,7 +40,7 @@ class EstateCurrentTenantController {
         estate_id: estate_id,
         status: status,
         page: page,
-        limit: limit,
+        limit: limit
       })
     )
   }
@@ -89,7 +89,7 @@ class EstateCurrentTenantController {
       response.res(
         await EstateCurrentTenantService.inviteTenantToAppByEmail({
           ids: ids,
-          user_id: auth.user.id,
+          user_id: auth.user.id
         })
       )
     } catch (e) {
@@ -102,14 +102,14 @@ class EstateCurrentTenantController {
     try {
       const { failureCount, links } = await EstateCurrentTenantService.getDynamicLinks({
         ids: ids,
-        user_id: auth.user.id,
+        user_id: auth.user.id
       })
 
       response.res({
         successCount: (ids.length || 0) - failureCount,
         failureCount,
         links,
-        totalInviteCount: await EstateCurrentTenantService.inviteOusideTenantCount(auth.user.id),
+        totalInviteCount: await EstateCurrentTenantService.inviteOusideTenantCount(auth.user.id)
       })
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -136,7 +136,7 @@ class EstateCurrentTenantController {
         data1,
         data2,
         password,
-        email,
+        email
       })
     )
   }
@@ -151,7 +151,7 @@ class EstateCurrentTenantController {
       await EstateCurrentTenantService.acceptOutsideTenant({
         data1,
         data2,
-        user: auth.user,
+        user: auth.user
       })
     )
   }
@@ -162,7 +162,7 @@ class EstateCurrentTenantController {
       response.res(
         await EstateCurrentTenantService.inviteTenantToAppBySMS({
           ids: ids,
-          user_id: auth.user.id,
+          user_id: auth.user.id
         })
       )
     } catch (e) {

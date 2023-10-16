@@ -18,7 +18,7 @@ class ImageSerializer extends BaseSerializer {
       disk,
       order,
       room_id,
-      file_name,
+      file_name
     }
   }
 }

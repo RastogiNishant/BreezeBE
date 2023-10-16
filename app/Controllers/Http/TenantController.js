@@ -25,6 +25,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
+  LOG_TYPE_DEACTIVATED_PROFILE
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
@@ -63,7 +64,7 @@ class TenantController {
         MEMBER_FILE_TYPE_EXTRA_PASSPORT,
         MEMBER_FILE_TYPE_EXTRA_RENT,
         MEMBER_FILE_TYPE_EXTRA_DEBT,
-        MEMBER_FILE_TYPE_INCOME,
+        MEMBER_FILE_TYPE_INCOME
       ].includes(file_type)
     ) {
       if (!file_id) {
@@ -151,12 +152,12 @@ class TenantController {
         filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
           has_notification_sent: false,
-          only_count: true,
+          only_count: true
         })
       } else {
         filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
-          has_notification_sent: false,
+          has_notification_sent: false
         })
       }
 
@@ -186,12 +187,24 @@ class TenantController {
     response.res(true)
   }
 
+  async deactivateTenant({ auth, response, request }) {
+    const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
+    try {
+      await TenantService.deactivateTenantIfActivated(tenant)
+      logEvent(request, LOG_TYPE_DEACTIVATED_PROFILE, auth.user.id, {}, false)
+      response.res(true)
+    } catch (e) {
+      console.log(`deactivateTenant controller error ${auth.user.id} ${e.message}`)
+      throw new HttpException(e.message, 400, e.code)
+    }
+  }
+
   async detail({ request, auth, response }) {
     let tenant = await TenantService.getTenantWithCertificates(auth.user.id)
     let members = await MemberService.getMembers(auth.user.id, true)
     response.res({
       tenant,
-      members,
+      members
     })
   }
 
@@ -237,16 +250,22 @@ class TenantController {
     response.res({
       phone: phoneVerifiedCount,
       id: idVerifiedCount,
-      income: incomeCounts,
+      income: incomeCounts
     })
   }
 
   async requestCertificate({ request, auth, response }) {
     const { request_certificate_at, request_certificate_city_id } = request.all()
-    await TenantService.requestCertificate({
-      user_id: auth.user.id,
-      request_certificate_at,
+
+    const updateData = {
       request_certificate_city_id,
+      user_id: auth.user.id
+    }
+
+    if (!request_certificate_city_id) Object.assign(updateData, { request_certificate_at })
+
+    await TenantService.requestCertificate({
+      ...updateData
     })
 
     let city = null
@@ -257,7 +276,7 @@ class TenantController {
     //TODO: need to send wbs link from city table. coming soon
     response.res({
       request_certificate_at,
-      city,
+      city
     })
   }
 
@@ -269,7 +288,7 @@ class TenantController {
         {
           user_id: auth.user.id,
           request_certificate_at: null,
-          request_certificate_city_id: null,
+          request_certificate_city_id: null
         },
         trx
       )

@@ -10,9 +10,8 @@ class ConfirmSMS extends Base {
     yup.object().shape({
       email: yup.string().email().lowercase().required(),
       phone: phoneSchema.required(),
-      code: yup.number().positive(),
+      code: yup.number().positive()
     })
 }
-
 
 module.exports = ConfirmSMS

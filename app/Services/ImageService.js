@@ -59,7 +59,7 @@ class ImageService {
                 estate_id: estateId,
                 disk: 's3public',
                 file_name: image.file_name,
-                file_format: image.format,
+                file_format: image.format
               },
               trx
             )
@@ -98,14 +98,14 @@ class ImageService {
         const image = {
           tmpPath: imagePath,
           header: {
-            'content-type': ContentType.getContentType(ext),
-          },
+            'content-type': ContentType.getContentType(ext)
+          }
         }
         const { filePathName } = await File.saveToDisk(image, [], true)
         await Image.createItem({
           url: filePathName,
           room_id: roomId,
-          disk: 's3public',
+          disk: 's3public'
         })
       } catch (e) {
         console.log(e)
@@ -171,7 +171,7 @@ class ImageService {
                     dir: `${url_strs[0]}`,
                     options,
                     disk: image.disk || 's3public',
-                    isUri: true,
+                    isUri: true
                   })
                 }
               }

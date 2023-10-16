@@ -24,7 +24,7 @@ class Income extends Model {
       'is_earlier_employeed',
       'employeed_address',
       'employeer_phone_number',
-      'probation_period',
+      'probation_period'
     ]
   }
 

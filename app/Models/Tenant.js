@@ -49,7 +49,7 @@ class Tenant extends Model {
       'request_certificate_city_id',
       'income_level',
       'is_public_certificate',
-      'mixed_use_type_detail',
+      'mixed_use_type_detail'
     ]
   }
 
@@ -88,7 +88,7 @@ class Tenant extends Model {
       'request_certificate_city_id',
       'income_level',
       'is_public_certificate',
-      'mixed_use_type_detail',
+      'mixed_use_type_detail'
     ]
   }
 
@@ -123,7 +123,7 @@ class Tenant extends Model {
       'request_certificate_at',
       'request_certificate_city_id',
       'income_level',
-      'is_public_certificate',
+      'is_public_certificate'
     ]
   }
 
@@ -233,7 +233,7 @@ class Tenant extends Model {
 
     return super.createItem({
       ...data,
-      options: (options || []).map((i) => i.id),
+      options: (options || []).map((i) => i.id)
     })
   }
 }

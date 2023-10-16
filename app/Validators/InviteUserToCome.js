@@ -7,7 +7,7 @@ class InviteUserToCome extends Base {
   static schema = () => {
     return yup.object().shape({
       estate_id: id.required(),
-      user_id: id.required(),
+      user_id: id.required()
     })
   }
 }

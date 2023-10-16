@@ -191,11 +191,27 @@ const {
   CERT_CATEGORY_140,
   CERT_CATEGORY_160,
   CERT_CATEGORY_180,
-  CERT_CATEGORY_220,
+  CERT_CATEGORY_220
 } = require('../constants')
 
+const certCategories = [
+  CERT_CATEGORY_A,
+  CERT_CATEGORY_B,
+  CERT_CATEGORY_C,
+  CERT_CATEGORY_NOT,
+  CERT_CATEGORY_I,
+  CERT_CATEGORY_II,
+  CERT_CATEGORY_III,
+  CERT_CATEGORY_IV,
+  CERT_CATEGORY_100,
+  CERT_CATEGORY_140,
+  CERT_CATEGORY_160,
+  CERT_CATEGORY_180,
+  CERT_CATEGORY_220
+]
+
 const {
-  exceptions: { SETTINGS_ERROR },
+  exceptions: { SETTINGS_ERROR }
 } = require('../exceptions')
 const moment = require('moment')
 
@@ -285,6 +301,16 @@ reverseExtractDate = (date) => {
   return date
 }
 
+const mapCertCategories = () => {
+  let certCategoryMap = {}
+  for (let count = 0; count < certCategories.length; count++) {
+    AVAILABLE_LANGUAGES.map((lang) => {
+      certCategoryMap[l.get(certCategories[count], lang)] = certCategories[count]
+    })
+  }
+  return certCategoryMap
+}
+
 class EstateAttributeTranslations {
   reverseDataMapping = {
     non_smoker: reverseBool,
@@ -293,7 +319,7 @@ class EstateAttributeTranslations {
     from_date: reverseExtractDate,
     vacant_date: reverseExtractDate,
     last_modernization: reverseExtractDate,
-    rent_end_at: reverseExtractDate,
+    rent_end_at: reverseExtractDate
   }
   dataMapping = {
     property_type: {
@@ -301,7 +327,7 @@ class EstateAttributeTranslations {
       Room: PROPERTY_TYPE_ROOM,
       House: PROPERTY_TYPE_HOUSE,
       Site: PROPERTY_TYPE_SITE,
-      Office: PROPERTY_TYPE_OFFICE,
+      Office: PROPERTY_TYPE_OFFICE
     },
     apt_type: {
       flat: APARTMENT_TYPE_FLAT,
@@ -313,7 +339,7 @@ class EstateAttributeTranslations {
       souterrain: APARTMENT_TYPE_SOUTERRAIN,
       penthouse: APARTMENT_TYPE_PENTHOUSE,
       terrassen: APARTMENT_TYPE_TERRACES,
-      attika: APARTMENT_TYPE_ATTIC,
+      attika: APARTMENT_TYPE_ATTIC
       //TODO: need to add more type here but later
     },
     // Building type
@@ -327,13 +353,13 @@ class EstateAttributeTranslations {
       country: HOUSE_TYPE_COUNTRY,
       bungalow: HOUSE_TYPE_BUNGALOW,
       villa: HOUSE_TYPE_VILLA,
-      gardenhouse: HOUSE_TYPE_GARDENHOUSE,
+      gardenhouse: HOUSE_TYPE_GARDENHOUSE
     },
     use_type: {
       residential: USE_TYPE_RESIDENTIAL,
       commercial: USE_TYPE_COMMERCIAL,
       construct: USE_TYPE_CONSTRUCT,
-      waz: USE_TYPE_WAZ,
+      waz: USE_TYPE_WAZ
     },
     occupancy: {
       occupied_own: OCCUPATION_TYPE_OCCUPIED_OWN,
@@ -341,19 +367,19 @@ class EstateAttributeTranslations {
       write_off: OCCUPATION_TYPE_WRITE_OFF,
       vacancy: OCCUPATION_TYPE_VACANCY,
       not_rent: OCCUPATION_TYPE_NOT_RENT,
-      not_occupied: OCCUPATION_TYPE_NOT_OCCUPIED,
+      not_occupied: OCCUPATION_TYPE_NOT_OCCUPIED
     },
     ownership_type: {
       freeholder: OWNERSHIP_TYPE_FREEHOLDER,
       direct_property: OWNERSHIP_TYPE_DIRECT_PROPERTY,
       leasehold: OWNERSHIP_TYPE_LEASEHOLD,
-      other: OWNERSHIP_TYPE_OTHER,
+      other: OWNERSHIP_TYPE_OTHER
     },
     marketing_type: {
       purchase: MARKETING_TYPE_PURCHASE,
       rent_lease: MARKETING_TYPE_RENT_LEASE,
       leasehold: MARKETING_TYPE_LEASEHOLD,
-      leasing: MARKETING_TYPE_LEASING,
+      leasing: MARKETING_TYPE_LEASING
     },
     building_status: {
       first_time_occupied: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -371,7 +397,7 @@ class EstateAttributeTranslations {
       developed: BUILDING_STATUS_DEVELOPED,
       abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
       projected: BUILDING_STATUS_PROJECTED,
-      refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
+      refurbished: BUILDING_STATUS_FULLY_REFURBISHED
     },
     apartment_status: {
       first_time_occupied: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -389,7 +415,7 @@ class EstateAttributeTranslations {
       developed: BUILDING_STATUS_DEVELOPED,
       abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
       projected: BUILDING_STATUS_PROJECTED,
-      refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
+      refurbished: BUILDING_STATUS_FULLY_REFURBISHED
     },
     firing: {
       oel: FIRING_OEL,
@@ -405,7 +431,7 @@ class EstateAttributeTranslations {
       pellet: FIRING_PELLET,
       coal: FIRING_COAL,
       wood: FIRING_WOOD,
-      liquid_gas: FIRING_LIQUID_GAS,
+      liquid_gas: FIRING_LIQUID_GAS
     },
     heating_type: {
       no_heating: HEATING_TYPE_NO,
@@ -414,12 +440,12 @@ class EstateAttributeTranslations {
       remote: HEATING_TYPE_REMOTE,
       oven: HEATING_TYPE_OVEN,
       underfloor: HEATING_TYPE_UNDERFLOOR,
-      misc: HEATING_TYPE_MISC,
+      misc: HEATING_TYPE_MISC
     },
     equipment_standard: {
       simple: EQUIPMENT_STANDARD_SIMPLE,
       normal: EQUIPMENT_STANDARD_NORMAL,
-      enhanced: EQUIPMENT_STANDARD_ENHANCED,
+      enhanced: EQUIPMENT_STANDARD_ENHANCED
     },
     parking_space_type: {
       no_parking: PARKING_SPACE_TYPE_NO_PARKING,
@@ -428,7 +454,7 @@ class EstateAttributeTranslations {
       outdoor: PARKING_SPACE_TYPE_OUTDOOR,
       car_park: PARKING_SPACE_TYPE_CAR_PARK,
       duplex: PARKING_SPACE_TYPE_DUPLEX,
-      garage: PARKING_SPACE_TYPE_GARAGE,
+      garage: PARKING_SPACE_TYPE_GARAGE
     },
     room_type: {
       guest_room: ROOM_TYPE_GUEST_ROOM,
@@ -463,12 +489,12 @@ class EstateAttributeTranslations {
       washing_room: ROOM_TYPE_WASHING_ROOM,
       external_corridor: ROOM_TYPE_EXTERNAL_CORRIDOR,
       stairs: ROOM_TYPE_STAIRS,
-      property_entrance: ROOM_TYPE_PROPERTY_ENTRANCE,
+      property_entrance: ROOM_TYPE_PROPERTY_ENTRANCE
     },
     family_status: {
       family_no_kids: FAMILY_STATUS_NO_CHILD,
       family_with_kids: FAMILY_STATUS_WITH_CHILD,
-      single: FAMILY_STATUS_SINGLE,
+      single: FAMILY_STATUS_SINGLE
     },
     kids_type: (i) => ((parseInt(i) || 0) > MAX_MINOR_COUNT ? MAX_MINOR_COUNT : parseInt(i) || 0),
     non_smoker: toBool,
@@ -481,10 +507,26 @@ class EstateAttributeTranslations {
     minors: toBool,
     pets_allowed: {
       PETS_NO: 1,
-      PETS_SMALL: 2,
+      PETS_SMALL: 2
     },
     stp_garage: (i) => parseInt(i) || 0,
     credit_score: toPercent,
+    cert_category: (content) => {
+      const certs = String(content).split(/[+,]/)
+      let certCategoryMap = mapCertCategories()
+      let cert_category = []
+      if (certs.length > 0) {
+        cert_category = certs
+          .map((str) => {
+            str = trim(str)
+            if (certCategoryMap[str]) {
+              return certCategoryMap[str]
+            }
+          })
+          .filter((c) => c !== undefined)
+      }
+      return cert_category
+    },
     deposit: (i, o) => parseInt(i) || 0, //* (parseFloat(o.net_rent) || 0), we need to parse deposit later
     budget: (i, o) => parseInt(i) || 0,
     number_floors: (i) => parseInt(i) || 1,
@@ -528,7 +570,7 @@ class EstateAttributeTranslations {
         return Math.random().toString(36).substr(2, 8).toUpperCase()
       }
       return i
-    },
+    }
   }
 
   constructor(lang = 'en') {
@@ -540,15 +582,15 @@ class EstateAttributeTranslations {
           'property.attribute.PROPERTY_TYPE.Room.message',
           'property.attribute.PROPERTY_TYPE.House.message',
           'property.attribute.PROPERTY_TYPE.Site.message',
-          'property.attribute.PROPERTY_TYPE.Office.message',
+          'property.attribute.PROPERTY_TYPE.Office.message'
         ],
         values: [
           PROPERTY_TYPE_APARTMENT,
           PROPERTY_TYPE_ROOM,
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
-          PROPERTY_TYPE_OFFICE,
-        ],
+          PROPERTY_TYPE_OFFICE
+        ]
       },
       apt_type: {
         keys: [
@@ -561,7 +603,7 @@ class EstateAttributeTranslations {
           'property.attribute.APARTMENT_TYPE.Souterrain.message',
           'property.attribute.APARTMENT_TYPE.Penthouse.message',
           'property.attribute.APARTMENT_TYPE.Terrassen.message',
-          'property.attribute.APARTMENT_TYPE.Attika.message',
+          'property.attribute.APARTMENT_TYPE.Attika.message'
         ],
         values: [
           APARTMENT_TYPE_FLAT,
@@ -573,8 +615,8 @@ class EstateAttributeTranslations {
           APARTMENT_TYPE_SOUTERRAIN,
           APARTMENT_TYPE_PENTHOUSE,
           APARTMENT_TYPE_TERRACES,
-          APARTMENT_TYPE_ATTIC,
-        ],
+          APARTMENT_TYPE_ATTIC
+        ]
       },
       house_type: {
         keys: [
@@ -587,7 +629,7 @@ class EstateAttributeTranslations {
           'property.attribute.HOUSE_TYPE.Country.message',
           'property.attribute.HOUSE_TYPE.Bungalow.message',
           'property.attribute.HOUSE_TYPE.Villa.message',
-          'property.attribute.HOUSE_TYPE.Gardenhouse.message',
+          'property.attribute.HOUSE_TYPE.Gardenhouse.message'
         ],
         values: [
           HOUSE_TYPE_MULTIFAMILY_HOUSE,
@@ -599,17 +641,17 @@ class EstateAttributeTranslations {
           HOUSE_TYPE_COUNTRY,
           HOUSE_TYPE_BUNGALOW,
           HOUSE_TYPE_VILLA,
-          HOUSE_TYPE_GARDENHOUSE,
-        ],
+          HOUSE_TYPE_GARDENHOUSE
+        ]
       },
       use_type: {
         keys: [
           'property.attribute.USE_TYPE.Residential.message',
           'property.attribute.USE_TYPE.Commercial.message',
           'property.attribute.USE_TYPE.Plant.message',
-          'property.attribute.USE_TYPE.Other.message',
+          'property.attribute.USE_TYPE.Other.message'
         ],
-        values: [USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_PLANT, USE_TYPE_OTHER],
+        values: [USE_TYPE_RESIDENTIAL, USE_TYPE_COMMERCIAL, USE_TYPE_PLANT, USE_TYPE_OTHER]
       },
       occupancy: {
         keys: [
@@ -618,7 +660,7 @@ class EstateAttributeTranslations {
           'property.attribute.OCCUPATION_TYPE.Write_off.message',
           'property.attribute.OCCUPATION_TYPE.Vacancy.message',
           'property.attribute.OCCUPATION_TYPE.Not_rent_not_occupied.message',
-          'property.attribute.OCCUPATION_TYPE.Rent_but_not_occupied.message',
+          'property.attribute.OCCUPATION_TYPE.Rent_but_not_occupied.message'
         ],
         values: [
           OCCUPATION_TYPE_OCCUPIED_OWN,
@@ -626,36 +668,36 @@ class EstateAttributeTranslations {
           OCCUPATION_TYPE_WRITE_OFF,
           OCCUPATION_TYPE_VACANCY,
           OCCUPATION_TYPE_NOT_RENT,
-          OCCUPATION_TYPE_NOT_OCCUPIED,
-        ],
+          OCCUPATION_TYPE_NOT_OCCUPIED
+        ]
       },
       ownership_type: {
         keys: [
           'property.attribute.OWNERSHIP_TYPE.Freeholder.message',
           'property.attribute.OWNERSHIP_TYPE.Direct_property.message',
           'property.attribute.OWNERSHIP_TYPE.Leasehold.message',
-          'property.attribute.OWNERSHIP_TYPE.Other.message',
+          'property.attribute.OWNERSHIP_TYPE.Other.message'
         ],
         values: [
           OWNERSHIP_TYPE_FREEHOLDER,
           OWNERSHIP_TYPE_DIRECT_PROPERTY,
           OWNERSHIP_TYPE_LEASEHOLD,
-          OWNERSHIP_TYPE_OTHER,
-        ],
+          OWNERSHIP_TYPE_OTHER
+        ]
       },
       marketing_type: {
         keys: [
           'property.attribute.DEAL_TYPE.Purchase.message',
           'property.attribute.DEAL_TYPE.Rent_lease.message',
           'property.attribute.DEAL_TYPE.Leasehold.message',
-          'property.attribute.DEAL_TYPE.Leasing.message',
+          'property.attribute.DEAL_TYPE.Leasing.message'
         ],
         values: [
           MARKETING_TYPE_PURCHASE,
           MARKETING_TYPE_RENT_LEASE,
           MARKETING_TYPE_LEASEHOLD,
-          MARKETING_TYPE_LEASING,
-        ],
+          MARKETING_TYPE_LEASING
+        ]
       },
       building_status: {
         keys: [
@@ -674,7 +716,7 @@ class EstateAttributeTranslations {
           'property.attribute.BUILDING_STATUS.Developed.message',
           'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
           'property.attribute.BUILDING_STATUS.Projected.message',
-          'property.attribute.BUILDING_STATUS.fully_refurbished.message',
+          'property.attribute.BUILDING_STATUS.fully_refurbished.message'
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -692,8 +734,8 @@ class EstateAttributeTranslations {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
-          BUILDING_STATUS_FULLY_REFURBISHED,
-        ],
+          BUILDING_STATUS_FULLY_REFURBISHED
+        ]
       },
       apartment_status: {
         keys: [
@@ -712,7 +754,7 @@ class EstateAttributeTranslations {
           'property.attribute.BUILDING_STATUS.Developed.message',
           'property.attribute.BUILDING_STATUS.Abrissobjekt.message',
           'property.attribute.BUILDING_STATUS.Projected.message',
-          'property.attribute.BUILDING_STATUS.fully_refurbished',
+          'property.attribute.BUILDING_STATUS.fully_refurbished'
         ],
         values: [
           BUILDING_STATUS_FIRST_TIME_OCCUPIED,
@@ -730,8 +772,8 @@ class EstateAttributeTranslations {
           BUILDING_STATUS_DEVELOPED,
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
-          BUILDING_STATUS_FULLY_REFURBISHED,
-        ],
+          BUILDING_STATUS_FULLY_REFURBISHED
+        ]
       },
       firing: {
         keys: [
@@ -748,7 +790,7 @@ class EstateAttributeTranslations {
           'property.attribute.FIRING.Pellet.message',
           'property.attribute.FIRING.Coal.message',
           'property.attribute.FIRING.Wood.message',
-          'property.attribute.FIRING.Liquid_gas.message',
+          'property.attribute.FIRING.Liquid_gas.message'
         ],
         values: [
           FIRING_OEL,
@@ -764,8 +806,8 @@ class EstateAttributeTranslations {
           FIRING_PELLET,
           FIRING_COAL,
           FIRING_WOOD,
-          FIRING_LIQUID_GAS,
-        ],
+          FIRING_LIQUID_GAS
+        ]
       },
       heating_type: {
         keys: [
@@ -774,7 +816,7 @@ class EstateAttributeTranslations {
           'property.attribute.HEATING_TYPE.Remote.message',
           'property.attribute.HEATING_TYPE.Oven.message',
           'property.attribute.HEATING_TYPE.Underfloor_heating.message',
-          'property.attribute.HEATING_TYPE.Other.message',
+          'property.attribute.HEATING_TYPE.Other.message'
         ],
         values: [
           HEATING_TYPE_CENTRAL,
@@ -782,28 +824,28 @@ class EstateAttributeTranslations {
           HEATING_TYPE_REMOTE,
           HEATING_TYPE_OVEN,
           HEATING_TYPE_UNDERFLOOR,
-          HEATING_TYPE_MISC,
-        ],
+          HEATING_TYPE_MISC
+        ]
       },
       equipment_standard: {
         keys: [
           'property.attribute.EQUIPMENT_STANDARD.Simple.message',
           'property.attribute.EQUIPMENT_STANDARD.Normal.message',
-          'property.attribute.EQUIPMENT_STANDARD.Enhanced.message',
+          'property.attribute.EQUIPMENT_STANDARD.Enhanced.message'
         ],
-        values: [EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED],
+        values: [EQUIPMENT_STANDARD_SIMPLE, EQUIPMENT_STANDARD_NORMAL, EQUIPMENT_STANDARD_ENHANCED]
       },
       furnished: {
         keys: [
           'no.message',
           'apartment.amenities.Apartment.partially_furnished.message',
-          'yes.message',
+          'yes.message'
         ],
         values: [
           FURNISHING_NOT_FURNISHED,
           FURNISHING_PARTIALLY_FURNISHED,
-          FURNISHING_FULLY_FURNISHED,
-        ],
+          FURNISHING_FULLY_FURNISHED
+        ]
       },
       parking_space_type: {
         keys: [
@@ -813,7 +855,7 @@ class EstateAttributeTranslations {
           'property.attribute.PARKING_SPACE_TYPE.Outdoor.message',
           'property.attribute.PARKING_SPACE_TYPE.Car_park.message',
           'property.attribute.PARKING_SPACE_TYPE.Duplex.message',
-          'property.attribute.PARKING_SPACE_TYPE.Garage.message',
+          'property.attribute.PARKING_SPACE_TYPE.Garage.message'
         ],
         values: [
           PARKING_SPACE_TYPE_NO_PARKING,
@@ -822,8 +864,8 @@ class EstateAttributeTranslations {
           PARKING_SPACE_TYPE_OUTDOOR,
           PARKING_SPACE_TYPE_CAR_PARK,
           PARKING_SPACE_TYPE_DUPLEX,
-          PARKING_SPACE_TYPE_GARAGE,
-        ],
+          PARKING_SPACE_TYPE_GARAGE
+        ]
       },
       room_type: {
         keys: [
@@ -859,7 +901,7 @@ class EstateAttributeTranslations {
           'apartment.amenities.room_type.technical_room.message',
           'landlord.property.inside_view.rooms.terrace.message',
           'landlord.property.inside_view.rooms.washing_room.message',
-          'landlord.property.inside_view.rooms.external_corridor.message',
+          'landlord.property.inside_view.rooms.external_corridor.message'
         ],
         values: [
           ROOM_TYPE_LIVING_ROOM,
@@ -894,8 +936,8 @@ class EstateAttributeTranslations {
           ROOM_TYPE_TECHNICAL_ROOM,
           ROOM_TYPE_TERRACE,
           ROOM_TYPE_WASHING_ROOM,
-          ROOM_TYPE_EXTERNAL_CORRIDOR,
-        ],
+          ROOM_TYPE_EXTERNAL_CORRIDOR
+        ]
       },
       room_type_name: {
         keys: [
@@ -931,7 +973,7 @@ class EstateAttributeTranslations {
           'apartment.amenities.room_type.technical_room.message',
           'landlord.property.inside_view.rooms.terrace.message',
           'landlord.property.inside_view.rooms.washing_room.message',
-          'landlord.property.inside_view.rooms.external_corridor.message',
+          'landlord.property.inside_view.rooms.external_corridor.message'
         ],
         values: [
           'apartment.amenities.room_type.living_room',
@@ -966,43 +1008,43 @@ class EstateAttributeTranslations {
           'apartment.amenities.room_type.technical_room',
           'landlord.property.inside_view.rooms.terrace',
           'landlord.property.inside_view.rooms.washing_room',
-          'landlord.property.inside_view.rooms.external_corridor',
-        ],
+          'landlord.property.inside_view.rooms.external_corridor'
+        ]
       },
       pets_allowed: {
         keys: ['yes.message', 'web.letting.property.import.No_or_small_pets.message'],
-        values: [PETS_SMALL, PETS_NO],
+        values: [PETS_SMALL, PETS_NO]
       },
       let_type: {
         keys: [
           'property.attribute.LETTING_TYPE.Let.message',
           'property.attribute.LETTING_TYPE.Void.message',
-          'property.attribute.LETTING_TYPE.NA.message',
+          'property.attribute.LETTING_TYPE.NA.message'
         ],
-        values: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
+        values: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA]
       },
       let_status: {
         keys: [
           'property.attribute.LETTING_STATUS.Normal.message',
           'property.attribute.LETTING_STATUS.Terminated.message',
           'property.attribute.LETTING_STATUS.Vacancy.message',
-          'property.attribute.LETTING_STATUS.new_renovated.message',
+          'property.attribute.LETTING_STATUS.new_renovated.message'
         ],
         values: [
           LETTING_STATUS_STANDARD,
           LETTING_STATUS_TERMINATED,
           LETTING_STATUS_VACANCY,
-          LETTING_STATUS_NEW_RENOVATED,
-        ],
+          LETTING_STATUS_NEW_RENOVATED
+        ]
       },
       salutation: {
         keys: [
           'landlord.profile.user_details.salut.mr.message',
           'landlord.profile.user_details.salut.ms.message',
           'landlord.profile.user_details.salut.not_def.message',
-          'landlord.profile.user_details.salut.sir_madam.message',
+          'landlord.profile.user_details.salut.sir_madam.message'
         ],
-        values: [GENDER_MALE, GENDER_FEMALE, GENDER_ANY, GENDER_NEUTRAL],
+        values: [GENDER_MALE, GENDER_FEMALE, GENDER_ANY, GENDER_NEUTRAL]
       },
       floor_direction: {
         keys: [
@@ -1011,7 +1053,7 @@ class EstateAttributeTranslations {
           'property.attribute.floor_direction.right.message',
           'property.attribute.floor_direction.straight.message',
           'property.attribute.floor_direction.straight.left.message',
-          'property.attribute.floor_direction.straight.right.message',
+          'property.attribute.floor_direction.straight.right.message'
         ],
         values: [
           ESTATE_FLOOR_DIRECTION_NA,
@@ -1019,41 +1061,10 @@ class EstateAttributeTranslations {
           ESTATE_FLOOR_DIRECTION_RIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
-          ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
-        ],
-      },
-      cert_category: {
-        keys: [
-          CERT_CATEGORY_A,
-          CERT_CATEGORY_B,
-          CERT_CATEGORY_C,
-          CERT_CATEGORY_I,
-          CERT_CATEGORY_II,
-          CERT_CATEGORY_III,
-          CERT_CATEGORY_IV,
-          CERT_CATEGORY_100,
-          CERT_CATEGORY_140,
-          CERT_CATEGORY_160,
-          CERT_CATEGORY_180,
-          CERT_CATEGORY_220,
-          CERT_CATEGORY_NOT,
-        ],
-        values: [
-          CERT_CATEGORY_A,
-          CERT_CATEGORY_B,
-          CERT_CATEGORY_C,
-          CERT_CATEGORY_I,
-          CERT_CATEGORY_II,
-          CERT_CATEGORY_III,
-          CERT_CATEGORY_IV,
-          CERT_CATEGORY_100,
-          CERT_CATEGORY_140,
-          CERT_CATEGORY_160,
-          CERT_CATEGORY_180,
-          CERT_CATEGORY_220,
-          CERT_CATEGORY_NOT,
-        ],
-      },
+          ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT
+        ]
+      }
+      /* ,*/
     }
     this.dataMap = dataMap
   }

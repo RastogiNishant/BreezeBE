@@ -9,7 +9,7 @@ class InviteInToVisit extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: id.required(),
-      tenant_id: id.required(),
+      tenant_id: id.required()
     })
 }
 

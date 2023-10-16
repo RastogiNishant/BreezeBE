@@ -40,7 +40,7 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
-  QUEUE_JOB_URGENT,
+  QUEUE_JOB_URGENT
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -160,7 +160,7 @@ class QueueService {
     return Promise.all([
       wrapException(QueueJobService.updateThirdPartyOfferPoints),
       wrapException(QueueJobService.fillMissingEstateInfo),
-      wrapException(require('./MatchService').sendKnockedReachedNotification),
+      wrapException(require('./MatchService').sendKnockedReachedNotification)
     ])
   }
 
@@ -184,8 +184,8 @@ class QueueService {
           delay: 1,
           backoff: {
             type: 'exponential',
-            delay: 5000,
-          },
+            delay: 5000
+          }
         }
       )
     } catch (e) {
@@ -217,7 +217,7 @@ class QueueService {
       wrapException(NoticeService.getProspectVisitIn3H),
       wrapException(NoticeService.getProspectVisitIn48H),
       wrapException(NoticeService.expiredShowTime),
-      wrapException(QueueJobService.updatePOI),
+      wrapException(QueueJobService.updatePOI)
     ])
   }
 
@@ -243,7 +243,7 @@ class QueueService {
       wrapException(NoticeService.sendLandlordNewProperty),
       wrapException(NoticeService.sandLandlord7DaysInactive),
       wrapException(NoticeService.sandProspectNoActivity),
-      wrapException(TenantPremiumPlanService.validateAllSubscriptions),
+      wrapException(TenantPremiumPlanService.validateAllSubscriptions)
     ])
   }
 
@@ -263,7 +263,7 @@ class QueueService {
       wrapException(QueueJobService.updateAllMisseEstateCoord),
       wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
       wrapException(require('./MarketPlaceService').sendReminderEmail),
-      wrapException(require('./TenantService').reminderProfileFillUp),
+      wrapException(require('./TenantService').reminderProfileFillUp)
     ])
   }
 
@@ -285,7 +285,7 @@ class QueueService {
           jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
           repeat: { cron: '*/15 * * * *' },
           removeOnComplete: true,
-          removeOnFail: true,
+          removeOnFail: true
         }
       )
     } catch (e) {
@@ -331,7 +331,7 @@ class QueueService {
           return QueueJobService.sendEmailToSupportForLandlordUpdate({
             type: job.data.type,
             landlordId: job.data.landlordId,
-            estateIds: job.data.estateIds,
+            estateIds: job.data.estateIds
           })
         case IMPORT_ESTATES_VIA_EXCEL:
           return ImportService.process({
@@ -340,7 +340,7 @@ class QueueService {
             user_id: job.data.user_id,
             type: job.data.template,
             import_id: job.data.import_id,
-            lang: job.data.lang,
+            lang: job.data.lang
           })
         case SCHEDULED_EVERY_15MINUTE_NIGHT_JOB:
           return QueueService.doEvery15MinsJob()
@@ -379,7 +379,7 @@ class QueueService {
           return require('./MatchService').matchByUser({
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,
-            only_count: job.data.only_count,
+            only_count: job.data.only_count
           })
         case QUEUE_CREATE_THIRD_PARTY_MATCHES:
           return require('./ThirdPartyMatchService').matchByEstates()
@@ -390,7 +390,7 @@ class QueueService {
           )
         case ESTATE_SYNC_PUBLISH_ESTATE:
           return require('./EstateSyncService').postEstate({
-            estate_id: job.data.estate_id,
+            estate_id: job.data.estate_id
           })
         case ESTATE_SYNC_PUBLISH_BUILDING:
           console.log(ESTATE_SYNC_PUBLISH_BUILDING, job.data)
@@ -409,7 +409,7 @@ class QueueService {
             contact: job.data.contact,
             estate: job.data.estate,
             landlord_name: job.data.landlord_name,
-            lang: job.data.lang,
+            lang: job.data.lang
           })
           break
         default:

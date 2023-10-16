@@ -9,7 +9,7 @@ class ResetEmailRequest extends Base {
     yup.object().shape({
       email: yup.string().email().lowercase().required(),
       from_web: yup.boolean(),
-      lang: yup.string().oneOf([LANG_DE, LANG_EN]),
+      lang: yup.string().oneOf([LANG_DE, LANG_EN])
     })
 }
 

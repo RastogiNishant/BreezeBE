@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED },
+  exceptionKeys: { REQUIRED }
 } = require('../exceptions')
 
 const {
@@ -106,6 +106,20 @@ const {
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
   BUILDING_STATUS_FULLY_REFURBISHED,
+  //cert_category
+  CERT_CATEGORY_A,
+  CERT_CATEGORY_B,
+  CERT_CATEGORY_C,
+  CERT_CATEGORY_I,
+  CERT_CATEGORY_II,
+  CERT_CATEGORY_III,
+  CERT_CATEGORY_IV,
+  CERT_CATEGORY_100,
+  CERT_CATEGORY_140,
+  CERT_CATEGORY_160,
+  CERT_CATEGORY_180,
+  CERT_CATEGORY_220,
+  CERT_CATEGORY_NOT,
   // firing
   FIRING_OEL,
   FIRING_GAS,
@@ -208,7 +222,7 @@ const {
   MAX_MINOR_COUNT,
   FURNISHING_NOT_FURNISHED,
   FURNISHING_PARTIALLY_FURNISHED,
-  FURNISHING_FULLY_FURNISHED,
+  FURNISHING_FULLY_FURNISHED
 } = require('../constants')
 
 yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
@@ -217,7 +231,7 @@ yup.addMethod(yup.number, 'mustNotBeSet', function mustNotBeSet() {
     name: 'mustNotBeSet',
     test: (value) => {
       return value === undefined
-    },
+    }
   })
 })
 
@@ -238,7 +252,7 @@ class ImportEstate extends Base {
           PROPERTY_TYPE_HOUSE,
           PROPERTY_TYPE_SITE,
           PROPERTY_TYPE_OFFICE,
-          null,
+          null
         ])
         .nullable(),
       apt_type: yup
@@ -256,7 +270,7 @@ class ImportEstate extends Base {
           APARTMENT_TYPE_HOLIDAY,
           APARTMENT_TYPE_GALLERY,
           APARTMENT_TYPE_ATTIC,
-          null,
+          null
         ])
         .nullable(),
       house_type: yup
@@ -272,10 +286,31 @@ class ImportEstate extends Base {
           HOUSE_TYPE_BUNGALOW,
           HOUSE_TYPE_VILLA,
           HOUSE_TYPE_GARDENHOUSE,
-          null,
+          null
         ])
         .nullable(),
       description: yup.string().min(2).max(500).nullable(),
+      cert_category: yup
+        .array()
+        .of(
+          yup
+            .string()
+            .oneOf([
+              CERT_CATEGORY_A,
+              CERT_CATEGORY_B,
+              CERT_CATEGORY_C,
+              CERT_CATEGORY_I,
+              CERT_CATEGORY_II,
+              CERT_CATEGORY_III,
+              CERT_CATEGORY_IV,
+              CERT_CATEGORY_100,
+              CERT_CATEGORY_140,
+              CERT_CATEGORY_160,
+              CERT_CATEGORY_180,
+              CERT_CATEGORY_220,
+              CERT_CATEGORY_NOT
+            ])
+        ),
       category: yup.string().min(2).max(20).nullable(),
       // TODO: add rooms schema
       rooms: yup.mixed(),
@@ -293,7 +328,7 @@ class ImportEstate extends Base {
           ESTATE_FLOOR_DIRECTION_STRAIGHT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
-          null,
+          null
         ])
         .nullable(),
       number_floors: yup.number().integer().min(1).max(100).nullable(),
@@ -335,7 +370,7 @@ class ImportEstate extends Base {
           OCCUPATION_TYPE_VACANCY,
           OCCUPATION_TYPE_NOT_RENT,
           OCCUPATION_TYPE_NOT_OCCUPIED,
-          null,
+          null
         ])
         .nullable(),
       use_type: yup
@@ -347,7 +382,7 @@ class ImportEstate extends Base {
           USE_TYPE_WAZ,
           USE_TYPE_PLANT,
           USE_TYPE_OTHER,
-          null,
+          null
         ])
         .nullable(),
       ownership_type: yup
@@ -357,7 +392,7 @@ class ImportEstate extends Base {
           OWNERSHIP_TYPE_DIRECT_PROPERTY,
           OWNERSHIP_TYPE_LEASEHOLD,
           OWNERSHIP_TYPE_OTHER,
-          null,
+          null
         ])
         .nullable(),
       marketing_type: yup
@@ -367,7 +402,7 @@ class ImportEstate extends Base {
           MARKETING_TYPE_RENT_LEASE,
           MARKETING_TYPE_LEASEHOLD,
           MARKETING_TYPE_LEASING,
-          null,
+          null
         ])
         .nullable(),
       energy_type: yup
@@ -382,7 +417,7 @@ class ImportEstate extends Base {
           ENERGY_TYPE_KFW70,
           ENERGY_TYPE_MINERGIE_CONSTRUCTION,
           ENERGY_TYPE_MINERGIE_CERTIFIED,
-          null,
+          null
         ])
         .nullable(),
       vacant_date: yup.date().nullable(),
@@ -408,7 +443,7 @@ class ImportEstate extends Base {
           PARKING_SPACE_TYPE_CAR_PARK,
           PARKING_SPACE_TYPE_DUPLEX,
           PARKING_SPACE_TYPE_GARAGE,
-          null,
+          null
         ])
         .nullable(),
       construction_year: yup.date().nullable(),
@@ -432,7 +467,7 @@ class ImportEstate extends Base {
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
           BUILDING_STATUS_FULLY_REFURBISHED,
-          null,
+          null
         ])
         .nullable(),
       building_age: yup.number().integer().min(0).nullable(),
@@ -453,7 +488,7 @@ class ImportEstate extends Base {
           FIRING_COAL,
           FIRING_WOOD,
           FIRING_LIQUID_GAS,
-          null,
+          null
         ])
         .nullable(),
       heating_type: yup
@@ -466,7 +501,7 @@ class ImportEstate extends Base {
           HEATING_TYPE_REMOTE,
           HEATING_TYPE_UNDERFLOOR,
           HEATING_TYPE_MISC,
-          null,
+          null
         ])
         .nullable(),
       equipment: yup
@@ -483,7 +518,7 @@ class ImportEstate extends Base {
               EQUIPMENT_WHEELCHAIR_ACCESSIBLE,
               EQUIPMENT_BIKE_ROOM,
               EQUIPMENT_GUEST_WC,
-              EQUIPMENT_WG_SUITABLE,
+              EQUIPMENT_WG_SUITABLE
             ])
         )
         .nullable(),
@@ -493,7 +528,7 @@ class ImportEstate extends Base {
           EQUIPMENT_STANDARD_SIMPLE,
           EQUIPMENT_STANDARD_NORMAL,
           EQUIPMENT_STANDARD_ENHANCED,
-          null,
+          null
         ])
         .nullable(),
       ground: yup
@@ -513,7 +548,7 @@ class ImportEstate extends Base {
           GROUND_MARMOR,
           GROUND_TERRAKOTTA,
           GROUND_GRANITE,
-          null,
+          null
         ])
         .nullable(),
       energy_efficiency: yup.number().positive().nullable(),
@@ -524,8 +559,8 @@ class ImportEstate extends Base {
             officency_pass: yup.string(),
             valid_until: yup.string(),
             energy_consumption_value: yup.string(),
-            final_energy_consumption: yup.string(),
-          }),
+            final_energy_consumption: yup.string()
+          })
         ])
         .nullable(),
       city: yup.string().max(40).nullable(),
@@ -542,7 +577,7 @@ class ImportEstate extends Base {
           FURNISHING_NOT_FURNISHED,
           FURNISHING_PARTIALLY_FURNISHED,
           FURNISHING_FULLY_FURNISHED,
-          null,
+          null
         ])
         .nullable(),
       kids_type: yup.number().integer().min(0).max(MAX_MINOR_COUNT).nullable(),
@@ -567,7 +602,7 @@ class ImportEstate extends Base {
           LETTING_STATUS_TERMINATED,
           LETTING_STATUS_NEW_RENOVATED,
           LETTING_STATUS_VACANCY,
-          null,
+          null
         ])
         .nullable(),
       letting_type: yup
@@ -596,7 +631,7 @@ class ImportEstate extends Base {
           BUILDING_STATUS_ABRISSOBJEKT,
           BUILDING_STATUS_PROJECTED,
           BUILDING_STATUS_FULLY_REFURBISHED,
-          null,
+          null
         ])
         .nullable(),
       extra_address: yup.string().min(0).max(255).nullable(),
@@ -607,9 +642,9 @@ class ImportEstate extends Base {
             return additional_costs || heating_costs
           },
           then: yup.number().mustNotBeSet(),
-          otherwise: yup.number().min(0).max(1000000),
+          otherwise: yup.number().min(0).max(1000000)
         })
-        .nullable(),
+        .nullable()
     })
 }
 

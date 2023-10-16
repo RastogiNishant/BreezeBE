@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH },
+  exceptionKeys: { REQUIRED, MINLENGTH, MAXLENGTH, OPTION, DATE, BOOLEAN, EMAIL, MATCH }
 } = require('../exceptions')
 
 class SetPassword extends Base {
@@ -25,7 +25,7 @@ class SetPassword extends Base {
         .string()
         .email(getExceptionMessage('email', EMAIL))
         .lowercase()
-        .required(getExceptionMessage('email', REQUIRED)),
+        .required(getExceptionMessage('email', REQUIRED))
     })
 }
 

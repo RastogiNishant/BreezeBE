@@ -3,19 +3,20 @@ const HttpException = use('App/Exceptions/HttpException')
 
 class FeatureService {
   static async getFeatures(params = {}) {
-    const query = PremiumFeature.query()
-    .with('plan')
-    if( params.plan_id !== undefined ) {
+    const query = PremiumFeature.query().with('plan')
+    if (params.plan_id !== undefined) {
       query.where('plan_id', params.plan_id)
     }
 
-    if( params.status !== undefined ) {
+    if (params.status !== undefined) {
       query.where('status', params.status)
     }
-    
-    if( params.role_id !== undefined ) {
+
+    if (params.role_id !== undefined) {
       query.where(function () {
-        this.orWhere('premium_features.role_id', params.role_id).orWhereNull('premium_features.role_id')
+        this.orWhere('premium_features.role_id', params.role_id).orWhereNull(
+          'premium_features.role_id'
+        )
       })
     }
 
@@ -25,7 +26,7 @@ class FeatureService {
 
   static async createFeature(data) {
     return PremiumFeature.createItem({
-      ...data,
+      ...data
     })
   }
 
@@ -36,19 +37,19 @@ class FeatureService {
     }
     const feature = await PremiumFeature.query()
       .where({ id: data.id })
-      .update({ 
-        ...data, 
+      .update({
+        ...data
       })
 
     return data
   }
 
   static async removeFeature(ids) {
-    try{
+    try {
       await PremiumFeature.query().whereIn('id', ids).delete()
       return true
-    }catch(e) {
-      return e;
+    } catch (e) {
+      return e
     }
   }
 }

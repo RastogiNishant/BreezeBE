@@ -19,7 +19,7 @@ class EstateSyncListing extends Model {
       'posting_error_message',
       'publishing_error_message',
       'publishing_error_type',
-      'user_connected',
+      'user_connected'
     ]
   }
 }

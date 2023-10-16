@@ -10,7 +10,7 @@ class FeedbackController {
         user_id: auth.user.id,
         description,
         device,
-        point,
+        point
       })
     )
   }
