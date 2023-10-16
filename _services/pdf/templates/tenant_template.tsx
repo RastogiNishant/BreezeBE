@@ -145,20 +145,19 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       household_size: tenant.members_count || '-',
       rooms_min_max: `${tenant.rooms_min || 0}-${tenant.rooms_max || 1000}`,
       rent_budget: `€${tenant.budget_min || 0}-${tenant.budget_max || 10000}`,
-      rent_duration: `${
-        tenant.residency_duration_min
-          ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
-          : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
-      }`,
+      rent_duration: `${tenant.residency_duration_min
+        ? tenant.residency_duration_min + '-' + tenant.residency_duration_max
+        : getTranslation(t, 'prospect.profile.adult.income.txt_contract_unlimited')
+        }`,
       children: tenant.minors_count || '-',
       income_level:
         tenant.wbs_certificate && Array.isArray(tenant.wbs_certificate)
           ? tenant.wbs_certificate
-              .reduce((acc: string[], cur: any) => {
-                acc.push(getTranslation(t, cur.income_level));
-                return acc;
-              }, [])
-              .join(', ') || '-'
+            .reduce((acc: string[], cur: any) => {
+              acc.push(getTranslation(t, cur.income_level));
+              return acc;
+            }, [])
+            .join(', ') || '-'
           : '-',
       pets:
         ifFalsy(tenant.pets) || tenant.pets === 2
@@ -204,14 +203,14 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         surName:
           member.secondname && member.firstname && member.sex
             ? [
-                member.sex &&
-                  typeof member.sex === 'number' &&
-                  getTranslation(t, SALUTATION[member.sex - 1]),
-                member.firstname,
-                member.secondname,
-              ]
-                .filter(Boolean)
-                .join(' ')
+              member.sex &&
+              typeof member.sex === 'number' &&
+              getTranslation(t, SALUTATION[member.sex - 1]),
+              member.firstname,
+              member.secondname,
+            ]
+              .filter(Boolean)
+              .join(' ')
             : '-',
         dateOfBirth: dateOfBirth(member.birthday, member.age, member.birth_place),
         citizenship: member.citizen || '-',
@@ -267,6 +266,10 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           file: member.rent_arrears_doc,
           name: member.rent_arrears_doc_file_name,
         },
+        passports:
+          Array.isArray(member.passports) &&
+          member.passports.length > 0 &&
+          member.passports?.map((item: any) => ({ file: item.file })),
       };
     }),
   };
@@ -291,7 +294,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           <MainHeader
             leftText={getTranslation(props?.t, 'prospect.rental_application.PROPERTYPREFERENCES')}
             rightText={getTranslation(props?.t, 'prospect.rental_application.HOUSEHOLD')}
-            // rightIcon={'../pdf/img/qrCode.png'}
+          // rightIcon={'../pdf/img/qrCode.png'}
           />
           <PropertyLandlordDetails
             leftLabel={getTranslation(props?.t, 'prospect.rental_application.Rentalspace')}
@@ -424,6 +427,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           if (Array.isArray(cur.debt_proof)) acc.push(...cur.debt_proof);
           else if (cur.debt_proof?.length > 0) acc.push(cur.debt_proof);
           if (cur.rent_arrears_doc) acc.push(cur.rent_arrears_doc);
+          if (cur.passports) acc.push(...cur.passports);
           return acc;
         }, [])
         .map((item: any, ind: number) => {
