@@ -29,11 +29,18 @@
     "setup-env:staging": "cp ./.env.staging ./.env",
     "setup-env:prod": "cp ./.env.dev ./.env",
     "prepare": "husky install",
-    "pre-commit": "lint-staged && tsc -noEmit"
+    "pre-commit": "lint-staged && tsc -noEmit",
+    "ts-standard": "ts-standard --ext ts"
+  },
+  "ts-standard": {
+    "ignore": [
+      "_services/**",
+      "**/*.js"
+    ]
   },
   "lint-staged": {
     "**/!(*.d).ts": [
-      "prettier --write"
+      "ts-standard --fix"
     ],
     "**/*.js": [
       "prettier --write"
@@ -142,6 +149,7 @@
     "husky": "^8.0.0",
     "jsonwebtoken": "^8.5.1",
     "lint-staged": "13.2",
-    "prettier": "^3.0.3"
+    "prettier": "^3.0.3",
+    "ts-standard": "^12.0.2"
   }
 }

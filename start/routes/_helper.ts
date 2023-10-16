@@ -1,7 +1,7 @@
 const Route = use('Route')
 
-export const prefixAll = (prefix: string, routes: Array<any>) => {
-  routes.forEach((route) => route.prefix(prefix))
+export const prefixAll = (prefix: string, routes: any[]): void => {
+  routes.forEach((route2) => route2.prefix(prefix))
 }
 
 export enum HTTP_METHODS {
@@ -12,13 +12,13 @@ export enum HTTP_METHODS {
   DELETE = 'delete'
 }
 
-export type Routes = {
+export interface Routes {
   [path: string]: RouteConfig
 }
 
 export type RouteConfig = {
   [key in HTTP_METHODS]?: {
-    controller: any,
+    controller: any
     middleware?: string[]
   }
 }
@@ -29,33 +29,48 @@ export type RouteConfig = {
  * @param prefix
  * @returns
  */
-export const generateAdonisRoutes = (routes: Routes, prefix = '') => {
-  return Object.keys(routes).map((path: string) => {
-    return Object.keys(routes[path]).map((method: HTTP_METHODS) => {
-      const { controller, middleware } = routes[path][method]
+export const generateAdonisRoutes = (routes: Routes, prefix = ''): void => {
+  for (const [path, routeConfig] of Object.entries(routes)) {
+    for (const [method, { controller, middleware }] of Object.entries(routeConfig)) {
       const route = Route[method](`${prefix}${path}`, controller)
-      middleware && route.middleware(middleware)
-      return route
-    })
-  })
+      if (middleware != null) {
+        route.middleware(middleware)
+      }
+    }
+  }
+}
+
+function isDefined<T> (arg: T | undefined | null): arg is T {
+  return arg !== undefined && arg !== null
 }
 
 /**
  * add middleware to all the routes
  * @returns modified routes object
  */
-export const addMiddlewareToRoutes = (routes: Routes, middleware: string[]) => {
-  Object.keys(routes).forEach((path: string) => {
-    Object.keys(routes[path]).forEach((method: HTTP_METHODS) => {
-      routes[path][method].middleware = [...middleware, ...(routes[path][method].middleware || [])]
-    })
-  })
+export const addMiddlewareToRoutes = (routes: Routes, middleware: string[]): Routes => {
+  for (const [path, route] of Object.entries(routes)) {
+    for (const [method, config] of Object.entries(route)) {
+      const oldMiddleware = config.middleware
+      if (isDefined(oldMiddleware)) {
+        routes[path][method] = {
+          ...config,
+          middleware: [...middleware, ...oldMiddleware]
+        }
+      } else {
+        routes[path][method] = {
+          ...config,
+          middleware
+        }
+      }
+    }
+  }
 
   return routes
 }
 
-export const mergeRoutes = (routeA: Routes, routeB: Routes) => {
-  const result = {}
+export const mergeRoutes = (routeA: Routes, routeB: Routes): Routes => {
+  const result: Routes = {}
 
   Object.keys(routeA).forEach((key) => {
     if (key in routeB) {
