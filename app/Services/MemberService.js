@@ -191,6 +191,7 @@ class MemberService {
           const passports = await Promise.all(
             (member.passports || []).map(async (passport) => {
               if (!passport.file) return passport
+              passport.fileName = passport.file
               passport.file = await FileBucket.getProtectedUrl(passport.file)
               return passport
             })
