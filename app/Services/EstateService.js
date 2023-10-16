@@ -274,11 +274,11 @@ const ESTATE_PERCENTAGE_VARIABLE = {
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false
     },
-    {
+    /* {
       key: 'household_type',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false
-    },
+    },*/
     {
       key: 'minors',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
