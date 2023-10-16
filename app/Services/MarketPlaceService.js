@@ -12,7 +12,7 @@ const SMSService = use('App/Services/SMSService')
 const yup = require('yup')
 const { phoneSchema } = require('../Libs/schemas')
 const ShortenLinkService = use('App/Services/ShortenLinkService')
-const MatchService = use('App/Service/MatchService')
+const MatchService = use('App/Services/MatchService')
 const {
   DEFAULT_LANG,
   ROLE_USER,
@@ -502,7 +502,7 @@ class MarketPlaceService {
     uri += `&number_floors=${number_floors}`
     uri += `&cover=${cover}`
     uri += `&is_not_show=${estate.is_not_show || false}`
-
+    console.log({ uri })
     const prospects = (
       await require('./UserService').getByEmailWithRole([email], ROLE_USER)
     ).toJSON()
@@ -539,7 +539,7 @@ class MarketPlaceService {
         data2
       })
       const knockRequest = await this.getKnockRequest({ estate_id, email })
-      console.log(`validating knockRequest ${estate_id} ${email}=`, knockRequest)
+      Logger.info(`validating knockRequest ${estate_id} ${email}=`, knockRequest)
       if (!knockRequest) {
         return //the link is NOT valid no match should be created.
       }
@@ -547,7 +547,7 @@ class MarketPlaceService {
       if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
         return
       }
-      console.log(`knockRequest code = ${knockRequest.code} ${code}`)
+      Logger.info(`knockRequest code = ${knockRequest.code} ${code}`)
       if (!knockRequest.code || code != knockRequest.code) {
         throw new HttpException(NO_PROSPECT_KNOCK, 400)
       }

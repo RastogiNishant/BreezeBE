@@ -35,7 +35,6 @@ const {
   ROLE_USER
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
-const MarketPlaceService = require('../../Services/MarketPlaceService')
 
 class AccountController {
   /**
