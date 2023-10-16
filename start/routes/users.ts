@@ -62,6 +62,16 @@ const usersTenantRoutes: Routes = {
       middleware: ['auth:jwt', 'valid:CreateTenantCertificate']
     }
   },
+  '/tenant/certificate/request': {
+    [HTTP_METHODS.PUT]: {
+      controller: 'TenantController.requestCertificate',
+      middleware: ['auth:jwt', 'valid:RequestCertificate']
+    },
+    [HTTP_METHODS.DELETE]: {
+      controller: 'TenantController.removeRequestCertificate',
+      middleware: ['auth:jwt']
+    }
+  },
   '/tenant/certificate/:id': {
     [HTTP_METHODS.DELETE]: {
       controller: 'TenantCertificateController.deleteCertificate',
@@ -84,16 +94,6 @@ const usersTenantRoutes: Routes = {
     [HTTP_METHODS.DELETE]: {
       controller: 'TenantCertificateController.deleteImage',
       middleware: ['auth:jwt', 'valid:Id,Uri']
-    }
-  },
-  '/tenant/certificate/request': {
-    [HTTP_METHODS.PUT]: {
-      controller: 'TenantController.requestCertificate',
-      middleware: ['auth:jwt', 'valid:RequestCertificate']
-    },
-    [HTTP_METHODS.DELETE]: {
-      controller: 'TenantController.removeRequestCertificate',
-      middleware: ['auth:jwt']
     }
   },
   '/tenant/deactive': {
