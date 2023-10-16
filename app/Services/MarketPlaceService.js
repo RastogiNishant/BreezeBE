@@ -12,6 +12,7 @@ const SMSService = use('App/Services/SMSService')
 const yup = require('yup')
 const { phoneSchema } = require('../Libs/schemas')
 const ShortenLinkService = use('App/Services/ShortenLinkService')
+const MatchService = use('App/Service/MatchService')
 const {
   DEFAULT_LANG,
   ROLE_USER,
@@ -253,7 +254,7 @@ class MarketPlaceService {
   }
 
   static async sendContactRequestWebsocket(contact) {
-    require('./MatchService').emitMatch({
+    await MatchService.emitMatch({
       data: {
         estate_id: contact.estate_id,
         old_status: NO_MATCH_STATUS,
@@ -265,7 +266,7 @@ class MarketPlaceService {
       role: ROLE_LANDLORD
     })
 
-    require('./MatchService').emitMatch({
+    await MatchService.emitMatch({
       data: {
         ...contact,
         firstname: contact?.contact_info?.firstName,
@@ -605,7 +606,7 @@ class MarketPlaceService {
       await Promise.map(
         pendingKnocks || [],
         async (knock) => {
-          const hasMatch = await require('./MatchService').hasInteracted({
+          const hasMatch = await MatchService.hasInteracted({
             userId: user.id,
             estateId: knock.estate_id
           })
@@ -613,7 +614,7 @@ class MarketPlaceService {
           if (!hasMatch) {
             if (!knock.is_invited_by_landlord) {
               //user knocked on marketplace we knock him on ours.
-              await require('./MatchService').knockEstate(
+              await MatchService.knockEstate(
                 {
                   estate_id: knock.estate_id,
                   user_id: user.id,
@@ -624,7 +625,7 @@ class MarketPlaceService {
                 trx
               )
             } else {
-              await require('./MatchService').inviteKnockedUser(
+              await MatchService.inviteKnockedUser(
                 {
                   estate: knock.estate,
                   userId: user.id,
@@ -671,12 +672,12 @@ class MarketPlaceService {
 
     Promise.map(pendingKnocks, async (knock) => {
       if (knock.is_invited_by_landlord) {
-        require('./MatchService').sendMatchInviteWebsocketFromKnock({
+        MatchService.sendMatchInviteWebsocketFromKnock({
           estate_id: knock.estate_id,
           user_id: knock.user_id
         })
       } else {
-        require('./MatchService').sendMatchKnockWebsocket({
+        MatchService.sendMatchKnockWebsocket({
           estate_id: knock.estate_id,
           user_id: knock.user_id
         })
