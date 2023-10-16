@@ -9,12 +9,11 @@ class TenantReportAbuseController {
     const user = auth.user
     const { estate_id, tenant_id, abuse } = request.all()
     try {
-
-      const matchResult = await MatchService.isExist(user.id, estate_id, tenant_id )
-      if( ! matchResult ) {
+      const matchResult = await MatchService.isExist(user.id, estate_id, tenant_id)
+      if (!matchResult) {
         throw new HttpException('No permission to report abuse')
       }
-      
+
       const params = {
         estate_id: estate_id,
         tenant_id: tenant_id,

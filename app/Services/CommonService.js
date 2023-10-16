@@ -4,7 +4,7 @@ const {
   RENT_DURATION_LONG,
   RENT_DURATION_SHORT,
   STATUS_ACTIVE,
-  CITIES_AUTOCOMPLETE_MAX_COUNT,
+  CITIES_AUTOCOMPLETE_MAX_COUNT
 } = require('../constants')
 const ThirdPartyOffer = use('App/Models/ThirdPartyOffer')
 const Estate = use('App/Models/Estate')
@@ -185,7 +185,7 @@ class CommonService {
       page,
       total_pages: Math.ceil(total / limit),
       total,
-      offers,
+      offers
     }
   }
 }

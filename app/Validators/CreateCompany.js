@@ -14,7 +14,7 @@ const {
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
   VISIBLE_BEFORE_TENANT,
-  NO_VISIBLE_BEFORE_TENANT,
+  NO_VISIBLE_BEFORE_TENANT
 } = require('../constants')
 
 class CreateCompany extends Base {
@@ -37,11 +37,11 @@ class CreateCompany extends Base {
           COMPANY_TYPE_MUNICIPAL_HOUSING,
           COMPANY_TYPE_HOUSING_COOPERATIVE,
           COMPANY_TYPE_LISTED_HOUSING,
-          COMPANY_TYPE_BROKER,
+          COMPANY_TYPE_BROKER
         ])
         .required(),
       avatar: yup.mixed(),
-      visibility: yup.number().oneOf([VISIBLE_BEFORE_TENANT, NO_VISIBLE_BEFORE_TENANT]),
+      visibility: yup.number().oneOf([VISIBLE_BEFORE_TENANT, NO_VISIBLE_BEFORE_TENANT])
     })
   }
 }

@@ -10,7 +10,7 @@ class Code extends Base {
         .string()
         .matches(/^[\da-f]{3,10}$/i, 'Should be hex up 3 to 10 length')
         .lowercase()
-        .required(),
+        .required()
     })
 }
 

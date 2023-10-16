@@ -7,7 +7,7 @@ class CreateFeedback extends Base {
     yup.object().shape({
       description: yup.string().min(1).max(1024).nullable(),
       point: yup.number().integer().min(0).max(5).required(),
-      device: yup.string().max(255).required(),
+      device: yup.string().max(255).required()
     })
 }
 

@@ -7,7 +7,7 @@ class TenantProperty extends Base {
   static schema = () =>
     yup.object().shape({
       properties: yup.string().required(),
-      prices: yup.number().positive().required(),
+      prices: yup.number().positive().required()
     })
 }
 

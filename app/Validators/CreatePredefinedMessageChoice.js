@@ -10,7 +10,7 @@ const {
   PREDEFINED_LAST,
   STATUS_ACTIVE,
   STATUS_DRAFT,
-  STATUS_DELETE,
+  STATUS_DELETE
 } = require('../constants')
 
 class CreatePredefinedMessageChoice extends Base {
@@ -18,7 +18,7 @@ class CreatePredefinedMessageChoice extends Base {
     yup.object().shape({
       text: yup.string().required(),
       predefined_message_id: yup.number().integer().required(),
-      next_predefined_message_id: yup.number().integer().nullable(),
+      next_predefined_message_id: yup.number().integer().nullable()
     })
 }
 

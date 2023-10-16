@@ -6,7 +6,7 @@ const Base = require('./Base')
 class AddEstateSyncApiKey extends Base {
   static schema = () =>
     yup.object().shape({
-      api_key: yup.string().required('api_key is required.'),
+      api_key: yup.string().required('api_key is required.')
     })
 }
 

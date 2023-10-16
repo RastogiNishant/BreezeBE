@@ -8,7 +8,7 @@ class ResendSMS extends Base {
   static schema = () =>
     yup.object().shape({
       email: yup.string().email().lowercase().required(),
-      phone: phoneSchema.required(),
+      phone: phoneSchema.required()
     })
 }
 

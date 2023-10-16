@@ -5,7 +5,7 @@ const {
   ROOM_CUSTOM_AMENITIES_MAX_COUNT,
   ROOM_CUSTOM_AMENITIES_EXCEED_MAX_ERROR,
   ROOM_CUSTOM_AMENITIES_UPDATE_REORDER_COUNT_NOT_MATCH,
-  STATUS_ACTIVE,
+  STATUS_ACTIVE
 } = require('../../constants')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
@@ -75,7 +75,7 @@ class RoomAmenityController {
         room_id: room_id,
         option_id,
         status: STATUS_ACTIVE,
-        location: 'room',
+        location: 'room'
       })
       await newRoomAmenity.save()
       newRoomAmenityId = newRoomAmenity.id
@@ -107,7 +107,7 @@ class RoomAmenityController {
     response.res({
       newRoomAmenityId,
       total: amenities.rows.length,
-      amenities: amenities,
+      amenities: amenities
     })
   }
 
@@ -187,7 +187,7 @@ class RoomAmenityController {
       .fetch()
     response.res({
       total: amenities.rows.length,
-      amenities: amenities,
+      amenities: amenities
     })
   }
 }

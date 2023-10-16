@@ -13,8 +13,9 @@ class BillingAddressService {
    *
    */
   static async updateBillingAddress(billingId, userId, data) {
-
-    const billingAddress = await BillingAddress.query().where({ user_id: userId,  id: billingId}).first()
+    const billingAddress = await BillingAddress.query()
+      .where({ user_id: userId, id: billingId })
+      .first()
     if (!billingAddress) {
       throw new AppException('BillingAddress not exists')
     }

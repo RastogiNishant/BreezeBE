@@ -4,7 +4,7 @@ const { reduce } = require('lodash')
 const yup = require('yup')
 const {
   getExceptionMessage,
-  exceptionKeys: { OPTION },
+  exceptionKeys: { OPTION }
 } = require('../exceptions')
 
 const Base = require('./Base')

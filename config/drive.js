@@ -11,7 +11,7 @@ module.exports = {
   disks: {
     local: {
       root: path.resolve(Helpers.publicPath(), './uploads'),
-      driver: 'local',
+      driver: 'local'
     },
 
     s3: {
@@ -19,7 +19,7 @@ module.exports = {
       key: Env.get('S3_KEY'),
       secret: Env.get('S3_SECRET'),
       bucket: Env.get('S3_BUCKET'),
-      region: Env.get('S3_REGION'),
+      region: Env.get('S3_REGION')
     },
 
     s3public: {
@@ -27,14 +27,14 @@ module.exports = {
       key: Env.get('S3_KEY'),
       secret: Env.get('S3_SECRET'),
       bucket: Env.get('S3_PUBLIC_BUCKET'),
-      region: Env.get('S3_REGION'),
+      region: Env.get('S3_REGION')
     },
     'breeze-ftp-files': {
       driver: 's3',
       key: Env.get('S3_KEY'),
       secret: Env.get('S3_SECRET'),
       bucket: 'breeze-ftp-files',
-      region: Env.get('S3_REGION'),
-    },
-  },
+      region: Env.get('S3_REGION')
+    }
+  }
 }

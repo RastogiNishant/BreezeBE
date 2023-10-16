@@ -6,7 +6,7 @@ const {
   THIRD_PARTY_OFFER_SOURCES,
   STATUS_ACTIVE,
   STATUS_EXPIRE,
-  VALID_URL_REG_EXP,
+  VALID_URL_REG_EXP
 } = require('../constants')
 const moment = require('moment')
 const currentYear = moment().format('Y')
@@ -44,7 +44,7 @@ class CreateThirdPartyOffer extends Base {
       coord_raw: yup.string().matches(/[0-9\.]+,[0-9\.]+/),
       expiration_date: yup.string().matches(/^[0-9]{4}\/[0-9]{2}\/[0-9]{2}$/),
       price: yup.number(),
-      contact: yup.object(),
+      contact: yup.object()
     })
 }
 

@@ -15,7 +15,7 @@ class ThirdPartyMatch extends Model {
       'created_at',
       'updated_at',
       'prospect_score',
-      'landlord_score',
+      'landlord_score'
     ]
   }
 }

@@ -5,7 +5,7 @@ const Base = require('./Base')
 const {
   THIRD_PARTY_PUBLISHERS,
   ESTATE_SYNC_PUBLISH_PROVIDER_EBAY,
-  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT,
+  ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT
 } = require('../constants')
 
 class AddEstateSyncTarget extends Base {
@@ -24,11 +24,11 @@ class AddEstateSyncTarget extends Base {
           .shape({
             host: yup.string().required('host is required.'),
             username: yup.string().required('username is required.'),
-            password: yup.string().required('password is required.'),
+            password: yup.string().required('password is required.')
           })
           .required('credentials is required'),
-        otherwise: yup.object().nullable(),
-      }),
+        otherwise: yup.object().nullable()
+      })
     })
 }
 

@@ -33,7 +33,7 @@ const {
   MATCH_STATUS_INVITE,
   MATCH_STATUS_VISIT,
   MATCH_STATUS_SHARE,
-  MATCH_STATUS_FINISH,
+  MATCH_STATUS_FINISH
 } = require('../../../constants')
 const { isArray } = require('lodash')
 const { props, Promise } = require('bluebird')
@@ -51,7 +51,7 @@ const EstateSyncService = use('App/Services/EstateSyncService')
 const Building = use('App/Models/Building')
 const QueueService = use('App/Services/QueueService')
 const {
-  exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE },
+  exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE }
 } = require('../../../exceptions')
 const NoticeService = require('../../../Services/NoticeService')
 
@@ -187,7 +187,7 @@ class PropertyController {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
         USER_ACTIVATION_STATUS_ACTIVATED,
-        USER_ACTIVATION_STATUS_DEACTIVATED,
+        USER_ACTIVATION_STATUS_DEACTIVATED
       ]
     }
     user_status = user_status || STATUS_ACTIVE
@@ -195,7 +195,7 @@ class PropertyController {
       STATUS_EXPIRE,
       STATUS_ACTIVE,
       STATUS_DRAFT,
-      STATUS_OFFLINE_ACTIVE,
+      STATUS_OFFLINE_ACTIVE
     ]
     if (id) {
       let query = this.getEstatesQuery({ estate_status, activation_status, user_status }).where(
@@ -289,7 +289,7 @@ class PropertyController {
         let query = this.getEstatesQuery({
           estate_status,
           activation_status,
-          user_status,
+          user_status
         })
           .whereNotIn('id', estateIdsOnBuildings)
           .whereNot('status', STATUS_DELETE)
@@ -333,7 +333,7 @@ class PropertyController {
       total,
       lastPage: Math.ceil(total / limit) || 1,
       page,
-      perPage: limit,
+      perPage: limit
     }
     return response.res({ estates, pages })
   }
@@ -380,7 +380,7 @@ class PropertyController {
         .whereIn('status', [
           ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
           ESTATE_SYNC_LISTING_STATUS_POSTED,
-          ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE,
+          ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE
         ])
         .where('estate_id', estate.id)
         .first()
@@ -392,7 +392,7 @@ class PropertyController {
         const result = await EstateService.publishEstate({
           estate,
           publishers,
-          performed_by: null,
+          performed_by: null
         })
         return await EstateService.getByIdWithDetail(id)
       } catch (e) {
@@ -437,7 +437,7 @@ class PropertyController {
         buildingPublished = await EstateService.updateBuildingPublishStatus(
           {
             building_id: requestPublishEstate.build_id,
-            action: 'publish',
+            action: 'publish'
           },
           trx
         )
@@ -456,12 +456,12 @@ class PropertyController {
         publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN,
         status: STATUS_ACTIVE,
         type: 'approved-publish',
-        listings: listings?.rows || [],
+        listings: listings?.rows || []
       }
       await EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_PUBLISH_APPROVED,
         user_id: requestPublishEstate.user_id,
-        data,
+        data
       })
       MailService.estatePublishRequestApproved(requestPublishEstate)
       NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
@@ -494,7 +494,7 @@ class PropertyController {
         await EstateService.updateBuildingPublishStatus(
           {
             building_id: requestPublishEstate.build_id,
-            action: 'decline-publish',
+            action: 'decline-publish'
           },
           trx
         )
@@ -512,12 +512,12 @@ class PropertyController {
         publish_status: PUBLISH_STATUS_DECLINED_BY_ADMIN,
         status: STATUS_DRAFT,
         type: 'declined-publish',
-        listings: listings?.rows || [],
+        listings: listings?.rows || []
       }
       EstateSyncService.emitWebsocketEventToLandlord({
         event: WEBSOCKET_EVENT_ESTATE_PUBLISH_DECLINED,
         user_id: requestPublishEstate.user_id,
-        data,
+        data
       })
       QueueService.estateSyncUnpublishEstates([id], false)
       await trx.commit()

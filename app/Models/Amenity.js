@@ -15,7 +15,7 @@ class Amenity extends Model {
       'added_by',
       'type',
       'estate_id',
-      'location',
+      'location'
     ]
   }
 

@@ -8,7 +8,7 @@ class AcceptTerms extends Base {
   static schema = () =>
     yup.object().shape({
       id: id.required(),
-      type: yup.string().oneOf(['agreement', 'terms']).required(),
+      type: yup.string().oneOf(['agreement', 'terms']).required()
     })
 }
 

@@ -8,7 +8,7 @@ const {
   STATUS_EMAIL_VERIFY,
   STATUS_DRAFT,
   STATUS_EXPIRE,
-  STATUS_OFFLINE_ACTIVE,
+  STATUS_OFFLINE_ACTIVE
 } = require('../constants')
 const { isArray } = require('lodash')
 const yup = require('yup')
@@ -51,7 +51,7 @@ class AdminGetsLandlords extends Base {
                 .oneOf([
                   USER_ACTIVATION_STATUS_NOT_ACTIVATED,
                   USER_ACTIVATION_STATUS_ACTIVATED,
-                  USER_ACTIVATION_STATUS_DEACTIVATED,
+                  USER_ACTIVATION_STATUS_DEACTIVATED
                 ])
             )
         } else {
@@ -60,12 +60,12 @@ class AdminGetsLandlords extends Base {
             .oneOf([
               USER_ACTIVATION_STATUS_NOT_ACTIVATED,
               USER_ACTIVATION_STATUS_ACTIVATED,
-              USER_ACTIVATION_STATUS_DEACTIVATED,
+              USER_ACTIVATION_STATUS_DEACTIVATED
             ])
         }
       }),
       query: yup.string(),
-      today: yup.boolean(),
+      today: yup.boolean()
     })
 }
 

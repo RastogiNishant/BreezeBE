@@ -5,7 +5,7 @@ const Base = require('./Base')
 const moment = require('moment')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER },
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER }
 } = require('../exceptions')
 const { DATE_FORMAT } = require('../constants')
 
@@ -43,8 +43,8 @@ class ExtendEstate extends Base {
             .integer()
             .positive()
             .required()
-            .typeError(getExceptionMessage('min_invite_count', NUMBER)),
-        }),
+            .typeError(getExceptionMessage('min_invite_count', NUMBER))
+        })
     })
 }
 

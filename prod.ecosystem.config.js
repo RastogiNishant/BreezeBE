@@ -14,25 +14,25 @@ module.exports = {
       exec_mode: 'cluster',
       env: {
         NODE_ENV: 'production',
-        name: 'breeze-prod',
+        name: 'breeze-prod'
       },
       env_development: {
         NODE_ENV: 'development',
-        name: 'breeze-development',
+        name: 'breeze-development'
       },
       'env_aws-development': {
-        NODE_ENV: 'aws-development',
+        NODE_ENV: 'aws-development'
       },
       env_staging: {
         NODE_ENV: 'staging',
-        name: 'breeze',
+        name: 'breeze'
       },
       env_production: {
-        NODE_ENV: 'production',
+        NODE_ENV: 'production'
       },
       env_testing: {
-        NODE_ENV: 'testing',
-      },
-    },
-  ],
+        NODE_ENV: 'testing'
+      }
+    }
+  ]
 }

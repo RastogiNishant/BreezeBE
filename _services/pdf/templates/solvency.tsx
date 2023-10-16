@@ -102,6 +102,9 @@ const styles = StyleSheet.create({
   upperCase: {
     textTransform: 'uppercase',
   },
+  creditHistory: {
+    height: 23,
+  },
 });
 
 const Solvency = ({
@@ -124,7 +127,12 @@ const Solvency = ({
       <View style={styles.section}>
         <View style={styles.leftSection}>
           <View style={styles.rowWrapper}>
-            <View style={styles.textWrapper}>
+            <View
+              style={[
+                styles.textWrapper,
+                solvencyDetails.find((item: any) => !!item.creditHistory) && styles.creditHistory,
+              ]}
+            >
               <Text style={styles.rowText}>{score}</Text>
             </View>
             <View style={styles.textWrapper}>
@@ -149,53 +157,57 @@ const Solvency = ({
         </View>
         <View style={styles.rightSection}>
           {!!solvencyDetails && solvencyDetails.length
-            ? solvencyDetails?.map((each: any, ind: number) => (
-                <View style={styles.rowWrapper} key={ind}>
-                  <View
-                    style={[styles.subSection, styles.textWrapper, styles.iconContainer]}
-                    key={ind}
-                  >
-                    <Text style={[styles.rowText, styles.isBold, styles.isUnderline]}>
-                      {each?.score}
-                    </Text>
-                    <View style={styles.iconContainer}>
-                      <Text style={styles.pageNumber}>
-                        {page} {each?.pageNumber || '-'}
+            ? solvencyDetails?.map((each: any, ind: number) => {
+                const creditScoreClasses: any = [styles.textWrapper, styles.iconContainer];
+                const creditScoreWrapperClasses: any = [styles.rowText];
+                if (solvencyDetails.find((item: any) => !!item.creditHistory)) {
+                  creditScoreClasses.push(styles.creditHistory);
+                } else {
+                  creditScoreWrapperClasses.push(styles.isBold);
+                  creditScoreWrapperClasses.push(styles.isUnderline);
+                }
+                return (
+                  <View style={styles.rowWrapper} key={ind}>
+                    <View style={creditScoreClasses}>
+                      <Text style={creditScoreWrapperClasses}>
+                        {!each?.creditHistory ? each?.score : ''}
+                        {each?.creditHistory && (
+                          <Text style={styles.isBold}>
+                            <Text style={styles.isUnderline}>{each?.creditHistory}</Text>
+                            {'\n'}
+                            <Text
+                              style={{
+                                fontWeight: 'light',
+                                fontSize: '7px',
+                              }}
+                            >
+                              {each?.score + ', ' + each?.creditScoreIssued}
+                            </Text>
+                          </Text>
+                        )}
                       </Text>
-                      <Image src={'../pdf/img/pageIcon.png'} style={styles.pageIcon} />
+                    </View>
+                    <View style={styles.textWrapper}>
+                      <Text style={[styles.rowText, styles.isBold]}>{each?.rentArrears}</Text>
+                    </View>
+                    <View style={styles.textWrapper}>
+                      <Text style={[styles.rowText, styles.isBold]}>{each?.unpaidRental}</Text>
+                    </View>
+                    <View style={styles.textWrapper}>
+                      <Text style={[styles.rowText, styles.isBold]}>{each?.execution}</Text>
+                    </View>
+                    <View style={styles.textWrapper}>
+                      <Text style={[styles.rowText, styles.isBold]}>{each?.insolvency}</Text>
+                    </View>
+                    <View style={styles.textWrapper}>
+                      <Text style={[styles.rowText, styles.isBold]}>{each?.cleanOut}</Text>
+                    </View>
+                    <View style={styles.textWrapper}>
+                      <Text style={[styles.rowText, styles.isBold]}>{each?.wage}</Text>
                     </View>
                   </View>
-                  <View
-                    style={[styles.subSection, styles.textWrapper, styles.iconContainer]}
-                    key={ind}
-                  >
-                    <Text style={[styles.rowText, styles.isBold]}>{each?.rentArrears}</Text>
-                    {each?.rentArrearsPageNumber && (
-                      <View style={styles.iconContainer}>
-                        <Text style={styles.pageNumber}>
-                          {page} {each?.rentArrearsPageNumber || '-'}
-                        </Text>
-                        <Image src={'../pdf/img/pageIcon.png'} style={styles.pageIcon} />
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.textWrapper}>
-                    <Text style={[styles.rowText, styles.isBold]}>{each?.unpaidRental}</Text>
-                  </View>
-                  <View style={styles.textWrapper}>
-                    <Text style={[styles.rowText, styles.isBold]}>{each?.execution}</Text>
-                  </View>
-                  <View style={styles.textWrapper}>
-                    <Text style={[styles.rowText, styles.isBold]}>{each?.insolvency}</Text>
-                  </View>
-                  <View style={styles.textWrapper}>
-                    <Text style={[styles.rowText, styles.isBold]}>{each?.cleanOut}</Text>
-                  </View>
-                  <View style={styles.textWrapper}>
-                    <Text style={[styles.rowText, styles.isBold]}>{each?.wage}</Text>
-                  </View>
-                </View>
-              ))
+                );
+              })
             : null}
         </View>
       </View>

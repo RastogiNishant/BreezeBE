@@ -3,7 +3,7 @@
 const {
   WEBSOCKET_TENANT_REDIS_KEY,
   WEBSOCKET_LANDLORD_REDIS_KEY,
-  WEBSOCKET_TASK_REDIS_KEY,
+  WEBSOCKET_TASK_REDIS_KEY
 } = require('../constants')
 
 const Redis = require('ioredis')
@@ -14,12 +14,12 @@ const Logger = use('Logger')
 class WebSocket {
   static redisSubscriber = new Redis({
     host: process.env.REDIS_HOST,
-    port: process.env.REDIS_PORT,
+    port: process.env.REDIS_PORT
   })
 
   static redisPublisher = new Redis({
     host: process.env.REDIS_HOST,
-    port: process.env.REDIS_PORT,
+    port: process.env.REDIS_PORT
   })
 
   static unsubscribe(topic) {
@@ -55,7 +55,7 @@ class WebSocket {
       topic: `${WEBSOCKET_TENANT_REDIS_KEY}:${userId}`,
       channel: 'tenant:*',
       event,
-      data,
+      data
     })
   }
 
@@ -64,7 +64,7 @@ class WebSocket {
       topic: `${WEBSOCKET_LANDLORD_REDIS_KEY}:${userId}`,
       channel: 'landlord:*',
       event,
-      data,
+      data
     })
   }
 
@@ -73,7 +73,7 @@ class WebSocket {
       topic: `${WEBSOCKET_TASK_REDIS_KEY}:${estateId}brz${taskId}`,
       channel: 'task:*',
       event,
-      data,
+      data
     })
   }
 }

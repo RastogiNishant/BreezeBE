@@ -6,7 +6,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const { STATUS_DELETE } = require('../constants')
 const Database = use('Database')
 const {
-  exceptions: { FAILED_TO_ADD_FILE },
+  exceptions: { FAILED_TO_ADD_FILE }
 } = require('../exceptions')
 class TenantCertificateSerivce {
   static async addCertificate(request, user_id) {
@@ -20,11 +20,11 @@ class TenantCertificateSerivce {
         File.IMAGE_WEBP,
         File.IMAGE_HEIC,
         File.IMAGE_GIF,
-        File.IMAGE_PDF,
+        File.IMAGE_PDF
       ]
 
       const files = await File.saveRequestFiles(request, [
-        { field: 'file', mime: imageMimes, isPublic: false },
+        { field: 'file', mime: imageMimes, isPublic: false }
       ])
 
       if (!files.file) {
@@ -38,13 +38,13 @@ class TenantCertificateSerivce {
       const attachments = paths.map((path, index) => ({
         disk: 's3',
         uri: path,
-        file_name: original_file_names[index],
+        file_name: original_file_names[index]
       }))
       await TenantService.requestCertificate(
         {
           user_id,
           request_certificate_at: null,
-          request_certificate_city_id: null,
+          request_certificate_city_id: null
         },
         trx
       )
@@ -54,7 +54,7 @@ class TenantCertificateSerivce {
           city_id,
           income_level,
           expired_at,
-          attachments: JSON.stringify(attachments),
+          attachments: JSON.stringify(attachments)
         },
         trx
       )
@@ -78,11 +78,11 @@ class TenantCertificateSerivce {
       File.IMAGE_WEBP,
       File.IMAGE_HEIC,
       File.IMAGE_GIF,
-      File.IMAGE_PDF,
+      File.IMAGE_PDF
     ]
 
     const files = await File.saveRequestFiles(request, [
-      { field: 'file', mime: imageMimes, isPublic: false },
+      { field: 'file', mime: imageMimes, isPublic: false }
     ])
 
     if (files && files.file) {
@@ -95,8 +95,8 @@ class TenantCertificateSerivce {
         ...paths.map((path, index) => ({
           disk: 's3',
           uri: path,
-          file_name: original_file_names[index],
-        })),
+          file_name: original_file_names[index]
+        }))
       ]
 
       await TenantCertificate.query()

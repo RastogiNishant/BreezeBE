@@ -6,7 +6,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const DataStorage = use('DataStorage')
 const {
   INVITATION_LINK_RETRIEVAL_TRIES_KEY,
-  INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT,
+  INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT
 } = require('../constants')
 
 class UserCanGetInvitationLink {

@@ -6,7 +6,7 @@ const Base = require('./Base')
 class Key extends Base {
   static schema = () =>
     yup.object().shape({
-      key: yup.string(),
+      key: yup.string()
     })
 }
 

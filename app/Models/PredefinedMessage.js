@@ -17,7 +17,11 @@ class PredefinedMessage extends Model {
   }
 
   choices() {
-    return this.hasMany('App/Models/PredefinedMessageChoice', 'id', 'predefined_message_id').whereNotIn('status', [STATUS_DELETE])
+    return this.hasMany(
+      'App/Models/PredefinedMessageChoice',
+      'id',
+      'predefined_message_id'
+    ).whereNotIn('status', [STATUS_DELETE])
   }
 }
 

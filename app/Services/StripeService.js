@@ -19,7 +19,7 @@ const {
   PAY_MODE_USAGE,
   DAY_FORMAT,
   PAID_COMPLETE_STATUS,
-  PRICE_MATCH,
+  PRICE_MATCH
 } = require('../constants')
 const PricePlanService = use('App/Services/PricePlanService')
 const PaymentAccountService = use('App/Services/PaymentAccountService')
@@ -36,9 +36,9 @@ const {
     NO_PRODUCTS_EXIST,
     SUBSCRIPTION_FAILED,
     ERROR_SUBSCRIPTION_NOT_CREATED,
-    ERROR_PRICE_PLAN_CONFIGURATION,
+    ERROR_PRICE_PLAN_CONFIGURATION
   },
-  exceptionCodes: { ERROR_SUBSCRIPTION_NOT_CREATED_CODE, ERROR_PRICE_PLAN_CONFIGURATION_CODE },
+  exceptionCodes: { ERROR_SUBSCRIPTION_NOT_CREATED_CODE, ERROR_PRICE_PLAN_CONFIGURATION_CODE }
 } = require('../exceptions')
 
 class StripeService {
@@ -47,7 +47,7 @@ class StripeService {
     const prices = await Stripe.getPrices()
     return (products?.data || []).map((product) => ({
       ...product,
-      prices: (prices?.data || []).filter((price) => product.id === price.product),
+      prices: (prices?.data || []).filter((price) => product.id === price.product)
     }))
   }
 
@@ -80,12 +80,12 @@ class StripeService {
       const checkoutSession = await Stripe.createCheckoutSession({
         user_id,
         mode,
-        prices,
+        prices
       })
       return {
         success_url: checkoutSession.success_url,
         cancel_url: checkoutSession.cancel_url,
-        url: checkoutSession.url,
+        url: checkoutSession.url
       }
     } catch (e) {
       Logger.error('create subscription failed', e.message)
@@ -151,7 +151,7 @@ class StripeService {
             user_id: data.client_reference_id,
             account_id: data.customer,
             livemode: data.livemode,
-            date: moment(data.created).format(DATE_FORMAT),
+            date: moment(data.created).format(DATE_FORMAT)
           },
           trx
         )
@@ -183,7 +183,7 @@ class StripeService {
         payment_method: PAYMENT_METHOD_STRIPE,
         date: moment.utc(data.created * 1000).format(DATE_FORMAT),
         livemode: data.livemode,
-        status,
+        status
       },
       trx
     )
@@ -210,7 +210,7 @@ class StripeService {
           {
             user_id: data.client_reference_id,
             account_id: data.customer,
-            livemode: data.livemode,
+            livemode: data.livemode
           },
           trx
         )
@@ -221,7 +221,7 @@ class StripeService {
           user_id: data.client_reference_id,
           contract_id: data.id,
           subscription_id: data?.subscription,
-          status: STATUS_ACTIVE,
+          status: STATUS_ACTIVE
         },
         trx
       )
@@ -272,7 +272,7 @@ class StripeService {
           user_id: data.client_reference_id,
           subscription_id: subscription.subscription_id,
           livemode: data.livemode,
-          status: STATUS_DELETE,
+          status: STATUS_DELETE
         },
         trx
       )
@@ -295,7 +295,7 @@ class StripeService {
           user_id: data.client_reference_id,
           subscription_id: data.subscription,
           livemode: data.livemode,
-          status: STATUS_DELETE,
+          status: STATUS_DELETE
         },
         trx
       )
@@ -309,7 +309,7 @@ class StripeService {
       this.emitEvent({
         user_id: data.client_reference_id,
         event: WEBSOCKET_EVENT_CHECKOUT_SESSION_FAILED,
-        data,
+        data
       })
     } catch (e) {
       Logger.error(
@@ -368,11 +368,11 @@ class StripeService {
       /** already attached payment intent to customer, so no need to pass payment_method */
       const price = await Stripe.getUnitAmount({
         id: publishPlan.price_id,
-        count: publishedCount + 1,
+        count: publishedCount + 1
       })
       const order = await Stripe.createPaymentIntent({
         customer,
-        amount: price,
+        amount: price
       })
 
       /** TODO:
@@ -389,7 +389,7 @@ class StripeService {
     WebSocket.publishToLandlord({
       event,
       userId: user_id,
-      data,
+      data
     })
   }
 }

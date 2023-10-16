@@ -22,7 +22,7 @@ class CompanyController {
     const data = request.all()
     const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
     const files = await File.saveRequestFiles(request, [
-      { field: 'avatar', mime: imageMimes, isPublic: true },
+      { field: 'avatar', mime: imageMimes, isPublic: true }
     ])
     if (files.avatar) {
       data.avatar = files.avatar
@@ -54,7 +54,7 @@ class CompanyController {
     const { id, ...data } = request.all()
     const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
     const files = await File.saveRequestFiles(request, [
-      { field: 'avatar', mime: imageMimes, isPublic: true },
+      { field: 'avatar', mime: imageMimes, isPublic: true }
     ])
     if (files.avatar) {
       data.avatar = files.avatar
@@ -98,7 +98,7 @@ class CompanyController {
     const data = request.all()
     const imageMimes = [File.IMAGE_JPG, File.IMAGE_JPEG, File.IMAGE_PNG]
     const files = await File.saveRequestFiles(request, [
-      { field: 'avatar', mime: imageMimes, isPublic: true },
+      { field: 'avatar', mime: imageMimes, isPublic: true }
     ])
     if (files.avatar) {
       data.avatar = files.avatar
@@ -120,7 +120,7 @@ class CompanyController {
       const contacts = await CompanyService.createContact(
         {
           data: contactData,
-          user_id: auth.user.id,
+          user_id: auth.user.id
         },
         trx
       )

@@ -1,0 +1,13 @@
+diff --git a/node_modules/@adonisjs/cli/src/Commands/Serve/index.js b/node_modules/@adonisjs/cli/src/Commands/Serve/index.js
+index b42318d..406324b 100644
+--- a/node_modules/@adonisjs/cli/src/Commands/Serve/index.js
++++ b/node_modules/@adonisjs/cli/src/Commands/Serve/index.js
+@@ -125,7 +125,7 @@ class Serve extends Command {
+    */
+   async handle (args, { dev, watch, debug, ignore, polling, ext }) {
+     const acePath = path.join(process.cwd(), 'ace')
+-    const appFile = path.join(process.cwd(), 'server.js')
++    const appFile = path.join(process.cwd(), 'server.ts')
+     const exists = await this.pathExists(acePath)
+ 
+     if (!exists) {

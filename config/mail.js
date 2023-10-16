@@ -15,11 +15,11 @@ module.exports = {
     secure: false,
     auth: {
       user: Env.get('MAIL_USERNAME'),
-      pass: Env.get('MAIL_PASSWORD'),
+      pass: Env.get('MAIL_PASSWORD')
     },
     maxConnections: 5,
     maxMessages: 100,
-    rateLimit: 10,
+    rateLimit: 10
   },
 
   mailtrap: {
@@ -30,17 +30,17 @@ module.exports = {
     secure: false,
     auth: {
       user: Env.get('MAIL_USERNAME'),
-      pass: Env.get('MAIL_PASSWORD'),
+      pass: Env.get('MAIL_PASSWORD')
     },
     maxConnections: 5,
     maxMessages: 100,
-    rateLimit: 10,
+    rateLimit: 10
   },
 
   sparkpost: {
     driver: 'sparkpost',
     apiKey: Env.get('SPARKPOST_API_KEY'),
-    extras: {},
+    extras: {}
   },
 
   mailgun: {
@@ -48,11 +48,11 @@ module.exports = {
     domain: Env.get('MAILGUN_DOMAIN'),
     region: Env.get('MAILGUN_API_REGION'),
     apiKey: Env.get('MAILGUN_API_KEY'),
-    extras: {},
+    extras: {}
   },
 
   ethereal: {
-    driver: 'ethereal',
+    driver: 'ethereal'
   },
 
   ses: {
@@ -61,6 +61,6 @@ module.exports = {
     accessKeyId: Env.get('SES_KEY'),
     secretAccessKey: Env.get('SES_SECRET'),
     region: Env.get('SES_REGION'),
-    rateLimit: 10,
-  },
+    rateLimit: 10
+  }
 }

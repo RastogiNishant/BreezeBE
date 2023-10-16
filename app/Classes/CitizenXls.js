@@ -20,7 +20,7 @@ class CitizenXls {
     return sheet.data.map((cell) => ({
       citizen_key: cell?.[0] || '',
       en_name: cell?.[1] || '',
-      de_name: cell?.[2] || '',
+      de_name: cell?.[2] || ''
     }))
   }
 }

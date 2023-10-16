@@ -7,7 +7,7 @@ class CreateEstateAbuse extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: yup.number().integer().positive(),
-      abuse: yup.string().required(),
+      abuse: yup.string().required()
     })
 }
 

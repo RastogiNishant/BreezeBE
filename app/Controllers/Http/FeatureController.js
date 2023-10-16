@@ -6,7 +6,7 @@ const { YEARLY_DISCOUNT_RATE } = require('../../constants')
 class FeatureController {
   async getFeatures({ request, response }) {
     const { limit, page, ...params } = request.all()
-    const features = await FeatureService.getFeatures(params);
+    const features = await FeatureService.getFeatures(params)
     return response.res(features)
   }
 
@@ -24,7 +24,7 @@ class FeatureController {
 
   async removeFeature({ request, response }) {
     const { ids } = request.all()
-    FeatureService.removeFeature(ids);
+    FeatureService.removeFeature(ids)
     return response.res(true)
   }
 }

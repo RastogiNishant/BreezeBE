@@ -7,13 +7,13 @@ const {
   FILE_TYPE_PLAN,
   FILE_TYPE_CUSTOM,
   DOCUMENT_VIEW_ENERGY_TYPE,
-  FILE_TYPE_EXTERNAL,
+  FILE_TYPE_EXTERNAL
 } = require('../constants')
 const Base = require('./Base')
 const { id } = require('../Libs/schemas.js')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER },
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER }
 } = require('../exceptions')
 const CreateRoom = require('./CreateRoom')
 
@@ -38,14 +38,14 @@ class GalleryAssign extends Base {
         .typeError(getExceptionMessage('room_id', NUMBER))
         .when('view_type', {
           is: GALLERY_INSIDE_VIEW_TYPE,
-          then: yup.number().integer().typeError(getExceptionMessage('room_id', NUMBER)),
+          then: yup.number().integer().typeError(getExceptionMessage('room_id', NUMBER))
         }),
       room: yup
         .object()
         .shape({})
         .when(['view_type', 'room_id'], {
           is: (view_type, room_id) => view_type === GALLERY_INSIDE_VIEW_TYPE && !room_id,
-          then: yup.object().concat(CreateRoom.schema()).required(),
+          then: yup.object().concat(CreateRoom.schema()).required()
         }),
       document_type: yup.string().when('view_type', {
         is: GALLERY_DOCUMENT_VIEW_TYPE,
@@ -59,7 +59,7 @@ class GalleryAssign extends Base {
               `[${FILE_TYPE_PLAN},${FILE_TYPE_CUSTOM}, ${FILE_TYPE_EXTERNAL}]`
             )
           )
-          .required(getExceptionMessage('document_type', REQUIRED)),
+          .required(getExceptionMessage('document_type', REQUIRED))
       }),
       ids: yup
         .array()
@@ -69,10 +69,10 @@ class GalleryAssign extends Base {
           then: yup
             .array()
             .of(yup.number().integer().positive().typeError(getExceptionMessage('ids', NUMBER)))
-            .max(1, getExceptionMessage('ids', SIZE, 1)),
+            .max(1, getExceptionMessage('ids', SIZE, 1))
         })
         .required(getExceptionMessage('ids', REQUIRED))
-        .typeError(getExceptionMessage(undefined, INVALID_IDS)),
+        .typeError(getExceptionMessage(undefined, INVALID_IDS))
     })
 }
 

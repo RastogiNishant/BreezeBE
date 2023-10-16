@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const {
   INVITATION_LINK_RETRIEVAL_CODE_CHARACTERS,
-  INVITATION_LINK_RETRIEVAL_CODE_LENGTH,
+  INVITATION_LINK_RETRIEVAL_CODE_LENGTH
 } = require('../constants')
 class InvitationLinkRetrieveCode extends Base {
   static schema = () =>
@@ -16,7 +16,7 @@ class InvitationLinkRetrieveCode extends Base {
             `[${INVITATION_LINK_RETRIEVAL_CODE_CHARACTERS}]{${INVITATION_LINK_RETRIEVAL_CODE_LENGTH}}`
           ),
           'Invalid Code Format.'
-        ),
+        )
     })
 }
 
