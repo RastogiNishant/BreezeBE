@@ -502,7 +502,7 @@ class MarketPlaceService {
     uri += `&number_floors=${number_floors}`
     uri += `&cover=${cover}`
     uri += `&is_not_show=${estate.is_not_show || false}`
-    console.log({ uri })
+
     const prospects = (
       await require('./UserService').getByEmailWithRole([email], ROLE_USER)
     ).toJSON()
