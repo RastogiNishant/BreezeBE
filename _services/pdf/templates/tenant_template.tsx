@@ -259,14 +259,21 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           );
           return acc;
         }, []),
-        debt_proof: member.debt_proof && {
-          file: member.debt_proof,
-          name: member.debt_proof_file_name,
-        },
+        debt_proof:
+          Array.isArray(member.debt_proof) &&
+          Array.isArray(member.debt_proof_file_name) &&
+          member.debt_proof.map((item: any, index: number) => ({
+            file: item,
+            name: member.debt_proof_file_name[index],
+          })),
         rent_arrears_doc: member.rent_arrears_doc && {
           file: member.rent_arrears_doc,
           name: member.rent_arrears_doc_file_name,
         },
+        passports:
+          Array.isArray(member.passports) &&
+          member.passports.length > 0 &&
+          member.passports?.map((item: any) => ({ file: item.file, name: item.fileName })),
       };
     }),
   };
@@ -421,9 +428,9 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
       {members
         .reduce((acc: any[], cur: any) => {
           if (cur.proofs?.length > 0) acc.push(...cur.proofs);
-          if (Array.isArray(cur.debt_proof)) acc.push(...cur.debt_proof);
-          else if (cur.debt_proof?.length > 0) acc.push(cur.debt_proof);
+          if (cur.debt_proof) acc.push(...cur.debt_proof);
           if (cur.rent_arrears_doc) acc.push(cur.rent_arrears_doc);
+          if (cur.passports) acc.push(...cur.passports);
           return acc;
         }, [])
         .map((item: any, ind: number) => {
