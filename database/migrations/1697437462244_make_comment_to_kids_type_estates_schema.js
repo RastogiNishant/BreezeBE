@@ -8,6 +8,12 @@ class MakeCommentToKidsTypeEstatesSchema extends Schema {
     this.table('estates', (table) => {
       // alter table
       table.integer('kids_type').unsigned().comment('minor count').alter()
+      table
+        .boolean('minors')
+        .nullable()
+        .defaultTo(null)
+        .comment('whether we allow minors or not on the estate')
+        .alter()
     })
   }
 
