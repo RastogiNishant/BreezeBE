@@ -448,7 +448,6 @@ class UserService {
     try {
       const date = String(new Date().getTime())
       const code = date.slice(date.length - 4, date.length)
-      console.log({ code_for_confirm_email: code })
       await DataStorage.setItem(user.id, { code }, 'confirm_email', { expire: 3600 })
       const lang = await UserService.getUserLang([user.id])
       const forgotLink = await UserService.getForgotShortLink(from_web)
