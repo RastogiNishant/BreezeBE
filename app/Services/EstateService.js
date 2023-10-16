@@ -211,7 +211,7 @@ const ESTATE_PERCENTAGE_VARIABLE = {
       key: 'parking_space',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
-      isNumber: true
+      zeroIsValid: true
     },
     {
       key: 'extra_costs',
