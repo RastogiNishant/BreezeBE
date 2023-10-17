@@ -69,6 +69,14 @@ class AccountController {
         })
       }
 
+      await UserService.handleOutsideInvitation({
+        user,
+        email,
+        invite_type,
+        data1,
+        data2
+      })
+
       response.res(user)
     } catch (e) {
       await trx.rollback()

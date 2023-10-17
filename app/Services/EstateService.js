@@ -1810,7 +1810,7 @@ class EstateService {
     const allActiveMatches = await Match.query()
       .select('estate_id')
       .where('user_id', userId)
-      .whereNotIn('status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
+      .whereNotIn('status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW, MATCH_STATUS_TOP])
       .fetch()
 
     const estateIds = allActiveMatches.rows.map((m) => m.estate_id)
