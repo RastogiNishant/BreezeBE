@@ -6,7 +6,7 @@ class MemberPermissionService {
       await MemberPermission.createItem(
         {
           member_id: member_id,
-          user_id: user_id,
+          user_id: user_id
         },
         trx
       )

@@ -2,7 +2,7 @@
 const HttpException = require('../Exceptions/HttpException')
 const File = use('App/Classes/File')
 const {
-  exceptionCodes: { IMAGE_ABSOLUTE_URL_ERROR_CODE },
+  exceptionCodes: { IMAGE_ABSOLUTE_URL_ERROR_CODE }
 } = require('../exceptions')
 
 class BaseService {
@@ -25,7 +25,7 @@ class BaseService {
                 ...attachment,
                 url: await File.getProtectedUrl(attachment.uri),
                 uri: attachment.uri,
-                thumb: thumb,
+                thumb: thumb
               }
             }
 
@@ -33,7 +33,7 @@ class BaseService {
               ...attachment,
               url: attachment.uri,
               uri: attachment.uri,
-              thumb: thumb,
+              thumb: thumb
             }
           })
         )
@@ -53,15 +53,15 @@ class BaseService {
       File.IMAGE_TIFF,
       File.IMAGE_GIF,
       File.IMAGE_WEBP,
-      File.IMAGE_HEIC,
+      File.IMAGE_HEIC
     ]
 
     const files = await File.saveRequestFiles(request, [
       {
         field: options?.fieldName || 'file',
         mime: imageMimes,
-        isPublic: options?.isPublic || false,
-      },
+        isPublic: options?.isPublic || false
+      }
     ])
 
     return files
@@ -90,7 +90,7 @@ class BaseService {
               user_id: sender_id,
               url: await File.getProtectedUrl(attachment),
               uri: attachment,
-              thumb: thumb,
+              thumb: thumb
             }
           }
 
@@ -98,7 +98,7 @@ class BaseService {
             user_id: sender_id,
             url: attachment,
             uri: attachment,
-            thumb: thumb,
+            thumb: thumb
           }
         })
       )

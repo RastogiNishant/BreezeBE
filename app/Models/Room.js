@@ -16,7 +16,7 @@ class Room extends Model {
       'name',
       'cover',
       'favorite',
-      'order',
+      'order'
     ]
   }
 

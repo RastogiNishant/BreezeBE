@@ -64,13 +64,13 @@ class EstateAmenityService {
   static async handleSingleAmenity(amenity, trx) {
     amenity = {
       ...amenity,
-      status: STATUS_ACTIVE,
+      status: STATUS_ACTIVE
     }
 
     const amenityEntity = await this.getAmenity({
       estate_id: amenity.estate_id,
       option_id: amenity.option_id,
-      type: amenity.type,
+      type: amenity.type
     })
 
     if (amenityEntity) {

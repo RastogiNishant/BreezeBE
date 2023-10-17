@@ -17,9 +17,9 @@ const {
     TIME_SLOT_CROSSING_EXISTING,
     TIME_SLOT_NOT_FOUND,
     SHOW_ALREADY_STARTED,
-    FAILED_CREATE_TIME_SLOT,
+    FAILED_CREATE_TIME_SLOT
   },
-  exceptionCodes: { SHOW_ALREADY_STARTED_ERROR_CODE },
+  exceptionCodes: { SHOW_ALREADY_STARTED_ERROR_CODE }
 } = require('../exceptions')
 class TimeSlotService {
   static async createSlot({ end_at, start_at, slot_length, estate_id, user_id }, trx) {
@@ -43,7 +43,7 @@ class TimeSlotService {
           start_at,
           end_at,
           slot_length,
-          estate_id,
+          estate_id
         },
         trx
       )
@@ -99,7 +99,7 @@ class TimeSlotService {
       const slot = slots?.filter((slot) => slot.estate_id === estate_id)?.[0] || {}
       return {
         is_not_show: data.is_not_show,
-        ...slot,
+        ...slot
       }
     } catch (e) {
       Logger.error(e)
@@ -130,7 +130,7 @@ class TimeSlotService {
           start_at: updatedSlot.start_at,
           end_at: updatedSlot.end_at,
           prev_start_at: updatedSlot.prev_start_at,
-          prev_end_at: updatedSlot.prev_end_at,
+          prev_end_at: updatedSlot.prev_end_at
         })
       }
 
@@ -143,7 +143,7 @@ class TimeSlotService {
             (await MatchService.getVisitsIn({
               estate_id,
               start_at: rvAt.start_at,
-              end_at: rvAt.end_at,
+              end_at: rvAt.end_at
             })) || []
           if (visitsIn && visitsIn.length) {
             visitIds = visitsIn.map((v) => v.user_id)
@@ -198,7 +198,7 @@ class TimeSlotService {
         await EstateService.updateShowRequired(
           {
             id: estate_ids,
-            is_not_show: data.is_not_show,
+            is_not_show: data.is_not_show
           },
           trx
         )
@@ -212,7 +212,7 @@ class TimeSlotService {
       let slots = await this.getSameTimeSlotInBuilding({
         estateId: estate_ids,
         start_at: moment(slot.start_at).format(DATE_FORMAT),
-        end_at: moment(slot.end_at).format(DATE_FORMAT),
+        end_at: moment(slot.end_at).format(DATE_FORMAT)
       })
 
       if (data.start_at && data.end_at) {
@@ -229,7 +229,7 @@ class TimeSlotService {
       const newSlot = slots?.filter((slot) => slot.estate_id === data.estate_id)?.[0] || {}
       return {
         is_not_show: data.is_not_show,
-        ...newSlot,
+        ...newSlot
       }
     } catch (e) {
       Logger.error(e)
@@ -344,7 +344,7 @@ class TimeSlotService {
 
     let { slots, visits } = await props({
       slots: getSlots(),
-      visits: getVisits(),
+      visits: getVisits()
     })
 
     // If slot_length is zero, so users are able to book unlimited slot
@@ -365,7 +365,7 @@ class TimeSlotService {
           const newItem = {
             start_at: slot.start_at,
             end_at: visit_date,
-            slot_length: slot.slot_length,
+            slot_length: slot.slot_length
           }
           slots = [...slots.slice(0, index), newItem, ...slots.slice(index, 500)]
           index += 1
@@ -374,7 +374,7 @@ class TimeSlotService {
           const newItem = {
             start_at: visit_date + slot.slot_length * 60,
             end_at: slot.end_at,
-            slot_length: slot.slot_length,
+            slot_length: slot.slot_length
           }
           slots = [...slots.slice(0, index), newItem, ...slots.slice(index, 500)]
         }
@@ -424,7 +424,7 @@ class TimeSlotService {
       await require('./EstateService').updatePercentAndIsPublished(
         {
           estate_id: slot.estate_id,
-          deleted_slots_ids: [slot.id],
+          deleted_slots_ids: [slot.id]
         },
         trx
       )
@@ -447,7 +447,7 @@ class TimeSlotService {
       let slots = await this.getSameTimeSlotInBuilding({
         estateId: estate_ids,
         start_at: moment(slot.start_at).format(DATE_FORMAT),
-        end_at: moment(slot.end_at).format(DATE_FORMAT),
+        end_at: moment(slot.end_at).format(DATE_FORMAT)
       })
 
       await Promise.map(slots, async (slot) => {

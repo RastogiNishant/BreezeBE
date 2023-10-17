@@ -15,7 +15,7 @@ class Chat extends Model {
       'is_viewed',
       'type',
       'created_at',
-      'updated_at',
+      'updated_at'
     ]
   }
 

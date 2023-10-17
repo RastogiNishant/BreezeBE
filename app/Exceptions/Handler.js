@@ -20,7 +20,7 @@ class ExceptionHandler extends BaseExceptionHandler {
     if (error.name === 'ValidationException') {
       return response.status(422).json({
         status: 'error',
-        data: error.messages.reduce((n, i) => ({ ...n, [i.field]: i.validation }), {}),
+        data: error.messages.reduce((n, i) => ({ ...n, [i.field]: i.validation }), {})
       })
     }
 
@@ -28,7 +28,7 @@ class ExceptionHandler extends BaseExceptionHandler {
       return response.status(error.status).json({
         status: 'error',
         data: error.message,
-        code: error.code || 0,
+        code: error.code || 0
       })
     }
 

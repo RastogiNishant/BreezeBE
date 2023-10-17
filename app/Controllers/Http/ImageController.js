@@ -16,7 +16,7 @@ class ImageController {
     try {
       const image = request.file('file', {
         size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: File.SUPPORTED_IMAGE_FORMAT,
+        extnames: File.SUPPORTED_IMAGE_FORMAT
       })
 
       if (image.hasErrors) {
@@ -32,7 +32,7 @@ class ImageController {
         // image size is bigger than 2M, it's only for test, we need to change it later
         img_data = (
           await imagemin([image.tmpPath], {
-            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })],
+            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })]
           })
         )[0].data
       }
@@ -44,7 +44,7 @@ class ImageController {
       const compressFilePathName = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
       await Drive.disk('s3public').put(compressFilePathName, img_data, {
         ACL: 'public-read',
-        ContentType: image.headers['content-type'],
+        ContentType: image.headers['content-type']
       })
 
       // const originalFilePathName = `${moment().format('YYYYMM')}/${uuid.v4()}.${ext}`
@@ -57,13 +57,13 @@ class ImageController {
 
       await Drive.disk('s3public').put(thumbnailFilePathName, thumbnail, {
         ACL: 'public-read',
-        ContentType: image.headers['content-type'],
+        ContentType: image.headers['content-type']
       })
 
       const ret = {
         // origin: Drive.disk('s3public').getUrl(originalFilePathName),
         compress: Drive.disk('s3public').getUrl(compressFilePathName),
-        thumbnail: Drive.disk('s3public').getUrl(thumbnailFilePathName),
+        thumbnail: Drive.disk('s3public').getUrl(thumbnailFilePathName)
       }
       response.res(ret)
     } catch (e) {
@@ -85,7 +85,7 @@ class ImageController {
   async testCompressPDF({ request, response }) {
     try {
       await exec({
-        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=/srv/temp/pdf/output.pdf /srv/temp/pdf/temp.pdf`,
+        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=/srv/temp/pdf/output.pdf /srv/temp/pdf/temp.pdf`
       })
       const data = await fs.readFile('/srv/temp/pdf/output.pdf', { encoding: 'utf8' })
       console.log(data)
@@ -100,7 +100,7 @@ class ImageController {
     try {
       const image = request.file('file', {
         size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: File.SUPPORTED_IMAGE_FORMAT,
+        extnames: File.SUPPORTED_IMAGE_FORMAT
       })
       console.log('checkformat image=', image)
     } catch (e) {

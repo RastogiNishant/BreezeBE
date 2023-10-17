@@ -136,7 +136,7 @@ const {
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
 
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
-  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID
 } = require('../constants')
 
 const mapping = [
@@ -169,7 +169,7 @@ const mapping = [
   [NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID, NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP],
   [
     NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
-    NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED,
+    NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED
   ],
   [NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID, NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED],
   [NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID, NOTICE_TYPE_PROSPECT_INVITE_REMINDER],
@@ -187,7 +187,7 @@ const mapping = [
   [NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID, NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW],
   [
     NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED_ID,
-    NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED,
+    NOTICE_TYPE_PROSPECT_INFORMED_LANDLORD_DEACTIVATED
   ],
   [NOTICE_TYPE_TENANT_DISCONNECTION_ID, NOTICE_TYPE_TENANT_DISCONNECTION],
   [NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID, NOTICE_TYPE_LANDLORD_UPDATE_SLOT],
@@ -198,14 +198,14 @@ const mapping = [
   [NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED_ID, NOTICE_TYPE_LANDLORD_MIN_PROSPECTS_REACHED],
   [
     NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED_ID,
-    NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED,
+    NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED
   ],
   [NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID, NOTICE_TYPE_PROSPECT_LIKE_EXPIRING],
   [NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID, NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK],
   [NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID, NOTICE_TYPE_ADMIN_APPROVES_PUBLISH],
   [NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID, NOTICE_TYPE_PROSPECT_GREEN_MATCH],
   [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID, NOTICE_TYPE_TENANT_PROFILE_FILL_UP],
-  [NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID, NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED],
+  [NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID, NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED]
 ]
 
 class NotificationsService {
@@ -247,15 +247,15 @@ class NotificationsService {
       notification: {
         title: title || body,
         body: body || title,
-        sound: 'my_sound.mp3',
+        sound: 'my_sound.mp3'
       },
       data: {
         type,
         messageId: uniqueId(`m_${uTime}_`),
         body,
         title,
-        payload: isEmpty(data) ? '' : JSON.stringify(data),
-      },
+        payload: isEmpty(data) ? '' : JSON.stringify(data)
+      }
     }
     if (image) {
       options.notification.image = image
@@ -271,8 +271,8 @@ class NotificationsService {
       body: message,
       title: title || message,
       data: {
-        payload: data,
-      },
+        payload: data
+      }
     })
   }
 
@@ -454,7 +454,7 @@ class NotificationsService {
           {
             title: isFunction(title) ? title(data, lang) : l.get(`${title}`, lang),
             body: isFunction(body) ? body(data, lang) : l.get(`${body}`, lang),
-            data,
+            data
           },
           image
         )
@@ -559,7 +559,7 @@ class NotificationsService {
       notice,
       (data, lang) => {
         return `${rc(l.get('prospect.notification.event.visit_delay', lang), [
-          { minutes: data.delay },
+          { minutes: data.delay }
         ])}`
       },
       (data, lang) => {
@@ -956,7 +956,7 @@ class NotificationsService {
         const urgency = URGENCIES.find(({ value }) => value == data.urgency)?.label
 
         let trans = rc(l.get('landlord.notification.next.message_got.message', data.lang), [
-          { urgency: l.get(urgency, data.lang) },
+          { urgency: l.get(urgency, data.lang) }
         ])
         trans = rc(trans, [{ title: data.title }])
         trans = rc(trans, [{ description: data.description }])

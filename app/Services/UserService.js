@@ -63,7 +63,7 @@ const {
   ACCOUNT_CREATION_EMAIL_NOTIFICATION_RECIPIENTS,
   LANDLORD_ACCOUNT_CREATION_EMAIL_NOTIFICATION_SUBJECT,
   PETS_NO,
-  PETS_SMALL,
+  PETS_SMALL
 } = require('../constants')
 
 const {
@@ -84,8 +84,8 @@ const {
     NO_CODE_PASSED,
     INVALID_TOKEN,
     ACCOUNT_ALREADY_VERIFIED,
-    NO_CONTACT_EXIST,
-  },
+    NO_CONTACT_EXIST
+  }
 } = require('../../app/exceptions')
 
 const { logEvent } = require('./TrackingService.js')
@@ -127,7 +127,7 @@ class UserService {
       const { estate_id } = await require('./EstateCurrentTenantService').handleInvitationLink({
         data1: userData.data1,
         data2: userData.data2,
-        email: userData.email,
+        email: userData.email
       })
       userData.source_estate_id = estate_id
     }
@@ -141,7 +141,7 @@ class UserService {
       otherInfo = await require('./MarketPlaceService.js').getInfoFromContactRequests({
         email: userData.email,
         data1: userData?.data1,
-        data2: userData?.data2,
+        data2: userData?.data2
       })
     }
 
@@ -159,7 +159,7 @@ class UserService {
           coord: userData?.signupData?.address?.coord,
           dist_type: userData?.signupData?.transport,
           dist_min: userData?.signupData?.time,
-          address: userData?.signupData?.address?.title,
+          address: userData?.signupData?.address?.title
         }
 
         if (otherInfo?.pets === true) {
@@ -177,7 +177,7 @@ class UserService {
         const memberInfo = {
           firstname: user?.firstname,
           secondname: user?.secondname,
-          is_verified: true,
+          is_verified: true
         }
 
         if (user.sex) memberInfo.sex = user.sex
@@ -190,7 +190,7 @@ class UserService {
           const incomeInfo = {
             member_id: member.id,
             income: otherInfo?.income || null,
-            income_type: otherInfo?.profession,
+            income_type: otherInfo?.profession
           }
           await Income.createItem(incomeInfo, trx)
         }
@@ -206,7 +206,7 @@ class UserService {
         email: userData?.email,
         invite_type: userData?.invite_type,
         data1: userData?.data1,
-        data2: userData?.data2,
+        data2: userData?.data2
       },
       trx
     )
@@ -224,7 +224,7 @@ class UserService {
           {
             new_email: email,
             data1,
-            data2,
+            data2
           },
           trx
         )
@@ -275,7 +275,7 @@ class UserService {
       password,
       role,
       google_id,
-      status: STATUS_ACTIVE,
+      status: STATUS_ACTIVE
     }
 
     const trx = await Database.beginTransaction()
@@ -287,7 +287,7 @@ class UserService {
         logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
           role: user.role,
           email: user.email,
-          method,
+          method
         })
       }
 
@@ -337,13 +337,13 @@ class UserService {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
           link: deepLink_URL,
           androidInfo: {
-            androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+            androidPackageName: process.env.ANDROID_PACKAGE_NAME
           },
           iosInfo: {
             iosBundleId: process.env.IOS_BUNDLE_ID,
-            iosAppStoreId: process.env.IOS_APPSTORE_ID,
-          },
-        },
+            iosAppStoreId: process.env.IOS_APPSTORE_ID
+          }
+        }
       }
 
       if (user.role === ROLE_USER) {
@@ -351,12 +351,12 @@ class UserService {
           ...params.dynamicLinkInfo,
           desktopInfo: {
             desktopFallbackLink:
-              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/invalid-platform',
-          },
+              process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/invalid-platform'
+          }
         }
       }
       const { shortLink } = await firebaseDynamicLinks.createLink({
-        ...params,
+        ...params
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
       const data = paramLang ? await this.getTokenWithLocale([user.id]) : null
@@ -474,7 +474,7 @@ class UserService {
         user: user,
         role: user.role,
         lang: lang,
-        forgotLink: forgotLink,
+        forgotLink: forgotLink
       })
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -493,13 +493,13 @@ class UserService {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
         link: deepLink_URL,
         androidInfo: {
-          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+          androidPackageName: process.env.ANDROID_PACKAGE_NAME
         },
         iosInfo: {
           iosBundleId: process.env.IOS_BUNDLE_ID,
-          iosAppStoreId: process.env.IOS_APPSTORE_ID,
-        },
-      },
+          iosAppStoreId: process.env.IOS_APPSTORE_ID
+        }
+      }
     })
     return shortLink
   }
@@ -552,7 +552,7 @@ class UserService {
       await require('./MatchService').matchByUser({
         userId: user.id,
         ignoreNullFields: true,
-        has_notification_sent: true,
+        has_notification_sent: true
       })
       MarketPlaceService.sendBulkKnockWebsocket(user.id)
     } catch (e) {
@@ -571,22 +571,21 @@ class UserService {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
         link: `${process.env.DEEP_LINK}?type=profile&user_id=${user.id}&role=${user.role}`,
         androidInfo: {
-          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+          androidPackageName: process.env.ANDROID_PACKAGE_NAME
         },
         iosInfo: {
           iosBundleId: process.env.IOS_BUNDLE_ID,
-          iosAppStoreId: process.env.IOS_APPSTORE_ID,
-        },
-      },
+          iosAppStoreId: process.env.IOS_APPSTORE_ID
+        }
+      }
     }
 
     if (user.role === ROLE_USER) {
       params.dynamicLinkInfo = {
         ...params.dynamicLinkInfo,
         desktopInfo: {
-          desktopFallbackLink:
-            process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share',
-        },
+          desktopFallbackLink: process.env.DYNAMIC_ONLY_WEB_LINK || 'https://app.breeze4me.de/share'
+        }
       }
     }
 
@@ -597,7 +596,7 @@ class UserService {
       code: shortLink,
       role: user.role,
       lang: lang,
-      forgotLink: forgotLink,
+      forgotLink: forgotLink
     })
     return user
   }
@@ -804,7 +803,7 @@ class UserService {
         this.on('_e.user_id', '_u.id').onIn('_e.status', [
           STATUS_ACTIVE,
           STATUS_DRAFT,
-          STATUS_EXPIRE,
+          STATUS_EXPIRE
         ])
       })
       .where({ '_u.role': ROLE_LANDLORD, '_u.status': STATUS_ACTIVE })
@@ -825,7 +824,7 @@ class UserService {
         {
           plan_id: plan_id,
           payment_plan: payment_plan,
-          member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+          member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss')
         },
         trx
       )
@@ -838,7 +837,7 @@ class UserService {
         activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
         is_verified: is_verify,
         verified_by: adminId,
-        verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        verified_date: moment().utc().format('YYYY-MM-DD HH:mm:ss')
       })
   }
 
@@ -891,7 +890,7 @@ class UserService {
     secondname,
     ip,
     ip_based_info,
-    lang,
+    lang
   }) {
     const member = await Member.query()
       .select('user_id', 'id')
@@ -928,7 +927,7 @@ class UserService {
             secondname,
             status: STATUS_EMAIL_VERIFY,
             ip,
-            ip_based_info,
+            ip_based_info
           },
           trx
         )
@@ -939,7 +938,7 @@ class UserService {
           member_id: member.id,
           firstname: user.firstname || firstname,
           secondname: user.secondname || secondname,
-          owner_id: user.id,
+          owner_id: user.id
         },
         trx
       )
@@ -1015,7 +1014,7 @@ class UserService {
     }
 
     await User.query().where({ id: user.id }).update({
-      status: STATUS_ACTIVE,
+      status: STATUS_ACTIVE
     })
 
     await DataStorage.remove(user.id, SMS_VERIFY_PREFIX)
@@ -1120,7 +1119,7 @@ class UserService {
           invite_type,
           source_estate_id,
           ip,
-          ip_based_info,
+          ip_based_info
         },
         trx
       )
@@ -1138,11 +1137,12 @@ class UserService {
       if (sendVerification) {
         await UserService.sendConfirmEmail(user, from_web)
         if (role === ROLE_LANDLORD) {
+          const lang = await UserService.getUserLang([user.id])
           const text =
             `New Landlord Account Created:\r\n` +
             `==============================\r\n` +
             `Email: ${email}\r\n` +
-            `Name: Dear Tenant\r\n` +
+            `Name: ${l.get('start.account.verification.salutation', lang)}\r\n` +
             `IP Address: ${ip}\r\n` +
             `IP Based Info:\r\n` +
             ` - City: ${ip_based_info.city || 'Not Specified'}\r\n` +
@@ -1379,7 +1379,7 @@ class UserService {
         if (data && data.company_name) {
           needCompanyUpdate = true
           companyData = {
-            name: data.company_name,
+            name: data.company_name
           }
         }
 
@@ -1387,7 +1387,7 @@ class UserService {
           needCompanyUpdate = true
           companyData = {
             ...companyData,
-            size: data.size,
+            size: data.size
           }
         }
 
@@ -1498,7 +1498,7 @@ class UserService {
     try {
       const ticket = await GoogleAuth.verifyIdToken({
         idToken: token,
-        audience: Config.get('services.ally.google.client_id'),
+        audience: Config.get('services.ally.google.client_id')
       })
       return ticket
     } catch (e) {
@@ -1513,7 +1513,7 @@ class UserService {
       WebSocket.publishToLandlord({
         event: WEBSOCKET_EVENT_USER_ACTIVATE,
         userId: id,
-        data,
+        data
       })
     })
   }

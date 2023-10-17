@@ -120,7 +120,7 @@ const {
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP,
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
-  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED
 } = require('../constants')
 
 class NoticeService {
@@ -144,7 +144,7 @@ class NoticeService {
           estate_id: data?.estate_id || null,
           data,
           created_at: Database.fn.now(),
-          updated_at: Database.fn.now(),
+          updated_at: Database.fn.now()
         }))
       )
     )
@@ -164,7 +164,7 @@ class NoticeService {
 
     const notices = newLandlords.map(({ id }) => ({
       user_id: id,
-      type: NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID,
+      type: NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendLandlordNoProperty(notices)
@@ -181,7 +181,7 @@ class NoticeService {
 
     const notices = inactiveLandlords.map(({ id }) => ({
       user_id: id,
-      type: NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID,
+      type: NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendLandlordNewProperty(notices)
@@ -228,7 +228,7 @@ class NoticeService {
 
     const notices = noActiveProspects.map((id) => ({
       user_id: id,
-      type: NOTICE_TYPE_PROSPECT_NO_ACTIVITY_ID,
+      type: NOTICE_TYPE_PROSPECT_NO_ACTIVITY_ID
     }))
 
     await NoticeService.insertNotices(notices)
@@ -244,7 +244,7 @@ class NoticeService {
         user_id: prospect_id,
         type: NOTICE_TYPE_PROSPECT_PROPERTY_DEACTIVATED_ID,
         data: { estate_id: id, estate_address: address },
-        image: File.getPublicUrl(cover),
+        image: File.getPublicUrl(cover)
       }))
       await NoticeService.insertNotices(notices)
       await NotificationsService.sendProspectPropertyDeactivated(notices)
@@ -271,7 +271,7 @@ class NoticeService {
       user_id,
       type: NOTICE_TYPE_LANDLORD_TIME_FINISHED_ID,
       data: { estate_id: id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendEstateExpired(notices)
@@ -285,14 +285,14 @@ class NoticeService {
       const knocks =
         (await require('./MatchService').getEstatesByStatus({
           estate_id,
-          status: MATCH_STATUS_KNOCK,
+          status: MATCH_STATUS_KNOCK
         })) || []
       knocks.map((match) => {
         notices.push({
           user_id: match.user_id,
           type: NOTICE_TYPE_PROSPECT_KNOCK_PROPERTY_EXPIRED_ID,
           data: { estate_id, estate_address: address },
-          image: File.getPublicUrl(cover),
+          image: File.getPublicUrl(cover)
         })
       })
     })
@@ -320,14 +320,14 @@ class NoticeService {
       estate_address: estate.address,
       total,
       booked,
-      date: moment.utc().format(GERMAN_DATE_TIME_FORMAT),
+      date: moment.utc().format(GERMAN_DATE_TIME_FORMAT)
     }
 
     const notice = {
       user_id: estate.user_id,
       type: NOTICE_TYPE_LANDLORD_CONFIRM_VISIT_ID,
       data,
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendLandlordSlotsSelected([notice])
@@ -350,7 +350,7 @@ class NoticeService {
         .select('_e.address', '_e.user_id', '_e.id')
         .innerJoin({ _e: 'estates' }, '_e.id', '_m.estate_id')
         .where({
-          '_m.user_id': userId,
+          '_m.user_id': userId
         })
         .whereIn('_m.status', [MATCH_STATUS_COMMIT, MATCH_STATUS_TOP])
         .whereNot('_e.id', estateId)
@@ -368,7 +368,7 @@ class NoticeService {
     const { estate, anotherEstates, anotherUsers } = await P.props({
       estate: getCurrentEstate(),
       anotherEstates: getAnotherEstates(),
-      anotherUsers: getAnotherUsersCurEstate(),
+      anotherUsers: getAnotherUsersCurEstate()
     })
 
     // Build notices data
@@ -376,21 +376,21 @@ class NoticeService {
       user_id: estate.user_id,
       type: NOTICE_TYPE_LANDLORD_MATCH_ID,
       data: { estate_id: estate.id, estate_address: estate.address },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
 
     const rejectNotices = anotherEstates.map(({ user_id, address, id }) => ({
       user_id,
       type: NOTICE_TYPE_LANDLORD_DECISION_ID,
       data: { estate_id: id, estate_address: address },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }))
 
     const rejectedUsers = anotherUsers.map(({ user_id }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_REJECT_ID,
       data: { estate_id: estate.id, estate_address: estate.address },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }))
 
     // Save notices
@@ -424,13 +424,13 @@ class NoticeService {
     const notices = result.map(({ user_id, match_count }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_NEW_MATCH_ID,
-      data: { match_count },
+      data: { match_count }
     }))
 
     await NoticeService.insertNotices(notices)
     const CHUNK_SIZE = 50
     await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.sendProspectNewMatch, {
-      concurrency: 1,
+      concurrency: 1
     })
   }
 
@@ -448,9 +448,9 @@ class NoticeService {
       type: NOTICE_TYPE_PROSPECT_INVITE_ID,
       data: {
         estate_id: estate.id,
-        estate_address: estate.address,
+        estate_address: estate.address
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendProspectNewInvite(notice)
@@ -482,9 +482,9 @@ class NoticeService {
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
-        user_name: tenantId ? `${notificationUser.firstname || ''}` : null,
+        user_name: tenantId ? `${notificationUser.firstname || ''}` : null
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
 
     await NoticeService.insertNotices([notice])
@@ -513,9 +513,9 @@ class NoticeService {
         type: NOTICE_TYPE_LANDLORD_UPDATE_SLOT_ID,
         data: {
           estate_id: estate.id,
-          estate_address: estate.address,
+          estate_address: estate.address
         },
-        image: File.getPublicUrl(estate.cover),
+        image: File.getPublicUrl(estate.cover)
       }
     })
     await NoticeService.insertNotices(notices)
@@ -539,9 +539,9 @@ class NoticeService {
       data: {
         estate_id: estate.id,
         count,
-        estate_address: estate.address,
+        estate_address: estate.address
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
     await NoticeService.insertNotices([notice])
     NotificationsService.sendMinKnockReached([notice])
@@ -561,9 +561,9 @@ class NoticeService {
       data: {
         estate_id: estate.id,
         count,
-        estate_address: estate.address,
+        estate_address: estate.address
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
     await NoticeService.insertNotices([notice])
     NotificationsService.sendGreenMinKnockReached([notice])
@@ -599,9 +599,9 @@ class NoticeService {
       type: NOTICE_TYPE_INVITE_TENANT_IN_TO_VISIT_ID,
       data: {
         estate_id: estateId,
-        estate_address: estate.address,
+        estate_address: estate.address
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendTenantInviteInToVisit([notice])
@@ -622,7 +622,7 @@ class NoticeService {
       user_id,
       type: NOTICE_TYPE_PROSPECT_VISIT3H_ID,
       data: { estate_id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
 
     await NoticeService.insertNotices(notices)
@@ -638,22 +638,25 @@ class NoticeService {
     const notices = []
     const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
 
-    let i = 0
-    while (i < Object.keys(groupMatches).length) {
-      const estate_id = Object.keys(groupMatches)[i]
+    let groupIdx = 0,
+      isNoticeCreated = false
+    while (groupIdx < Object.keys(groupMatches).length) {
+      const estate_id = Object.keys(groupMatches)[groupIdx]
       const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
       if (!Object.keys(freeTimeSlots).length) {
         const estate = await require('./EstateService').getActiveById(estate_id)
-        if (estate) {
+
+        if (!isNoticeCreated && estate) {
+          isNoticeCreated = true
           notices.push({
             user_id: estate.user_id,
             type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
             data: { estate_id, estate_address: estate.address },
-            image: File.getPublicUrl(estate.cover),
+            image: File.getPublicUrl(estate.cover)
           })
         }
       }
-      i++
+      groupIdx++
     }
 
     if (notices.length) {
@@ -675,7 +678,7 @@ class NoticeService {
       user_id,
       type: NOTICE_TYPE_PROSPECT_VISIT90M_ID,
       data: { estate_id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
 
     await NoticeService.insertNotices(notices)
@@ -719,7 +722,7 @@ class NoticeService {
       user_id,
       type: NOTICE_TYPE_LANDLORD_VISIT90M_ID,
       data: { estate_id: id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
 
     await NoticeService.insertNotices(notices)
@@ -737,9 +740,9 @@ class NoticeService {
       data: {
         estate_id: estateId,
         estate_address: estate.address,
-        params: estate.getAptParams(),
+        params: estate.getAptParams()
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
 
     await NoticeService.insertNotices([notice])
@@ -766,8 +769,8 @@ class NoticeService {
             user_id: key,
             type: NOTICE_TYPE_PROSPECT_SUPER_MATCH_ID,
             data: {
-              count: knockCount[0].count,
-            },
+              count: knockCount[0].count
+            }
           })
         }
       })
@@ -789,9 +792,9 @@ class NoticeService {
           type: NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
           data: {
             estate_id: estate.id,
-            estate_address: estate.address,
-          },
-        },
+            estate_address: estate.address
+          }
+        }
       ]
     })
     if (notices.length) {
@@ -807,9 +810,9 @@ class NoticeService {
         type: NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
         data: {
           estate_id: estate.id,
-          estate_address: estate.address,
-        },
-      },
+          estate_address: estate.address
+        }
+      }
     ]
     await NoticeService.insertNotices(notices)
     NotificationsService.finalConfirmRequestExpired(notices)
@@ -839,7 +842,7 @@ class NoticeService {
     const notices = users.map(({ id }) => {
       return {
         user_id: id,
-        type: NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID,
+        type: NOTICE_TYPE_PROSPECT_PROFILE_EXPIRE_ID
       }
     })
 
@@ -865,7 +868,7 @@ class NoticeService {
       user_id,
       type: NOTICE_TYPE_PROSPECT_VISIT30M_ID,
       data: { estate_id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
 
     await NoticeService.insertNotices(notices)
@@ -887,7 +890,7 @@ class NoticeService {
       user_id,
       type: NOTICE_TYPE_PROSPECT_VISIT48H_ID,
       data: { estate_id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
 
     await NoticeService.insertNotices(notices)
@@ -907,7 +910,7 @@ class NoticeService {
       user_id,
       type: NOTICE_TYPE_LANDLORD_VISIT30M_ID,
       data: { estate_id: id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
 
     await NoticeService.insertNotices(notices)
@@ -942,9 +945,9 @@ class NoticeService {
       data: {
         ...extraData,
         estate_id: estate.id,
-        estate_address: estate.address,
+        estate_address: estate.address
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
 
     switch (type) {
@@ -1030,9 +1033,9 @@ class NoticeService {
       type: NOTICE_TYPE_PROSPECT_COME_ID,
       data: {
         estate_id: estate.id,
-        estate_address: estate.address,
+        estate_address: estate.address
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
 
     await NotificationsService.sendProspectInviteToCome([notice])
@@ -1058,9 +1061,9 @@ class NoticeService {
         estate_id: estate.id,
         estate_address: estate.address,
         delay: delay,
-        user_name: prospectId ? `${notificationUser.firstname || ''}` : undefined,
+        user_name: prospectId ? `${notificationUser.firstname || ''}` : undefined
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
 
     await NoticeService.insertNotices([notice])
@@ -1086,9 +1089,9 @@ class NoticeService {
           estate_id: estateId,
           estate_address: estate.address,
           params: estate.getAptParams(),
-          user_name: `${prospect.firstname || ''}`,
+          user_name: `${prospect.firstname || ''}`
         },
-        image: File.getPublicUrl(estate.cover),
+        image: File.getPublicUrl(estate.cover)
       }
       await NoticeService.insertNotices([notice])
       await NotificationsService.sendProspectArrived([notice])
@@ -1098,7 +1101,7 @@ class NoticeService {
   static async verifyUserByAdmin(userIds = []) {
     const notices = userIds.map((id) => ({
       user_id: id,
-      type: NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN_ID,
+      type: NOTICE_TYPE_USER_VERIFICATION_BY_ADMIN_ID
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.sendLandlordIsVerifiedByAdmin(notices)
@@ -1109,7 +1112,7 @@ class NoticeService {
       user_id,
       type: NOTICE_TYPE_ESTATE_SHOW_TIME_IS_OVER_ID,
       data: { estate_id: id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
 
     await NoticeService.insertNotices(notices)
@@ -1121,7 +1124,7 @@ class NoticeService {
       user_id: prospect_id,
       type: NOTICE_TYPE_PROSPECT_INVITE_REMINDER_ID,
       data: { estate_id, estate_address: address },
-      image: File.getPublicUrl(cover),
+      image: File.getPublicUrl(cover)
     }))
 
     await NoticeService.insertNotices(notices)
@@ -1140,9 +1143,9 @@ class NoticeService {
         data: {
           estate_id: estateId,
           estate_address: estate.address,
-          params: estate.getAptParams(),
+          params: estate.getAptParams()
         },
-        image: File.getPublicUrl(estate.cover),
+        image: File.getPublicUrl(estate.cover)
       }
       await NoticeService.insertNotices([notice])
       await NotificationsService.sendProspectIsNotInterested([notice])
@@ -1160,9 +1163,9 @@ class NoticeService {
       type: NOTICE_TYPE_LANDLORD_MOVED_PROSPECT_TO_TOP_ID,
       data: {
         estate_id: estate.id,
-        estate_address: estate.address,
+        estate_address: estate.address
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendLandlordMovedProspectToTop([notice])
@@ -1171,7 +1174,7 @@ class NoticeService {
   static async prospectHouseholdInvitationAccepted(userId) {
     const notice = {
       user_id: userId,
-      type: NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID,
+      type: NOTICE_TYPE_PROSPECT_HOUSEHOLD_INVITATION_ACCEPTED_ID
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendProspectHouseholdInvitationAccepted([notice])
@@ -1180,7 +1183,7 @@ class NoticeService {
   static async prospectHouseholdDisconnected(userId) {
     const notice = {
       user_id: userId,
-      type: NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID,
+      type: NOTICE_TYPE_PROSPECT_HOUSEHOLD_DISCONNECTED_ID
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendProspectHouseholdDisconnected([notice])
@@ -1189,7 +1192,7 @@ class NoticeService {
   static async prospectAccountDeactivated(userId) {
     const notice = {
       user_id: userId,
-      type: NOTICE_TYPE_PROSPECT_DEACTIVATED_ID,
+      type: NOTICE_TYPE_PROSPECT_DEACTIVATED_ID
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendProspectDeactivated([notice])
@@ -1212,8 +1215,8 @@ class NoticeService {
         user_id: id,
         type: NOTICE_TYPE_ZENDESK_NOTIFY_ID,
         data: {
-          ticket_id: notification.ticket_id ? notification.ticket_id : '',
-        },
+          ticket_id: notification.ticket_id ? notification.ticket_id : ''
+        }
       }
     })
     await NoticeService.insertNotices(notices)
@@ -1233,9 +1236,9 @@ class NoticeService {
           : NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
       data: {
         actor,
-        estate_address: estate.address,
+        estate_address: estate.address
       },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.sendFollowUpVisit(notice)
@@ -1247,8 +1250,8 @@ class NoticeService {
         ...notices,
         {
           user_id: userId,
-          type: NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID,
-        },
+          type: NOTICE_TYPE_LANDLORD_DEACTIVATE_NOW_ID
+        }
       ])
     }, [])
     await NoticeService.insertNotices(notices)
@@ -1271,9 +1274,9 @@ class NoticeService {
           data: {
             estate_id: match.estate_id,
             estate_address: match.address,
-            image: File.getPublicUrl(match.cover),
-          },
-        },
+            image: File.getPublicUrl(match.cover)
+          }
+        }
       ])
     }, [])
 
@@ -1287,8 +1290,8 @@ class NoticeService {
         user_id: id,
         type: NOTICE_TYPE_LANDLORD_DEACTIVATE_IN_TWO_DAYS_ID,
         data: {
-          deactivateDateTimeTz: deactivateDateTime,
-        },
+          deactivateDateTimeTz: deactivateDateTime
+        }
       }
     })
     await NoticeService.insertNotices(notices)
@@ -1336,9 +1339,9 @@ class NoticeService {
         title: task.title,
         description: task.description,
         urgency: task.urgency,
-        message,
+        message
       },
-      image: File.getPublicUrl(task.cover),
+      image: File.getPublicUrl(task.cover)
     }
 
     await NoticeService.insertNotices([notice])
@@ -1356,9 +1359,9 @@ class NoticeService {
         type: NOTICE_TYPE_TENANT_DISCONNECTION_ID,
         data: {
           estate_id,
-          estate_address: estate.address,
+          estate_address: estate.address
         },
-        image: File.getPublicUrl(estate.cover),
+        image: File.getPublicUrl(estate.cover)
       }
     })
     await NoticeService.insertNotices(notices)
@@ -1380,9 +1383,9 @@ class NoticeService {
         type: NOTICE_TYPE_PROSPECT_TASK_RESOLVED_ID,
         data: {
           estate_id,
-          estate_address: estate.address || ``,
+          estate_address: estate.address || ``
         },
-        image: File.getPublicUrl(estate.cover),
+        image: File.getPublicUrl(estate.cover)
       }
     })
     await NoticeService.insertNotices(notices)
@@ -1396,9 +1399,9 @@ class NoticeService {
         type: NOTICE_TYPE_PROSPECT_LIKE_EXPIRING_ID,
         data: {
           estate_id,
-          estate_address: address,
+          estate_address: address
         },
-        image: File.getPublicUrl(cover),
+        image: File.getPublicUrl(cover)
       }
     })
 
@@ -1413,7 +1416,7 @@ class NoticeService {
       user_id: userId,
       type: NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK_ID,
       data: { estate_id: estate.id, estate_address: estate.address },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
 
     await NoticeService.insertNotices([notice])
@@ -1425,7 +1428,7 @@ class NoticeService {
       user_id: estate.user_id,
       type: NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID,
       data: { estate_id: estate.estate_id, estate_address: estate.address },
-      image: File.getPublicUrl(estate.cover),
+      image: File.getPublicUrl(estate.cover)
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.adminApprovesPublish([notice])
@@ -1435,7 +1438,7 @@ class NoticeService {
     const notices = user_ids.map((user_id) => ({
       user_id,
       type: NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
-      data: {},
+      data: {}
     }))
 
     await NoticeService.insertNotices(notices)

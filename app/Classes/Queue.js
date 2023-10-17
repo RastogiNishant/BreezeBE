@@ -1,7 +1,7 @@
 const { Queue, QueueScheduler, Worker, Job, JobsOptions } = require('bullmq')
 
 const defaultOptions = {
-  removeOnComplete: true,
+  removeOnComplete: true
 }
 
 const {
@@ -14,7 +14,7 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_MONTHLY_JOB,
-  SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+  SCHEDULED_EVERY_15MINUTE_NIGHT_JOB
 } = require('../constants')
 const COMMON_QUEUE = 'common'
 
@@ -70,8 +70,8 @@ class QueueEngine {
             attempts: 3,
             backoff: {
               type: 'exponential',
-              delay: 5000,
-            },
+              delay: 5000
+            }
           }
         )
         .catch(Logger.error)
@@ -87,8 +87,8 @@ class QueueEngine {
             attempts: 3,
             backoff: {
               type: 'exponential',
-              delay: 5000,
-            },
+              delay: 5000
+            }
           }
         )
         .catch(Logger.error)
@@ -104,8 +104,8 @@ class QueueEngine {
             attempts: 3,
             backoff: {
               type: 'exponential',
-              delay: 5000,
-            },
+              delay: 5000
+            }
           }
         )
         .catch(Logger.error)
@@ -150,7 +150,7 @@ class QueueEngine {
           jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
           repeat: { cron: '*/15 * * * *' },
           removeOnComplete: true,
-          removeOnFail: true,
+          removeOnFail: true
         }
       )
     } catch (e) {

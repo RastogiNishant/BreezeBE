@@ -31,10 +31,10 @@ const {
   WEBSOCKET_EVENT_USER_DEACTIVATE,
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_STATUS_INIT,
-  ROLE_USER,
+  ROLE_USER
 } = require('../../../constants')
 const {
-  exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD },
+  exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD }
 } = require('../../../exceptions')
 const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
@@ -124,7 +124,7 @@ class UserController {
               activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
               is_verified: true,
               verified_by: auth.user.id,
-              verified_date: moment().utc().format(),
+              verified_date: moment().utc().format()
             },
             trx
           )
@@ -140,13 +140,13 @@ class UserController {
           users.map((user) => {
             MailService.sendLandlordActivateEmail(user.email, {
               user,
-              lang: user.lang ?? DEFAULT_LANG,
+              lang: user.lang ?? DEFAULT_LANG
             })
           })
 
           UserService.emitAccountEnabled(ids, {
             activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-            activated: true,
+            activated: true
           })
           return response.res({ affectedRows })
         } catch (err) {
@@ -163,7 +163,7 @@ class UserController {
               activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
               is_verified: false,
               verified_by: null,
-              verified_date: null,
+              verified_date: null
             },
             trx
           )
@@ -192,7 +192,7 @@ class UserController {
           NoticeService.landlordsDeactivated(ids, estateIds)
           UserService.emitAccountEnabled(ids, {
             activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-            activated: false,
+            activated: false
           })
           return response.res({ affectedRows })
         } catch (err) {
@@ -244,7 +244,7 @@ class UserController {
             const deactivationSchedule = await UserDeactivationSchedule.create(
               {
                 user_id: id,
-                deactivate_schedule: deactivateDateTime,
+                deactivate_schedule: deactivateDateTime
               },
               trx
             )
@@ -354,7 +354,7 @@ class UserController {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
         USER_ACTIVATION_STATUS_ACTIVATED,
-        USER_ACTIVATION_STATUS_DEACTIVATED,
+        USER_ACTIVATION_STATUS_DEACTIVATED
       ]
     }
     status = status || STATUS_ACTIVE
@@ -362,7 +362,7 @@ class UserController {
       STATUS_ACTIVE,
       STATUS_EXPIRE,
       STATUS_DRAFT,
-      STATUS_OFFLINE_ACTIVE,
+      STATUS_OFFLINE_ACTIVE
     ]
     limit = 99999
     const landlordQuery = this.landlordQuery({ status, estate_status, activation_status, light })

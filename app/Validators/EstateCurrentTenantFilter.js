@@ -9,7 +9,7 @@ class EstateCurrentTenantFilter extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: id,
-      status: yup.array().of(yup.number().oneOf([STATUS_ACTIVE, STATUS_DELETE])),
+      status: yup.array().of(yup.number().oneOf([STATUS_ACTIVE, STATUS_DELETE]))
     })
 }
 

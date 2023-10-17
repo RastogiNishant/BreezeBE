@@ -4,7 +4,7 @@ const yup = require('yup')
 const Base = require('./Base')
 const {
   getExceptionMessage,
-  exceptionKeys: { MINLENGTH, MAXLENGTH },
+  exceptionKeys: { MINLENGTH, MAXLENGTH }
 } = require('../exceptions')
 
 class ChangePassword extends Base {
@@ -19,7 +19,7 @@ class ChangePassword extends Base {
         .string()
         .trim()
         .min(6, getExceptionMessage('new_password', MINLENGTH, 6))
-        .max(36, getExceptionMessage('new_password', MAXLENGTH, 36)),
+        .max(36, getExceptionMessage('new_password', MAXLENGTH, 36))
     })
 }
 

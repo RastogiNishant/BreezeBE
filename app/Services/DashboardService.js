@@ -7,7 +7,7 @@ const {
   LETTING_TYPE_NA,
   STATUS_DRAFT,
   STATUS_ACTIVE,
-  STATUS_EXPIRE,
+  STATUS_EXPIRE
 } = require('../constants')
 
 const Estate = use('App/Models/Estate')
@@ -35,22 +35,22 @@ class DashboardService {
       user_id,
       params: {
         status: [STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE],
-        letting_type: [LETTING_TYPE_VOID, LETTING_TYPE_NA, null],
-      },
+        letting_type: [LETTING_TYPE_VOID, LETTING_TYPE_NA, null]
+      }
     })
     const noBuildEstateCount = await EstateService.noBuildEstateCount({
       user_id,
       params: {
         status: [STATUS_ACTIVE, STATUS_DRAFT, STATUS_EXPIRE],
-        letting_type: [LETTING_TYPE_VOID, LETTING_TYPE_NA, null],
-      },
+        letting_type: [LETTING_TYPE_VOID, LETTING_TYPE_NA, null]
+      }
     })
 
     return {
       estate: estateCount[0].count,
       offline_count: variousStatusEstatesCounts.offline_count,
       connect: connectCount[0].count,
-      match: buildEstateCount + noBuildEstateCount,
+      match: buildEstateCount + noBuildEstateCount
     }
   }
 }

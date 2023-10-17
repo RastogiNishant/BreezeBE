@@ -7,7 +7,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const { getAuthByRole } = require('../Libs/utils')
 const { ERROR_CHANGE_EMAIL_PASSWORD_NOT_MATCH } = require('../constants')
 const {
-  exceptions: { USER_WRONG_PASSWORD },
+  exceptions: { USER_WRONG_PASSWORD }
 } = require('../exceptions')
 class UserCanValidlyChangeEmail {
   /**

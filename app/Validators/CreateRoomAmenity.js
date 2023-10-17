@@ -17,12 +17,12 @@ class CreateRoomAmenity extends Base {
             (val) => val.length >= 1 && val.length <= ROOM_CUSTOM_AMENITY_MAX_STRING_LENGTH
           )
           .typeError('Custom amenity must have at least 1 character.')
-          .required('custom amenity name is required.'),
+          .required('custom amenity name is required.')
       }),
       option_id: yup.number().when('type', {
         is: 'amenity',
-        then: yup.number().integer().positive().required('room amenity is required.'),
-      }),
+        then: yup.number().integer().positive().required('room amenity is required.')
+      })
     })
 }
 

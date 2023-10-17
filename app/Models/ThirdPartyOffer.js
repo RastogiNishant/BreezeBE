@@ -56,7 +56,7 @@ class ThirdPartyOffer extends Model {
       'source_information',
       'wbs',
       'property_id',
-      'ftp_last_update',
+      'ftp_last_update'
     ]
   }
 
@@ -110,7 +110,7 @@ class ThirdPartyOffer extends Model {
     prospect_duration_min,
     prospect_duration_max,
     estate_duration_min,
-    estate_duration_max,
+    estate_duration_max
   }) {
     if (!prospect_duration_min || !prospect_duration_max) {
       return true

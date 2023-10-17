@@ -17,7 +17,7 @@ const Server = use('Server')
 const globalMiddleware = [
   'App/Middleware/QueryParse',
   'Adonis/Middleware/BodyParser',
-  'App/Middleware/ConvertEmptyStringsToNull',
+  'App/Middleware/ConvertEmptyStringsToNull'
 ]
 
 /*
@@ -56,7 +56,7 @@ const namedMiddleware = {
   RoomBelongsToEstate: 'App/Middleware/RoomBelongsToEstate',
   ValidOpenImmoImport: 'App/Middleware/ValidOpenImmoImport',
   EstateCanEdit: 'App/Middleware/EstateCanEdit',
-  BuildCanEdit: 'App/Middleware/BuildCanEdit',
+  BuildCanEdit: 'App/Middleware/BuildCanEdit'
 }
 
 /*

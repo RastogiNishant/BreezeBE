@@ -11,11 +11,11 @@ const {
   CHAT_TYPE_MESSAGE,
   CHAT_EDIT_STATUS_UNEDITED,
   WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT,
-  OUTSIDE_LANDLORD_INVITE_TYPE,
+  OUTSIDE_LANDLORD_INVITE_TYPE
 } = require('../constants')
 const {
   exceptions: { NOT_FOUND_OUTSIDE_INVITAION },
-  exceptionCodes: { NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE },
+  exceptionCodes: { NOT_FOUND_OUTSIDE_INVITAION_ERROR_CODE }
 } = require('../exceptions')
 const MailService = use('App/Services/MailService')
 const Task = use('App/Models/Task')
@@ -63,7 +63,7 @@ class OutsideLandlordService {
         prospect_email: user.email,
         task: task.activeTasks[0],
         link: shortLink,
-        lang,
+        lang
       })
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -92,7 +92,7 @@ class OutsideLandlordService {
       id: task.id,
       code: task.code,
       email: task.email,
-      expired_time: time,
+      expired_time: time
     })
 
     let encDst = cipher.update(txtSrc, 'utf8', 'base64')
@@ -123,7 +123,7 @@ class OutsideLandlordService {
       email: task.email,
       shortLink,
       lang,
-      user_id: landlords?.[0]?.id,
+      user_id: landlords?.[0]?.id
     }
   }
 
@@ -194,7 +194,7 @@ class OutsideLandlordService {
           task_id,
           type: CHAT_TYPE_MESSAGE,
           text: l.get('prospect.notification.event.declined_invitation', lang),
-          edit_status: CHAT_EDIT_STATUS_UNEDITED,
+          edit_status: CHAT_EDIT_STATUS_UNEDITED
         },
         trx
       )
@@ -238,7 +238,7 @@ class OutsideLandlordService {
           property_address: null,
           address_detail: null,
           landlord_id: user_id,
-          estate_id,
+          estate_id
         })
         .transacting(trx)
 
@@ -249,7 +249,7 @@ class OutsideLandlordService {
           task_id,
           type: CHAT_TYPE_MESSAGE,
           text: l.get('prospect.notification.next.successful_invitation', lang),
-          edit_status: CHAT_EDIT_STATUS_UNEDITED,
+          edit_status: CHAT_EDIT_STATUS_UNEDITED
         },
         trx
       )
@@ -264,7 +264,7 @@ class OutsideLandlordService {
     WebSocket.publishToLandlord({
       event: WEBSOCKET_EVENT_LANDLORD_INVITED_FROM_TENANT,
       userId: user_id,
-      data,
+      data
     })
   }
 }

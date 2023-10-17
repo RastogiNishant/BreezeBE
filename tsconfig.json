@@ -23,7 +23,7 @@
     // typescript options here
     "strict": false,
 
-    "target": "ES5",
+    "target": "ES6",
 
     "types": ["node"],
 
@@ -35,5 +35,6 @@
     },
     "baseUrl": "./",
     "outDir": "dist",
-  }
+  },
+  "exclude": ["_services/**/*"]
 }

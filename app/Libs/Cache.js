@@ -40,5 +40,5 @@ const remember = (key, cb, ttl = null, tags = []) => {
 module.exports = {
   Cache,
   remember,
-  getKey,
+  getKey
 }

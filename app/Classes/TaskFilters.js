@@ -18,7 +18,7 @@ const {
   PENDING_BREEZE_TEANT_LABEL,
   DATE_FORMAT,
   STATUS_ACTIVE,
-  TENANT_INVITATION_EXPIRATION_DATE,
+  TENANT_INVITATION_EXPIRATION_DATE
 } = require('../constants')
 
 class TaskFilters extends Filter {
@@ -27,7 +27,7 @@ class TaskFilters extends Filter {
     'estates.property_id',
     'estates.address',
     '_ect.phone_number',
-    '_ect.surname',
+    '_ect.surname'
   ]
   constructor(params, query) {
     super(params, query)
@@ -43,14 +43,14 @@ class TaskFilters extends Filter {
         low: URGENCY_LOW,
         normal: URGENCY_NORMAL,
         high: URGENCY_HIGH,
-        urgent: URGENCY_SUPER,
+        urgent: URGENCY_SUPER
       },
       status: {
         new: TASK_STATUS_NEW,
         in_progress: TASK_STATUS_INPROGRESS,
         resolved: TASK_STATUS_RESOLVED,
-        unresolved: TASK_STATUS_UNRESOLVED,
-      },
+        unresolved: TASK_STATUS_UNRESOLVED
+      }
     }
     Filter.TableInfo = {
       property_id: 'estates',
@@ -62,7 +62,7 @@ class TaskFilters extends Filter {
       phone_number: '_ect',
       surname: '_ect',
       title: 'tasks',
-      description: 'tasks',
+      description: 'tasks'
     }
 
     Filter.paramToField = {
@@ -70,7 +70,7 @@ class TaskFilters extends Filter {
       in_progress_task: 'count(tasks.id)',
       tenant: ['surname'],
       task_name: ['title', 'description'],
-      attachments_count: 'json_array_length(_ect.attachments)',
+      attachments_count: 'json_array_length(_ect.attachments)'
     }
     this.matchFilter(
       [
@@ -85,7 +85,7 @@ class TaskFilters extends Filter {
         'rent_end_at',
         'tenant',
         'task_name',
-        'attachments_count',
+        'attachments_count'
       ],
       params
     )

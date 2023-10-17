@@ -5,7 +5,7 @@ const { get, has, isString, isFunction, unset, omit, keys } = require('lodash')
 const {
   exceptions: { IMPORT_ESTATE_INVALID_SHEET },
   exceptionKeys: { IMPORT_ESTATE_INVALID_VARIABLE_WARNING },
-  getExceptionMessage,
+  getExceptionMessage
 } = require('../exceptions')
 const {
   MAX_ROOM_TYPES_TO_IMPORT,
@@ -13,7 +13,7 @@ const {
   AVAILABLE_LANGUAGES,
   UNIT_SHEET,
   BUILDING_SHEET,
-  CATEGORY_SHEET,
+  CATEGORY_SHEET
 } = require('../constants')
 const { generateAddress } = use('App/Libs/utils')
 const EstateAttributeTranslations = use('App/Classes/EstateAttributeTranslations')
@@ -84,7 +84,7 @@ class EstateImportReader {
     'family_size_max',
     'minors',
     'pets_allowed',
-    'unit_category_id',
+    'unit_category_id'
   ]
   validateBuildingHeaders = [
     'building_id',
@@ -93,7 +93,7 @@ class EstateImportReader {
     'extra_address',
     'zip',
     'city',
-    'country',
+    'country'
   ]
 
   validateCategoryHeaders = [
@@ -104,13 +104,13 @@ class EstateImportReader {
     'area',
     'rent',
     'income_level',
-    'household_size',
+    'household_size'
   ]
 
   sheetName = [
     'landlord.web.my-properties.import.excel_import.txt_units',
     'landlord.web.my-properties.import.excel_import.txt_buildings',
-    'landlord.web.my-properties.import.excel_import.txt_unitcategories',
+    'landlord.web.my-properties.import.excel_import.txt_unitcategories'
   ]
   rowForColumnKeys = 4
   dataStart = 5
@@ -184,8 +184,8 @@ class EstateImportReader {
           ...columns,
           {
             name: current,
-            index,
-          },
+            index
+          }
         ]
       } else {
         this.warnings.push(getExceptionMessage('', IMPORT_ESTATE_INVALID_VARIABLE_WARNING, current))
@@ -213,8 +213,8 @@ class EstateImportReader {
             ...columns,
             {
               name: current,
-              index,
-            },
+              index
+            }
           ]
         } else {
           this.warnings.push(
@@ -251,8 +251,8 @@ class EstateImportReader {
             ...columns,
             {
               name: current,
-              index,
-            },
+              index
+            }
           ]
         } else {
           this.warnings.push(
@@ -370,7 +370,7 @@ class EstateImportReader {
         house_number: row.house_number || '',
         zip: row.zip || '',
         city: row.city || '',
-        country: row.country || '',
+        country: row.country || ''
       })
       //letting
       if (row.letting) {
@@ -391,7 +391,7 @@ class EstateImportReader {
           if (get(this.dataMapping, `room_type.${roomValue}`)) {
             row[`room${count}_type`] = {
               type: get(this.dataMapping, `room_type.${roomValue}`),
-              name: get(this.dataMapping, `room_type_name.${roomValue}`),
+              name: get(this.dataMapping, `room_type_name.${roomValue}`)
             }
           }
         }
@@ -417,7 +417,7 @@ class EstateImportReader {
       const data = await buildSchema.validate(row)
       return {
         line: rowCount,
-        data,
+        data
       }
     } catch (e) {
       const ret = {
@@ -430,7 +430,7 @@ class EstateImportReader {
         street: row ? row.street : `no street code in ${l.get(this.sheetName[1], this.lang)}`,
         postcode: row ? row.zip : `no zip code in ${l.get(this.sheetName[1], this.lang)}`,
         city: row ? row.city : `no city code in ${l.get(this.sheetName[1], this.lang)}`,
-        country: row ? row.country : `no country code in ${l.get(this.sheetName[1], this.lang)}`,
+        country: row ? row.country : `no country code in ${l.get(this.sheetName[1], this.lang)}`
       }
       this.errors.push(ret)
     }
@@ -441,7 +441,7 @@ class EstateImportReader {
       const data = await categorySchema.validate(row)
       return {
         line: rowCount,
-        data,
+        data
       }
     } catch (e) {
       const ret = {
@@ -451,7 +451,7 @@ class EstateImportReader {
         building_id: row
           ? row.building_id
           : `no build id in ${l.get(this.sheetName[1], this.lang)} sheet`,
-        name: row ? row.name : `no street code in ${l.get(this.sheetName[2], this.lang)}`,
+        name: row ? row.name : `no street code in ${l.get(this.sheetName[2], this.lang)}`
       }
       this.errors.push(ret)
     }
@@ -463,7 +463,7 @@ class EstateImportReader {
       return {
         line: rowCount,
         data: data,
-        six_char_code: row.six_char_code,
+        six_char_code: row.six_char_code
       }
     } catch (e) {
       const ret = {
@@ -473,7 +473,7 @@ class EstateImportReader {
         breeze_id: row.six_char_code || null,
         property_id: row ? row.property_id : `no property id`,
         street: row ? row.street : `no street code`,
-        postcode: row ? row.zip : `no zip code`,
+        postcode: row ? row.zip : `no zip code`
       }
       this.errors.push(ret)
     }
@@ -486,7 +486,7 @@ class EstateImportReader {
     return {
       errors: this.errors,
       warnings: this.warnings,
-      data: { unit: unitData, building: buildingData, category: categoryData },
+      data: { unit: unitData, building: buildingData, category: categoryData }
     }
   }
 }

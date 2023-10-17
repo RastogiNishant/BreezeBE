@@ -7,7 +7,7 @@ const File = use('App/Models/File')
 const FileBucket = use('App/Classes/File')
 const Promise = require('bluebird')
 const {
-  exceptions: { MEDIA_NOT_EXIST },
+  exceptions: { MEDIA_NOT_EXIST }
 } = require('../exceptions')
 const {
   STATUS_DELETE,
@@ -18,7 +18,7 @@ const {
   FILE_TYPE_CUSTOM,
   DOCUMENT_VIEW_ENERGY_TYPE,
   FILE_TYPE_UNASSIGNED,
-  FILE_TYPE_EXTERNAL,
+  FILE_TYPE_EXTERNAL
 } = require('../constants')
 
 class GalleryService extends BaseService {
@@ -36,7 +36,7 @@ class GalleryService extends BaseService {
           estate_id,
           url: p,
           file_name: file_names[index],
-          type: FILE_TYPE_UNASSIGNED,
+          type: FILE_TYPE_UNASSIGNED
         }
       })
 
@@ -51,7 +51,7 @@ class GalleryService extends BaseService {
       file_name,
       estate_id,
       type: FILE_TYPE_UNASSIGNED,
-      disk: 's3public',
+      disk: 's3public'
     }
 
     await File.createItem(file, trx)
@@ -102,7 +102,7 @@ class GalleryService extends BaseService {
 
     return {
       galleries,
-      count,
+      count
     }
   }
 
@@ -131,7 +131,7 @@ class GalleryService extends BaseService {
         room_id: data.room_id,
         room: data.room,
         estate_id,
-        galleries: galleries.rows || [],
+        galleries: galleries.rows || []
       },
       trx
     )
@@ -157,7 +157,7 @@ class GalleryService extends BaseService {
                   ids: data.ids,
                   estate_id,
                   type: data.document_type,
-                  user_id: user.id,
+                  user_id: user.id
                 },
                 trx
               )
@@ -169,7 +169,7 @@ class GalleryService extends BaseService {
             {
               user_id: user.id,
               estate_id,
-              galleries: galleries.rows || [],
+              galleries: galleries.rows || []
             },
             trx
           )

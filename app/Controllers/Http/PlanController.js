@@ -19,18 +19,18 @@ class PlanController {
       if (monthlyOption) {
         planJson = {
           priceDescription: `${monthlyOption.price}€ / month`,
-          ...planJson,
+          ...planJson
         }
       } else {
         planJson = {
           priceDescription: 'Free',
-          ...planJson,
+          ...planJson
         }
       }
     } else {
       planJson = {
         priceDescription: 'Free',
-        ...planJson,
+        ...planJson
       }
     }
 
@@ -59,7 +59,7 @@ class PlanController {
         await PlanService.updatePlan(
           {
             ...old_free_plan.toJSON(),
-            prospect_free_plan: false,
+            prospect_free_plan: false
           },
           trx
         )
@@ -78,7 +78,7 @@ class PlanController {
         await PlanService.updatePlan(
           {
             ...old_free_plan.toJSON(),
-            landlord_free_plan: false,
+            landlord_free_plan: false
           },
           trx
         )

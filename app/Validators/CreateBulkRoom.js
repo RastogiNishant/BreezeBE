@@ -10,7 +10,7 @@ class CreateBulkRoom extends Base {
   static schema = () => {
     return yup.object().shape({
       estate_id: id.required(),
-      rooms: yup.array().of(CreateRoom.schema()).required(),
+      rooms: yup.array().of(CreateRoom.schema()).required()
     })
   }
 }

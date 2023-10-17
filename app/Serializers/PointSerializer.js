@@ -14,7 +14,7 @@ class PointSerializer extends BaseSerializer {
       item.data = (get(item, 'data.data') || []).map((i) => ({
         id: i.id,
         coord: get(i, 'result.features.0.geometry.coordinates'),
-        dist: get(i, 'result.features.0.properties.distance'),
+        dist: get(i, 'result.features.0.properties.distance')
       }))
 
       return this._getRowJSON(item)

@@ -36,7 +36,7 @@ const {
   ROOM_TYPE_STAIRS,
   ROOM_TYPE_PROPERTY_ENTRANCE,
   ROOM_TYPE_GARDEN,
-  ROOM_TYPE_LOGGIA,
+  ROOM_TYPE_LOGGIA
 } = require('../constants')
 
 class CreateRoom extends Base {
@@ -80,13 +80,13 @@ class CreateRoom extends Base {
           ROOM_TYPE_STAIRS,
           ROOM_TYPE_PROPERTY_ENTRANCE,
           ROOM_TYPE_GARDEN,
-          ROOM_TYPE_LOGGIA,
+          ROOM_TYPE_LOGGIA
         ])
         .required(),
       area: yup.number().min(0),
       options: yup.array().of(yup.string().lowercase().trim()),
       favorite: yup.boolean(),
-      order: yup.number().positive(),
+      order: yup.number().positive()
     })
 }
 

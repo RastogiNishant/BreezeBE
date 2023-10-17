@@ -94,6 +94,6 @@ module.exports = {
   },
 
   apple: {
-    clientId: Env.get('APPLE_ID'),
+    clientId: Env.get('APPLE_ID')
   }
 }

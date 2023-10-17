@@ -8,7 +8,7 @@ class ShareProspectProfile extends Base {
   static schema = () =>
     yup.object().shape({
       estate_id: id.required(),
-      code: yup.string().required(),
+      code: yup.string().required()
     })
 }
 

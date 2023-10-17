@@ -6,7 +6,7 @@ const {
   CHAT_TYPE_MESSAGE,
   STATUS_ACTIVE,
   PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
-  CHAT_TYPE_BOT_MESSAGE,
+  CHAT_TYPE_BOT_MESSAGE
 } = require('../constants')
 
 const PredefinedMessage = use('App/Models/PredefinedMessage')
@@ -44,7 +44,7 @@ class PredefinedMessageService {
       .where({ id: data.id })
       .whereNot('status', STATUS_DELETE)
       .update({
-        ...data,
+        ...data
       })
   }
 
@@ -59,7 +59,7 @@ class PredefinedMessageService {
       task,
       predefinedMessage,
       predefined_message_choice_id,
-      lang,
+      lang
     },
     trx
   ) {
@@ -89,7 +89,7 @@ class PredefinedMessageService {
           street: answer?.street,
           house_number: answer?.housenumber,
           zip: answer?.postcode,
-          country: answer?.country,
+          country: answer?.country
         })
       } else {
         answerForChat = answer || ''
@@ -101,7 +101,7 @@ class PredefinedMessageService {
         task_id: task.id,
         sender_id: task.tenant_id,
         text: answerForChat,
-        type: CHAT_TYPE_MESSAGE,
+        type: CHAT_TYPE_MESSAGE
       },
       trx
     )
@@ -111,7 +111,7 @@ class PredefinedMessageService {
         predefined_message_choice_id,
         predefined_message_id: predefinedMessage.id,
         text: choice ? l.get(choice.text, lang) : answer,
-        chat_id: tenantMessage.id,
+        chat_id: tenantMessage.id
       },
       trx
     )
@@ -147,7 +147,7 @@ class PredefinedMessageService {
         .where({
           step: predefinedMessage.step + 1,
           type: PREDEFINED_MSG_MULTIPLE_ANSWER_CUSTOM_CHOICE,
-          status: STATUS_ACTIVE,
+          status: STATUS_ACTIVE
         })
         .first()
     }
@@ -155,7 +155,7 @@ class PredefinedMessageService {
     return {
       nextPredefinedMessage,
       tenantMessage,
-      task,
+      task
     }
   }
 
@@ -167,7 +167,7 @@ class PredefinedMessageService {
         sender_id: task.tenant_id,
         text: answer,
         attachments: attachments ? JSON.stringify(attachments) : null,
-        type: CHAT_TYPE_MESSAGE,
+        type: CHAT_TYPE_MESSAGE
       },
       trx
     )
@@ -177,7 +177,7 @@ class PredefinedMessageService {
         task_id: task.id,
         predefined_message_id: predefinedMessage.id,
         text: answer,
-        chat_id: tenantMessage.id,
+        chat_id: tenantMessage.id
       },
       trx
     )
@@ -188,7 +188,7 @@ class PredefinedMessageService {
 
     return {
       tenantMessage,
-      task,
+      task
     }
   }
 

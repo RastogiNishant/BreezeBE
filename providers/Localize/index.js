@@ -37,7 +37,7 @@ class Localization {
         return await req.send({
           url: `/projects/${this.settings.projectId}/locales/${locale}/download?file_format=json`,
           data: {},
-          headers: { Authorization: `token ${this.settings.accessToken}` },
+          headers: { Authorization: `token ${this.settings.accessToken}` }
         })
       }
       try {

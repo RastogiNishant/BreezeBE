@@ -6,7 +6,7 @@ const { ESTATE_AMENITY_LOCATIONS } = require('../constants')
 class EstateAmenitiesLocation extends Base {
   static schema = () =>
     yup.object().shape({
-      location: yup.string().oneOf(ESTATE_AMENITY_LOCATIONS),
+      location: yup.string().oneOf(ESTATE_AMENITY_LOCATIONS)
     })
 }
 

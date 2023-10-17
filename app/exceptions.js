@@ -121,6 +121,7 @@ const exceptions = {
   ERROR_COMMIT_MATCH_INVITE: 'No match for that property',
   ERROR_ALREADY_MATCH_INVITE: 'The prospect is already in that stage for that property',
   ERROR_NO_ACTIVE_MATCH_FOUND: 'No active match with the landlord found',
+  ERROR_TENANT_NOT_MATCH_WITH_ESTATE: 'Does not match tenant with estate'
 }
 
 const exceptionCodes = {
@@ -146,7 +147,7 @@ const exceptionCodes = {
   ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE: 9002000,
   ERROR_WRONG_MATCH_STATUS_CODE: 10001000,
   ERROR_COMMIT_MATCH_INVITE_CODE: 10001001,
-  ERROR_ALREADY_MATCH_INVITE_CODE: 10001002,
+  ERROR_ALREADY_MATCH_INVITE_CODE: 10001002
 }
 
 const exceptionKeys = {
@@ -204,7 +205,7 @@ const exceptionKeys = {
   INVALID_IDS: 'INVALID_IDS',
   NO_ROOM_EXISTS: 'NO_ROOM_EXISTS',
   NO_IMAGE_EXIST: 'NO_IMAGE_EXIST',
-  NO_FILE_EXIST: 'NO_FILE_EXIST',
+  NO_FILE_EXIST: 'NO_FILE_EXIST'
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
@@ -223,5 +224,5 @@ module.exports = {
   exceptionKeys,
   exceptionCodes,
   getExceptionMessage,
-  sleep,
+  sleep
 }

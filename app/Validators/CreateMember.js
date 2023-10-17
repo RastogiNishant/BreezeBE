@@ -34,7 +34,7 @@ const {
   MARITAL_REGISTERED_COHABITATION,
   CREDIT_HISTORY_STATUS_ENFORCEABLE_CLAIMS,
   CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
-  CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA,
+  CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA
 } = require('../constants')
 
 class CreateMember extends Base {
@@ -60,7 +60,7 @@ class CreateMember extends Base {
           CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
           CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA,
           CREDIT_HISTORY_STATUS_ENFORCEABLE_CLAIMS,
-          null,
+          null
         ])
         .nullable(),
       credit_score_issued_at: yup.date().nullable(),
@@ -90,10 +90,10 @@ class CreateMember extends Base {
           MARITAL_DIVORCED,
           MARITAL_WIDOWED,
           MARITAL_COHABITATION,
-          MARITAL_REGISTERED_COHABITATION,
+          MARITAL_REGISTERED_COHABITATION
         ])
         .nullable(),
-      citizen: yup.string().nullable(),
+      citizen: yup.string().nullable()
     })
   }
 }

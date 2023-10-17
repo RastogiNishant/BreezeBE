@@ -6,7 +6,7 @@ const Base = require('./Base')
 class EstateMultipleDelete extends Base {
   static schema = () =>
     yup.object().shape({
-      id: yup.array().of(yup.number().integer().positive()).required(),
+      id: yup.array().of(yup.number().integer().positive()).required()
     })
 }
 

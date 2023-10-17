@@ -7,7 +7,7 @@ const { id } = require('../Libs/schemas.js')
 class MemberFileId extends Base {
   static schema = () =>
     yup.object().shape({
-      member_file_id: id.required(),
+      member_file_id: id.required()
     })
 }
 

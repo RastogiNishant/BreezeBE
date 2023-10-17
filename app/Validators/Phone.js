@@ -9,9 +9,8 @@ class Phone extends Base {
   static schema = () =>
     yup.object().shape({
       phone: phoneSchema.required(),
-      code: yup.number().positive(),
+      code: yup.number().positive()
     })
 }
-
 
 module.exports = Phone

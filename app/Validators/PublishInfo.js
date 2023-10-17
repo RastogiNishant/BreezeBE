@@ -6,7 +6,7 @@ const moment = require('moment')
 const { DATE_FORMAT } = require('../constants')
 const {
   getExceptionMessage,
-  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER },
+  exceptionKeys: { REQUIRED, OPTION, INVALID_IDS, SIZE, NUMBER, SHOULD_BE_AFTER }
 } = require('../exceptions')
 class PublishInfo extends Base {
   static schema = () =>
@@ -41,9 +41,9 @@ class PublishInfo extends Base {
             .integer()
             .positive()
             .required()
-            .typeError(getExceptionMessage('min_invite_count', NUMBER)),
+            .typeError(getExceptionMessage('min_invite_count', NUMBER))
         }),
-      notify_on_green_matches: yup.boolean().nullable(),
+      notify_on_green_matches: yup.boolean().nullable()
     })
 }
 

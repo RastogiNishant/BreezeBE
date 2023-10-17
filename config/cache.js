@@ -3,7 +3,6 @@
 const Env = use('Env')
 
 module.exports = {
-
   default: Env.get('CACHE_STORE', null),
 
   /*
@@ -24,24 +23,24 @@ module.exports = {
 
   stores: {
     object: {
-      driver: 'object',
+      driver: 'object'
     },
 
     database: {
       driver: 'database',
       table: 'cache',
-      connection: 'sqlite',
+      connection: 'sqlite'
     },
 
     redis: {
       driver: 'redis',
-      connection: 'local',
+      connection: 'local'
     },
 
     null: {
-      driver: 'null',
-    },
+      driver: 'null'
+    }
   },
 
-  prefix: 'breeze',
+  prefix: 'breeze'
 }

@@ -3,7 +3,7 @@ const Admin = use('App/Models/Admin')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
 const {
-  exceptions: { USER_WRONG_PASSWORD },
+  exceptions: { USER_WRONG_PASSWORD }
 } = require('../../../exceptions')
 class AuthController {
   async login({ request, auth, response }) {

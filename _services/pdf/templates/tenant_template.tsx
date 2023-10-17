@@ -98,6 +98,7 @@ const ifFalsy = (value: any) => (value === null || value === undefined) && '-';
 
 const boolExpressions = (t: TFunction, value: any) =>
   ifFalsy(value) ||
+  (value === 3 && 'prospect.profile.general.no_answer') ||
   getTranslation(
     t,
     value
@@ -105,7 +106,11 @@ const boolExpressions = (t: TFunction, value: any) =>
       : 'landlord.property.tenant_pref.solvency.rent_arrears.no.message'
   );
 
-const upScaleBool = (value: any) => (value === 1 ? true : value === 2 ? false : null);
+const upScaleBool = (t: TFunction, value: any) =>
+  (value === 1 && boolExpressions(t, true)) ||
+  (value === 2 && boolExpressions(t, false)) ||
+  (value === 3 && getTranslation(t, 'prospect.profile.general.no_answer')) ||
+  '-';
 
 const dateOfBirth = (day: any, age: any, place: any) =>
   day || age || place
@@ -188,21 +193,7 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
         cur['position'] && acc.push(cur['position']);
         return acc;
       }, []);
-      const getCreditPage = () => {
-        if (Array.isArray(member['debt_proof']) && member.debt_proof.length > 0) {
-          creditStartPage +=
-            incomes.reduce((acc: any[], cur: any) => cur['proofs'] && acc.push(cur['proofs']), [])
-              .length + 1;
-          creditEndPage =
-            member['debt_proof'].length > 1
-              ? creditStartPage + member['debt_proof'].length
-              : creditStartPage;
-          return {
-            startPage: creditStartPage,
-            endPage: creditEndPage,
-          };
-        }
-      };
+
       if (member['rent_arrears_doc']) residencyStartPage = creditEndPage + 1;
       return {
         // Personal
@@ -252,12 +243,11 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           (member.rent_arrears_doc_submit_later &&
             boolExpressions(t, member.rent_arrears_doc_submit_later)) ||
           '-',
-        unpaidRental: boolExpressions(t, upScaleBool(member.unpaid_rental)),
-        execution: boolExpressions(t, upScaleBool(member.unpaid_rental)),
-        insolvency: boolExpressions(t, upScaleBool(member.insolvency_proceed)),
-        cleanOut: boolExpressions(t, upScaleBool(member.clean_procedure)),
-        wage: boolExpressions(t, upScaleBool(member.income_seizure)),
-        pageNumber: getCreditPage(),
+        unpaidRental: upScaleBool(t, member.unpaid_rental),
+        execution: upScaleBool(t, member.execution),
+        insolvency: upScaleBool(t, member.insolvency_proceed),
+        cleanOut: upScaleBool(t, member.clean_procedure),
+        wage: upScaleBool(t, member.income_seizure),
         rentArrearsPageNumber: member['rent_arrears_doc'] && residencyStartPage,
 
         //document
@@ -269,14 +259,21 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           );
           return acc;
         }, []),
-        debt_proof: member.debt_proof && {
-          file: member.debt_proof,
-          name: member.debt_proof_file_name,
-        },
+        debt_proof:
+          Array.isArray(member.debt_proof) &&
+          Array.isArray(member.debt_proof_file_name) &&
+          member.debt_proof.map((item: any, index: number) => ({
+            file: item,
+            name: member.debt_proof_file_name[index],
+          })),
         rent_arrears_doc: member.rent_arrears_doc && {
           file: member.rent_arrears_doc,
           name: member.rent_arrears_doc_file_name,
         },
+        passports:
+          Array.isArray(member.passports) &&
+          member.passports.length > 0 &&
+          member.passports?.map((item: any) => ({ file: item.file, name: item.fileName })),
       };
     }),
   };
@@ -381,7 +378,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
               props?.t,
               'prospect.rental_application.Companyname_address'
             )}
-            page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
+            //page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
             incomeDetails={Array.isArray(members) && members.length >= 1 && members.slice(0, 2)}
           />
           <Solvency
@@ -406,7 +403,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
             )}
             cleanOut={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question5')}
             wage={getTranslation(props?.t, 'prospect.profile.adult.creditworthiness.question6')}
-            page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
+            // page={getTranslation(props?.t, 'web.letting.tenant_profile.export.page.message')}
             solvencyDetails={Array.isArray(members) && members.length >= 1 && members.slice(0, 2)}
           />
           <View style={styles.section}>
@@ -431,9 +428,9 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
       {members
         .reduce((acc: any[], cur: any) => {
           if (cur.proofs?.length > 0) acc.push(...cur.proofs);
-          if (Array.isArray(cur.debt_proof)) acc.push(...cur.debt_proof);
-          else if (cur.debt_proof?.length > 0) acc.push(cur.debt_proof);
+          if (cur.debt_proof) acc.push(...cur.debt_proof);
           if (cur.rent_arrears_doc) acc.push(cur.rent_arrears_doc);
+          if (cur.passports) acc.push(...cur.passports);
           return acc;
         }, [])
         .map((item: any, ind: number) => {

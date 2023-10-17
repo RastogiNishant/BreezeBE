@@ -12,6 +12,6 @@ module.exports = {
 
   environment: Env.get('SENTRY_ENVIRONMENT'),
   options: {
-    captureUnhandledRejections: true,
-  },
+    captureUnhandledRejections: true
+  }
 }

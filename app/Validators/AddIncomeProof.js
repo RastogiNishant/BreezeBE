@@ -8,7 +8,7 @@ class AddIncomeProof extends Base {
   static schema = () =>
     yup.object().shape({
       expire_date: yup.date().nullable(),
-      type: yup.string().oneOf([INCOME_NORMAL_TYPE, INCOME_EXTRA_TYPE]).nullable(),
+      type: yup.string().oneOf([INCOME_NORMAL_TYPE, INCOME_EXTRA_TYPE]).nullable()
     })
 }
 

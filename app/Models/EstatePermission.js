@@ -3,8 +3,7 @@
 const Model = require('./BaseModel')
 
 class EstatePermission extends Model {
-
-  static boot () {
+  static boot() {
     if (this.booted) {
       return
     }
@@ -13,7 +12,7 @@ class EstatePermission extends Model {
   }
 
   static get columns() {
-    return ['id', 'property_manager_id', 'landlord_id','status']
+    return ['id', 'property_manager_id', 'landlord_id', 'status']
   }
   propertyManager() {
     return this.belongsTo('App/Models/User', 'property_manager_id', 'id')
@@ -25,7 +24,7 @@ class EstatePermission extends Model {
   /**
    *
    */
-   static get traits() {
+  static get traits() {
     return ['NoTimestamp']
   }
 }

@@ -1,5 +1,5 @@
-interface globalThis {
-  use: (identifier: string) => void
+declare global {
+  function use(injectorName: string): any
 }
 
 export {}

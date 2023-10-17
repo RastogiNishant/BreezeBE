@@ -7,7 +7,6 @@ const AppException = use('App/Exceptions/AppException')
 /** @type {typeof import('/providers/Static')} */
 
 class PaymentMethodController {
-  
   /**
    *
    */
@@ -15,8 +14,8 @@ class PaymentMethodController {
     try {
       const { ...data } = request.all()
       const resp = await PaymentMethodService.create({
-          ...data,
-          user_id: auth.current.user.id,
+        ...data,
+        user_id: auth.current.user.id
       })
 
       return response.res(resp)
@@ -28,13 +27,9 @@ class PaymentMethodController {
    *
    */
   async update({ request, auth, response }) {
-
     try {
       const { id, ...data } = request.all()
-      const { resp } = await PaymentMethodService.update(
-        id,
-        auth.current.user.id,
-      )
+      const { resp } = await PaymentMethodService.update(id, auth.current.user.id)
       return response.res(resp)
     } catch (e) {
       console.log('exception:', e)
@@ -52,7 +47,6 @@ class PaymentMethodController {
       throw e
     }
   }
-
 }
 
 module.exports = PaymentMethodController
