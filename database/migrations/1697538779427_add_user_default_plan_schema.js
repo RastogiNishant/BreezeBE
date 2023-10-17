@@ -8,9 +8,9 @@ const userPlanUpdateSQL = `
 UPDATE users SET "plan_id" = 1 WHERE "plan_id" IS NULL;
 `
 
-class AddUserDefaultPlanJsSchema extends Schema {
-  async up() {
-    this.create('users', async (table) => {
+class AddUserDefaultPlanSchema extends Schema {
+  up() {
+    this.table('users', async (table) => {
       // alter table
       await Database.raw(userPlanUpdateSQL)
       table.integer('plan_id').notNullable().defaultTo(1).alter()
@@ -24,4 +24,4 @@ class AddUserDefaultPlanJsSchema extends Schema {
   }
 }
 
-module.exports = AddUserDefaultPlanJsSchema
+module.exports = AddUserDefaultPlanSchema
