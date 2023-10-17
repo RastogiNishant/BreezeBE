@@ -1685,9 +1685,8 @@ class MatchService {
         { tenantId: userId, landlordId: estate.user_id, estateId: estate.id },
         trx
       )
-    }
-
-    if (!estate.is_not_show) {
+      await NoticeService.landlordMovedProspectToTop(estate.id, userId)
+    } else {
       await NoticeService.userInvite(estate.id, userId)
       MatchService.inviteEmailToProspect({ estateId: estate.id, userId })
     }
