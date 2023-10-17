@@ -63,8 +63,7 @@ const {
   ACCOUNT_CREATION_EMAIL_NOTIFICATION_RECIPIENTS,
   LANDLORD_ACCOUNT_CREATION_EMAIL_NOTIFICATION_SUBJECT,
   PETS_NO,
-  PETS_SMALL,
-  BASIC_TENANT_MEMBER
+  PETS_SMALL
 } = require('../constants')
 
 const {
@@ -108,9 +107,6 @@ class UserService {
     userData.terms_id = latestTerm.id
     userData.agreements_id = latestAgreement.id
 
-    if (userData.role === ROLE_USER) {
-      if (!userData.plan_id) userData.plan_id = BASIC_TENANT_MEMBER
-    }
     let isExist = true
     let code = ''
     while (isExist) {
