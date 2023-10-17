@@ -259,7 +259,6 @@ class TenantService extends BaseService {
    *
    */
   static async activateTenant(tenant, trx) {
-    console.log({ tenant })
     const getRequiredTenantData = (tenantId) => {
       return Database.table({ _t: 'tenants' })
         .select(
