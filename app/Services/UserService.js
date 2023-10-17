@@ -146,9 +146,10 @@ class UserService {
     }
     //userData.birthday is default 1970-01-01.
     //So we can apply his birthday from marketplace if it is set there
-    if (userData.birthday === '1970-01-01' && otherInfo && otherInfo?.birthday) {
-      userData.birthday = otherInfo.birthday
-    }
+    userData.birthday =
+      userData.birthday === '1970-01-01' && otherInfo?.birthday
+        ? otherInfo.birthday
+        : userData.birthday
     const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
     //return userData
     if (user.role === ROLE_USER) {
