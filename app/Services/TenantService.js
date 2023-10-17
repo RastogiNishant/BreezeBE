@@ -68,7 +68,6 @@ const {
   DAY_FORMAT,
   REQUIRED_INCOME_PROOFS_COUNT
 } = require('../constants')
-const { getOrCreateTenant } = require('./UserService')
 const HttpException = require('../Exceptions/HttpException')
 
 const {
@@ -492,7 +491,7 @@ class TenantService extends BaseService {
   }
 
   static async updateSelectedAdultsCount(user, adultsCount, trx = null) {
-    const tenant = await getOrCreateTenant(user)
+    const tenant = await require('./UserService').getOrCreateTenant(user)
     tenant.selected_adults_count = adultsCount
     return tenant.save(trx)
   }
@@ -510,7 +509,7 @@ class TenantService extends BaseService {
 
   static async updateTenantAddress({ user, address }, trx) {
     if (user && address) {
-      let tenant = await getOrCreateTenant(user, trx)
+      let tenant = await require('./UserService').getOrCreateTenant(user, trx)
       tenant.address = address
 
       const { lon, lat } = (await GeoService.geeGeoCoordByAddress(address)) || {}

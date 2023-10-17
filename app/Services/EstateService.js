@@ -211,7 +211,7 @@ const ESTATE_PERCENTAGE_VARIABLE = {
       key: 'parking_space',
       mandatory: [LETTING_TYPE_LET, LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
-      isNumber: true
+      zeroIsValid: true
     },
     {
       key: 'extra_costs',
@@ -274,11 +274,11 @@ const ESTATE_PERCENTAGE_VARIABLE = {
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false
     },
-    {
+    /* {
       key: 'household_type',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false
-    },
+    },*/
     {
       key: 'minors',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
@@ -1810,7 +1810,7 @@ class EstateService {
     const allActiveMatches = await Match.query()
       .select('estate_id')
       .where('user_id', userId)
-      .whereNotIn('status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW])
+      .whereNotIn('status', [MATCH_STATUS_FINISH, MATCH_STATUS_NEW, MATCH_STATUS_TOP])
       .fetch()
 
     const estateIds = allActiveMatches.rows.map((m) => m.estate_id)

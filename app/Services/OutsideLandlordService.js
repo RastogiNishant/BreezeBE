@@ -152,14 +152,13 @@ class OutsideLandlordService {
     }
   }
 
-  static async updateOutsideLandlordInfo({ new_email, data1, data2 }, trx) {
+  static async updateOutsideLandlordInfo({ new_email, data1, data2 }) {
     const { id, code, email } = await this.decryptDynamicLink({ data1, data2 })
     await Task.query()
       .where('id', id)
       .where('email', email)
       .where('landlord_identify_key', code)
       .update({ email: new_email })
-      .transacting(trx)
   }
 
   static async updateTaskLandlord({ landlord_id, email }, trx) {
