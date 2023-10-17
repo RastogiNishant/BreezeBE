@@ -58,16 +58,15 @@ Install the node packages:
 npm install
 ```
 
-make sure you have the `@adonisjs/cli` package installed. I recommend you install it globally with
+make sure you have the `@adonisjs/cli` package installed. We need to use it from local repo, cause it is patched for ts files.
+
+Normally the command is just `adonis` in order to play nice with our `typescript` files we need to convert into `npm run ace --`.
 
 ```bash
-npm install -g @adonisjs/cli
-```
-
-Test adonisjs by
-
-```bash
-adonis --version
+# this
+# adonis --version
+# turns into
+npm run ace -- --version  
 ```
 
 #### Migrations
@@ -75,7 +74,7 @@ adonis --version
 Run the following command to run startup migrations.
 
 ```bash
-adonis migration:run
+npm run ace -- migration:run
 ```
 
 #### Running Application
@@ -83,8 +82,8 @@ adonis migration:run
 Run the app with:
 
 ```bash
-adonis serve --dev
-#or you can
+npm run ace -- --dev
+# or you can
 npm run dev #this won't work with windows 10 because adding env variables is different there
 ```
 
