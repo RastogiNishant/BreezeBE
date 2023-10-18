@@ -78,7 +78,7 @@ class EstateImportReader {
     'email',
     'budget',
     'rent_arrears',
-    'credit_score',
+    'credit_history_status',
     'min_age',
     'max_age',
     'family_size_max',
