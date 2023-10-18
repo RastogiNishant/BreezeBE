@@ -246,7 +246,7 @@ class MatchService {
       petsWeight
 
     //WBS certificate score
-    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+    if (!MatchService.calculateWBSScore(prospect.wbs_certificate, estate.wbs_certificate)) {
       if (debug) {
         return {
           scoreL: 0,
@@ -481,6 +481,19 @@ class MatchService {
     return scoreLPer
   }
 
+  static calculateWBSScore(prospectWbs, estateWbs) {
+    if (estateWbs?.city) {
+      if (!prospectWbs?.city || estateWbs.city !== prospectWbs.city) {
+        return 0
+      }
+      const passedCertificate = estateWbs.income_level.filter(
+        (level) => level === prospectWbs.income_level
+      )
+      return passedCertificate.length > 0 ? 1 : 0
+    }
+    return 1
+  }
+
   static async calculateProspectScore(prospect, estate, debug = false) {
     let prospectBudgetScore = 0
     let roomsScore = 0
@@ -518,25 +531,6 @@ class MatchService {
     const realBudget = estatePrice / userIncome
 
     const prospectBudgetRel = prospectBudget / 100
-
-    //WBS certificate score
-    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
-      if (debug) {
-        return {
-          scoreT,
-          prospectBudgetScore,
-          roomsScore,
-          spaceScore,
-          floorScore,
-          rentStartScore,
-          aptTypeScore,
-          houseTypeScore,
-          amenitiesScore,
-          reason: 'wbs certificate mismatch'
-        }
-      }
-      return 0
-    }
 
     //Prospect Budget Points
     const PROSPECT_BUDGET_POINT_FACTOR = 0.1
