@@ -320,12 +320,12 @@ class MatchService {
     // Credit Score Points
     const creditHistoryStatuses = prospect.credit_history_status
     let memberCount = 0
-    creditHistoryStatuses.map((obj) => {
-      creditScorePoints += +obj.status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
+    creditHistoryStatuses.map(({ status }) => {
+      creditScorePoints += +status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
       memberCount++
     })
     creditScorePoints = creditScorePoints / memberCount
-    log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
+    log({ creditScorePoints })
     if (!creditScorePoints > 0) {
       if (debug) {
         return {
