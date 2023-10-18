@@ -303,12 +303,6 @@ const ESTATE_PERCENTAGE_VARIABLE = {
       isNumber: true
     },
     {
-      key: 'credit_score',
-      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
-      is_custom: false,
-      isNumber: true
-    },
-    {
       key: 'rent_arrears',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
@@ -3965,13 +3959,11 @@ class EstateService {
   }
 
   static isTenantPreferenceUpdated(estateDetails) {
-    const { rent_arrears, budget, credit_score, min_age, max_age, family_size_max } =
-      estateDetails ?? {}
+    const { rent_arrears, budget, min_age, max_age, family_size_max } = estateDetails ?? {}
     const tenantPreferenceObject = {
       budget,
       min_age,
       max_age,
-      credit_score,
       rent_arrears,
       family_size_max
     }
