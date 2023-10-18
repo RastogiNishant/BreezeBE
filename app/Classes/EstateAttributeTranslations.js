@@ -510,7 +510,6 @@ class EstateAttributeTranslations {
       PETS_SMALL: 2
     },
     stp_garage: (i) => parseInt(i) || 0,
-    credit_score: toPercent,
     cert_category: (content) => {
       const certs = String(content).split(/[+,]/)
       let certCategoryMap = mapCertCategories()
@@ -570,7 +569,8 @@ class EstateAttributeTranslations {
         return Math.random().toString(36).substr(2, 8).toUpperCase()
       }
       return i
-    }
+    },
+    credit_history_status: (i) => parseInt(i) || null
   }
 
   constructor(lang = 'en') {
