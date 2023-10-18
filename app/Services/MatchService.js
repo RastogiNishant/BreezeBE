@@ -1067,7 +1067,7 @@ class MatchService {
     }
   }
 
-  static async upsertBulkMatches(matches, trx) {
+  static async upsertBulkMatches(matches, trx = null) {
     let queries = `INSERT INTO matches 
                   ( user_id, estate_id, percent, status, landlord_score, prospect_score, status_at )    
                   VALUES 
@@ -1084,8 +1084,11 @@ class MatchService {
                   DO UPDATE SET percent = EXCLUDED.percent, landlord_score = EXCLUDED.landlord_score,
                   prospect_score = EXCLUDED.prospect_score, status = EXCLUDED.status, status_at = EXCLUDED.status_at
                 `
-
-    await Database.raw(queries).transacting(trx)
+    if (trx) {
+      await Database.raw(queries).transacting(trx)
+    } else {
+      await Database.raw(queries)
+    }
   }
 
   /**
@@ -1157,7 +1160,7 @@ class MatchService {
    * Try to knock to estate
    */
   static async knockEstate(
-    { estate_id, user_id, share_profile, knock_anyway, buddy = false },
+    { estate_id, user_id, share_profile, knock_anyway, buddy = false, top = false },
     trx
   ) {
     let estate = await EstateService.getActiveById(estate_id)
@@ -1237,7 +1240,7 @@ class MatchService {
         percent,
         landlord_score,
         prospect_score,
-        status: MATCH_STATUS_KNOCK,
+        status: top ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
         share: share_profile ? true : false,
         buddy,
         knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
@@ -1682,9 +1685,8 @@ class MatchService {
         { tenantId: userId, landlordId: estate.user_id, estateId: estate.id },
         trx
       )
-    }
-
-    if (!estate.is_not_show) {
+      await NoticeService.landlordMovedProspectToTop(estate.id, userId)
+    } else {
       await NoticeService.userInvite(estate.id, userId)
       MatchService.inviteEmailToProspect({ estateId: estate.id, userId })
     }
@@ -2958,7 +2960,8 @@ class MatchService {
         })
         .select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
         .select('_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
-        .where({ '_m.status': MATCH_STATUS_TOP, share: true })
+        //.where({ '_m.status': MATCH_STATUS_TOP, share: true })
+        .where({ '_m.status': MATCH_STATUS_TOP })
         .clearOrder()
         .orderBy(
           Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
