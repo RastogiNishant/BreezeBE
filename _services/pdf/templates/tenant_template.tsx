@@ -166,7 +166,7 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       rent_start: tenant.rent_start ? dayConverter(tenant.rent_start) : '-',
       parking: tenant.parking_space || '-',
       mixed_use:
-        (tenant.mixed_use_type_detail !== null ? getTranslation(t, 'prospect.profile.general.mixed_use.message') + `: ${tenant.mixed_use_type_detail}` : '-'),
+        (tenant.mixed_use_type_detail !== null ? getTranslation(t, 'prospect.profile.general.mixed_use.message') + `: ${tenant.mixed_use_type_detail}` : getTranslation(t, 'prospect.profile.general.private_use.message')),
     },
 
     members: members.map((member: any, index: number) => {
