@@ -52,7 +52,6 @@ class CreateMember extends Base {
       landlord_phone: yup.string().max('60'),
       landlord_email: yup.string().email().lowercase().max('255'),
       last_address: yup.string().max('255'),
-      credit_score: yup.number().min(0).max(100),
       credit_score_submit_later: yup.boolean(),
       credit_history_status: yup
         .number()
