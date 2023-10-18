@@ -105,7 +105,8 @@ const {
   WEBSOCKET_EVENT_MATCH_COUNT,
   YES_UNPAID_RENTAL,
   INCOME_TYPE_CHILD_BENEFIT,
-  INCOME_TYPE_OTHER_BENEFIT
+  INCOME_TYPE_OTHER_BENEFIT,
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -317,22 +318,13 @@ class MatchService {
     scoreL += landlordBudgetScore * landlordBudgetWeight
 
     // Credit Score Points
-    const userCurrentCredit = Number(prospect.credit_score) || 0
-    const userRequiredCredit = Number(estate.credit_score) || 0
-    const CREDIT_SCORE_POINT_FACTOR = 5
-    if ((userCurrentCredit === 100 && userRequiredCredit === 100) || userRequiredCredit === 0) {
-      creditScorePoints = 1
-    } else if (userRequiredCredit === 100) {
-      creditScorePoints = 0
-    } else if (userCurrentCredit > userRequiredCredit) {
-      creditScorePoints =
-        0.9 + (0.1 / (100 - userRequiredCredit)) * (userCurrentCredit - userRequiredCredit)
-    } else {
-      creditScorePoints =
-        (0.9 / CREDIT_SCORE_POINT_FACTOR) *
-        (userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR) *
-        Number(userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR > 0)
-    }
+    const creditHistoryStatuses = prospect.credit_history_status
+    let memberCount = 0
+    creditHistoryStatuses.map((obj) => {
+      creditScorePoints += +obj.status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
+      memberCount++
+    })
+    creditScorePoints = creditScorePoints / memberCount
     log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
     if (!creditScorePoints > 0) {
       if (debug) {
@@ -4289,6 +4281,7 @@ class MatchService {
         'tenants.residency_duration_max',
         'tenants.is_short_term_rent',
         Database.raw(`_me.total_income as income`), //sum of all member's income
+        '_m.credit_history_status',
         '_m.credit_score', //average
         'rent_arrears', //if at least one has true, then true
         '_me.income_proofs', //all members must submit at least 3 income proofs for each of their incomes for this to be true
@@ -4322,6 +4315,7 @@ class MatchService {
       (select
         user_id, owner_user_id,
         avg(credit_score) as credit_score,
+        json_agg(json_build_object('status', credit_history_status)) as credit_history_status,
         count(id) as members_count,
         bool_and(coalesce(debt_proof, null) is not null) as credit_score_proofs,
         bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
