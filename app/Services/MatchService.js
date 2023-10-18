@@ -247,6 +247,7 @@ class MatchService {
       petsWeight
 
     //WBS certificate score
+    console.log('calculating WBS Score...')
     if (!MatchService.calculateWBSScore(prospect.wbs_certificate, estate.wbs_certificate)) {
       if (debug) {
         return {
@@ -474,14 +475,19 @@ class MatchService {
   }
 
   static calculateWBSScore(prospectWbs, estateWbs) {
-    if (estateWbs?.city) {
-      if (!prospectWbs?.city || estateWbs.city !== prospectWbs.city) {
-        return 0
-      }
-      const passedCertificate = estateWbs.income_level.filter(
-        (level) => level === prospectWbs.income_level
-      )
-      return passedCertificate.length > 0 ? 1 : 0
+    let passedCertificates = []
+    if (estateWbs?.city_id) {
+      passedCertificates = estateWbs.income_level.filter((level) => {
+        for (let count = 0; count < prospectWbs.length; count++) {
+          if (
+            level === prospectWbs[count].income_level &&
+            estateWbs.city_id === prospectWbs[count].city_id
+          ) {
+            return prospectWbs[count].income_level
+          }
+        }
+      })
+      return passedCertificates.length > 0 ? 1 : 0
     }
     return 1
   }
@@ -4332,18 +4338,20 @@ class MatchService {
         Database.raw(`
         (select
           user_id,
-          status, 
-          case when income_level is null or income_level='' then
-            null else
-            json_build_object('city_id', city_id, 'income_level', income_level)
-            end
-            as wbs_certificate
+          array_agg(
+            case when income_level is null or income_level='' then
+              null else
+              json_build_object('city_id', city_id, 'income_level', income_level)
+              end
+          ) as wbs_certificate
           from tenant_certificates
           where expired_at > NOW()
+          and status=${STATUS_ACTIVE}
+          group by user_id
           ) as _tc
         `),
         function () {
-          this.on(Database.raw(`(tenants.user_id=_tc.user_id)`)).on(`_tc.status`, STATUS_ACTIVE)
+          this.on(Database.raw(`(tenants.user_id=_tc.user_id)`))
         }
       )
       .leftJoin(
