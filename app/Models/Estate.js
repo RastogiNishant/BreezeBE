@@ -140,7 +140,6 @@ class Estate extends Model {
       'city',
       'zip',
       'budget',
-      'credit_score',
       'rent_arrears',
       'full_address',
       'kids_type',
