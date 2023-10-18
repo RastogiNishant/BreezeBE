@@ -23,6 +23,7 @@
     "ace": "ts-node ace",
     "clear": "ts-node ace app:clear",
     "migrate": "ts-node ace migration:run",
+    "rollback": "ts-node ace migration:rollback",
     "test-dev": "adonis test -f ",
     "setup-env:dev": "cp ./.env.dev ./.env",
     "setup-env:staging": "cp ./.env.staging ./.env",
@@ -140,7 +141,7 @@
     "concurrently": "^6.0.0",
     "husky": "^8.0.0",
     "jsonwebtoken": "^8.5.1",
-    "lint-staged": "^13.3.0",
+    "lint-staged": "13.2",
     "prettier": "^3.0.3"
   }
 }

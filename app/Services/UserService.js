@@ -144,12 +144,14 @@ class UserService {
         data2: userData?.data2
       })
     }
-
-    if (otherInfo && !userData?.birthday && otherInfo?.birthday) {
-      userData.birthday = otherInfo.birthday
-    }
+    //userData.birthday is default 1970-01-01.
+    //So we can apply his birthday from marketplace if it is set there
+    userData.birthday =
+      userData.birthday === '1970-01-01' && otherInfo?.birthday
+        ? otherInfo.birthday
+        : userData.birthday
     const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
-
+    //return userData
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
@@ -200,37 +202,23 @@ class UserService {
       }
     }
 
-    await this.handleOutsideInvitation(
-      {
-        user,
-        email: userData?.email,
-        invite_type: userData?.invite_type,
-        data1: userData?.data1,
-        data2: userData?.data2
-      },
-      trx
-    )
-
     return user
   }
 
-  static async handleOutsideInvitation({ user, email, invite_type, data1, data2 }, trx) {
+  static async handleOutsideInvitation({ user, email, invite_type, data1, data2 }) {
     if (!invite_type || !data1 || !data2) {
       return
     }
     switch (invite_type) {
       case OUTSIDE_LANDLORD_INVITE_TYPE: //outside landlord invitation
-        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
-          {
-            new_email: email,
-            data1,
-            data2
-          },
-          trx
-        )
+        await require('./OutsideLandlordService').updateOutsideLandlordInfo({
+          new_email: email,
+          data1,
+          data2
+        })
         break
       case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: //outside prospect knock invitation
-        await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 }, trx)
+        await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 })
         break
       // case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
       //   await require('./EstateCurrentTenantService').acceptOutsideTenant(
@@ -543,7 +531,7 @@ class UserService {
           )
           user.source_estate_id = null
         } else {
-          await MarketPlaceService.createKnock({ user }, trx)
+          await require('./MarketPlaceService').createKnock({ user }, trx)
         }
       }
 
