@@ -105,7 +105,8 @@ const {
   WEBSOCKET_EVENT_MATCH_COUNT,
   YES_UNPAID_RENTAL,
   INCOME_TYPE_CHILD_BENEFIT,
-  INCOME_TYPE_OTHER_BENEFIT
+  INCOME_TYPE_OTHER_BENEFIT,
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -246,7 +247,8 @@ class MatchService {
       petsWeight
 
     //WBS certificate score
-    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+    console.log('calculating WBS Score...')
+    if (!MatchService.calculateWBSScore(prospect.wbs_certificate, estate.wbs_certificate)) {
       if (debug) {
         return {
           scoreL: 0,
@@ -317,23 +319,14 @@ class MatchService {
     scoreL += landlordBudgetScore * landlordBudgetWeight
 
     // Credit Score Points
-    const userCurrentCredit = Number(prospect.credit_score) || 0
-    const userRequiredCredit = Number(estate.credit_score) || 0
-    const CREDIT_SCORE_POINT_FACTOR = 5
-    if ((userCurrentCredit === 100 && userRequiredCredit === 100) || userRequiredCredit === 0) {
-      creditScorePoints = 1
-    } else if (userRequiredCredit === 100) {
-      creditScorePoints = 0
-    } else if (userCurrentCredit > userRequiredCredit) {
-      creditScorePoints =
-        0.9 + (0.1 / (100 - userRequiredCredit)) * (userCurrentCredit - userRequiredCredit)
-    } else {
-      creditScorePoints =
-        (0.9 / CREDIT_SCORE_POINT_FACTOR) *
-        (userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR) *
-        Number(userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR > 0)
-    }
-    log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
+    const creditHistoryStatuses = prospect.credit_history_status
+    let memberCount = 0
+    creditHistoryStatuses.map(({ status }) => {
+      creditScorePoints += +status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
+      memberCount++
+    })
+    creditScorePoints = creditScorePoints / memberCount
+    log({ creditScorePoints })
     if (!creditScorePoints > 0) {
       if (debug) {
         return {
@@ -481,6 +474,24 @@ class MatchService {
     return scoreLPer
   }
 
+  static calculateWBSScore(prospectWbs, estateWbs) {
+    let passedCertificates = []
+    if (estateWbs?.city_id) {
+      passedCertificates = estateWbs.income_level.filter((level) => {
+        for (let count = 0; count < prospectWbs.length; count++) {
+          if (
+            level === prospectWbs[count].income_level &&
+            estateWbs.city_id === prospectWbs[count].city_id
+          ) {
+            return prospectWbs[count].income_level
+          }
+        }
+      })
+      return passedCertificates.length > 0 ? 1 : 0
+    }
+    return 1
+  }
+
   static async calculateProspectScore(prospect, estate, debug = false) {
     let prospectBudgetScore = 0
     let roomsScore = 0
@@ -518,25 +529,6 @@ class MatchService {
     const realBudget = estatePrice / userIncome
 
     const prospectBudgetRel = prospectBudget / 100
-
-    //WBS certificate score
-    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
-      if (debug) {
-        return {
-          scoreT,
-          prospectBudgetScore,
-          roomsScore,
-          spaceScore,
-          floorScore,
-          rentStartScore,
-          aptTypeScore,
-          houseTypeScore,
-          amenitiesScore,
-          reason: 'wbs certificate mismatch'
-        }
-      }
-      return 0
-    }
 
     //Prospect Budget Points
     const PROSPECT_BUDGET_POINT_FACTOR = 0.1
@@ -4289,6 +4281,7 @@ class MatchService {
         'tenants.residency_duration_max',
         'tenants.is_short_term_rent',
         Database.raw(`_me.total_income as income`), //sum of all member's income
+        '_m.credit_history_status',
         '_m.credit_score', //average
         'rent_arrears', //if at least one has true, then true
         '_me.income_proofs', //all members must submit at least 3 income proofs for each of their incomes for this to be true
@@ -4322,6 +4315,7 @@ class MatchService {
       (select
         user_id, owner_user_id,
         avg(credit_score) as credit_score,
+        json_agg(json_build_object('status', credit_history_status)) as credit_history_status,
         count(id) as members_count,
         bool_and(coalesce(debt_proof, null) is not null) as credit_score_proofs,
         bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
@@ -4344,18 +4338,20 @@ class MatchService {
         Database.raw(`
         (select
           user_id,
-          status, 
-          case when income_level is null or income_level='' then
-            null else
-            json_build_object('city_id', city_id, 'income_level', income_level)
-            end
-            as wbs_certificate
+          array_agg(
+            case when income_level is null or income_level='' then
+              null else
+              json_build_object('city_id', city_id, 'income_level', income_level)
+              end
+          ) as wbs_certificate
           from tenant_certificates
           where expired_at > NOW()
+          and status=${STATUS_ACTIVE}
+          group by user_id
           ) as _tc
         `),
         function () {
-          this.on(Database.raw(`(tenants.user_id=_tc.user_id)`)).on(`_tc.status`, STATUS_ACTIVE)
+          this.on(Database.raw(`(tenants.user_id=_tc.user_id)`))
         }
       )
       .leftJoin(

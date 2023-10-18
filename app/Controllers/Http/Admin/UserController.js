@@ -364,7 +364,7 @@ class UserController {
       STATUS_DRAFT,
       STATUS_OFFLINE_ACTIVE
     ]
-    limit = 99999
+    limit = limit || 99999
     const landlordQuery = this.landlordQuery({ status, estate_status, activation_status, light })
     if (query) {
       landlordQuery.andWhere(function (d) {
