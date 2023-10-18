@@ -601,7 +601,6 @@ class CreateEstate extends Base {
             otherwise: yup.number().integer()
           })
           .nullable(),
-        credit_score: yup.number().min(0).max(100).nullable(),
         rent_arrears: yup.boolean().nullable(),
         full_address: yup.boolean().nullable(),
         photo_require: yup.boolean().nullable(),
