@@ -567,7 +567,6 @@ class ImportEstate extends Base {
       city: yup.string().max(40).nullable(),
       zip: yup.string().max(8).nullable(),
       budget: yup.string().nullable(),
-      credit_score: yup.string().nullable(),
       rent_arrears: yup.boolean().nullable(),
       full_address: yup.boolean().nullable(),
       photo_require: yup.boolean().nullable(),
