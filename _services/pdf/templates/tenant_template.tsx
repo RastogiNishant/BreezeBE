@@ -107,8 +107,8 @@ const boolExpressions = (t: TFunction, value: any) =>
   );
 
 const upScaleBool = (t: TFunction, value: any) =>
-  (value === 1 && boolExpressions(t, false)) ||
-  (value === 2 && boolExpressions(t, true)) ||
+  (value === 1 && boolExpressions(t, true)) ||
+  (value === 2 && boolExpressions(t, false)) ||
   (value === 3 && getTranslation(t, 'prospect.profile.general.no_answer')) ||
   '-';
 
