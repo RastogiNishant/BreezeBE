@@ -527,14 +527,8 @@ class TenantService extends BaseService {
     }
   }
 
-  static async getCountByFilter({ credit_score_min, credit_score_max, budget_min, budget_max }) {
+  static async getCountByFilter({ budget_min, budget_max }) {
     let query = Tenant.query()
-    if (credit_score_min) {
-      query.where('credit_score', '>=', credit_score_min)
-    }
-    if (credit_score_max) {
-      query.where('credit_score', '<=', credit_score_max)
-    }
 
     if (budget_min) {
       query.where('budget_min', '>=', budget_min)
