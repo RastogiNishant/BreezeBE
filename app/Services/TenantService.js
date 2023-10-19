@@ -254,44 +254,41 @@ class TenantService extends BaseService {
       .groupBy(['_m.id', '_ip.income_id', '_i.income_type'])
   }
 
+  static async getRequiredTenantData(tenantUserId) {
+    const tenantData = await Tenant.query()
+      .select(
+        'private_use',
+        'pets',
+        '_m.*',
+        '_i.position',
+        '_i.company',
+        '_i.income_type',
+        '_i.hiring_date',
+        '_i.income',
+        '_i.employment_type',
+        '_i.income_contract_end',
+        '_i.is_earlier_employeed',
+        '_i.employeed_address',
+        '_i.employeer_phone_number',
+        '_i.probation_period'
+      )
+      .leftJoin({ _m: 'members' }, function () {
+        this.on('_m.user_id', 'tenants.user_id').on(Database.raw(`_m.child is not true`))
+      })
+      .leftJoin({ _i: 'incomes' }, function () {
+        this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
+      })
+      .where('tenants.user_id', tenantUserId)
+      .fetch()
+    return tenantData.toJSON() || []
+  }
   /**
    *
    */
   static async activateTenant(tenant, trx) {
-    const getRequiredTenantData = (tenantId) => {
-      return Database.table({ _t: 'tenants' })
-        .select(
-          '_t.private_use',
-          '_t.pets',
-          '_m.*',
-          '_i.position',
-          '_i.company',
-          '_i.income_type',
-          '_i.hiring_date',
-          '_i.income',
-          '_i.employment_type',
-          '_i.income_contract_end',
-          '_i.is_earlier_employeed',
-          '_i.employeed_address',
-          '_i.employeer_phone_number',
-          '_i.probation_period'
-        )
-        .leftJoin({ _m: 'members' }, function () {
-          this.on('_m.user_id', '_t.user_id').on(Database.raw(`"_m"."child" not in ( true )`))
-        })
-        .leftJoin({ _i: 'incomes' }, function () {
-          this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
-        })
-        .where('_t.id', tenantId)
-    }
-    console.log('getRequiredTenantData=')
-    const data = await getRequiredTenantData(tenant.id)
+    const data = await TenantService.getRequiredTenantData(tenant.user_id)
     const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
 
-    // if (!data.find((m) => !m.rent_proof_not_applicable) && isEmpty(counts)) {
-    //   throw new AppException('members proof not provided', 400)
-    // }
-    console.log('income proofs counts=', data)
     // Check is user has income proofs for last 3 month
     const hasUnconfirmedProofs = !!counts.find(
       (i) =>
@@ -316,6 +313,34 @@ class TenantService extends BaseService {
       throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
     }
 
+    let insideTrx = false
+    if (!trx) {
+      insideTrx = true
+      trx = await Database.beginTransaction()
+    }
+
+    try {
+      await TenantService.validateTenantInfo(data)
+      tenant.status = STATUS_ACTIVE
+
+      await tenant.save(trx)
+      await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
+
+      if (insideTrx) {
+        await trx.commit()
+      }
+
+      require('./MemberService').calcTenantMemberData(tenant.user_id)
+    } catch (e) {
+      if (insideTrx) {
+        await trx.rollback()
+      }
+
+      throw new AppException(e.message, 400)
+    }
+  }
+
+  static async validateTenantInfo(data) {
     const getConditionRule = (types = []) => {
       return yup.lazy(function (value, { parent }) {
         if (parent.income_type && types.includes(parent.income_type)) {
@@ -404,32 +429,7 @@ class TenantService extends BaseService {
       ]),
       employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME])
     })
-
-    let insideTrx = false
-    if (!trx) {
-      insideTrx = true
-      trx = await Database.beginTransaction()
-    }
-
-    try {
-      await yup.array().of(schema).validate(data)
-      tenant.status = STATUS_ACTIVE
-
-      await tenant.save(trx)
-      await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
-
-      if (insideTrx) {
-        await trx.commit()
-      }
-
-      require('./MemberService').calcTenantMemberData(tenant.user_id)
-    } catch (e) {
-      if (insideTrx) {
-        await trx.rollback()
-      }
-
-      throw new AppException(e.message, 400)
-    }
+    await yup.array().of(schema).validate(data)
   }
 
   /**
