@@ -143,7 +143,7 @@ class EstateController {
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
         from: 0,
-        params: { estateId }
+        params: { id: estateId }
       })
 
       // Run task to separate get coords and point of estate
