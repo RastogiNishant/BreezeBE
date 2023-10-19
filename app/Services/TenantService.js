@@ -313,9 +313,9 @@ class TenantService extends BaseService {
       throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
     }
 
-    let insideTrx = false
+    let shouldCloseTrx = false
     if (!trx) {
-      insideTrx = true
+      shouldCloseTrx = true
       trx = await Database.beginTransaction()
     }
 
@@ -326,13 +326,13 @@ class TenantService extends BaseService {
       await tenant.save(trx)
       await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
 
-      if (insideTrx) {
+      if (shouldCloseTrx) {
         await trx.commit()
       }
 
       require('./MemberService').calcTenantMemberData(tenant.user_id)
     } catch (e) {
-      if (insideTrx) {
+      if (shouldCloseTrx) {
         await trx.rollback()
       }
 
