@@ -241,7 +241,7 @@ class CreateEstate extends Base {
         breeze_id: yup.string().nullable(),
         coord: yup
           .string()
-          .matches(/^(-)?\d{1,3}\.\d{5,8}\,(-)?\d{1,3}\.\d{5,8}$/)
+          .matches(/^(-)?\d{1,3}\.\d+\,(-)?\d{1,3}\.\d+$/)
           .nullable(),
         property_id: yup.string().uppercase().max(20).nullable(),
         property_type: yup
