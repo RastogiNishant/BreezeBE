@@ -191,7 +191,9 @@ const {
   CERT_CATEGORY_140,
   CERT_CATEGORY_160,
   CERT_CATEGORY_180,
-  CERT_CATEGORY_220
+  CERT_CATEGORY_220,
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
+  CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA
 } = require('../constants')
 
 const certCategories = [
@@ -569,8 +571,7 @@ class EstateAttributeTranslations {
         return Math.random().toString(36).substr(2, 8).toUpperCase()
       }
       return i
-    },
-    credit_history_status: (i) => parseInt(i) || null
+    }
   }
 
   constructor(lang = 'en') {
@@ -1063,6 +1064,13 @@ class EstateAttributeTranslations {
           ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
           ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT
         ]
+      },
+      credit_history_status: {
+        keys: [
+          'prospect.profile.adult.debt.txt_Nonegativedataisavailable',
+          'prospect.profile.adult.debt.txt_Somenegativedataavailable'
+        ],
+        values: [CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA, CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA]
       }
       /* ,*/
     }
