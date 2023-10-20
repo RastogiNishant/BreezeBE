@@ -303,6 +303,12 @@ const ESTATE_PERCENTAGE_VARIABLE = {
       isNumber: true
     },
     {
+      key: 'credit_history_status',
+      mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
+      is_custom: false,
+      isNumber: true
+    },
+    {
       key: 'rent_arrears',
       mandatory: [LETTING_TYPE_VOID, LETTING_TYPE_NA],
       is_custom: false,
