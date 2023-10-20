@@ -3743,7 +3743,7 @@ class MatchService {
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
       .select(`_mf.id_verified`)
-      .select('_mb.firstname', '_mb.secondname', '_mb.birthday', '_mb.credit_score')
+      .select('_mb.firstname', '_mb.secondname', '_mb.birthday')
       .select(
         Database.raw(`
         (case when _bd.user_id is null
@@ -3767,7 +3767,6 @@ class MatchService {
         json_build_object
           (
             'income', all_members_submitted_income_proofs,
-            'credit_score', all_members_submitted_credit_score_proofs,
             'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
           )
         as submitted_proofs
@@ -3836,13 +3835,6 @@ class MatchService {
       })
     )[0].count
 
-    const creditScoreLimitCount = (
-      await this.getCountLandlordMatchesWithFilterQuery(estate, filter, {
-        credit_score_min: params.credit_score_min,
-        credit_score_max: params.credit_score_max
-      })
-    )[0].count
-
     const incomeTypes = [
       INCOME_TYPE_EMPLOYEE,
       INCOME_TYPE_WORKER,
@@ -3872,7 +3864,6 @@ class MatchService {
 
     return {
       budget: budetLimitCount,
-      credit_score: creditScoreLimitCount,
       income: incomeCount,
       phoneVerified: phoneVerifiedCount,
       idVerified: idVeriedCount

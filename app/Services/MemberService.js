@@ -278,7 +278,7 @@ class MemberService {
 
       const householdTenant = await Tenant.query().where({ user_id: userId }).first()
 
-      const { members_count, credit_score } = tenantData[0] // calculated data
+      const { members_count } = tenantData[0] // calculated data
       const { minors_count, private_use, pets, pets_species, parking_space, status } =
         householdTenant // data to sync with all the tenants of all the members
 
