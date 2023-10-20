@@ -927,6 +927,18 @@
     "handler": "Admin/AppController.calculateMatchScore"
   },
   {
+    "route": "/api/v1/administration/utilities/prospect-activate/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/UserController.testProspectActivate"
+  },
+  {
     "route": "/api/v1/administration/verifyUsers",
     "method": [
       "POST"

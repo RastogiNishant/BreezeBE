@@ -9,6 +9,7 @@ const UserService = use('App/Services/UserService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
+const TenantService = use('App/Services/TenantService')
 const MailService = use('App/Services/MailService')
 const File = use('App/Classes/File')
 
@@ -31,7 +32,18 @@ const {
   WEBSOCKET_EVENT_USER_DEACTIVATE,
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_STATUS_INIT,
-  ROLE_USER
+  ROLE_USER,
+  INCOME_TYPE_EMPLOYEE,
+  INCOME_TYPE_WORKER,
+  INCOME_TYPE_CIVIL_SERVANT,
+  REQUIRED_INCOME_PROOFS_COUNT,
+  INCOME_TYPE_UNEMPLOYED,
+  INCOME_TYPE_FREELANCER,
+  INCOME_TYPE_PENSIONER,
+  INCOME_TYPE_SELF_EMPLOYED,
+  INCOME_TYPE_TRAINEE,
+  INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD }
@@ -600,6 +612,45 @@ class UserController {
     })
 
     return response.res(prospect.toJSON({ publicOnly: false }))
+  }
+
+  async testProspectActivate({ request, response }) {
+    const { id } = request.all()
+    const data = await TenantService.getRequiredTenantData(id)
+    const counts = await TenantService.getTenantValidProofsCount(id)
+    const hasUnconfirmedProofs = !!counts.find(
+      (i) =>
+        !i.credit_score_not_applicable &&
+        (([INCOME_TYPE_EMPLOYEE, INCOME_TYPE_WORKER, INCOME_TYPE_CIVIL_SERVANT].includes(
+          i.income_type
+        ) &&
+          parseInt(i.income_proofs_count) < REQUIRED_INCOME_PROOFS_COUNT) ||
+          ([
+            INCOME_TYPE_UNEMPLOYED,
+            INCOME_TYPE_FREELANCER,
+            INCOME_TYPE_PENSIONER,
+            INCOME_TYPE_SELF_EMPLOYED,
+            INCOME_TYPE_TRAINEE,
+            INCOME_TYPE_OTHER_BENEFIT,
+            INCOME_TYPE_CHILD_BENEFIT
+          ].includes(i.income_type) &&
+            parseInt(i.income_proofs_count) < 1))
+    )
+
+    if (hasUnconfirmedProofs) {
+      return response.res({
+        tenantMemberData: data,
+        can_activate: false,
+        reason: 'Prospect/Tenant has unconfirmed proofs.'
+      })
+    }
+
+    try {
+      await TenantService.validateTenantInfo(data)
+      return response.res({ tenantMemberData: data, can_activate: true })
+    } catch (err) {
+      return response.res({ tenantMemberData: data, can_activate: false, reason: err.message })
+    }
   }
 }
 
