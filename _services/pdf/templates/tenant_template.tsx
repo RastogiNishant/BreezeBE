@@ -107,8 +107,8 @@ const boolExpressions = (t: TFunction, value: any) =>
   );
 
 const upScaleBool = (t: TFunction, value: any) =>
-  (value === 1 && boolExpressions(t, true)) ||
-  (value === 2 && boolExpressions(t, false)) ||
+  (value === 1 && boolExpressions(t, false)) ||
+  (value === 2 && boolExpressions(t, true)) ||
   (value === 3 && getTranslation(t, 'prospect.profile.general.no_answer')) ||
   '-';
 
@@ -167,8 +167,10 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
       rent_start: tenant.rent_start ? dayConverter(tenant.rent_start) : '-',
       parking: tenant.parking_space || '-',
       mixed_use:
-        getTranslation(t, 'prospect.profile.general.mixed_use.message') +
-        (tenant.mixed_use_type_detail !== null ? `: ${tenant.mixed_use_type_detail}` : ''),
+        tenant.mixed_use_type_detail !== null
+          ? getTranslation(t, 'prospect.profile.general.mixed_use.message') +
+            `: ${tenant.mixed_use_type_detail}`
+          : getTranslation(t, 'prospect.profile.general.private_use.message'),
     },
 
     members: members.map((member: any, index: number) => {

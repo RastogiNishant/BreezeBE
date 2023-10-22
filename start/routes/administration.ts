@@ -250,5 +250,11 @@ export const administrationRoutes = {
       controller: 'Admin/AppController.calculateMatchScore',
       middleware: ['auth:jwtAdministrator', 'valid:Id,EstateId']
     }
+  },
+  '/utilities/prospect-activate/:id': {
+    [HTTP_METHODS.GET]: {
+      controller: 'Admin/UserController.testProspectActivate',
+      middleware: ['auth:jwtAdministrator', 'valid:Id']
+    }
   }
 }

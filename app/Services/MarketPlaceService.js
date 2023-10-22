@@ -619,8 +619,7 @@ class MarketPlaceService {
                   estate_id: knock.estate_id,
                   user_id: user.id,
                   knock_anyway: true,
-                  share_profile: knock.estate?.is_not_show ? true : false,
-                  top: true
+                  share_profile: knock.estate?.is_not_show ? true : false
                 },
                 trx
               )
