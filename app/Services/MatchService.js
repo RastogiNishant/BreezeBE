@@ -1152,7 +1152,7 @@ class MatchService {
    * Try to knock to estate
    */
   static async knockEstate(
-    { estate_id, user_id, share_profile, knock_anyway, buddy = false, top = false },
+    { estate_id, user_id, share_profile, knock_anyway, buddy = false },
     trx
   ) {
     let estate = await EstateService.getActiveById(estate_id)
@@ -1232,7 +1232,7 @@ class MatchService {
         percent,
         landlord_score,
         prospect_score,
-        status: top ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
         share: share_profile ? true : false,
         buddy,
         knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
