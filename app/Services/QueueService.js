@@ -165,6 +165,9 @@ class QueueService {
   }
 
   static getTenantMatchProperties({ userId, only_count = false, has_notification_sent = false }) {
+    Logger.info(
+      `QueueService GET_TENANT_MATCH_PROPERTIES ${job.data.userId} ${new Date().toISOString()}`
+    )
     Queue.addJob(
       GET_TENANT_MATCH_PROPERTIES,
       { userId, has_notification_sent, only_count },
@@ -371,11 +374,6 @@ class QueueService {
         case GET_IP_BASED_INFO:
           return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
         case GET_TENANT_MATCH_PROPERTIES:
-          Logger.info(
-            `QueueService GET_TENANT_MATCH_PROPERTIES ${
-              job.data.userId
-            } ${new Date().toISOString()}`
-          )
           return require('./MatchService').matchByUser({
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,
@@ -389,6 +387,10 @@ class QueueService {
             job.data.userId
           )
         case ESTATE_SYNC_PUBLISH_ESTATE:
+          await require('./MailService').sendEmailToOhneMakler(
+            `Estate Sync Publish Estate`,
+            'barudo@gmail.com'
+          )
           return require('./EstateSyncService').postEstate({
             estate_id: job.data.estate_id
           })
