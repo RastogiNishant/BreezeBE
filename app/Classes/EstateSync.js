@@ -409,6 +409,10 @@ class EstateSync {
         attachments,
         externalId
       }
+      await require('./MailService').sendEmailToOhneMakler(
+        `EstateSync.postEstate: ERROR ` + JSON.stringify(body),
+        'barudo@gmail.com'
+      )
       if (contactId) {
         body.contactId = contactId
       }
