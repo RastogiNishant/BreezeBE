@@ -419,6 +419,10 @@ class EstateSync {
       }
     } catch (err) {
       console.log(err)
+      await require('./MailService').sendEmailToOhneMakler(
+        `EstateSync.postEstate: ERROR ` + JSON.stringify(err),
+        'barudo@gmail.com'
+      )
       if (err?.response?.data) {
         return {
           success: false,
