@@ -2126,7 +2126,7 @@ class EstateService {
 
       if (isNull(performed_by)) {
         //comes from admin so we can publish to market place
-        await MailService.sendEmailToOhneMakler(
+        await require('./MailService').sendEmailToOhneMakler(
           `QUEUEING Estate Sync Publish Estate...`,
           'barudo@gmail.com'
         )
