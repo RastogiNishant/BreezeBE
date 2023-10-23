@@ -389,6 +389,10 @@ class QueueService {
             job.data.userId
           )
         case ESTATE_SYNC_PUBLISH_ESTATE:
+          await require('./MailService').sendEmailToOhneMakler(
+            `Estate Sync Publish Estate`,
+            'barudo@gmail.com'
+          )
           return require('./EstateSyncService').postEstate({
             estate_id: job.data.estate_id
           })
