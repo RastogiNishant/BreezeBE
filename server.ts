@@ -29,15 +29,15 @@ const key = '/home/ubuntu/cert/privkey.pem'
 const cert = '/home/ubuntu/cert/fullchain.pem'
 
 let httpsListener:
-  | ((handler: http.RequestListener) => ReturnType<typeof https.createServer>)
-  | null = null
+| ((handler: http.RequestListener) => ReturnType<typeof https.createServer>)
+| null = null
 
 if (fs.existsSync(key)) {
   httpsListener = (handler) => {
     return https.createServer(
       {
         key: fs.readFileSync(key),
-        cert: fs.readFileSync(cert),
+        cert: fs.readFileSync(cert)
       },
       handler
     )

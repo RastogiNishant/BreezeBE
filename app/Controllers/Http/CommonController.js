@@ -90,9 +90,9 @@ class CommonController {
     if (!range.length) {
       throw new HttpException('Not found', 404)
     }
-    const { min_rate, max_rate } = range[0]
+    const { min_rate: minRate, max_rate: maxRate } = range[0]
 
-    response.res({ min_rate, max_rate, min_price: sqr * min_rate, max_price: max_rate * sqr })
+    response.res({ minRate, maxRate, min_price: sqr * minRate, max_price: maxRate * sqr })
   }
 
   /**
@@ -139,15 +139,15 @@ class CommonController {
 
   async getExcelTemplate({ request, response }) {
     let { lang } = request.all()
-    lang = lang ? lang : constants.DEFAULT_LANG
-    const template_dir = process.env.EXCEL_TEMPLATE_DIR || 'excel-template'
-    const relative_path = `${template_dir}/${lang}_template.xlsx`
-    response.res(File.getPublicUrl(relative_path))
+    lang = lang || constants.DEFAULT_LANG
+    const templateDir = process.env.EXCEL_TEMPLATE_DIR || 'excel-template'
+    const relativePath = `${templateDir}/${lang}_template.xlsx`
+    response.res(File.getPublicUrl(relativePath))
   }
 
   async searchCities({ request, response }) {
-    const { country_code, city } = request.all()
-    const result = await CommonService.searchCities(city, country_code)
+    const { country_code: countryCode, city } = request.all()
+    const result = await CommonService.searchCities(city, countryCode)
     response.res(result)
   }
 
@@ -156,13 +156,13 @@ class CommonController {
   }
 
   async getOffers({ request, response }) {
-    const { country_code, city, rent_max, duration } = request.all()
+    const { country_code: countryCode, city, rent_max: rentMax, duration } = request.all()
     let { page, limit = 20 } = request.all()
     if (!page || page < 1) {
       page = 1
     }
     const result = await CommonService.getOffers(
-      { rent_max, country_code, city, duration },
+      { rent_max: rentMax, country_code: countryCode, city, duration },
       page,
       limit
     )

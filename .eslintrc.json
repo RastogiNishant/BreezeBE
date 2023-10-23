@@ -1,0 +1,23 @@
+{
+    "env": {
+      "node": true,
+      "commonjs": true,
+      "es2021": true
+    },
+    "globals": {
+      "use": false
+    },
+    "extends": [
+      "standard",
+      "prettier"
+    ],
+    "parserOptions": {
+      "ecmaVersion": "latest"
+    },
+    "rules": {
+    },
+    "plugins": [
+      "prettier",
+      "eslint-plugin-only-warn"
+    ]
+}
