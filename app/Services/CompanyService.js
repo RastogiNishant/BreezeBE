@@ -22,7 +22,7 @@ const {
   COMPANY_SIZE_SMALL,
   COMPANY_SIZE_MID,
   COMPANY_SIZE_LARGE,
-  STATUS_DELETE,
+  STATUS_DELETE
 } = require('../constants')
 
 class CompanyService {
@@ -52,7 +52,7 @@ class CompanyService {
     return Company.createItem(
       {
         ...data,
-        user_id: userId,
+        user_id: userId
       },
       trx
     )
@@ -137,7 +137,7 @@ class CompanyService {
         {
           ...data,
           company_id: user.company_id,
-          user_id: user_id,
+          user_id: user_id
         },
         trx
       )
@@ -145,7 +145,7 @@ class CompanyService {
       contact = await Contact.createItem({
         ...data,
         company_id: user.company_id,
-        user_id: user_id,
+        user_id: user_id
       })
     }
     return contact
@@ -237,18 +237,19 @@ class CompanyService {
           COMPANY_TYPE_MUNICIPAL_HOUSING,
           COMPANY_TYPE_HOUSING_COOPERATIVE,
           COMPANY_TYPE_LISTED_HOUSING,
-          COMPANY_TYPE_BROKER,
+          COMPANY_TYPE_BROKER
         ])
         .required(),
       email: yup.string().email().lowercase().max(255).required(),
       full_name: yup.string().min(2).max(255).required(),
-      phone: phoneSchema.nullable(),
+      phone: phoneSchema.nullable()
     })
     try {
       await map(contacts.rows, (i) => {
         return schema.validate(i)
       })
     } catch (e) {
+      console.log('validateUserContacts eror', e.message)
       throw new HttpException(
         'Please double check if you have added Your name, company size, type, email address, company name, phone number'
       )

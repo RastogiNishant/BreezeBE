@@ -46,7 +46,7 @@ const aceProviders = [
   'adonis-acl/providers/CommandsProvider',
   '@adonisjs/vow/providers/VowProvider',
   'adonis-cache/providers/CommandsProvider',
-  'adonis-twilio-node/providers/TwilioProvider',
+  'adonis-twilio-node/providers/TwilioProvider'
 ]
 
 /*
@@ -64,7 +64,7 @@ const aceProviders = [
 const aliases = {
   Role: 'Adonis/Acl/Role',
   Permission: 'Adonis/Acl/Permission',
-  Cache: 'Adonis/Addons/Cache',
+  Cache: 'Adonis/Addons/Cache'
 }
 
 const commands = [
@@ -73,10 +73,12 @@ const commands = [
   'App/Commands/Recalc',
   'App/Commands/PullOhnemakler',
   'App/Commands/PullGewobag',
+  'App/Commands/FillWbs',
+  'App/Commands/FillCitizen'
 ]
 
 const http = {
-  loggerEnv: ['development', 'production'],
+  loggerEnv: ['development', 'production']
 }
 
 module.exports = { providers, aceProviders, aliases, commands, http }

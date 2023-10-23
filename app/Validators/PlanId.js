@@ -7,7 +7,7 @@ const { id } = require('../Libs/schemas.js')
 class PlanId extends Base {
   static schema = () =>
     yup.object().shape({
-      plan_id: id,
+      plan_id: id
     })
 }
 

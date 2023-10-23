@@ -1,4 +1,3 @@
-
 'use strict'
 
 const Payment = use('App/Models/Payment')
@@ -17,7 +16,7 @@ class BillingAddressController {
       const { ...data } = request.all()
       const { billingAddress } = await BillingAddressService.createBillingAddress({
         ...data,
-        user_id: auth.current.user.id,
+        user_id: auth.current.user.id
       })
       return billingAddress
     } catch (e) {
@@ -40,13 +39,12 @@ class BillingAddressController {
    *
    */
   async updateBillingAddress({ request, auth, response }) {
-
     try {
       const { id, ...data } = request.all()
       const { billingAddress } = await BillingAddressService.updateBillingAddress(
         id,
         auth.current.user.id,
-        data,
+        data
       )
       return response.res(billingAddress)
     } catch (e) {
@@ -54,8 +52,6 @@ class BillingAddressController {
       throw e
     }
   }
-
 }
 
 module.exports = BillingAddressController
-

@@ -26,10 +26,12 @@ const SEND_EMAIL_TO_SUPPORT_FOR_LANDLORD_UPDATE = 'sendEmailToSupportForLandlord
 const QUEUE_CREATE_THIRD_PARTY_MATCHES = 'createThirdPartyMatches'
 const NOTIFY_PROSPECT_WHO_LIKED_BUT_NOT_KNOCKED = 'notifyProspectWhoLikedButNotKnocked'
 const ESTATE_SYNC_PUBLISH_ESTATE = 'estateSyncPublishEstate'
+const ESTATE_SYNC_PUBLISH_BUILDING = 'estateSyncPublishBuilding'
 const ESTATE_SYNC_UNPUBLISH_ESTATES = 'estateSyncUnpublishEstates'
 const KNOCK_SEND_REQUEST_EMAIL = 'knockRequestToEstate'
 const {
   SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+  SCHEDULED_EVERY_1M_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB,
@@ -38,7 +40,7 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
-  QUEUE_JOB_URGENT,
+  QUEUE_JOB_URGENT
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -106,6 +108,11 @@ class QueueService {
     Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
   }
 
+  static estateSyncPublishBuilding({ building_id, publisher }, userId) {
+    console.log('esateSyncPublishBuilding called...', building_id, publisher, userId)
+    Queue.addJob(ESTATE_SYNC_PUBLISH_BUILDING, { building_id, publisher, userId })
+  }
+
   static estateSyncUnpublishEstates(estate_ids, markListingsForDelete = true) {
     Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids, markListingsForDelete })
   }
@@ -153,7 +160,7 @@ class QueueService {
     return Promise.all([
       wrapException(QueueJobService.updateThirdPartyOfferPoints),
       wrapException(QueueJobService.fillMissingEstateInfo),
-      wrapException(require('./MatchService').sendKnockedReachedNotification),
+      wrapException(require('./MatchService').sendKnockedReachedNotification)
     ])
   }
 
@@ -177,13 +184,20 @@ class QueueService {
           delay: 1,
           backoff: {
             type: 'exponential',
-            delay: 5000,
-          },
+            delay: 5000
+          }
         }
       )
     } catch (e) {
       Logger.error(`createThirdPartyMatchesByEstate error ${e.message || e}`)
     }
+  }
+
+  /**
+   *
+   */
+  static async sendEveryMin() {
+    return Promise.all([wrapException(require('./MatchService').moveExpiredFinalConfirmToTop)])
   }
 
   /**
@@ -203,7 +217,7 @@ class QueueService {
       wrapException(NoticeService.getProspectVisitIn3H),
       wrapException(NoticeService.getProspectVisitIn48H),
       wrapException(NoticeService.expiredShowTime),
-      wrapException(QueueJobService.updatePOI),
+      wrapException(QueueJobService.updatePOI)
     ])
   }
 
@@ -216,12 +230,7 @@ class QueueService {
   }
 
   static async performEvery1HourJob() {
-    const MatchService = require('./MatchService')
-
-    return Promise.all([
-      wrapException(MatchService.moveExpiredFinalConfirmToTop),
-      wrapException(require('./EstateService').updateVacantDate),
-    ])
+    return Promise.all([wrapException(require('./EstateService').updateVacantDate)])
   }
 
   static async pullGewobag() {
@@ -234,7 +243,7 @@ class QueueService {
       wrapException(NoticeService.sendLandlordNewProperty),
       wrapException(NoticeService.sandLandlord7DaysInactive),
       wrapException(NoticeService.sandProspectNoActivity),
-      wrapException(TenantPremiumPlanService.validateAllSubscriptions),
+      wrapException(TenantPremiumPlanService.validateAllSubscriptions)
     ])
   }
 
@@ -254,7 +263,7 @@ class QueueService {
       wrapException(QueueJobService.updateAllMisseEstateCoord),
       wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
       wrapException(require('./MarketPlaceService').sendReminderEmail),
-      wrapException(require('./TenantService').reminderProfileFillUp),
+      wrapException(require('./TenantService').reminderProfileFillUp)
     ])
   }
 
@@ -276,7 +285,7 @@ class QueueService {
           jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
           repeat: { cron: '*/15 * * * *' },
           removeOnComplete: true,
-          removeOnFail: true,
+          removeOnFail: true
         }
       )
     } catch (e) {
@@ -322,7 +331,7 @@ class QueueService {
           return QueueJobService.sendEmailToSupportForLandlordUpdate({
             type: job.data.type,
             landlordId: job.data.landlordId,
-            estateIds: job.data.estateIds,
+            estateIds: job.data.estateIds
           })
         case IMPORT_ESTATES_VIA_EXCEL:
           return ImportService.process({
@@ -331,10 +340,12 @@ class QueueService {
             user_id: job.data.user_id,
             type: job.data.template,
             import_id: job.data.import_id,
-            lang: job.data.lang,
+            lang: job.data.lang
           })
         case SCHEDULED_EVERY_15MINUTE_NIGHT_JOB:
           return QueueService.doEvery15MinsJob()
+        case SCHEDULED_EVERY_1M_JOB:
+          return QueueService.sendEveryMin()
         case SCHEDULED_EVERY_5M_JOB:
           return QueueService.sendEvery5Min()
         case SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB:
@@ -368,7 +379,7 @@ class QueueService {
           return require('./MatchService').matchByUser({
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,
-            only_count: job.data.only_count,
+            only_count: job.data.only_count
           })
         case QUEUE_CREATE_THIRD_PARTY_MATCHES:
           return require('./ThirdPartyMatchService').matchByEstates()
@@ -379,8 +390,14 @@ class QueueService {
           )
         case ESTATE_SYNC_PUBLISH_ESTATE:
           return require('./EstateSyncService').postEstate({
-            estate_id: job.data.estate_id,
+            estate_id: job.data.estate_id
           })
+        case ESTATE_SYNC_PUBLISH_BUILDING:
+          console.log(ESTATE_SYNC_PUBLISH_BUILDING, job.data)
+          return require('./EstateSyncService').publishBuilding(
+            { buildingId: job.data.building_id, publisher: job.data.publisher },
+            job.data.userId
+          )
         case ESTATE_SYNC_UNPUBLISH_ESTATES:
           return require('./EstateSyncService').unpublishMultipleEstates(
             job.data.estate_ids,
@@ -392,7 +409,7 @@ class QueueService {
             contact: job.data.contact,
             estate: job.data.estate,
             landlord_name: job.data.landlord_name,
-            lang: job.data.lang,
+            lang: job.data.lang
           })
           break
         default:

@@ -14,10 +14,10 @@ const {
   PROPERTY_MANAGE_ALLOWED,
   ROLE_PROPERTY_MANAGER,
   STATUS_DELETE,
-  FILE_LIMIT_LENGTH,
+  FILE_LIMIT_LENGTH
 } = require('../../constants')
 const {
-  exceptions: { IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE },
+  exceptions: { IMAGE_COUNT_LIMIT, FAILED_TO_ADD_FILE }
 } = require('../../exceptions')
 const ImageService = require('../../Services/ImageService')
 
@@ -45,7 +45,7 @@ class RoomController {
           const room = await Room.createItem(
             {
               ...r,
-              estate_id,
+              estate_id
             },
             trx
           )
@@ -136,7 +136,7 @@ class RoomController {
       )
       //Event.fire('estate::update', room.estate_id)
       await trx.commit()
-
+      await EstateService.updatePercentAndIsPublished({ estate_id: room.estate_id })
       response.res(true)
     } catch (e) {
       await trx.rollback()

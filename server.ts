@@ -16,31 +16,36 @@
 |     Also you can preload files by calling `preLoad('path/to/file')` method.
 |     Make sure to pass a relative path from the project root.
 */
-require('newrelic')
-const { Ignitor } = require('@adonisjs/ignitor')
-const https = require('https')
-const fs = require('fs')
+import * as http from 'node:http'
+import * as fs from 'node:fs'
+import * as https from 'node:https'
+
+import 'newrelic'
+import { Ignitor } from '@adonisjs/ignitor'
+import * as AdonisFold from '@adonisjs/fold'
 
 // TODO: change hardcoded cert paths
 const key = '/home/ubuntu/cert/privkey.pem'
 const cert = '/home/ubuntu/cert/fullchain.pem'
 
-let handler = null
+let httpsListener:
+  | ((handler: http.RequestListener) => ReturnType<typeof https.createServer>)
+  | null = null
 
 if (fs.existsSync(key)) {
-  handler = (handler) => {
+  httpsListener = (handler) => {
     return https.createServer(
       {
         key: fs.readFileSync(key),
-        cert: fs.readFileSync(cert),
+        cert: fs.readFileSync(cert)
       },
       handler
     )
   }
 }
 
-new Ignitor(require('@adonisjs/fold'))
+new Ignitor(AdonisFold)
   .appRoot(__dirname)
   .wsServer() // boot the WebSocket server
-  .fireHttpServer(handler)
+  .fireHttpServer(httpsListener)
   .catch(console.error)

@@ -32,5 +32,5 @@ const isPublicIp = (ip) => {
 
 module.exports = {
   getIpBasedInfo,
-  isPublicIp,
+  isPublicIp
 }

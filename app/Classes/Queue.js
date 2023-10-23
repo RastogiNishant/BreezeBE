@@ -1,10 +1,11 @@
 const { Queue, QueueScheduler, Worker, Job, JobsOptions } = require('bullmq')
 
 const defaultOptions = {
-  removeOnComplete: true,
+  removeOnComplete: true
 }
 
 const {
+  SCHEDULED_EVERY_1M_JOB,
   SCHEDULED_EVERY_5M_JOB,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB,
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
@@ -13,7 +14,7 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_MONTHLY_JOB,
-  SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+  SCHEDULED_EVERY_15MINUTE_NIGHT_JOB
 } = require('../constants')
 const COMMON_QUEUE = 'common'
 
@@ -40,6 +41,15 @@ class QueueEngine {
         { connection: this.connection, concurrency: 10 }
       )
 
+      // Run every 1 min
+      this.commonQueue
+        .add(
+          SCHEDULED_EVERY_1M_JOB,
+          {},
+          { repeat: { cron: '*/1 * * * *' }, removeOnComplete: true, removeOnFail: true }
+        )
+        .catch(Logger.error)
+
       // Run every 5 min check for moving expire job
       this.commonQueue
         .add(
@@ -60,8 +70,8 @@ class QueueEngine {
             attempts: 3,
             backoff: {
               type: 'exponential',
-              delay: 5000,
-            },
+              delay: 5000
+            }
           }
         )
         .catch(Logger.error)
@@ -77,8 +87,8 @@ class QueueEngine {
             attempts: 3,
             backoff: {
               type: 'exponential',
-              delay: 5000,
-            },
+              delay: 5000
+            }
           }
         )
         .catch(Logger.error)
@@ -94,8 +104,8 @@ class QueueEngine {
             attempts: 3,
             backoff: {
               type: 'exponential',
-              delay: 5000,
-            },
+              delay: 5000
+            }
           }
         )
         .catch(Logger.error)
@@ -124,11 +134,12 @@ class QueueEngine {
         )
         .catch(Logger.error)
 
+      //scheduled at 12th of the month at 00:00
       this.commonQueue
         .add(
           SCHEDULED_MONTHLY_JOB,
           {},
-          { repeat: { cron: '0 0 12 * * *' }, removeOnComplete: true, removeOnFail: true }
+          { repeat: { cron: '0 0 12 * *' }, removeOnComplete: true, removeOnFail: true }
         )
         .catch(Logger.error)
 
@@ -139,7 +150,7 @@ class QueueEngine {
           jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
           repeat: { cron: '*/15 * * * *' },
           removeOnComplete: true,
-          removeOnFail: true,
+          removeOnFail: true
         }
       )
     } catch (e) {

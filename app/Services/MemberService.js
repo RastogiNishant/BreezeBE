@@ -7,7 +7,7 @@ const Income = use('App/Models/Income')
 const MemberFile = use('App/Models/MemberFile')
 const IncomeProof = use('App/Models/IncomeProof')
 const { getHash } = require('../Libs/utils.js')
-const { pick } = require('lodash')
+const { pick, uniq } = require('lodash')
 const moment = require('moment')
 const MailService = use('App/Services/MailService')
 const random = require('random')
@@ -51,10 +51,14 @@ const {
   DEFAULT_LANG,
   WEBSOCKET_EVENT_MEMBER_INVITATION,
   VALID_INCOME_PROOFS_PERIOD,
+  INCOME_TYPE_OTHER_BENEFIT,
+  INCOME_TYPE_CHILD_BENEFIT,
+  REQUIRED_INCOME_PROOFS_COUNT,
+  STATUS_DRAFT
 } = require('../constants')
 
 const {
-  exceptions: { MEMBER_INVITATION_CANCELED },
+  exceptions: { MEMBER_INVITATION_CANCELED }
 } = require('../exceptions')
 const HttpException = require('../Exceptions/HttpException.js')
 const { createDynamicLink } = require('../Libs/utils')
@@ -128,6 +132,7 @@ class MemberService {
   static async getMembers(householdId, includes_absolute_url = false) {
     const query = Member.query()
       .select('members.*')
+      .select(Database.raw(`date_part('year', age(birthday)) as age`))
       .where('members.user_id', householdId)
       .with('incomes', function (b) {
         b.with('proofs')
@@ -153,13 +158,14 @@ class MemberService {
               const proofs = await Promise.all(
                 income.proofs.map(async (proof) => {
                   if (!proof.file) return proof
+                  proof.proofFileName = proof.file
                   proof.file = await FileBucket.getProtectedUrl(proof.file)
                   return proof
                 })
               )
               income = {
                 ...income,
-                proofs: proofs,
+                proofs: proofs
               }
               return income
             })
@@ -176,7 +182,7 @@ class MemberService {
               )
               income = {
                 ...income,
-                final_proofs: proofs,
+                final_proofs: proofs
               }
               return income
             })
@@ -185,6 +191,7 @@ class MemberService {
           const passports = await Promise.all(
             (member.passports || []).map(async (passport) => {
               if (!passport.file) return passport
+              passport.fileName = passport.file
               passport.file = await FileBucket.getProtectedUrl(passport.file)
               return passport
             })
@@ -218,6 +225,8 @@ class MemberService {
 
           member = {
             ...member,
+            rent_arrears_doc_file_name: member.rent_arrears_doc,
+            debt_proof_file_name: member.debt_proof,
             rent_arrears_doc: await FileBucket.getProtectedUrl(member.rent_arrears_doc),
             debt_proof: await FileBucket.getProtectedUrl(member.debt_proof),
             incomes,
@@ -225,7 +234,7 @@ class MemberService {
             extra_passports,
             passports,
             extra_residency_proofs,
-            extra_score_proofs,
+            extra_score_proofs
           }
           return member
         })
@@ -296,7 +305,7 @@ class MemberService {
           const updatingFields = {
             members_count,
             family_status,
-            credit_score: parseInt(credit_score) || null,
+            credit_score: parseInt(credit_score) || null
           }
 
           // sync secondary member's tenant
@@ -338,12 +347,12 @@ class MemberService {
         { code: code, count: 5 },
         SMS_MEMBER_PHONE_VERIFY_PREFIX,
         {
-          ttl: 3600,
+          ttl: 3600
         }
       )
 
       const data = await require('./UserService').getTokenWithLocale([
-        member.owner_user_id || member.user_id,
+        member.owner_user_id || member.user_id
       ])
       const lang = data && data.length && data[0].lang ? data[0].lang : 'en'
       const txt = l.get('sms.tenant.phone_verification', lang).replace('{code}', code)
@@ -384,7 +393,7 @@ class MemberService {
     }
 
     await Member.query().where({ id: memberId }).update({
-      phone_verified: true,
+      phone_verified: true
     })
 
     await DataStorage.remove(memberId, SMS_MEMBER_PHONE_VERIFY_PREFIX)
@@ -484,7 +493,7 @@ class MemberService {
     return Income.createItem(
       {
         ...data,
-        member_id: member.id,
+        member_id: member.id
       },
       trx
     )
@@ -505,9 +514,21 @@ class MemberService {
    *
    */
   static async addMemberIncomeProof(data, income) {
+    if (
+      income.income_type === INCOME_TYPE_UNEMPLOYED ||
+      income.income_type === INCOME_TYPE_HOUSE_WORK ||
+      income.income_type === INCOME_TYPE_PENSIONER ||
+      income.income_type === INCOME_TYPE_TRAINEE ||
+      income.income_type === INCOME_TYPE_OTHER_BENEFIT ||
+      income.income_type === INCOME_TYPE_CHILD_BENEFIT
+    ) {
+      //these income types are not to be deletable...
+      data.expire_date = null
+    }
+
     return IncomeProof.createItem({
       ...data,
-      income_id: income.id,
+      income_id: income.id
     })
   }
 
@@ -553,7 +574,7 @@ class MemberService {
         .where({ id: member.id })
         .update({
           code,
-          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+          published_at: moment().utc().format('YYYY-MM-DD HH:mm:ss')
         })
         .transacting(trx)
 
@@ -680,7 +701,7 @@ class MemberService {
           .where({
             user_id: invitorUserId,
             email: null,
-            owner_user_id: null,
+            owner_user_id: null
           })
           .first()
         if (invitorMember) {
@@ -691,6 +712,7 @@ class MemberService {
       Event.fire('tenant::update', invitorUserId)
       Event.fire('tenant::update', user.id)
       await NoticeService.prospectHouseholdInvitationAccepted(invitorUserId)
+      await this.emitMemberInvitation({ user_id: invitorUserId, data: member })
       return true
     } catch (e) {
       console.log({ e })
@@ -725,7 +747,7 @@ class MemberService {
         .where({
           user_id: user.id,
           email: null,
-          owner_user_id: null,
+          owner_user_id: null
         })
         .first()
 
@@ -758,6 +780,7 @@ class MemberService {
       await trx.commit()
       Event.fire('tenant::update', invitorUserId)
       Event.fire('tenant::update', user.id)
+      await this.emitMemberInvitation({ user_id: invitorUserId, data: member })
       return true
     } catch (e) {
       console.log({ e })
@@ -778,6 +801,8 @@ class MemberService {
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
+      //expire_date = null should not be deleted
+      .whereNotNull('income_proofs.expire_date')
       .where('income_proofs.status', STATUS_ACTIVE)
       .innerJoin({ _i: 'incomes' }, function () {
         this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
@@ -786,19 +811,28 @@ class MemberService {
       .select('_m.user_id')
       .fetch()
 
-    const promises = []
-    const deactivatedUsers = []
-
-    incomeProofs.rows.map(({ user_id, id }) => {
-      promises.push(IncomeProof.query().where('id', id).delete())
-      if (!deactivatedUsers.includes(user_id)) {
+    let incomeProofsToDelete = []
+    let usersToDeactivate = []
+    incomeProofs.rows.map(async ({ user_id, id }) => {
+      incomeProofsToDelete.push(id)
+      if (!usersToDeactivate.includes(user_id)) {
         Event.fire('tenant::update', user_id)
         NoticeService.prospectAccountDeactivated(user_id)
-        deactivatedUsers.push(user_id)
+        usersToDeactivate.push(user_id)
       }
     })
-
-    return await Promise.all(promises)
+    const trx = await Database.beginTransaction()
+    try {
+      if (incomeProofsToDelete.length) {
+        await IncomeProof.query()
+          .whereIn('id', incomeProofsToDelete)
+          .update({ status: STATUS_DELETE }, trx)
+      }
+      await trx.commit()
+    } catch (err) {
+      console.log(err.message)
+      await trx.rollback()
+    }
   }
 
   static async createThumbnail() {
@@ -826,7 +860,7 @@ class MemberService {
                     dir: `${url_strs[0]}`,
                     options,
                     disk: 's3',
-                    isUri: true,
+                    isUri: true
                   })
                   console.log('Income Proof saved', url)
                 }
@@ -867,7 +901,7 @@ class MemberService {
     }
 
     const files = await File.saveRequestFiles(request, [
-      { field: doc, mime: docMimes, isPublic: false },
+      { field: doc, mime: docMimes, isPublic: false }
     ])
 
     if (!files[doc]) {
@@ -879,7 +913,7 @@ class MemberService {
       file: files[doc],
       type: file_type,
       status: STATUS_ACTIVE,
-      member_id: id,
+      member_id: id
     })
     return await memberFile.save()
   }
@@ -911,6 +945,8 @@ class MemberService {
         INCOME_TYPE_PENSIONER,
         INCOME_TYPE_SELF_EMPLOYED,
         INCOME_TYPE_TRAINEE,
+        INCOME_TYPE_OTHER_BENEFIT,
+        INCOME_TYPE_CHILD_BENEFIT
       ].map(async (income_source) => {
         const count = (
           await Income.query()
@@ -933,7 +969,10 @@ class MemberService {
       (
         await IncomeProof.query()
           .select('_i.id', '_i.income_type')
-          .where('income_proofs.expire_date', '>=', startOf)
+          .where(function () {
+            this.orWhere('income_proofs.expire_date', '>=', startOf)
+            this.orWhereNull('income_proofs.expire_date')
+          })
           .innerJoin({ _i: 'incomes' }, function () {
             this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
           })

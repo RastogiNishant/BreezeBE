@@ -6,10 +6,10 @@ class EstateReportAbuseService {
     const data = {
       user_id: user_id,
       estate_id: estate_id,
-      abuse: abuse,
+      abuse: abuse
     }
     return EstateReportAbuse.createItem({
-      ...data,
+      ...data
     })
   }
 }

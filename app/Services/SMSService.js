@@ -10,8 +10,8 @@ class SMS {
     try {
       await Twilio.messages.create({
         body: txt,
-        from: from !== '' ? from : Env.get('TWILIO_FROM', ''),
-        to: to,
+        from: Env.get('TWILIO_FROM', ''),
+        to: to
       })
     } catch (e) {
       throw new HttpException(e.message, 400)

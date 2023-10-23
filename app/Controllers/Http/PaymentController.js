@@ -16,7 +16,7 @@ class PaymentController {
   async createTransaction(paymentData) {
     try {
       const { payment } = await PaymentService.createPayment({
-        ...paymentData,
+        ...paymentData
       })
       return payment
     } catch (e) {
@@ -30,7 +30,7 @@ class PaymentController {
     try {
       const { ...paymentData } = request.all()
       const payment = await PaymentService.processStripePayment({
-        ...paymentData,
+        ...paymentData
       })
       const plan_id = paymentData.plan_id || 4
       const plan = await PlanService.getPlan(plan_id)
@@ -44,7 +44,7 @@ class PaymentController {
         lettings: lettings,
         payment_method_response: payment,
         plan_id: plan_id,
-        plan_response: planJson,
+        plan_response: planJson
       })
 
       UserService.updatePaymentPlan(auth.current.user.id, plan_id)
@@ -71,7 +71,7 @@ class PaymentController {
         lettings: lettings,
         payment_method_response: {},
         plan_id: plan_id,
-        plan_response: planJson,
+        plan_response: planJson
       })
       return response.res(transaction)
     } catch (e) {

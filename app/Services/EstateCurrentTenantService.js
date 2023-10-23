@@ -48,7 +48,7 @@ const {
   DATE_FORMAT,
   LETTING_STATUS_STANDARD,
   CONNECT_ESTATE,
-  OUTSIDE_TENANT_INVITE_TYPE,
+  OUTSIDE_TENANT_INVITE_TYPE
 } = require('../constants')
 
 const {
@@ -57,8 +57,8 @@ const {
     INVALID_QR_CODE,
     ALREADY_USED_QR_CODE,
     EXPIRED_QR_CODE,
-    TENANT_EXIST,
-  },
+    TENANT_EXIST
+  }
 } = require('../exceptions')
 
 const HttpException = use('App/Exceptions/HttpException')
@@ -105,10 +105,10 @@ class EstateCurrentTenantService extends BaseService {
               contract_end: data.contract_end || data.rent_end_at || currentTenant.contract_end,
               phone_number: data.phone_number || currentTenant.phone_number,
               status: STATUS_ACTIVE,
-              salutation_int: data.salutation_int || currentTenant.salutation_int,
+              salutation_int: data.salutation_int || currentTenant.salutation_int
             },
             estate_id: currentTenant.estate_id,
-            user_id,
+            user_id
           },
           trx
         )
@@ -122,7 +122,7 @@ class EstateCurrentTenantService extends BaseService {
           contract_end: data.contract_end || data.rent_end_at,
           phone_number: data.phone_number,
           status: STATUS_ACTIVE,
-          salutation_int: data.salutation_int,
+          salutation_int: data.salutation_int
         })
 
         await currentTenant.save(trx)
@@ -190,7 +190,7 @@ class EstateCurrentTenantService extends BaseService {
           : user.sex === GENDER_NEUTRAL
           ? SALUTATION_NEUTRAL_LABEL
           : SALUTATION_SIR_OR_MADAM_LABEL,
-      salutation_int: user.sex || GENDER_ANY,
+      salutation_int: user.sex || GENDER_ANY
     })
 
     await currentTenant.save(trx)
@@ -199,7 +199,7 @@ class EstateCurrentTenantService extends BaseService {
     require('./QueueService').sendEmailToSupportForLandlordUpdate({
       type: CONNECT_ESTATE,
       landlordId: estate.user_id,
-      estateIds: [estate.id],
+      estateIds: [estate.id]
     })
     return currentTenant
   }
@@ -212,7 +212,7 @@ class EstateCurrentTenantService extends BaseService {
         await yup
           .object()
           .shape({
-            email: yup.string().email().lowercase().max(255),
+            email: yup.string().email().lowercase().max(255)
           })
           .validate({ email: data.email })
       } catch (e) {
@@ -231,7 +231,7 @@ class EstateCurrentTenantService extends BaseService {
         await yup
           .object()
           .shape({
-            phone_number: phoneSchema,
+            phone_number: phoneSchema
           })
           .validate({ phone_number: data.phone_number })
       } catch (e) {
@@ -253,7 +253,7 @@ class EstateCurrentTenantService extends BaseService {
       const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant(
         {
           data,
-          estate_id,
+          estate_id
         },
         trx
       )
@@ -270,7 +270,7 @@ class EstateCurrentTenantService extends BaseService {
           contract_end: data.contract_end || data.rent_end_at,
           phone_number: data.phone_number,
           salutation_int: data.salutation_int,
-          email: data.email,
+          email: data.email
         })
         await currentTenant.save(trx)
       }
@@ -302,7 +302,7 @@ class EstateCurrentTenantService extends BaseService {
     email,
     phone_number,
     notDisconnected = false,
-    connected = false,
+    connected = false
   }) {
     let query = EstateCurrentTenant.query()
       .where('estate_id', estate_id)
@@ -440,7 +440,7 @@ class EstateCurrentTenantService extends BaseService {
       let { failureCount, links } = await this.getDynamicLinks(
         {
           ids,
-          user_id,
+          user_id
         },
         trx
       )
@@ -477,7 +477,7 @@ class EstateCurrentTenantService extends BaseService {
     floor_direction,
     email,
     phone,
-    surname,
+    surname
   }) {
     const trx = await Database.beginTransaction()
     let inviteResult, currentTenant, reason
@@ -496,10 +496,10 @@ class EstateCurrentTenantService extends BaseService {
               floor,
               floor_direction,
               letting_type: LETTING_TYPE_LET,
-              letting_status: LETTING_STATUS_STANDARD,
+              letting_status: LETTING_STATUS_STANDARD
             },
             userId: user_id,
-            is_coord_changed: false,
+            is_coord_changed: false
           },
           false,
           trx
@@ -511,7 +511,7 @@ class EstateCurrentTenantService extends BaseService {
             estate_id,
             email,
             phone_number: phone,
-            notDisconnected: true,
+            notDisconnected: true
           })
         ) {
           throw new HttpException(TENANT_EXIST, 400)
@@ -526,10 +526,10 @@ class EstateCurrentTenantService extends BaseService {
             phone_number: phone,
             surname,
             salutation_int: GENDER_ANY,
-            txt_salutation: SALUTATION_SIR_OR_MADAM_LABEL,
+            txt_salutation: SALUTATION_SIR_OR_MADAM_LABEL
           },
           estate_id,
-          user_id,
+          user_id
         },
         trx
       )
@@ -548,9 +548,10 @@ class EstateCurrentTenantService extends BaseService {
             failureCount: inviteResult.failureCount,
             email: {
               successCount: inviteResult.successCount,
-              failureCount: inviteResult.failureCount,
-            },
+              failureCount: inviteResult.failureCount
+            }
           }
+          return ret
         } else if (phone) {
           inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
           ret = {
@@ -558,15 +559,15 @@ class EstateCurrentTenantService extends BaseService {
             failureCount: inviteResult.failureCount,
             phone: {
               successCount: inviteResult.successCount,
-              failureCount: inviteResult.failureCount,
-            },
+              failureCount: inviteResult.failureCount
+            }
           }
         }
         return ret
       }
       return {
         failureCount: 1,
-        reason,
+        reason
       }
     }
   }
@@ -574,7 +575,7 @@ class EstateCurrentTenantService extends BaseService {
     let result = {
       email: {},
       phone: {},
-      reason: [],
+      reason: []
     }
 
     await Promise.map(
@@ -592,7 +593,7 @@ class EstateCurrentTenantService extends BaseService {
         floor_direction,
         email,
         phone,
-        surname,
+        surname
       }) => {
         const singleResult = await EstateCurrentTenantService.singleInvitation({
           user_id,
@@ -608,7 +609,7 @@ class EstateCurrentTenantService extends BaseService {
           floor_direction,
           email,
           phone,
-          surname,
+          surname
         })
         if (singleResult?.successCount) {
           result.successCount = (result?.successCount || 0) + singleResult.successCount
@@ -644,7 +645,7 @@ class EstateCurrentTenantService extends BaseService {
 
     return {
       ...result,
-      totalInviteCount: await this.inviteOusideTenantCount(user_id),
+      totalInviteCount: await this.inviteOusideTenantCount(user_id)
     }
   }
 
@@ -652,7 +653,7 @@ class EstateCurrentTenantService extends BaseService {
     let { failureCount, links } = await this.getDynamicLinks(
       {
         ids,
-        user_id,
+        user_id
       },
       trx
     )
@@ -679,7 +680,7 @@ class EstateCurrentTenantService extends BaseService {
     return {
       successCount,
       failureCount,
-      totalInviteCount: await EstateCurrentTenantService.inviteOusideTenantCount(user_id),
+      totalInviteCount: await EstateCurrentTenantService.inviteOusideTenantCount(user_id)
     }
   }
 
@@ -716,7 +717,7 @@ class EstateCurrentTenantService extends BaseService {
     estateCurrentTenants = await Promise.all(
       (estateCurrentTenants || []).map(async (ect) => {
         const estate = await EstateService.getEstateHasTenant({
-          condition: { id: ect.estate_id, user_id },
+          condition: { id: ect.estate_id, user_id }
         })
         if (!estate) {
           failureCount++
@@ -779,7 +780,7 @@ class EstateCurrentTenantService extends BaseService {
         id: estateCurrentTenant.id,
         estate_id: estateCurrentTenant.estate_id,
         code: code,
-        expired_time: time,
+        expired_time: time
       })
 
       let encDst = cipher.update(txtSrc, 'utf8', 'base64')
@@ -812,7 +813,7 @@ class EstateCurrentTenantService extends BaseService {
         email: estateCurrentTenant.email,
         phone_number: estateCurrentTenant.phone_number,
         shortLink,
-        lang: existingUser?.lang || DEFAULT_LANG,
+        lang: existingUser?.lang || DEFAULT_LANG
       }
     } catch (e) {
       console.log('createDynamic link error=', e.message)
@@ -825,7 +826,7 @@ class EstateCurrentTenantService extends BaseService {
       data1,
       data2,
       email,
-      user,
+      user
     })
 
     let isOutsideTrx = true
@@ -841,14 +842,14 @@ class EstateCurrentTenantService extends BaseService {
           role: ROLE_USER,
           secondname: estateCurrentTenant.surname,
           phone: estateCurrentTenant.phone_number,
-          password: password,
+          password: password
         }
         user = await UserService.signUp(
           {
             email: email || estateCurrentTenant.email, // one of them must be not null, validated in handleInvitationLink
             firstname: '',
             source_estate_id: estate_id,
-            ...userData,
+            ...userData
           },
           trx
         )
@@ -876,7 +877,7 @@ class EstateCurrentTenantService extends BaseService {
       estate_id,
       ...rest,
       email,
-      user,
+      user
     })
     return { estate_id, estateCurrentTenant }
   }
@@ -888,7 +889,7 @@ class EstateCurrentTenantService extends BaseService {
     try {
       estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
         id,
-        estate_id,
+        estate_id
       })
     } catch (e) {
       if (e.code === ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED) {
@@ -927,7 +928,7 @@ class EstateCurrentTenantService extends BaseService {
   static async validateOutsideTenantInvitation({ id, estate_id, code, expired_time, email, user }) {
     const estateCurrentTenant = await EstateCurrentTenantService.validateInvitedTenant({
       id,
-      estate_id,
+      estate_id
     })
 
     EstateCurrentTenantService.validateInvitationEmail({ email, estateCurrentTenant, user })
@@ -1100,7 +1101,7 @@ class EstateCurrentTenantService extends BaseService {
         .fetch()
 
       estateCurrentTenants = estateCurrentTenants?.toJSON() || []
-      if (estateCurrentTenants.length > 0) {
+      if (estateCurrentTenants.length) {
         await EstateCurrentTenant.query()
           .whereIn(
             'id',
@@ -1121,7 +1122,7 @@ class EstateCurrentTenantService extends BaseService {
 
       return {
         successCount: estateCurrentTenants.length || 0,
-        failureCount: ids.length - (estateCurrentTenants.length || 0),
+        failureCount: ids.length - (estateCurrentTenants.length || 0)
       }
     } catch (e) {
       await trx.rollback()
@@ -1182,7 +1183,7 @@ class EstateCurrentTenantService extends BaseService {
 
       return {
         successCount: estateCurrentTenants.length || 0,
-        failureCount: ids.length - (estateCurrentTenants.length || 0),
+        failureCount: ids.length - (estateCurrentTenants.length || 0)
       }
     } catch (e) {
       await trx.rollback()
@@ -1216,7 +1217,7 @@ class EstateCurrentTenantService extends BaseService {
     } catch (err) {
       console.log(err.message)
       await DataStorage.increment(ip, INVITATION_LINK_RETRIEVAL_TRIES_KEY, {
-        expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60,
+        expire: INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME * 60
       })
       throw new HttpException(INVALID_QR_CODE, 400, ERROR_OUTSIDE_TENANT_INVITATION_INVALID)
     }
@@ -1241,7 +1242,7 @@ class EstateCurrentTenantService extends BaseService {
       )
       currentEstate = {
         ...currentEstate.toJSON(),
-        attachments,
+        attachments
       }
 
       await EstateCurrentTenant.query()
@@ -1269,7 +1270,7 @@ class EstateCurrentTenantService extends BaseService {
         .where('id', id)
         .update({
           ...currentEstate.toJSON(),
-          attachments: attachments && attachments.length ? JSON.stringify(attachments) : null,
+          attachments: attachments && attachments.length ? JSON.stringify(attachments) : null
         })
       return true
     } catch (e) {
@@ -1294,8 +1295,8 @@ class EstateCurrentTenantService extends BaseService {
         data: {
           estate_id,
           user_id,
-          current_tenant: estate?.toJSON()?.current_tenant,
-        },
+          current_tenant: estate?.toJSON()?.current_tenant
+        }
       })
     }
   }

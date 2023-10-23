@@ -12,7 +12,7 @@ class Contact {
       addressLine1: '',
       addressLine2: '',
       zip: '',
-      place: '',
+      place: ''
     }
     this.email = ''
     this.tel = ''

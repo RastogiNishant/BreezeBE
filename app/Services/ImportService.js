@@ -1,5 +1,5 @@
 const Promise = require('bluebird')
-const { has, omit, isEmpty, trim } = require('lodash')
+const { has, omit, isEmpty, trim, property } = require('lodash')
 const moment = require('moment')
 const EstateImportReader = use('App/Classes/EstateImportReader')
 const Database = use('Database')
@@ -36,11 +36,13 @@ const {
   PROPERTY_HANDLE_FINISHED,
   WEBSOCKET_TENANT_REDIS_KEY,
   WEBSOCKET_LANDLORD_REDIS_KEY,
-  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN
 } = require('../constants')
 const {
-  exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE },
+  exceptions: { ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE }
 } = require('../exceptions')
+const BuildingService = require('./BuildingService')
+const UnitCategoryService = require('./UnitCategoryService')
 const WebSocket = use('App/Classes/Websocket')
 const Import = use('App/Models/Import')
 const EstateCurrentTenantService = use('App/Services/EstateCurrentTenantService')
@@ -58,7 +60,19 @@ class ImportService {
    *
    */
 
-  static async createSingleEstate({ data, line, six_char_code }, userId, lang) {
+  static async createSingleEstate({ property, buildings, unitCategories, userId, lang }) {
+    let data = property.data
+    let line = property.line
+    let six_char_code = property.six_char_code
+
+    data.build_id = data.building_id
+      ? (buildings || []).filter((b) => b.building_id === data.building_id)[0]?.id
+      : null
+
+    data.unit_category_id = data.unit_category_id
+      ? (unitCategories || []).filter((category) => category.name === data.unit_category_id)[0]?.id
+      : null
+
     let estate
     line += 1
     const warnings = []
@@ -78,8 +92,8 @@ class ImportService {
               error: [`${six_char_code} is an invalid Breeze ID`],
               line,
               property_id: data.property_id,
-              address: data.address,
-            },
+              address: data.address
+            }
           }
         }
 
@@ -90,15 +104,14 @@ class ImportService {
               error: [
                 l
                   .get('landlord.web.my-properties.import.txt_online_id_not_editable', lang)
-                  .replace('{{property_id}}', data.property_id),
+                  .replace('{{property_id}}', data.property_id)
               ],
               line,
               property_id: data.property_id,
-              address: data.address,
-            },
+              address: data.address
+            }
           }
         }
-
         await ImportService.updateImportBySixCharCode({ estate, data }, trx)
       } else {
         if (!data.address) {
@@ -108,8 +121,8 @@ class ImportService {
               error: [`address is empty`],
               line,
               address: data.address,
-              property_id: data.property_id,
-            },
+              property_id: data.property_id
+            }
           }
         }
 
@@ -137,7 +150,7 @@ class ImportService {
           await EstateCurrentTenantService.addCurrentTenant(
             {
               data,
-              estate_id: estate.id,
+              estate_id: estate.id
             },
             trx
           )
@@ -153,7 +166,7 @@ class ImportService {
               error: [`Tenant info igonored because this property has not rented yet`],
               line,
               address: data.address,
-              property_id: data.property_id,
+              property_id: data.property_id
             })
           }
         }
@@ -196,7 +209,7 @@ class ImportService {
     const { errors, data } = await ImportService.readBuddyFile(filePath)
     const result = await Promise.map(data, (i) => ImportService.createSingleBuddy(i, userId))
     return {
-      success: result.length,
+      success: result.length
     }
   }
   /**
@@ -211,18 +224,18 @@ class ImportService {
     try {
       this.emitImported({
         data: {
-          message: PREPARING_TO_UPLOAD,
+          message: PREPARING_TO_UPLOAD
         },
-        user_id,
+        user_id
       })
 
-      Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name}`)
+      Logger.info(`${user_id} getting s3 bucket url!!! ${s3_bucket_file_name} ${lang}`)
       const url = await FileBucket.getPublicUrl(s3_bucket_file_name)
       Logger.info(`storing excel file to s3 bucket!!! ${url}`)
       const localPath = await FileBucket.saveFileTo({ url: s3_bucket_file_name, ext: 'xlsx' })
       Logger.info(`saved file to path ${localPath}`)
       const reader = new EstateImportReader()
-      reader.init(localPath)
+      reader.init(localPath, { lang })
       Logger.info('processing excel file!!!')
       const excelData = await reader.process()
       errors = excelData.errors
@@ -231,12 +244,29 @@ class ImportService {
 
       fsPromise.unlink(localPath)
 
+      //add/update building
+      const buildingsData = (data.building || []).map((building) => building.data)
+
+      await BuildingService.bulkUpsert(user_id, buildingsData)
+      const buildings = await BuildingService.getAll(user_id)
+      const categoryData = (data.category || []).map((category) => category.data)
+      await UnitCategoryService.bulkUpsert({ user_id, buildings, data: categoryData })
+      const unitCategories = await UnitCategoryService.getAll(
+        (buildings || []).map((building) => building.id)
+      )
+
       result = await Promise.map(
-        data,
+        data?.unit || [],
         async (i, index) => {
           if (i) {
             const { estateResult, singleWarnings, singleErrors } =
-              await ImportService.createSingleEstate(i, user_id, lang)
+              await ImportService.createSingleEstate({
+                property: i,
+                buildings,
+                unitCategories,
+                userId: user_id,
+                lang
+              })
 
             if (singleErrors) {
               createErrors = createErrors.concat(singleErrors)
@@ -249,12 +279,12 @@ class ImportService {
               data: {
                 message: PROPERTY_HANDLE_FINISHED,
                 count: errors?.length + index + 1,
-                total: data.length + errors?.length,
+                total: (data?.unit?.length || 0) + (errors?.length || 0),
                 result: estateResult,
                 errors: singleErrors || [],
-                warnings: singleWarnings || [],
+                warnings: singleWarnings || []
               },
-              user_id,
+              user_id
             })
             return estateResult
           }
@@ -281,13 +311,13 @@ class ImportService {
         data: {
           last_activity: {
             file: filePath?.clientName || null,
-            created_at: moment().utc().format(),
+            created_at: moment().utc().format()
           },
           errors: [...errors, ...createErrors],
           success: result.length - createErrors.length,
-          warnings: [...warnings],
+          warnings: [...warnings]
         },
-        event: WEBSOCKET_EVENT_IMPORT_EXCEL,
+        event: WEBSOCKET_EVENT_IMPORT_EXCEL
       })
     }
   }
@@ -319,7 +349,7 @@ class ImportService {
         'surname',
         'phone_number',
         'email',
-        'salutation_int',
+        'salutation_int'
       ])
 
       if (!estate) {
@@ -332,25 +362,24 @@ class ImportService {
       }
 
       const estateCurrentTenants = await EstateCurrentTenantService.getActiveByEstateIds([
-        estate.id,
+        estate.id
       ])
 
       //Recalculating address by disconnected connect (no tenants connected) and unpublished match units (no prospects associated)
       //so addrss can only be updated only in the cases above
-      if (
-        (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) ||
-        estate.status === STATUS_ACTIVE
-      ) {
+      if (data.letting_type === LETTING_TYPE_LET && estateCurrentTenants?.length) {
         estate_data = omit(estate_data, ['city', 'country', 'zip', 'street', 'house_number'])
         estate_data.is_coord_changed = false
       } else {
         estate_data.is_coord_changed = true
       }
 
+      //TODO: add build_id and unit_category_id:
+
       await require('./EstateService').updateEstate(
         {
           data: { ...estate_data, id: estate.id },
-          user_id,
+          user_id
         },
         trx
       )
@@ -359,7 +388,7 @@ class ImportService {
           {
             data,
             estate_id: estate.id,
-            user_id,
+            user_id
           },
           trx
         )
@@ -369,7 +398,7 @@ class ImportService {
           await EstateCurrentTenantService.deleteByEstate(
             {
               estate_ids: [estate.id],
-              user_id,
+              user_id
             },
             trx
           )
@@ -403,7 +432,7 @@ class ImportService {
     filename,
     type = IMPORT_TYPE_EXCEL,
     entity = IMPORT_ENTITY_ESTATES,
-    status,
+    status
   }) {
     return await Import.createItem({ user_id, filename, type, entity, status })
   }
@@ -440,12 +469,12 @@ class ImportService {
     let ret = {
       excel: {
         imported: {},
-        exported: {},
+        exported: {}
       },
       openimmo: {
         imported: {},
-        exported: {},
-      },
+        exported: {}
+      }
     }
     if (importActivity) {
       importActivity.rows.map((row) => {

@@ -13,7 +13,7 @@ const {
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
-  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
+  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT
 } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
@@ -42,8 +42,8 @@ const wrapValidationError = (e) => {
       ...n,
       {
         field: i.path,
-        validation: i.message,
-      },
+        validation: i.message
+      }
     ]
   }, [])
 
@@ -143,16 +143,16 @@ const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WE
         domainUriPrefix: process.env.DOMAIN_PREFIX,
         link,
         androidInfo: {
-          androidPackageName: process.env.ANDROID_PACKAGE_NAME,
+          androidPackageName: process.env.ANDROID_PACKAGE_NAME
         },
         iosInfo: {
           iosBundleId: process.env.IOS_BUNDLE_ID,
-          iosAppStoreId: process.env.IOS_APPSTORE_ID,
+          iosAppStoreId: process.env.IOS_APPSTORE_ID
         },
         desktopInfo: {
-          desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform',
-        },
-      },
+          desktopFallbackLink: desktopLink || 'https://app.breeze4me.de/invalid-platform'
+        }
+      }
     })
     return shortLink
   } catch (e) {
@@ -171,6 +171,19 @@ const calculateEnergyClassFromEfficiency = (efficiency) => {
   return ENERGY_CLASS_USING_EFFICIENCY[idx].level
 }
 
+const checkIfIsValid = (object) => {
+  let flag = true
+  Object.keys(object).forEach((each) => {
+    if (
+      object[each] === null ||
+      object[each] === undefined ||
+      Array.isArray(object[each] && object[each].length === 0)
+    )
+      flag = false
+  })
+  return flag
+}
+
 module.exports = {
   getUrl,
   valueToJSON,
@@ -186,4 +199,5 @@ module.exports = {
   createDynamicLink,
   encodeURL,
   calculateEnergyClassFromEfficiency,
+  checkIfIsValid
 }

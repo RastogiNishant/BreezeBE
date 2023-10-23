@@ -9,6 +9,7 @@ class RemoveMemberDocs extends Base {
     yup.object().shape({
       id: id.required(),
       field: yup.string().oneOf(['rent_arrears_doc', 'debt_proof']),
+      uri: yup.string()
     })
 }
 

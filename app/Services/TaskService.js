@@ -24,6 +24,8 @@ const {
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_URGENCY,
   WEBSOCKET_EVENT_TASK_UPDATED,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_NEW
 } = require('../constants')
 
 const WebSocket = use('App/Classes/Websocket')
@@ -37,12 +39,12 @@ const {
   TASK_STATUS_NEW,
   TASK_STATUS_DRAFT,
   TASK_STATUS_DELETE,
-  ESTATE_FIELD_FOR_TASK,
+  ESTATE_FIELD_FOR_TASK
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
 const {
-  exceptions: { NO_TASK_FOUND, NO_ESTATE_EXIST, WRONG_PARAMS },
+  exceptions: { NO_TASK_FOUND, NO_ESTATE_EXIST, WRONG_PARAMS }
 } = require('../exceptions')
 const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
@@ -65,7 +67,7 @@ class TaskService extends BaseService {
     const tenant_id = await this.hasPermission({
       estate_id: data.estate_id,
       user_id: user.id,
-      role: user.role,
+      role: user.role
     })
 
     let task = {
@@ -73,7 +75,7 @@ class TaskService extends BaseService {
       creator_role: user.role,
       tenant_id: tenant_id,
       status: TASK_STATUS_NEW,
-      status_changed_by: user.role,
+      status_changed_by: user.role
     }
 
     const files = await this.saveFiles(request)
@@ -85,7 +87,7 @@ class TaskService extends BaseService {
 
       task = {
         ...task,
-        attachments: JSON.stringify(attachments),
+        attachments: JSON.stringify(attachments)
       }
     }
 
@@ -119,7 +121,7 @@ class TaskService extends BaseService {
         title: '',
         type: TASK_SYSTEM_TYPE,
         status: TASK_STATUS_DRAFT,
-        estate_id: estateId,
+        estate_id: estateId
       },
       trx
     )
@@ -132,7 +134,7 @@ class TaskService extends BaseService {
       predefined_message_choice_id,
       estate_id = null,
       task_id,
-      answer,
+      answer
     } = data
     let { attachments } = data
 
@@ -195,9 +197,9 @@ class TaskService extends BaseService {
           task_id: task.id,
           sender_id: estate?.user_id || null,
           text: rc(l.get(predefinedMessage.text, lang), [
-            { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') },
+            { name: user?.firstname + (user?.secondname ? ' ' + user?.secondname : '') }
           ]),
-          type: CHAT_TYPE_BOT_MESSAGE,
+          type: CHAT_TYPE_BOT_MESSAGE
         },
         trx
       )
@@ -224,7 +226,7 @@ class TaskService extends BaseService {
             task,
             predefinedMessage,
             predefined_message_choice_id,
-            lang,
+            lang
           },
           trx
         )
@@ -238,7 +240,7 @@ class TaskService extends BaseService {
             task,
             predefinedMessage,
             answer,
-            attachments,
+            attachments
           },
           trx
         )
@@ -272,7 +274,7 @@ class TaskService extends BaseService {
         if (!task.estate_id) {
           await require('./OutsideLandlordService').noticeInvitationToLandlord({
             user,
-            task_id: task.id,
+            task_id: task.id
           })
         } else {
           //assigned task
@@ -293,7 +295,7 @@ class TaskService extends BaseService {
         estate_id,
         tenant_id,
         creator_role: ROLE_USER,
-        status: TASK_STATUS_DRAFT,
+        status: TASK_STATUS_DRAFT
       },
       trx
     )
@@ -335,8 +337,8 @@ class TaskService extends BaseService {
         ...taskRow.toJSON(),
         property_id: estate.property_id,
         estate_id: task.estate_id,
-        task_id: task.id,
-      },
+        task_id: task.id
+      }
     })
 
     // send notification to tenant to inform task has been resolved
@@ -344,8 +346,8 @@ class TaskService extends BaseService {
       NoticeService.notifyTenantTaskResolved([
         {
           user_id: taskRow.tenant_id,
-          estate_id: taskRow.estate_id,
-        },
+          estate_id: taskRow.estate_id
+        }
       ])
     }
     return taskResult
@@ -384,7 +386,7 @@ class TaskService extends BaseService {
       !(await this.hasPermission({
         estate_id: task.estate_id,
         user_id: user.id,
-        role: user.role,
+        role: user.role
       }))
     ) {
       throw new HttpException(NO_TASK_FOUND, 400)
@@ -434,7 +436,23 @@ class TaskService extends BaseService {
       .first()
 
     if (!task) {
-      return null
+      // if it is system task but not exists, we need to create one automatically
+      if (estate_id) {
+        const estate = await EstateService.getById(estate_id)
+        const match = await require('./MatchService').getMatches(prospect_id || user.id, estate_id)
+        if (estate && match && (match.status >= MATCH_STATUS_NEW || estate.is_not_show)) {
+          task = await this.createGlobalTask({
+            tenantId: prospect_id || user.id,
+            landlordId: estate.user_id,
+            estateId: estate_id
+          })
+          console.log('task here=', task)
+        } else {
+          return null
+        }
+      } else {
+        return null
+      }
     }
 
     if (user.role === ROLE_LANDLORD) {
@@ -468,7 +486,7 @@ class TaskService extends BaseService {
       street: task.property_address?.street,
       house_number: task.property_address?.housenumber,
       zip: task.property_address?.postcode,
-      country: task.property_address?.country,
+      country: task.property_address?.country
     })
 
     return {
@@ -478,14 +496,14 @@ class TaskService extends BaseService {
       mosturgency: task.urgency,
       current_tenant: {
         salutation_int: task?.user?.sex,
-        user: task.user,
+        user: task.user
       },
       taskSummary: {
         activeTaskCount: 1,
         taskCount: 1,
         mostUrgency: task.urgency,
-        mostUrgencyCount: 1,
-      },
+        mostUrgencyCount: 1
+      }
     }
   }
 
@@ -494,7 +512,7 @@ class TaskService extends BaseService {
     role = ROLE_LANDLORD,
     email,
     page = -1,
-    limit = -1,
+    limit = -1
   }) {
     let query = Task.query()
       .with('user')
@@ -521,7 +539,7 @@ class TaskService extends BaseService {
 
     return {
       tasks,
-      count,
+      count
     }
   }
 
@@ -534,7 +552,7 @@ class TaskService extends BaseService {
     query,
     status,
     page = -1,
-    limit = -1,
+    limit = -1
   }) {
     let taskQuery = Task.query()
       .select('tasks.*')
@@ -576,7 +594,7 @@ class TaskService extends BaseService {
       taskQuery.whereNotIn('tasks.status', [
         TASK_STATUS_ARCHIVED,
         TASK_STATUS_DELETE,
-        TASK_STATUS_DRAFT,
+        TASK_STATUS_DRAFT
       ])
     }
 
@@ -637,7 +655,7 @@ class TaskService extends BaseService {
 
     return {
       tasks,
-      count,
+      count
     }
   }
 
@@ -679,8 +697,8 @@ class TaskService extends BaseService {
         mostUrgency: mostUrgency?.urgency || null,
         mostUrgencyCount: mostUrgency
           ? countBy(activeTasks, (re) => re.urgency === mostUrgency.urgency).true || 0
-          : 0,
-      },
+          : 0
+      }
     }
   }
 
@@ -763,8 +781,14 @@ class TaskService extends BaseService {
     }
 
     // to check if the user is the tenant for that property.
-    if (role === ROLE_USER && task.tenant_id !== user_id) {
-      throw new HttpException('No permission for task', 400)
+    if (role === ROLE_USER) {
+      if (!task) {
+        if (!(await MatchService.getUserToChat({ user_id, estate_id, role }))) {
+          throw new HttpException('No permission for task', 400)
+        }
+      } else if (task && task.tenant_id !== user_id) {
+        throw new HttpException('No permission for task', 400)
+      }
     }
 
     // if (role === ROLE_USER) {
@@ -804,7 +828,7 @@ class TaskService extends BaseService {
 
       task = {
         ...task.toJSON(),
-        attachments: JSON.stringify((task.toJSON().attachments || []).concat(pathJSON)),
+        attachments: JSON.stringify((task.toJSON().attachments || []).concat(pathJSON))
       }
 
       await Task.query()
@@ -838,7 +862,7 @@ class TaskService extends BaseService {
         .update({
           ...task.toJSON(),
           attachments:
-            taskAttachments && taskAttachments.length ? JSON.stringify(taskAttachments) : null,
+            taskAttachments && taskAttachments.length ? JSON.stringify(taskAttachments) : null
         })
         .transacting(trx)
 
@@ -855,7 +879,7 @@ class TaskService extends BaseService {
           {
             id: chat.id,
             message: chat.message,
-            attachments: attachments.length ? attachments : null,
+            attachments: attachments.length ? attachments : null
           },
           trx
         )
@@ -888,7 +912,7 @@ class TaskService extends BaseService {
             unread_count: 1,
             unread_role,
             first_not_read_chat_id: chat_id,
-            status: TASK_STATUS_INPROGRESS,
+            status: TASK_STATUS_INPROGRESS
           })
           .transacting(trx)
       } else {
@@ -897,7 +921,7 @@ class TaskService extends BaseService {
           .update({
             unread_count: +(task.unread_count || 0) + 1,
             unread_role,
-            status: TASK_STATUS_INPROGRESS,
+            status: TASK_STATUS_INPROGRESS
           })
           .transacting(trx)
       }
@@ -930,13 +954,13 @@ class TaskService extends BaseService {
       WebSocket.publishToLandlord({
         event,
         userId: user_id,
-        data,
+        data
       })
     } else {
       WebSocket.publishToTenant({
         event,
         userId: user_id,
-        data,
+        data
       })
     }
   }

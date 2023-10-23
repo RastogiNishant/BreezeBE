@@ -27,7 +27,7 @@ class EstatePermissionService {
           const record = {
             property_manager_id: userId,
             landlord_id: lId,
-            status: PROPERTY_MANAGE_REQUEST,
+            status: PROPERTY_MANAGE_REQUEST
           }
 
           return await EstatePermission.findOrCreate(
@@ -74,7 +74,7 @@ class EstatePermissionService {
    * pmIds: Propery Managers' user_id
    * permission: Interger : PROPERTY_MANAGE_ALLOWED|PROPERTY_MANAGE_REQUEST
    */
-  static async permissionToPropertyManager(userId, pmIds, permission ) {
+  static async permissionToPropertyManager(userId, pmIds, permission) {
     try {
       if (!pmIds || !pmIds.length) {
         new HttpException('There is no landlord Ids provided', 400)
@@ -84,20 +84,20 @@ class EstatePermissionService {
         const data = await Promise.all(
           pmIds.map(async (pmId) => {
             const estatePermission = await EstatePermission.query()
-            .where('property_manager_id', pmId )
-            .where({ 'landlord_id': userId })
-            .first()
-            if( estatePermission ){
-              return await EstatePermission.query()
               .where('property_manager_id', pmId)
-              .where('landlord_id', userId)
-              .update({ status: permission })
-            }else {
+              .where({ landlord_id: userId })
+              .first()
+            if (estatePermission) {
+              return await EstatePermission.query()
+                .where('property_manager_id', pmId)
+                .where('landlord_id', userId)
+                .update({ status: permission })
+            } else {
               return await EstatePermission.createItem({
-                  property_manager_id: pmId,
-                  landlord_id: userId,
-                  status: permission,
-                })
+                property_manager_id: pmId,
+                landlord_id: userId,
+                status: permission
+              })
             }
           })
         )
@@ -111,7 +111,7 @@ class EstatePermissionService {
     }
   }
 
-  static async deletePermissionByLandlord(userId, pmIds ) {
+  static async deletePermissionByLandlord(userId, pmIds) {
     const data = await Promise.all(
       pmIds.map(async (pmId) => {
         return await EstatePermission.query()
@@ -126,7 +126,6 @@ class EstatePermissionService {
   static async deletePermissionByPropertyManager(userId, landlordIds) {
     const data = await Promise.all(
       landlordIds.map(async (lId) => {
-
         return await EstatePermission.query()
           .where('property_manager_id', userId)
           .where('landlord_id', lId)
@@ -136,26 +135,26 @@ class EstatePermissionService {
     return data
   }
 
-  static async getLandlordIds( userId, status ) {
+  static async getLandlordIds(userId, status) {
     const landlords = await EstatePermission.query()
       .where('property_manager_id', userId)
-      .where('status', status )
+      .where('status', status)
       .select('landlord_id')
       .fetch()
-    
-    const lds = landlords.toJSON().map( lr => get(lr,'landlord_id') )      
+
+    const lds = landlords.toJSON().map((lr) => get(lr, 'landlord_id'))
     return lds
   }
 
-  static async getLandlordHasPermissionByEmail( propertyManagerId, landlord_email ) {
+  static async getLandlordHasPermissionByEmail(propertyManagerId, landlord_email) {
     const estatePermission = await EstatePermission.query('landlord_id')
       .innerJoin({ _u: 'users' }, '_u.id', 'estate_permissions.landlord_id')
       .where('property_manager_id', propertyManagerId)
       .where('_u.email', landlord_email)
       .where('estate_permissions.status', PROPERTY_MANAGE_ALLOWED)
       .first()
-    
-    return estatePermission      
+
+    return estatePermission
     return []
   }
 }

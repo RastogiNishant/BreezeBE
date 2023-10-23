@@ -7,7 +7,7 @@ const {
   PUBLISH_PROPERTY,
   UNPUBLISH_PROPERTY,
   DEACTIVATE_PROPERTY,
-  PUBLISH_OFFLINE_PROPERTY,
+  PUBLISH_OFFLINE_PROPERTY
 } = require('../constants')
 
 class PublishEstate extends Base {
@@ -19,10 +19,11 @@ class PublishEstate extends Base {
           PUBLISH_PROPERTY,
           UNPUBLISH_PROPERTY,
           DEACTIVATE_PROPERTY,
-          PUBLISH_OFFLINE_PROPERTY,
+          PUBLISH_OFFLINE_PROPERTY
         ])
         .required(),
-      publishers: yup.array().of(yup.string().oneOf(THIRD_PARTY_PUBLISHERS)),
+      publishers: yup.array().of(yup.string().oneOf(THIRD_PARTY_PUBLISHERS)).nullable(),
+      estate_ids: yup.array().of(yup.number().positive()).nullable()
     })
 }
 

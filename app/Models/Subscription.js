@@ -16,7 +16,7 @@ class Subscription extends Model {
       'payment_method',
       'date',
       'status',
-      'livemode',
+      'livemode'
     ]
   }
 }

@@ -9,13 +9,10 @@ class CreatePlan extends Base {
     yup.object().shape({
       name: yup.string(),
       description: yup.string(),
-      role: yup
-        .number()
-        .oneOf([ROLE_USER, ROLE_LANDLORD])
-        .required(),
+      role: yup.number().oneOf([ROLE_USER, ROLE_LANDLORD]).required(),
       prospect_free_plan: yup.boolean(),
       landlord_free_plan: yup.boolean(),
-      status: yup.boolean(),
+      status: yup.boolean()
       // prices: yup.number(),
     })
 }

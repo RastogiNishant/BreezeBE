@@ -6,6 +6,8 @@ const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const UserService = use('App/Services/UserService')
 const MemberService = use('App/Services/MemberService')
+const TenantCertificateService = use('App/Services/TenantCertificateService')
+const CityService = use('App/Services/CityService')
 const Tenant = use('App/Models/Tenant')
 const Database = use('Database')
 const { without, omit } = require('lodash')
@@ -23,8 +25,9 @@ const {
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
+  LOG_TYPE_DEACTIVATED_PROFILE
 } = require('../../constants')
-const QueueService = require('../../Services/QueueService')
+
 const { logEvent } = require('../../Services/TrackingService')
 
 class TenantController {
@@ -61,7 +64,7 @@ class TenantController {
         MEMBER_FILE_TYPE_EXTRA_PASSPORT,
         MEMBER_FILE_TYPE_EXTRA_RENT,
         MEMBER_FILE_TYPE_EXTRA_DEBT,
-        MEMBER_FILE_TYPE_INCOME,
+        MEMBER_FILE_TYPE_INCOME
       ].includes(file_type)
     ) {
       if (!file_id) {
@@ -99,6 +102,12 @@ class TenantController {
     try {
       const tenant = await UserService.getOrCreateTenant(auth.user, trx)
 
+      if (!Array.isArray(data.income_level) || data.income_level.length === 0) {
+        data.is_public_certificate = false
+      } else {
+        data.is_public_certificate = true
+      }
+
       if (
         data.transfer_budget_min &&
         data.transfer_budget_max &&
@@ -122,7 +131,6 @@ class TenantController {
         tenant.status = STATUS_DRAFT
       } else {
       }
-
       await tenant.updateItemWithTrx(omit(data, ['only_count']), trx)
 
       await trx.commit()
@@ -140,16 +148,16 @@ class TenantController {
 
       let filterResult = {}
 
-      if (!shouldDeactivateTenant.length && data.only_count) {
+      if (data.only_count) {
         filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
           has_notification_sent: false,
-          only_count: true,
+          only_count: true
         })
-      } else if (!shouldDeactivateTenant.length) {
+      } else {
         filterResult = await MatchService.matchByUser({
           userId: auth.user.id,
-          has_notification_sent: false,
+          has_notification_sent: false
         })
       }
 
@@ -170,11 +178,34 @@ class TenantController {
       logEvent(request, LOG_TYPE_ACTIVATED_PROFILE, auth.user.id, {}, false)
       Event.fire('mautic:syncContact', auth.user.id, { activated_profile_date: new Date() })
     } catch (e) {
+      console.log(`activateTenant controller error ${auth.user.id} ${e.message}`)
       throw new HttpException(e.message, 400, e.code)
+    } finally {
+      await MatchService.matchByUser({ userId: auth.user.id, ignoreNullFields: true })
     }
-    await MatchService.matchByUser({ userId: auth.user.id, ignoreNullFields: true })
 
     response.res(true)
+  }
+
+  async deactivateTenant({ auth, response, request }) {
+    const tenant = await Tenant.query().where({ user_id: auth.user.id }).first()
+    try {
+      await TenantService.deactivateTenantIfActivated(tenant)
+      logEvent(request, LOG_TYPE_DEACTIVATED_PROFILE, auth.user.id, {}, false)
+      response.res(true)
+    } catch (e) {
+      console.log(`deactivateTenant controller error ${auth.user.id} ${e.message}`)
+      throw new HttpException(e.message, 400, e.code)
+    }
+  }
+
+  async detail({ request, auth, response }) {
+    let tenant = await TenantService.getTenantWithCertificates(auth.user.id)
+    let members = await MemberService.getMembers(auth.user.id, true)
+    response.res({
+      tenant,
+      members
+    })
   }
 
   /**
@@ -219,8 +250,54 @@ class TenantController {
     response.res({
       phone: phoneVerifiedCount,
       id: idVerifiedCount,
-      income: incomeCounts,
+      income: incomeCounts
     })
+  }
+
+  async requestCertificate({ request, auth, response }) {
+    const { request_certificate_at, request_certificate_city_id } = request.all()
+
+    const updateData = {
+      request_certificate_city_id,
+      user_id: auth.user.id
+    }
+
+    if (!request_certificate_city_id) Object.assign(updateData, { request_certificate_at })
+
+    await TenantService.requestCertificate({
+      ...updateData
+    })
+
+    let city = null
+    if (request_certificate_city_id) {
+      city = await CityService.get(request_certificate_city_id)
+    }
+
+    //TODO: need to send wbs link from city table. coming soon
+    response.res({
+      request_certificate_at,
+      city
+    })
+  }
+
+  async removeRequestCertificate({ request, auth, response }) {
+    const trx = await Database.beginTransaction()
+    try {
+      await TenantCertificateService.deleteCertificate({ user_id: auth.user.id }, trx)
+      const deleteCertificateResult = await TenantService.requestCertificate(
+        {
+          user_id: auth.user.id,
+          request_certificate_at: null,
+          request_certificate_city_id: null
+        },
+        trx
+      )
+      await trx.commit()
+      response.res(deleteCertificateResult)
+    } catch (e) {
+      await trx.rollback()
+      throw new HttpException(e.message, e.status || 400)
+    }
   }
 }
 

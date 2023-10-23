@@ -9,7 +9,7 @@ class ChangeOrder extends Base {
     yup.object().shape({
       estate_id: id.required(),
       user_id: id,
-      position: yup.number().integer().min(0).max(100000),
+      position: yup.number().integer().min(0).max(100000)
     })
 }
 

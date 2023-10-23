@@ -13,7 +13,7 @@ class Match extends Model {
       'status_at',
       'final_match_date',
       'prospect_score',
-      'landlord_score',
+      'landlord_score'
     ]
   }
 
@@ -22,6 +22,9 @@ class Match extends Model {
   }
   tenant() {
     return this.belongsTo('App/Models/Tenant', 'user_id', 'user_id')
+  }
+  estate() {
+    return this.belongsTo('App/Models/Estate', 'estate_id', 'id')
   }
 }
 

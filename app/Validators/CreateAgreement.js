@@ -12,7 +12,7 @@ class CreateAgreement extends Base {
       body: yup.string().min(10).max(50000),
       body_de: yup.string().min(10).max(50000),
       title: yup.string().min(10).max(1000),
-      title_de: yup.string().min(10).max(1000),
+      title_de: yup.string().min(10).max(1000)
     })
 }
 

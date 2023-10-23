@@ -184,13 +184,26 @@ class Filter {
         }
         return `${field} ilike '%${value}'`
       case 'equals':
-      case 'dateIs':
         if (isArray(field)) {
           const filterList = field.map((f) => `${this.getField(f)} = '${value}'`)
           const filter = `( ${filterList.join(` or `)} )`
           return filter
         }
         return `${field} = '${value}'`
+      case 'dateIs':
+        if (isArray(field)) {
+          const filterList = field.map(
+            (f) =>
+              `${this.getField(f)} BETWEEN '${value}' AND '${moment(value)
+                .add(1, 'days')
+                .format(DAY_FORMAT)}'`
+          )
+          const filter = `( ${filterList.join(` or `)} )`
+          return filter
+        }
+        return `${field} BETWEEN '${value}' AND '${moment(value)
+          .add(1, 'days')
+          .format(DAY_FORMAT)}'`
       case 'notEquals':
       case 'dateIsNot':
         if (isArray(field)) {

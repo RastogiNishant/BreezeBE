@@ -9,7 +9,7 @@ const {
   ROLE_USER,
   STATUS_ACTIVE,
   STATUS_EXPIRE,
-  VISIT_MAX_ALLOWED_FOLLOWUPS,
+  VISIT_MAX_ALLOWED_FOLLOWUPS
 } = require('../constants')
 const Estate = use('App/Models/Estate')
 const Visit = use('App/Models/Visit')
@@ -90,7 +90,7 @@ class VisitService {
     return {
       actor,
       estate,
-      recipient,
+      recipient
     }
   }
 
@@ -128,7 +128,7 @@ class VisitService {
         .update(
           {
             [`${actor}_followup_count`]: Database.raw(`${actor}_followup_count + 1`),
-            [`${actor}_followup_meta`]: meta,
+            [`${actor}_followup_meta`]: meta
           },
           trx
         )

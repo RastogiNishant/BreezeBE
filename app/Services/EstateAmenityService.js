@@ -1,11 +1,12 @@
 'use strict'
 
 const Database = use('Database')
-const { STATUS_ACTIVE, ESTATE_AMENITY_LOCATIONS } = require('../constants')
+const { STATUS_ACTIVE, ESTATE_AMENITY_LOCATIONS, MANDATORY_AMENITIES } = require('../constants')
 const Promise = require('bluebird')
 const { omit } = require('lodash')
 const HttpException = require('../Exceptions/HttpException')
 const Amenity = use('App/Models/Amenity')
+const Option = use('App/Models/Option')
 class EstateAmenityService {
   static async getByEstate({ estate_id, location }) {
     let subQuery = `(select amenities.*,
@@ -63,13 +64,13 @@ class EstateAmenityService {
   static async handleSingleAmenity(amenity, trx) {
     amenity = {
       ...amenity,
-      status: STATUS_ACTIVE,
+      status: STATUS_ACTIVE
     }
 
     const amenityEntity = await this.getAmenity({
       estate_id: amenity.estate_id,
       option_id: amenity.option_id,
-      type: amenity.type,
+      type: amenity.type
     })
 
     if (amenityEntity) {
@@ -107,6 +108,12 @@ class EstateAmenityService {
     }
     query.where('estate_id', estate_id).transacting(trx)
     await query
+  }
+
+  static async getMandatoryAmenityIds() {
+    const mandatoryAmenityKeys = Object.values(MANDATORY_AMENITIES)
+    const amenities = await Option.query().whereIn('title', mandatoryAmenityKeys).fetch()
+    return (amenities.toJSON() || []).map((amenity) => amenity.id)
   }
 }
 

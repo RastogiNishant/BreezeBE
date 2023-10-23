@@ -33,7 +33,7 @@ class MapController {
     return view.render('map', {
       points: JSON.stringify(data),
       zone: JSON.stringify(zone),
-      tenants: JSON.stringify(tenants),
+      tenants: JSON.stringify(tenants)
     })
   }
 }

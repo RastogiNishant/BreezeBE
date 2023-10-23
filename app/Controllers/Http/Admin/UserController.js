@@ -31,10 +31,10 @@ const {
   WEBSOCKET_EVENT_USER_DEACTIVATE,
   STATUS_OFFLINE_ACTIVE,
   PUBLISH_STATUS_INIT,
-  ROLE_USER,
+  ROLE_USER
 } = require('../../../constants')
 const {
-  exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD },
+  exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD }
 } = require('../../../exceptions')
 const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
@@ -109,9 +109,10 @@ class UserController {
   async updateActivationStatus({ request, auth, response }) {
     const { ids, action } = request.all()
     let affectedRows = 0
-    const trx = await Database.beginTransaction()
+    let trx
     switch (action) {
       case 'activate':
+        trx = await Database.beginTransaction()
         try {
           const users = await UserService.getLangByIds({ ids, status: STATUS_ACTIVE })
           if (users.length !== ids.length) {
@@ -123,7 +124,7 @@ class UserController {
               activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
               is_verified: true,
               verified_by: auth.user.id,
-              verified_date: moment().utc().format(),
+              verified_date: moment().utc().format()
             },
             trx
           )
@@ -139,13 +140,13 @@ class UserController {
           users.map((user) => {
             MailService.sendLandlordActivateEmail(user.email, {
               user,
-              lang: user.lang ?? DEFAULT_LANG,
+              lang: user.lang ?? DEFAULT_LANG
             })
           })
 
           UserService.emitAccountEnabled(ids, {
             activation_status: USER_ACTIVATION_STATUS_ACTIVATED,
-            activated: true,
+            activated: true
           })
           return response.res({ affectedRows })
         } catch (err) {
@@ -155,13 +156,14 @@ class UserController {
         }
 
       case 'deactivate':
+        trx = await Database.beginTransaction()
         try {
           affectedRows = await User.query().whereIn('id', ids).update(
             {
               activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
               is_verified: false,
               verified_by: null,
-              verified_date: null,
+              verified_date: null
             },
             trx
           )
@@ -190,7 +192,7 @@ class UserController {
           NoticeService.landlordsDeactivated(ids, estateIds)
           UserService.emitAccountEnabled(ids, {
             activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
-            activated: false,
+            activated: false
           })
           return response.res({ affectedRows })
         } catch (err) {
@@ -199,6 +201,7 @@ class UserController {
           throw new HttpException(err.message, 422)
         }
       case 'deactivate-in-2-days':
+        trx = await Database.beginTransaction()
         try {
           await Promise.map(ids, async (id) => {
             const user = await User.query().where('id', id).where('role', ROLE_LANDLORD).first()
@@ -241,7 +244,7 @@ class UserController {
             const deactivationSchedule = await UserDeactivationSchedule.create(
               {
                 user_id: id,
-                deactivate_schedule: deactivateDateTime,
+                deactivate_schedule: deactivateDateTime
               },
               trx
             )
@@ -258,7 +261,7 @@ class UserController {
       case 'deactivate-by-date':
         return response.res({ message: 'action not implemented yet.' })
     }
-    await trx.rollback()
+
     response.res(false)
   }
 
@@ -351,7 +354,7 @@ class UserController {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
         USER_ACTIVATION_STATUS_ACTIVATED,
-        USER_ACTIVATION_STATUS_DEACTIVATED,
+        USER_ACTIVATION_STATUS_DEACTIVATED
       ]
     }
     status = status || STATUS_ACTIVE
@@ -359,7 +362,7 @@ class UserController {
       STATUS_ACTIVE,
       STATUS_EXPIRE,
       STATUS_DRAFT,
-      STATUS_OFFLINE_ACTIVE,
+      STATUS_OFFLINE_ACTIVE
     ]
     limit = 99999
     const landlordQuery = this.landlordQuery({ status, estate_status, activation_status, light })
@@ -487,7 +490,9 @@ class UserController {
                 'insolvency_proceed', members.insolvency_proceed,
                 'arrest_warranty', members.arrest_warranty,
                 'clean_procedure', members.clean_procedure,
-                'income_seizure', members.income_seizure
+                'income_seizure', members.income_seizure,
+                'credit_history_status', members.credit_history_status,
+                'credit_score_issued_at', members.credit_score_issued_at
               )
             ) as member_info
           from

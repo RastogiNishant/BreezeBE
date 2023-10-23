@@ -10,7 +10,7 @@ class RoleIsValid {
    * @param {Request} ctx.request
    * @param {Function} next
    */
-  async handle ({ request }, next) {
+  async handle({ request }, next) {
     // call next to advance the request
     let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
     const role = request.role

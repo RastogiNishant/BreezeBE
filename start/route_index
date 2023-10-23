@@ -1,0 +1,5335 @@
+[
+  {
+    "route": "/",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "CommonController.getVersionInfo"
+  },
+  {
+    "route": "/:key",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:Key"
+    ],
+    "handler": "CommonController.getOriginalUrl"
+  },
+  {
+    "route": "/api/v1/accept/outside_tenant",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "valid:OutsideTenantInvite",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.acceptOutsideTenant"
+  },
+  {
+    "route": "/api/v1/accept/outside_tenant/already_registered",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:AlreadyRegisteredOutsideTenantInvite",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.acceptAlreadyRegisterdOutsideTenant"
+  },
+  {
+    "route": "/api/v1/admin/activation",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:UpdateUserValidationStatus",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/UserController.updateActivationStatus"
+  },
+  {
+    "route": "/api/v1/admin/agreements",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AgreementController.getAgreements"
+  },
+  {
+    "route": "/api/v1/admin/agreements",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:CreateAgreement",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AgreementController.createAgreement"
+  },
+  {
+    "route": "/api/v1/admin/agreements/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AgreementController.deleteAgreement"
+  },
+  {
+    "route": "/api/v1/admin/agreements/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:CreateAgreement,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AgreementController.updateAgreement"
+  },
+  {
+    "route": "/api/v1/admin/auth/login",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "valid:AdminLogin",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AuthController.login"
+  },
+  {
+    "route": "/api/v1/admin/feature",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Ids",
+      "agreement",
+      "plan"
+    ],
+    "handler": "FeatureController.removeFeature"
+  },
+  {
+    "route": "/api/v1/admin/feature",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:CreateFeature",
+      "agreement",
+      "plan"
+    ],
+    "handler": "FeatureController.createFeature"
+  },
+  {
+    "route": "/api/v1/admin/feature",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:CreateFeature,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "FeatureController.updateFeature"
+  },
+  {
+    "route": "/api/v1/admin/login",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "guest",
+      "valid:SignIn",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/UserController.login"
+  },
+  {
+    "route": "/api/v1/admin/plan",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Ids",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PlanController.deletePlan"
+  },
+  {
+    "route": "/api/v1/admin/plan",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PlanController.getPlanAll"
+  },
+  {
+    "route": "/api/v1/admin/plan",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:CreatePlan",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PlanController.createPlan"
+  },
+  {
+    "route": "/api/v1/admin/plan/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PlanController.getPlan"
+  },
+  {
+    "route": "/api/v1/admin/plan/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:CreatePlan,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PlanController.updatePlan"
+  },
+  {
+    "route": "/api/v1/admin/tenant/paymentplan",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:PlanId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantPaymentPlanController.getTenantPaymentPlan"
+  },
+  {
+    "route": "/api/v1/admin/tenant/paymentplan",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:TenantPaymentPlan",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantPaymentPlanController.createTenantPaymentPlan"
+  },
+  {
+    "route": "/api/v1/admin/tenant/paymentplan/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantPaymentPlanController.deleteTenantPaymentPlan"
+  },
+  {
+    "route": "/api/v1/admin/tenant/paymentplan/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantPaymentPlanController.getTenantPaymentPlanById"
+  },
+  {
+    "route": "/api/v1/admin/tenant/paymentplan/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:TenantPaymentPlan,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantPaymentPlanController.updateTenantPaymentPlan"
+  },
+  {
+    "route": "/api/v1/admin/terms",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AgreementController.getTerms"
+  },
+  {
+    "route": "/api/v1/admin/terms",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:CreateAgreement",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AgreementController.createTerm"
+  },
+  {
+    "route": "/api/v1/admin/terms/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AgreementController.deleteTerm"
+  },
+  {
+    "route": "/api/v1/admin/terms/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:CreateAgreement,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/AgreementController.updateTerm"
+  },
+  {
+    "route": "/api/v1/admin/users",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/UserController.getUsers"
+  },
+  {
+    "route": "/api/v1/admin/users/:user_id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/UserController.getUser"
+  },
+  {
+    "route": "/api/v1/admin/users/:user_id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/UserController.updateUser"
+  },
+  {
+    "route": "/api/v1/admin/verifyUsers",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Ids,UserVerify",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/UserController.verifyUsers"
+  },
+  {
+    "route": "/api/v1/administration/activation",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:UpdateUserValidationStatus"
+    ],
+    "handler": "Admin/UserController.updateActivationStatus"
+  },
+  {
+    "route": "/api/v1/administration/app/tenant",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/AppController.createTenantLink"
+  },
+  {
+    "route": "/api/v1/administration/auth/login",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "guest",
+      "valid:AdminLogin"
+    ],
+    "handler": "Admin/AuthController.login"
+  },
+  {
+    "route": "/api/v1/administration/buildings",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/PropertyController.publishBuilding"
+  },
+  {
+    "route": "/api/v1/administration/estate-sync",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:InitializeEstateSync"
+    ],
+    "handler": "Admin/EstateSyncController.initialize"
+  },
+  {
+    "route": "/api/v1/administration/estate-sync/targets",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/EstateSyncController.getTargets"
+  },
+  {
+    "route": "/api/v1/administration/estate-sync/targets",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:AddEstateSyncTarget"
+    ],
+    "handler": "Admin/EstateSyncController.addTarget"
+  },
+  {
+    "route": "/api/v1/administration/estate-sync/targets/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/EstateSyncController.deleteTarget"
+  },
+  {
+    "route": "/api/v1/administration/estates",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "pagination"
+    ],
+    "handler": "Admin/PropertyController.getProperties"
+  },
+  {
+    "route": "/api/v1/administration/estates/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/PropertyController.getSingle"
+  },
+  {
+    "route": "/api/v1/administration/estates/:id/images",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/PropertyController.getAllPropertyImages"
+  },
+  {
+    "route": "/api/v1/administration/estates/publish-status",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:AdminUpdatePublishStatus"
+    ],
+    "handler": "Admin/PropertyController.updatePublishStatus"
+  },
+  {
+    "route": "/api/v1/administration/feature",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Ids"
+    ],
+    "handler": "FeatureController.removeFeature"
+  },
+  {
+    "route": "/api/v1/administration/feature",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:CreateFeature"
+    ],
+    "handler": "FeatureController.createFeature"
+  },
+  {
+    "route": "/api/v1/administration/feature",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:CreateFeature,Id"
+    ],
+    "handler": "FeatureController.updateFeature"
+  },
+  {
+    "route": "/api/v1/administration/image/check",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "ImageController.checkFormat"
+  },
+  {
+    "route": "/api/v1/administration/image/compress",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "ImageController.compressImage"
+  },
+  {
+    "route": "/api/v1/administration/image/compress_pdf",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt"
+    ],
+    "handler": "ImageController.testCompressPDF"
+  },
+  {
+    "route": "/api/v1/administration/landlords",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Pagination,AdminGetsLandlords"
+    ],
+    "handler": "Admin/UserController.getLandlords"
+  },
+  {
+    "route": "/api/v1/administration/me",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/AuthController.me"
+  },
+  {
+    "route": "/api/v1/administration/notifications",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/NotificationController.sendNotification"
+  },
+  {
+    "route": "/api/v1/administration/plan",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Ids"
+    ],
+    "handler": "PlanController.deletePlan"
+  },
+  {
+    "route": "/api/v1/administration/plan",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "PlanController.getPlanAll"
+  },
+  {
+    "route": "/api/v1/administration/plan",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:CreatePlan"
+    ],
+    "handler": "PlanController.createPlan"
+  },
+  {
+    "route": "/api/v1/administration/plan/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "PlanController.getPlan"
+  },
+  {
+    "route": "/api/v1/administration/plan/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:CreatePlan,Id"
+    ],
+    "handler": "PlanController.updatePlan"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessage",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/PredefinedMessageController.getAll"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessage",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:CreatePredefinedMessage"
+    ],
+    "handler": "Admin/PredefinedMessageController.create"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessage/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/PredefinedMessageController.delete"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessage/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/PredefinedMessageController.get"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessage/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:CreatePredefinedMessage,Id"
+    ],
+    "handler": "Admin/PredefinedMessageController.update"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessageChoice",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:PredefinedMessageChoiceFilter"
+    ],
+    "handler": "Admin/PredefinedMessageChoiceController.getAll"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessageChoice",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:CreatePredefinedMessageChoice"
+    ],
+    "handler": "Admin/PredefinedMessageChoiceController.create"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessageChoice/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/PredefinedMessageChoiceController.delete"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessageChoice/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/PredefinedMessageChoiceController.get"
+  },
+  {
+    "route": "/api/v1/administration/predefinedMessageChoice/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:CreatePredefinedMessageChoice,Id"
+    ],
+    "handler": "Admin/PredefinedMessageChoiceController.update"
+  },
+  {
+    "route": "/api/v1/administration/prospects",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/UserController.getProspects"
+  },
+  {
+    "route": "/api/v1/administration/prospects/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/UserController.getProspect"
+  },
+  {
+    "route": "/api/v1/administration/users",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "pagination"
+    ],
+    "handler": "Admin/UserController.getUsers"
+  },
+  {
+    "route": "/api/v1/administration/users",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:AdminAddUser"
+    ],
+    "handler": "Admin/UserController.addUser"
+  },
+  {
+    "route": "/api/v1/administration/users/:user_id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/UserController.getUser"
+  },
+  {
+    "route": "/api/v1/administration/users/:user_id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/UserController.updateUser"
+  },
+  {
+    "route": "/api/v1/administration/utilities/estates/:id/percent",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/AppController.calculateEstatePercent"
+  },
+  {
+    "route": "/api/v1/administration/utilities/matchscore/:id/:estate_id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id,EstateId"
+    ],
+    "handler": "Admin/AppController.calculateMatchScore"
+  },
+  {
+    "route": "/api/v1/administration/verifyUsers",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Ids,UserVerify"
+    ],
+    "handler": "Admin/UserController.verifyUsers"
+  },
+  {
+    "route": "/api/v1/building",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BuildingController.getAll"
+  },
+  {
+    "route": "/api/v1/building",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateBuilding",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BuildingController.create"
+  },
+  {
+    "route": "/api/v1/building/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BuildingController.delete"
+  },
+  {
+    "route": "/api/v1/building/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BuildingController.get"
+  },
+  {
+    "route": "/api/v1/calc_price",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:CalcRentPrice",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CommonController.calcRentPrice"
+  },
+  {
+    "route": "/api/v1/cities",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:SearchCity"
+    ],
+    "handler": "CommonController.searchCities"
+  },
+  {
+    "route": "/api/v1/closeAccount",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.closeAccount"
+  },
+  {
+    "route": "/api/v1/companies",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.getCompany"
+  },
+  {
+    "route": "/api/v1/companies",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateCompany",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.createCompany"
+  },
+  {
+    "route": "/api/v1/companies/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.removeCompany"
+  },
+  {
+    "route": "/api/v1/companies/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id,UpdateCompany",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.updateCompany"
+  },
+  {
+    "route": "/api/v1/confirm_email",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:ConfirmEmail,Code",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.confirmEmail"
+  },
+  {
+    "route": "/api/v1/confirmsms",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "guest",
+      "valid:ConfirmSMS",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.checkSignUpConfirmBySMS"
+  },
+  {
+    "route": "/api/v1/connect/chat",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:TaskId,Pagination,LastId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "ChatController.getByTaskId"
+  },
+  {
+    "route": "/api/v1/connect/predefinedAnswer",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:createPredefinedAnswer",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PredefinedAnswerController.createPredefinedAnswer"
+  },
+  {
+    "route": "/api/v1/connect/predefinedAnswer/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PredefinedAnswerController.deletePredefinedAnswer"
+  },
+  {
+    "route": "/api/v1/connect/predefinedAnswer/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:createPredefinedAnswer,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PredefinedAnswerController.updatePredefinedAnswer"
+  },
+  {
+    "route": "/api/v1/connect/predefinedMessage",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:PredefinedMessageFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/PredefinedMessageController.getAll"
+  },
+  {
+    "route": "/api/v1/connect/predefinedMessage/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/PredefinedMessageController.get"
+  },
+  {
+    "route": "/api/v1/connect/predefinedMessageChoice",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:PredefinedMessageChoiceFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "Admin/PredefinedMessageChoiceController.getAll"
+  },
+  {
+    "route": "/api/v1/connect/task",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:TenantTaskFilter,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.getAllTasks"
+  },
+  {
+    "route": "/api/v1/connect/task",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:CreateTask",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.createTask"
+  },
+  {
+    "route": "/api/v1/connect/task/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.deleteTask"
+  },
+  {
+    "route": "/api/v1/connect/task/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.getTaskById"
+  },
+  {
+    "route": "/api/v1/connect/task/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:CreateTask,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.updateTask"
+  },
+  {
+    "route": "/api/v1/connect/task/:id/addImage",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.addImage"
+  },
+  {
+    "route": "/api/v1/connect/task/:id/removeImage",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:Id,RemoveImage",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.removeImage"
+  },
+  {
+    "route": "/api/v1/connect/task/accept/:id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id,EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.acceptTenantInvitation"
+  },
+  {
+    "route": "/api/v1/connect/task/cancel/:id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.cancelTenantInvitation"
+  },
+  {
+    "route": "/api/v1/connect/task/estate/:id/counts",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.getTaskCountsByEstate"
+  },
+  {
+    "route": "/api/v1/connect/task/estate/:id/with-filters",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Pagination,Id,TaskFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.getEstateTasks"
+  },
+  {
+    "route": "/api/v1/connect/task/init",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:InitTask",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.init"
+  },
+  {
+    "route": "/api/v1/connect/task/quick_actions_count",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.getQuickActionsCount"
+  },
+  {
+    "route": "/api/v1/connect/task/topic",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.getTopicList"
+  },
+  {
+    "route": "/api/v1/connect/task/unassigned",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.getUnassignedTasks"
+  },
+  {
+    "route": "/api/v1/connect/task/unread_messages",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "ChatController.getUnreadMessages"
+  },
+  {
+    "route": "/api/v1/connect/task/with-filters",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Pagination,TaskFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TaskController.getLandlordTasks"
+  },
+  {
+    "route": "/api/v1/contacts",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.getContacts"
+  },
+  {
+    "route": "/api/v1/contacts",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateContact",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.createContact"
+  },
+  {
+    "route": "/api/v1/contacts/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.removeContact"
+  },
+  {
+    "route": "/api/v1/contacts/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id,UpdateContact",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.updateContact"
+  },
+  {
+    "route": "/api/v1/countries",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "CommonController.getAvailableCountries"
+  },
+  {
+    "route": "/api/v1/current_tenant",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Ids",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.delete"
+  },
+  {
+    "route": "/api/v1/current_tenant",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstateCurrentTenantFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.getAll"
+  },
+  {
+    "route": "/api/v1/current_tenant",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateEstateCurrentTenant",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.create"
+  },
+  {
+    "route": "/api/v1/current_tenant/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.get"
+  },
+  {
+    "route": "/api/v1/current_tenant/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateEstateCurrentTenant,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.update"
+  },
+  {
+    "route": "/api/v1/current_tenant/:id/lease_contract",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id,RemoveImage",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.removeLeaseContract"
+  },
+  {
+    "route": "/api/v1/current_tenant/:id/lease_contract",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.addLeaseContract"
+  },
+  {
+    "route": "/api/v1/current_tenant/expire/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.expire"
+  },
+  {
+    "route": "/api/v1/dashboard/count",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "DashboardController.getDashboardCount"
+  },
+  {
+    "route": "/api/v1/debug/notifications",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "valid:DebugNotification",
+      "agreement",
+      "plan"
+    ],
+    "handler": "NoticeController.sendTestNotification"
+  },
+  {
+    "route": "/api/v1/estate-by-hash/:hash",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "EstateFoundByHash",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateViewInvitationController.getEstateByHash"
+  },
+  {
+    "route": "/api/v1/estate-sync",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateSyncController.getPublishers"
+  },
+  {
+    "route": "/api/v1/estate-sync-is24",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "EstateSyncController.redirectToWebApp"
+  },
+  {
+    "route": "/api/v1/estate-sync/:publisher",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstateSyncPublisher",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateSyncController.removePublisher"
+  },
+  {
+    "route": "/api/v1/estate-sync/:type",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:AddEstateSyncTarget",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateSyncController.createPublisher"
+  },
+  {
+    "route": "/api/v1/estate-sync/api-key",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateSyncController.deleteApiKey"
+  },
+  {
+    "route": "/api/v1/estate-sync/api-key",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:AddEstateSyncApiKey",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateSyncController.createApiKey"
+  },
+  {
+    "route": "/api/v1/estate-sync/api-key",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:AddEstateSyncApiKey",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateSyncController.updateApiKey"
+  },
+  {
+    "route": "/api/v1/estate-view-invitation/:code",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "ViewEstateInvitationCodeExist",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateViewInvitationController.getByCode"
+  },
+  {
+    "route": "/api/v1/estatePermission",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstatePermission",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.givePermissionToPropertyManager"
+  },
+  {
+    "route": "/api/v1/estatePermission",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstatePermission",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.permissionToPropertyManager"
+  },
+  {
+    "route": "/api/v1/estatePermission/email",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtPropertyManager",
+      "valid:Emails",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.deletePermissionLandlordByEmail"
+  },
+  {
+    "route": "/api/v1/estatePermission/email",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtPropertyManager",
+      "valid:Emails",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.requestPermissionToLandlordByEmail"
+  },
+  {
+    "route": "/api/v1/estatePermission/id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtPropertyManager",
+      "valid:Ids",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.requestPermissionToLandlordById"
+  },
+  {
+    "route": "/api/v1/estatePermission/landlord",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Ids",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.deletePermissionByLandlord"
+  },
+  {
+    "route": "/api/v1/estatePermission/landlords",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtPropertyManager",
+      "valid:EstatePermissionFilter,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.getLandlords"
+  },
+  {
+    "route": "/api/v1/estatePermission/pm",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtPropertyManager",
+      "valid:Ids",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.deletePermissionByPM"
+  },
+  {
+    "route": "/api/v1/estatePermission/propertyManagers",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstatePermissionFilter,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstatePermissionController.getPermittedPropertyManagers"
+  },
+  {
+    "route": "/api/v1/estateReportAbuse",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:CreateEstateAbuse",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateAbuseController.reportEstateAbuse"
+  },
+  {
+    "route": "/api/v1/estates",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateMultipleDelete",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.deleteMultiple"
+  },
+  {
+    "route": "/api/v1/estates",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Pagination,EstateFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getEstates"
+  },
+  {
+    "route": "/api/v1/estates",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:CreateEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.createEstate"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/amenities",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId",
+      "LandlordOwnsThisEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateAmenityController.get"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/amenities",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,CreateEstateAmenity",
+      "LandlordOwnsThisEstate",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateAmenityController.add"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/amenities/:location",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,EstateAmenitiesLocation,Id",
+      "LandlordOwnsThisEstate",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateAmenityController.delete"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/amenities/:location",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,EstateAmenitiesLocation",
+      "LandlordOwnsThisEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateAmenityController.get"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/amenities/:location",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,EstateAmenitiesLocation,UpdateEstateAmenity",
+      "LandlordOwnsThisEstate",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateAmenityController.update"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/bulk/amenities",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,CreateBulkEstateAmenities",
+      "LandlordOwnsThisEstate",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateAmenityController.addBulk"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/bulk_rooms",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:CreateBulkRoom,EstateId",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.createBulkRoom"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/files",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,Ids",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.removeMultipleFiles"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/files",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getFiles"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/files",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateAddFile,EstateId",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.addFile"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/files/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,Id",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.removeFile"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/files/order",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateAddFile,Ids",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.updateOrder"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/invite-to-view",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:LandlordInviteToView",
+      "LandlordOwnsThisEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.inviteToView"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/match",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getMatchByEstate"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/me_tenant_detail",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,TenantId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.landlordTenantDetailInfo"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.getEstateRooms"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:CreateRoom,EstateId",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.createRoom"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:RoomId,EstateId",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.removeRoom"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,RoomId",
+      "LandlordOwnsThisEstate",
+      "RoomBelongsToEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.getRoomById"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:CreateRoom,EstateId,RoomId",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.updateRoom"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id/amenities",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstateId,RoomId,Id",
+      "LandlordOwnsThisEstate",
+      "RoomBelongsToEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomAmenityController.delete"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id/amenities",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstateId,RoomId",
+      "LandlordOwnsThisEstate",
+      "RoomBelongsToEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomAmenityController.getAll"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id/amenities",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstateId,RoomId,CreateRoomAmenity",
+      "LandlordOwnsThisEstate",
+      "RoomBelongsToEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomAmenityController.add"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id/amenities",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:EstateId,RoomId,UpdateRoomAmenity",
+      "LandlordOwnsThisEstate",
+      "RoomBelongsToEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomAmenityController.update"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id/images",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:RoomId,EstateId",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.addRoomPhoto"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id/images/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:RoomId,Id,EstateId",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.removeRoomPhoto"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/:room_id/images/order",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:RoomId,Ids,EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.orderRoomPhoto"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/rooms/order",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Ids",
+      "agreement",
+      "plan"
+    ],
+    "handler": "RoomController.updateOrder"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/slots",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getSlots"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/slots",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,CreateSlot",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.createSlot"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/slots/:slot_id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,SlotId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.removeSlot"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/slots/:slot_id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateId,SlotId,UpdateSlot",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.updateSlot"
+  },
+  {
+    "route": "/api/v1/estates/:estate_id/slots/free",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getEstateFreeTimeslots"
+  },
+  {
+    "route": "/api/v1/estates/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.removeEstate"
+  },
+  {
+    "route": "/api/v1/estates/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getEstate"
+  },
+  {
+    "route": "/api/v1/estates/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:UpdateEstate",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.updateEstate"
+  },
+  {
+    "route": "/api/v1/estates/:id/let",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:UpdateEstate",
+      "EstateCanEdit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.changeLettingType"
+  },
+  {
+    "route": "/api/v1/estates/:id/link",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.createShareLink"
+  },
+  {
+    "route": "/api/v1/estates/:id/offline",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.makeEstateOffline"
+  },
+  {
+    "route": "/api/v1/estates/:id/publish",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id,PublishEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.publishEstate"
+  },
+  {
+    "route": "/api/v1/estates/building/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id,EstateFilter,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getBuildingEstates"
+  },
+  {
+    "route": "/api/v1/estates/building/:id/can_publish",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.canBuildPublish"
+  },
+  {
+    "route": "/api/v1/estates/building/:id/extend",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:ExtendEstate,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.extendBuilding"
+  },
+  {
+    "route": "/api/v1/estates/building/:id/publish",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id,PublishEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.publishBuild"
+  },
+  {
+    "route": "/api/v1/estates/building/match",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Pagination,EstateFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getMatchEstates"
+  },
+  {
+    "route": "/api/v1/estates/building/publish/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:PublishInfo,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.updateBuilding"
+  },
+  {
+    "route": "/api/v1/estates/candidate",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.searchEstates"
+  },
+  {
+    "route": "/api/v1/estates/cities",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getCityList"
+  },
+  {
+    "route": "/api/v1/estates/duplicate/:id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.duplicateEstate"
+  },
+  {
+    "route": "/api/v1/estates/export",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.export"
+  },
+  {
+    "route": "/api/v1/estates/export/:lang",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:ExportExcel",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.export"
+  },
+  {
+    "route": "/api/v1/estates/extend",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:ExtendEstate,EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.extendEstate"
+  },
+  {
+    "route": "/api/v1/estates/import",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.importEstate"
+  },
+  {
+    "route": "/api/v1/estates/import/last-activity",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.importLastActivity"
+  },
+  {
+    "route": "/api/v1/estates/import/last-activity",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:PostImportLastActivity",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.postImportLastActivity"
+  },
+  {
+    "route": "/api/v1/estates/import/openimmo",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "ValidOpenImmoImport",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.importOpenimmo"
+  },
+  {
+    "route": "/api/v1/estates/latest",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getLatestEstates"
+  },
+  {
+    "route": "/api/v1/estates/match",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateFilter,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getMatchList"
+  },
+  {
+    "route": "/api/v1/estates/match/invite",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:MatchFilter,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getMatchStageList"
+  },
+  {
+    "route": "/api/v1/estates/quickLinks",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getEstatesQuickLinks"
+  },
+  {
+    "route": "/api/v1/estates/quick_search",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.shortSearchEstates"
+  },
+  {
+    "route": "/api/v1/estates/search/onboard",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:UpdateTenant",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.searchPreOnboard"
+  },
+  {
+    "route": "/api/v1/estates/search/property_id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.searchByPropertyId"
+  },
+  {
+    "route": "/api/v1/estates/tenant/disconnect",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:InvitationIds",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.disconnect"
+  },
+  {
+    "route": "/api/v1/estates/tenant/invite",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:TenantInvitation",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.inviteTenantToApp"
+  },
+  {
+    "route": "/api/v1/estates/tenant/invite/email",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:InvitationIds",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.inviteTenantToAppByEmail"
+  },
+  {
+    "route": "/api/v1/estates/tenant/invite/letter",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:InvitationIds",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.inviteTenantToAppByLetter"
+  },
+  {
+    "route": "/api/v1/estates/tenant/invite/letter/retrieve-link/:code",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:InvitationLinkRetrieveCode",
+      "UserCanGetInvitationLink",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.retrieveLinkByCode"
+  },
+  {
+    "route": "/api/v1/estates/tenant/invite/sms",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:InvitationIds",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.inviteTenantToAppBySMS"
+  },
+  {
+    "route": "/api/v1/estates/tenant/revoke",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:InvitationIds",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.revokeInvitation"
+  },
+  {
+    "route": "/api/v1/estates/upcomingShows",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getLandlordUpcomingVisits"
+  },
+  {
+    "route": "/api/v1/estates/verifyPropertyId",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:PropertyId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.verifyPropertyId"
+  },
+  {
+    "route": "/api/v1/estates/with-filters",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Pagination,EstateFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getEstates"
+  },
+  {
+    "route": "/api/v1/excel",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Lang",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CommonController.getExcelTemplate"
+  },
+  {
+    "route": "/api/v1/feature",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:CreateFeature",
+      "auth:jwtLandlord,jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "FeatureController.getFeatures"
+  },
+  {
+    "route": "/api/v1/feedback",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "agreement",
+      "plan"
+    ],
+    "handler": "FeedbackController.getAll"
+  },
+  {
+    "route": "/api/v1/feedback",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:CreateFeedback",
+      "agreement",
+      "plan"
+    ],
+    "handler": "FeedbackController.create"
+  },
+  {
+    "route": "/api/v1/forgotPassword",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "guest",
+      "valid:ResetEmailRequest",
+      "UserWithEmailExists",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.sendCodeForgotPassword"
+  },
+  {
+    "route": "/api/v1/forgotPassword/setPassword",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "guest",
+      "valid:SetPassword",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.setPasswordForgotPassword"
+  },
+  {
+    "route": "/api/v1/gallery",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:EstateAddFile",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.addFile"
+  },
+  {
+    "route": "/api/v1/gallery/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Id,EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "GalleryController.removeFile"
+  },
+  {
+    "route": "/api/v1/gallery/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:Pagination,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "GalleryController.getAll"
+  },
+  {
+    "route": "/api/v1/gallery/assign",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:GalleryAssign",
+      "agreement",
+      "plan"
+    ],
+    "handler": "GalleryController.assign"
+  },
+  {
+    "route": "/api/v1/hash-invited-signup/:hash",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "EstateFoundByHash",
+      "valid:SignupAfterViewEstateInvitation",
+      "ProspectHasNotRegisterYet",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.signupProspectWithHash"
+  },
+  {
+    "route": "/api/v1/housekeeperSignup",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "guest",
+      "valid:HosekeeperSignUp",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.housekeeperSignup"
+  },
+  {
+    "route": "/api/v1/image/createthumbnail",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "ImageController.tryCreateThumbnail"
+  },
+  {
+    "route": "/api/v1/invited-signup/:code",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "ViewEstateInvitationCodeExist",
+      "valid:SignupAfterViewEstateInvitation",
+      "ProspectHasNotRegisterYet",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.signupProspectWithViewEstateInvitation"
+  },
+  {
+    "route": "/api/v1/landlord/:id/company",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CompanyController.getCompanyByLandlord"
+  },
+  {
+    "route": "/api/v1/landlord/activate",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LandlordController.activate"
+  },
+  {
+    "route": "/api/v1/landlord/billingAddress",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BillingAddressController.getUserBillingAddress"
+  },
+  {
+    "route": "/api/v1/landlord/billingAddress",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BillingAddressController.addBillingAddress"
+  },
+  {
+    "route": "/api/v1/landlord/billingAddress",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BillingAddressController.updateBillingAddress"
+  },
+  {
+    "route": "/api/v1/landlord/invite-to-view-estate",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "LandlordOwnsThisEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getInviteToView"
+  },
+  {
+    "route": "/api/v1/landlord/invite-to-view-estate",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:LandlordInviteToView",
+      "LandlordOwnsThisEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.createInviteToViewCode"
+  },
+  {
+    "route": "/api/v1/landlord/payment",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PaymentController.getUserPayments"
+  },
+  {
+    "route": "/api/v1/landlord/payment",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PaymentController.processPayment"
+  },
+  {
+    "route": "/api/v1/landlord/payment/paypal",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PaymentController.processPaypal"
+  },
+  {
+    "route": "/api/v1/landlord/paymentMethod",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PaymentMethodController.get"
+  },
+  {
+    "route": "/api/v1/landlord/paymentMethod",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PaymentMethodController.post"
+  },
+  {
+    "route": "/api/v1/landlord/paymentMethod",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PaymentMethodController.update"
+  },
+  {
+    "route": "/api/v1/landlord/visit",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LandlordController.getLordVisits"
+  },
+  {
+    "route": "/api/v1/landlords",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LandlordController.landlords"
+  },
+  {
+    "route": "/api/v1/landlords/buddies",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BuddyController.removeBuddies"
+  },
+  {
+    "route": "/api/v1/landlords/buddies/get",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BuddyController.getBuddies"
+  },
+  {
+    "route": "/api/v1/landlords/buddies/import",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "BuddyController.importBuddies"
+  },
+  {
+    "route": "/api/v1/landlords/getLandlords",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LandlordController.landlords"
+  },
+  {
+    "route": "/api/v1/landlords/myTenants",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LandlordController.getAllTenants"
+  },
+  {
+    "route": "/api/v1/landlords/tenant_budget_count",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:BudgetFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.tenantCountByBudget"
+  },
+  {
+    "route": "/api/v1/landlords/tenant_count",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.tenantCount"
+  },
+  {
+    "route": "/api/v1/landlords/tenant_credit_score_count",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreditScoreFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.tenantCountByCreditScore"
+  },
+  {
+    "route": "/api/v1/landlords/toggle",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LandlordController.toggleStatus"
+  },
+  {
+    "route": "/api/v1/letter_template",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LetterTemplateController.get"
+  },
+  {
+    "route": "/api/v1/letter_template",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:LetterTemplate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LetterTemplateController.update"
+  },
+  {
+    "route": "/api/v1/letter_template/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LetterTemplateController.delete"
+  },
+  {
+    "route": "/api/v1/letter_template/:id/delete_logo",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "LetterTemplateController.deleteLogo"
+  },
+  {
+    "route": "/api/v1/login",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "guest",
+      "valid:SignIn",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.login"
+  },
+  {
+    "route": "/api/v1/logout",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager,jwtAdministrator"
+    ],
+    "handler": "AccountController.logout"
+  },
+  {
+    "route": "/api/v1/marketplace/contact",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:MarketPlaceContact"
+    ],
+    "handler": "MarketPlaceController.createContact"
+  },
+  {
+    "route": "/api/v1/marketplace/invite/:id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id"
+    ],
+    "handler": "MarketPlaceController.inviteByLandlord"
+  },
+  {
+    "route": "/api/v1/marketplace/knock",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:AlreadyRegisteredOutsideTenantInvite"
+    ],
+    "handler": "MarketPlaceController.createKnock"
+  },
+  {
+    "route": "/api/v1/match/cancel-building/:action",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:MatchBuildingAction",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.cancelBuildingAction"
+  },
+  {
+    "route": "/api/v1/match/cancel/:action",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:MatchAction",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.cancelAction"
+  },
+  {
+    "route": "/api/v1/match/commit",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.tenantCancelCommit"
+  },
+  {
+    "route": "/api/v1/match/confirm",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:ConfirmRequest",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.commitEstateRent"
+  },
+  {
+    "route": "/api/v1/match/invite",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:MatchInvite",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.removeInvite"
+  },
+  {
+    "route": "/api/v1/match/invite",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:MatchInvite",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.matchToInvite"
+  },
+  {
+    "route": "/api/v1/match/invite/:estate_id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.removeInviteByTenant"
+  },
+  {
+    "route": "/api/v1/match/knock",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.removeKnock"
+  },
+  {
+    "route": "/api/v1/match/knock",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getKnockPlacesNumber"
+  },
+  {
+    "route": "/api/v1/match/knock",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Knock",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.knockEstate"
+  },
+  {
+    "route": "/api/v1/match/landlord",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:MatchListLandlord,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getMatchesListLandlord"
+  },
+  {
+    "route": "/api/v1/match/landlord/estate",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:MatchListLandlord,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getMatchesSummaryLandlordEstate"
+  },
+  {
+    "route": "/api/v1/match/landlord/estate/notifyprospect-fillupprofile",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.notifyOutsideProspectToFillUpProfile"
+  },
+  {
+    "route": "/api/v1/match/landlord/inviteTenantTo",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:InviteInToVisit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.removeTenantEdit"
+  },
+  {
+    "route": "/api/v1/match/landlord/inviteTenantTo",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:InviteInToVisit,InviteTo",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.inviteTenantToEstate"
+  },
+  {
+    "route": "/api/v1/match/landlord/search",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Pagination,EstateFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.searchForLandlord"
+  },
+  {
+    "route": "/api/v1/match/landlord/summary",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getLandlordSummary"
+  },
+  {
+    "route": "/api/v1/match/landlordVisit",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:LandlordVisitCancel",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.cancelVisitByLandlord"
+  },
+  {
+    "route": "/api/v1/match/move",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:MatchMoveToNewEstate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.matchMoveToNewEstate"
+  },
+  {
+    "route": "/api/v1/match/order",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:ChangeOrder",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.changeOrder"
+  },
+  {
+    "route": "/api/v1/match/request",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.requestUserCommit"
+  },
+  {
+    "route": "/api/v1/match/share",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.cancelShare"
+  },
+  {
+    "route": "/api/v1/match/share",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:ShareProspectProfile",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.shareTenantData"
+  },
+  {
+    "route": "/api/v1/match/tenant",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:MatchListTenant,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getMatchesListTenant"
+  },
+  {
+    "route": "/api/v1/match/tenant/check/commitedAlready",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.checkTenantMatchCommitedAlready"
+  },
+  {
+    "route": "/api/v1/match/tenant/count",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:MatchListTenant,Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getMatchesCountsTenant"
+  },
+  {
+    "route": "/api/v1/match/tenant/property",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:EstateId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.deleteProperty"
+  },
+  {
+    "route": "/api/v1/match/tenant/property",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:EstateId,TenantProperty",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.updateProperty"
+  },
+  {
+    "route": "/api/v1/match/tenant/property",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:EstateId,TenantProperty",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.updateProperty"
+  },
+  {
+    "route": "/api/v1/match/tenant/search",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Pagination,EstateFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.searchForTenant"
+  },
+  {
+    "route": "/api/v1/match/tenant/stage/count",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getMatchesStageCountsTenant"
+  },
+  {
+    "route": "/api/v1/match/tenant/upcoming",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getTenantUpcomingVisits"
+  },
+  {
+    "route": "/api/v1/match/top",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.discardUserToTop"
+  },
+  {
+    "route": "/api/v1/match/top",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.moveUserToTop"
+  },
+  {
+    "route": "/api/v1/match/top/tenant",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.cancelTopByTenant"
+  },
+  {
+    "route": "/api/v1/match/visit",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.cancelVisit"
+  },
+  {
+    "route": "/api/v1/match/visit",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:ChooseTimeslot",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.chooseVisitTimeslot"
+  },
+  {
+    "route": "/api/v1/match/visit/inviteIn",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:InviteInToVisit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.inviteTenantInToVisit"
+  },
+  {
+    "route": "/api/v1/me",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator,jwt,jwtHousekeeper"
+    ],
+    "handler": "AccountController.me"
+  },
+  {
+    "route": "/api/v1/notes",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:TenantId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "NoteController.removeNote"
+  },
+  {
+    "route": "/api/v1/notes",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:TenantId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "NoteController.getNotes"
+  },
+  {
+    "route": "/api/v1/notes",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateNote",
+      "agreement",
+      "plan"
+    ],
+    "handler": "NoteController.createNote"
+  },
+  {
+    "route": "/api/v1/notes",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateNote",
+      "agreement",
+      "plan"
+    ],
+    "handler": "NoteController.updateNote"
+  },
+  {
+    "route": "/api/v1/notices",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:GetNotifications",
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "NoticeController.getNotices"
+  },
+  {
+    "route": "/api/v1/notices/resetCount",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.resetUnreadNotificationCount"
+  },
+  {
+    "route": "/api/v1/offers",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:GetOffers"
+    ],
+    "handler": "CommonController.getOffers"
+  },
+  {
+    "route": "/api/v1/onboard/tenant/estates/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getTenantEstate"
+  },
+  {
+    "route": "/api/v1/onboard/tenant/estates/third_party/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getThirdPartyOfferEstate"
+  },
+  {
+    "route": "/api/v1/onboarding",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.onboard"
+  },
+  {
+    "route": "/api/v1/onboarding/dashboard",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.onboardDashboard"
+  },
+  {
+    "route": "/api/v1/onboarding/profile",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.onboardProfile"
+  },
+  {
+    "route": "/api/v1/onboarding/selection",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.onboardSelection"
+  },
+  {
+    "route": "/api/v1/onboarding/verification",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.onboardLandlordVerification"
+  },
+  {
+    "route": "/api/v1/plan",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PlanController.getPlanAll"
+  },
+  {
+    "route": "/api/v1/plan/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PlanController.getPlan"
+  },
+  {
+    "route": "/api/v1/profile/tenant/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.getTenantProfile"
+  },
+  {
+    "route": "/api/v1/references",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "CommonController.getReferences"
+  },
+  {
+    "route": "/api/v1/search/profession",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:ProfessionQuery",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CommonController.searchProfession"
+  },
+  {
+    "route": "/api/v1/search/street",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:SearchStreet",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CommonController.searchStreet"
+  },
+  {
+    "route": "/api/v1/signup",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "guest",
+      "valid:SignUp",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.signup"
+  },
+  {
+    "route": "/api/v1/stripe/products",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord"
+    ],
+    "handler": "StripeController.getProducts"
+  },
+  {
+    "route": "/api/v1/stripe/subscription",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateSubscription"
+    ],
+    "handler": "StripeController.createSubscription"
+  },
+  {
+    "route": "/api/v1/tenant/estates",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Pagination",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getTenantEstates"
+  },
+  {
+    "route": "/api/v1/tenant/estates/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getTenantEstate"
+  },
+  {
+    "route": "/api/v1/tenant/estates/:id/dislike",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.removeEstateDislike"
+  },
+  {
+    "route": "/api/v1/tenant/estates/:id/dislike",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.dislikeEstate"
+  },
+  {
+    "route": "/api/v1/tenant/estates/:id/like",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.unlikeEstate"
+  },
+  {
+    "route": "/api/v1/tenant/estates/:id/like",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.likeEstate"
+  },
+  {
+    "route": "/api/v1/tenant/estates/build/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id,TenantBuildFilter",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getTenantBuildingEstate"
+  },
+  {
+    "route": "/api/v1/tenant/estates/invite",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Code",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.acceptEstateInvite"
+  },
+  {
+    "route": "/api/v1/tenant/estates/third-party-offers/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateController.getThirdPartyOfferEstate"
+  },
+  {
+    "route": "/api/v1/tenant/estates/third-party-offers/action",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "auth:jwt",
+      "valid:ThirdPartyOffersAction",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.postThirdPartyOfferAction"
+  },
+  {
+    "route": "/api/v1/tenant/file",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:ProtectedFile",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.getProtectedFile"
+  },
+  {
+    "route": "/api/v1/tenant/income/:income_id/proof",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:IncomeId,AddIncomeProof",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.addMemberIncomeProof"
+  },
+  {
+    "route": "/api/v1/tenant/income/:income_id/proof/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id,IncomeId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.removeMemberIncomeProof"
+  },
+  {
+    "route": "/api/v1/tenant/members",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.getMembers"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.removeMember"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:CreateMember,Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.updateMember"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id/:field",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:RemoveMemberDocs",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.removeMemberDocs"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id/extraproof",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id,ExtraFileType",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.addPassportImage"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id/extraproof/:member_file_id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id,MemberFileId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.deleteExtraImage"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id/income",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id,CreateIncome",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.addMemberIncome"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id/income/:income_id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id,IncomeId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.removeMemberIncome"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id/income/:income_id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id,IncomeId,CreateIncome",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.editIncome"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id/passport",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.addPassportImage"
+  },
+  {
+    "route": "/api/v1/tenant/members/:id/passport/:member_file_id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id,MemberFileId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.deleteExtraImage"
+  },
+  {
+    "route": "/api/v1/tenant/members/confirmsms",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:MemberId,Code,Phone",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.confirmBySMS"
+  },
+  {
+    "route": "/api/v1/tenant/members/email",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:CreateMember,Email,ProfileVisibilityToOther",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.addMember"
+  },
+  {
+    "route": "/api/v1/tenant/members/invitation",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.prepareHouseholdInvitationDetails"
+  },
+  {
+    "route": "/api/v1/tenant/members/invitation/accept",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:ProfileVisibilityToOther",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.acceptInvitation"
+  },
+  {
+    "route": "/api/v1/tenant/members/invitation/refuse",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.refuseInvitation"
+  },
+  {
+    "route": "/api/v1/tenant/members/invite/:id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.sendInviteCode"
+  },
+  {
+    "route": "/api/v1/tenant/members/pdfdownload",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "PdfRentalController.generatePdf"
+  },
+  {
+    "route": "/api/v1/tenant/members/sendsms",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt,jwtHousekeeper",
+      "valid:MemberId,Phone",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.sendUserConfirmBySMS"
+  },
+  {
+    "route": "/api/v1/tenant/members/visible",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:MemberId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.checkVisibilitySetting"
+  },
+  {
+    "route": "/api/v1/tenant/members/visible",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:MemberId,ProfileVisibilityToOther",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MemberController.showMe"
+  },
+  {
+    "route": "/api/v1/tenant/paymentplan",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:PlanId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantPaymentPlanController.getTenantPaymentPlan"
+  },
+  {
+    "route": "/api/v1/tenant/paymentplan/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantPaymentPlanController.getTenantPaymentPlanById"
+  },
+  {
+    "route": "/api/v1/tenantPremiumPlan",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:AppType",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.getTenantPremiumPlans"
+  },
+  {
+    "route": "/api/v1/tenantPremiumPlan",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:TenantPremiumPlan,AppType",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.updateTenantPremiumPlan"
+  },
+  {
+    "route": "/api/v1/tenantReportAbuse",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:CreateEstateAbuse,TenantId",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantReportAbuseController.reportTenantAbuse"
+  },
+  {
+    "route": "/api/v1/tenantReportAbuse/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwtAdmin",
+      "is:admin",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantReportAbuseController.deleteAbuse"
+  },
+  {
+    "route": "/api/v1/terms",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "CommonController.getTermsAndConditions"
+  },
+  {
+    "route": "/api/v1/terms",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "valid:AcceptTerms"
+    ],
+    "handler": "CommonController.acceptTermsAndConditions"
+  },
+  {
+    "route": "/api/v1/test/publish/pay",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord"
+    ],
+    "handler": "StripeController.testPublishPayment"
+  },
+  {
+    "route": "/api/v1/test/webhooks/stripe",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord"
+    ],
+    "handler": "StripeController.webhookTest"
+  },
+  {
+    "route": "/api/v1/updateDeviceToken",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord,jwtHousekeeper,jwtPropertyManager",
+      "valid:DeviceToken",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.updateDeviceToken"
+  },
+  {
+    "route": "/api/v1/url",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwt",
+      "valid:Uri",
+      "agreement",
+      "plan"
+    ],
+    "handler": "CommonController.getProtectedUrl"
+  },
+  {
+    "route": "/api/v1/users",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:UpdateUser",
+      "userCanValidlyChangeEmail",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.updateProfile"
+  },
+  {
+    "route": "/api/v1/users/avatar",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.updateAvatar"
+  },
+  {
+    "route": "/api/v1/users/password",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt,jwtLandlord",
+      "valid:ChangePassword",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.changePassword"
+  },
+  {
+    "route": "/api/v1/users/reconfirm",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "valid:ConfirmEmail",
+      "agreement",
+      "plan"
+    ],
+    "handler": "AccountController.resendUserConfirm"
+  },
+  {
+    "route": "/api/v1/users/tenant",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:UpdateTenant",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.updateTenant"
+  },
+  {
+    "route": "/api/v1/users/tenant/activate",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.activateTenant"
+  },
+  {
+    "route": "/api/v1/users/tenant/all",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.getAllTenants"
+  },
+  {
+    "route": "/api/v1/users/tenant/buddy/accept",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.acceptBuddyInvite"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantCertificateController.getAll"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:CreateTenantCertificate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantCertificateController.addCertificate"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate/:id",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantCertificateController.deleteCertificate"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantCertificateController.get"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate/:id",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id,CreateTenantCertificate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantCertificateController.updateCertificate"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate/:id/image",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id,Uri",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantCertificateController.deleteImage"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate/:id/image",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:Id,CreateFile",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantCertificateController.updateImage"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate/request",
+    "method": [
+      "DELETE"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.removeRequestCertificate"
+  },
+  {
+    "route": "/api/v1/users/tenant/certificate/request",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:RequestCertificate",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.requestCertificate"
+  },
+  {
+    "route": "/api/v1/users/tenant/deactive",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.deactivateTenant"
+  },
+  {
+    "route": "/api/v1/users/tenant/detail",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.detail"
+  },
+  {
+    "route": "/api/v1/users/tenant/map",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": "TenantController.getTenantMap"
+  },
+  {
+    "route": "/api/v1/validate/outside_tenant/invitation",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "valid:AlreadyRegisteredOutsideTenantInvite",
+      "agreement",
+      "plan"
+    ],
+    "handler": "EstateCurrentTenantController.validateInvitationQRCode"
+  },
+  {
+    "route": "/api/v1/view-estate-invitations",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwt",
+      "agreement",
+      "plan"
+    ],
+    "handler": ""
+  },
+  {
+    "route": "/api/v1/visit/landlord",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:UpdateVisitStatusLord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.updateVisitTimeslotLandlord"
+  },
+  {
+    "route": "/api/v1/visit/landlord/come",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:InviteUserToCome",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.inviteToCome"
+  },
+  {
+    "route": "/api/v1/visit/notifications/followup",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:FollowupVisit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.followupVisit"
+  },
+  {
+    "route": "/api/v1/visit/notifications/followup/:estate_id/:user_id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:FollowupVisit",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.getFollowups"
+  },
+  {
+    "route": "/api/v1/visit/tenant",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:UpdateVisitStatusTenant",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.updateVisitTimeslotTenant"
+  },
+  {
+    "route": "/api/v1/zendesk/notify",
+    "method": [
+      "POST"
+    ],
+    "middle": [],
+    "handler": "NoticeController.acceptZendeskNotification"
+  },
+  {
+    "route": "/api/webhooks/stripe",
+    "method": [
+      "POST"
+    ],
+    "middle": [],
+    "handler": "StripeController.webhook"
+  },
+  {
+    "route": "/auth/apple/mobile",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:OAuthSignIn",
+      "agreement",
+      "plan"
+    ],
+    "handler": "OAuthController.tokenAuthApple"
+  },
+  {
+    "route": "/auth/google",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "OAuthController.googleAuth"
+  },
+  {
+    "route": "/auth/google/mobile",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "valid:OAuthSignIn",
+      "agreement",
+      "plan"
+    ],
+    "handler": "OAuthController.tokenAuth"
+  },
+  {
+    "route": "/map",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "MapController.getMap"
+  },
+  {
+    "route": "/ping",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "CommonController.ping"
+  },
+  {
+    "route": "/populate_mautic_db/:secure_key",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "MauticController.populateMauticDB"
+  },
+  {
+    "route": "/webhooks/estate-sync",
+    "method": [
+      "POST"
+    ],
+    "middle": [],
+    "handler": "WebhookController.estateSync"
+  }
+]

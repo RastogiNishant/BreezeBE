@@ -15,7 +15,7 @@ class CreateEstateCurrentTenant extends Base {
       salutation_int: yup
         .number()
         .oneOf([GENDER_MALE, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_ANY])
-        .required(),
+        .required()
     })
 }
 

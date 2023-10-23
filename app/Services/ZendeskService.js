@@ -22,15 +22,15 @@ class ZendeskService {
       req.rawBody = buf.toString('utf8')
     }
   }
-  static createToken( id, name, email ) {
-    const jwt = require('jsonwebtoken'); 
+  static createToken(id, name, email) {
+    const jwt = require('jsonwebtoken')
     const payload = {
       name: name,
       email: email,
       external_id: id
-    };
+    }
 
-    const token = jwt.sign(payload, process.env.ZENDESK_JWT_KEY);    
+    const token = jwt.sign(payload, process.env.ZENDESK_JWT_KEY)
     return token
   }
 }

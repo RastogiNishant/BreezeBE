@@ -7,7 +7,7 @@ const {
   PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE,
   PREDEFINED_MSG_OPEN_ENDED,
   PREDEFINED_NOT_A_QUESTION,
-  PREDEFINED_LAST,
+  PREDEFINED_LAST
 } = require('../constants')
 
 class PredefinedMessageFilter extends Base {
@@ -23,7 +23,7 @@ class PredefinedMessageFilter extends Base {
               PREDEFINED_MSG_MULTIPLE_ANSWER_SIGNLE_CHOICE,
               PREDEFINED_MSG_OPEN_ENDED,
               PREDEFINED_NOT_A_QUESTION,
-              PREDEFINED_LAST,
+              PREDEFINED_LAST
             ])
         )
         .nullable(),

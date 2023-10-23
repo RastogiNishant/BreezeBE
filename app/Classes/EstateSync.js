@@ -54,12 +54,12 @@ const {
   OPTIONS_TYPE_BUILD,
   OPTIONS_TYPE_APT,
   OPTIONS_TYPE_OUT,
-  LANG_DE,
+  LANG_DE
 } = require('../constants')
 const ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION = [
   OPTIONS_TYPE_BUILD,
   OPTIONS_TYPE_APT,
-  OPTIONS_TYPE_OUT,
+  OPTIONS_TYPE_OUT
 ]
 const { invert, isFunction, isEmpty } = require('lodash')
 const { calculateEnergyClassFromEfficiency } = use('App/Libs/utils')
@@ -73,7 +73,7 @@ const APARTMENT_TYPE_KEYS = {
   [APARTMENT_TYPE_LOFT]: 'landlord.property.details.building_apartment.type.loft',
   [APARTMENT_TYPE_SOCIAL]: 'landlord.property.details.building_apartment.type.social',
   [APARTMENT_TYPE_SOUTERRAIN]: 'landlord.property.details.building_apartment.type.souterrain',
-  [APARTMENT_TYPE_PENTHOUSE]: 'landlord.property.details.building_apartment.type.penthouse',
+  [APARTMENT_TYPE_PENTHOUSE]: 'landlord.property.details.building_apartment.type.penthouse'
 }
 
 class EstateSync {
@@ -86,7 +86,7 @@ class EstateSync {
     loft: APARTMENT_TYPE_LOFT,
     terrace: APARTMENT_TYPE_TERRACES,
     lowerGroundFloor: APARTMENT_TYPE_SOUTERRAIN,
-    groundFloor: APARTMENT_TYPE_GROUND,
+    groundFloor: APARTMENT_TYPE_GROUND
   }
 
   static condition = {
@@ -105,7 +105,7 @@ class EstateSync {
     developed: BUILDING_STATUS_DEVELOPED,
     abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
     projected: BUILDING_STATUS_PROJECTED,
-    refurbished: BUILDING_STATUS_FULLY_REFURBISHED,
+    refurbished: BUILDING_STATUS_FULLY_REFURBISHED
   }
 
   static energyType = {
@@ -120,14 +120,14 @@ class EstateSync {
     pellet: FIRING_PELLET,
     coal: FIRING_COAL,
     wood: FIRING_WOOD,
-    liquidGas: FIRING_LIQUID_GAS,
+    liquidGas: FIRING_LIQUID_GAS
   }
 
   static heatingType = {
     //heatingType must be one of stove, floor, central, district, underfloor, heatPump.
     central: HEATING_TYPE_CENTRAL,
     floor: HEATING_TYPE_FLOOR,
-    stove: HEATING_TYPE_OVEN,
+    stove: HEATING_TYPE_OVEN
   }
 
   makeNumeric = [
@@ -141,7 +141,7 @@ class EstateSync {
     'numberOfFloors',
     'numberOfParkingSpaces',
     'numberOfRooms',
-    'usableArea',
+    'usableArea'
   ]
 
   makeBoolean = ['petsAllowed']
@@ -154,7 +154,7 @@ class EstateSync {
     carport: PARKING_SPACE_TYPE_CARPORT,
     outdoor: PARKING_SPACE_TYPE_OUTDOOR,
     carPark: PARKING_SPACE_TYPE_CAR_PARK,
-    duplex: PARKING_SPACE_TYPE_DUPLEX,
+    duplex: PARKING_SPACE_TYPE_DUPLEX
   }
 
   map = {
@@ -199,7 +199,7 @@ class EstateSync {
     //residentialEnergyCertificate: this.composeEnergyClass,
     title: this.composeTitle,
     //'totalRent',
-    area: 'usableArea',
+    area: 'usableArea'
   }
 
   constructor(apiKey = '') {
@@ -307,12 +307,15 @@ class EstateSync {
       postalCode: estate?.zip,
       publish: estate?.full_address,
       street: estate?.street,
-      streetNumber: estate?.house_number,
+      streetNumber: estate?.house_number
     }
     return address
   }
 
-  composeTitle({ rooms_number, area, apt_type, city, country }) {
+  composeTitle({ rooms_number, area, apt_type, city, country, category }, is_building = false) {
+    if (is_building) {
+      return category?.name
+    }
     let estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES['others']
     const formatter = new Intl.NumberFormat('de-DE')
     if (ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]) {
@@ -327,7 +330,7 @@ class EstateSync {
         rooms_number % 1 === 0 ? parseInt(rooms_number) : formatter.format(rooms_number),
       area: area % 1 === 0 ? parseInt(area) : formatter.format(area),
       apartmentType: apartmentType,
-      city: city,
+      city: city
     }
 
     var re = new RegExp(Object.keys(mapObj).join('|'), 'gi')
@@ -392,16 +395,19 @@ class EstateSync {
     }
   }
 
-  async postEstate({ type = 'apartmentRent', estate, contactId = '' }) {
+  async postEstate({ type = 'apartmentRent', estate, contactId = '' }, is_building = false) {
     try {
       const fields = this.composeEstate(estate)
+      if (is_building) {
+        fields.title = this.composeTitle(estate, true)
+      }
       const attachments = this.composeAttachments(estate)
       const externalId = `${process.env.NODE_ENV}-${estate.id}`
       const body = {
         type,
         fields,
         attachments,
-        externalId,
+        externalId
       }
       if (contactId) {
         body.contactId = contactId
@@ -409,18 +415,18 @@ class EstateSync {
       const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 5000 })
       return {
         success: true,
-        data: ret.data,
+        data: ret.data
       }
     } catch (err) {
       console.log(err)
       if (err?.response?.data) {
         return {
           success: false,
-          data: err.response.data,
+          data: err.response.data
         }
       }
       return {
-        success: false,
+        success: false
       }
     }
   }
@@ -434,18 +440,18 @@ class EstateSync {
       )
       return {
         success: true,
-        data: ret.data,
+        data: ret.data
       }
     } catch (err) {
       console.log(err)
       if (err?.response?.data) {
         return {
           success: false,
-          data: err.response.data,
+          data: err.response.data
         }
       } else {
         return {
-          success: false,
+          success: false
         }
       }
     }
@@ -459,7 +465,7 @@ class EstateSync {
       'listings',
       'contacts',
       'requests',
-      'webhooks',
+      'webhooks'
     ]
     if (possibleTypes.indexOf(type) < 0) {
       return false
@@ -468,17 +474,17 @@ class EstateSync {
       const ret = await axios.post(`${this.baseUrl}/${type}`, data, { timeout: 5000 })
       return {
         success: true,
-        data: ret.data,
+        data: ret.data
       }
     } catch (err) {
       if (err?.response?.data) {
         return {
           success: false,
-          data: err.response.data,
+          data: err.response.data
         }
       } else {
         return {
-          success: false,
+          success: false
         }
       }
     }
@@ -490,7 +496,7 @@ class EstateSync {
       'account/credentials/immobilienscout-24-sandbox',
       'properties',
       'listings',
-      'contacts',
+      'contacts'
     ]
     if (possibleTypes.indexOf(type) < 0) {
       return false
@@ -499,17 +505,17 @@ class EstateSync {
       const ret = await axios.put(`${this.baseUrl}/${type}${id ? '/' + id : ''}`, data)
       return {
         success: true,
-        data: ret.data,
+        data: ret.data
       }
     } catch (err) {
       if (err?.response?.data) {
         return {
           success: false,
-          data: err.response.data,
+          data: err.response.data
         }
       } else {
         return {
-          success: false,
+          success: false
         }
       }
     }
@@ -523,7 +529,7 @@ class EstateSync {
       'listings',
       'contacts',
       'requests',
-      'webhooks',
+      'webhooks'
     ]
     if (possibleTypes.indexOf(type) < 0) {
       return false
@@ -532,18 +538,18 @@ class EstateSync {
       const ret = await axios.get(`${this.baseUrl}/${type}${id ? '/' + id : ''}`)
       return {
         success: true,
-        data: ret?.data,
+        data: ret?.data
       }
     } catch (err) {
       console.log(err)
       if (err?.response?.data) {
         return {
           success: false,
-          data: err.response.data,
+          data: err.response.data
         }
       } else {
         return {
-          success: false,
+          success: false
         }
       }
     }
@@ -562,22 +568,22 @@ class EstateSync {
       const ret = await axios.delete(`${this.baseUrl}/${type}${id ? '/' + id : ''}`)
       if (ret?.status === 200) {
         return {
-          success: true,
+          success: true
         }
       }
       return {
-        success: false,
+        success: false
       }
     } catch (err) {
       console.log(err)
       if (err?.response?.data) {
         return {
           success: false,
-          message: err.response.data,
+          message: err.response.data
         }
       } else {
         return {
-          success: false,
+          success: false
         }
       }
     }

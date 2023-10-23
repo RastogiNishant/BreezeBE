@@ -10,7 +10,7 @@ const {
   FILE_TYPE_UNASSIGNED,
   FILE_TYPE_EXTERNAL,
   FILE_TYPE_CUSTOM,
-  FILE_TYPE_ENERGY_CERTIFICATE,
+  FILE_TYPE_ENERGY_CERTIFICATE
 } = require('../constants')
 
 class EstateAddFile extends Base {
@@ -24,9 +24,9 @@ class EstateAddFile extends Base {
           FILE_TYPE_DOC,
           FILE_TYPE_EXTERNAL,
           FILE_TYPE_UNASSIGNED,
-          FILE_TYPE_CUSTOM,
+          FILE_TYPE_CUSTOM
         ])
-        .required(),
+        .required()
     })
 }
 

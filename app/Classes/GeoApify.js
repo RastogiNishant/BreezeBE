@@ -12,14 +12,14 @@ const BATCHED_ROUTING_INPUTS = [
   { id: ROUTING_DRIVE, params: { mode: ROUTING_DRIVE } },
   { id: ROUTING_TRANSIT, params: { mode: ROUTING_TRANSIT } },
   { id: ROUTING_BICYCLE, params: { mode: ROUTING_BICYCLE } },
-  { id: ROUTING_WALK, params: { mode: ROUTING_WALK } },
+  { id: ROUTING_WALK, params: { mode: ROUTING_WALK } }
 ]
 
 const BATCHED_ISOLINE_INPUTS = [
   { id: ROUTING_DRIVE, params: { mode: ROUTING_DRIVE } },
   { id: ROUTING_TRANSIT, params: { mode: ROUTING_TRANSIT } },
   { id: ROUTING_BICYCLE, params: { mode: ROUTING_BICYCLE } },
-  { id: ROUTING_WALK, params: { mode: ROUTING_WALK } },
+  { id: ROUTING_WALK, params: { mode: ROUTING_WALK } }
 ]
 
 const PLACE_SCHOOL = 'education.school'
@@ -30,6 +30,7 @@ const PLACE_SUBWAY = 'public_transport.subway'
 const PLACE_RAIL = 'public_transport.light_rail'
 const PLACE_PARK = 'leisure.park,national_park'
 const PLACE_KINDERGARTEN = 'childcare.kindergarten'
+const PLACE_FITNESS = 'sport.fitness'
 const BATCHED_PLACE_INPUTS = [
   { id: PLACE_SCHOOL, params: { categories: PLACE_SCHOOL } },
   { id: PLACE_HOSPITAL, params: { categories: PLACE_HOSPITAL } },
@@ -39,6 +40,7 @@ const BATCHED_PLACE_INPUTS = [
   { id: PLACE_RAIL, params: { categories: PLACE_RAIL } },
   { id: PLACE_PARK, params: { categories: PLACE_PARK } },
   { id: PLACE_KINDERGARTEN, params: { categories: PLACE_KINDERGARTEN } },
+  { id: PLACE_FITNESS, params: { categories: PLACE_FITNESS } }
 ]
 
 class GeoPify {
@@ -68,7 +70,7 @@ class GeoPify {
     return this.request
       .send({
         url: '/v1/batch',
-        data: { id, apiKey: this.settings.apiKey },
+        data: { id, apiKey: this.settings.apiKey }
       })
       .then(async (response) => {
         if (response.status === 'pending') {
@@ -86,7 +88,7 @@ class GeoPify {
       .send({
         url: `/v1/batch?apiKey=${this.settings.apiKey}`,
         data: { api, inputs, params },
-        method: 'POST',
+        method: 'POST'
       })
       .then(({ id }) => {
         return this.promisedAnswer(id)
@@ -105,7 +107,7 @@ class GeoPify {
     const params = {
       limit: '1',
       filter: `circle:${lon},${lat},5000`,
-      bias: `proximity:${lon},${lat}`,
+      bias: `proximity:${lon},${lat}`
     }
 
     return this.makeBatchedCall({ api, params, inputs }).then((r) => {
@@ -120,7 +122,7 @@ class GeoPify {
     const api = '/v1/routing'
     const inputs = BATCHED_ROUTING_INPUTS
     const params = {
-      waypoints: `${from.lat},${from.lon}|${to.lat},${to.lon}`,
+      waypoints: `${from.lat},${from.lon}|${to.lat},${to.lon}`
     }
 
     return this.makeBatchedCall({ api, params, inputs })
@@ -136,7 +138,7 @@ class GeoPify {
       lat,
       lon,
       type: 'time',
-      range: '1800',
+      range: '1800'
     }
 
     return this.makeBatchedCall({ api, params, inputs })
@@ -150,7 +152,7 @@ class GeoPify {
       .send({
         url: '/v1/geocode/reverse',
         data: { lat, lon, apiKey: this.settings.apiKey, limit: 30, lang },
-        method: 'GET',
+        method: 'GET'
       })
       .then((response) => {
         return response.features || null
@@ -168,7 +170,7 @@ class GeoPify {
       .send({
         url: '/v1/geocode/autocomplete',
         data: { text, apiKey: this.settings.apiKey, limit: 30, lang },
-        method: 'GET',
+        method: 'GET'
       })
       .then((response) => {
         const data = response.features || []
@@ -199,7 +201,7 @@ class GeoPify {
       .send({
         url: '/v1/geocode/autocomplete',
         data: { text: address, apiKey: this.settings.apiKey, limit: 30, lang: 'de' },
-        method: 'GET',
+        method: 'GET'
       })
       .then((response) => {
         return response.features || null
@@ -220,13 +222,13 @@ class GeoPify {
       lat,
       lon,
       mode,
-      range,
+      range
     }
 
     return this.request.send({
       url: '/v1/isoline',
       data,
-      method: 'GET',
+      method: 'GET'
     })
   }
 }

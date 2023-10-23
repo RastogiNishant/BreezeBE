@@ -30,11 +30,11 @@ const {
   MEMBER_FILE_DEBT_PROOFS_DOC,
   MEMBER_FILE_PASSPORT_DOC,
   MEMBER_FILE_EXTRA_RENT_ARREARS_DOC,
-  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC,
+  MEMBER_FILE_EXTRA_DEBT_PROOFS_DOC
 } = require('../../constants')
 
 const {
-  exceptions: { ONLY_HOUSEHOLD_ADD_MEMBER },
+  exceptions: { ONLY_HOUSEHOLD_ADD_MEMBER }
 } = require('../../exceptions')
 /**
  *
@@ -95,9 +95,11 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: 'rent_arrears_doc', mime: docMimes, isPublic: false },
         { field: 'debt_proof', mime: docMimes, isPublic: false },
-        { field: 'passport', mime: docMimes, isPublic: false },
+        { field: 'passport', mime: docMimes, isPublic: false }
       ])
-
+      if (files.debt_proof) {
+        files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
+      }
       const user_id = auth.user.id
 
       if (!data.email) {
@@ -123,7 +125,6 @@ class MemberController {
 
         data.owner_user_id = existingUser.id
       }
-
       const createdMember = await MemberService.createMember({ ...data, ...files }, user_id, trx)
 
       if (files.passport) {
@@ -132,7 +133,7 @@ class MemberController {
           file: files.passport,
           type: MEMBER_FILE_TYPE_PASSPORT,
           status: STATUS_ACTIVE,
-          member_id: createdMember.id,
+          member_id: createdMember.id
         })
         await memberFile.save(trx)
       }
@@ -142,7 +143,7 @@ class MemberController {
           member: createdMember,
           id: createdMember.id,
           userId: user_id,
-          isExisting_user: !!existingUser,
+          isExisting_user: !!existingUser
         },
         trx
       )
@@ -161,7 +162,7 @@ class MemberController {
       if (existingUser) {
         MemberService.emitMemberInvitation({
           data: createdMember.toJSON(),
-          user_id: existingUser.id,
+          user_id: existingUser.id
         })
       }
 
@@ -187,12 +188,11 @@ class MemberController {
         { field: 'avatar', mime: imageMimes, isPublic: true },
         { field: MEMBER_FILE_RENT_ARREARS_DOC, mime: docMimes, isPublic: false },
         { field: MEMBER_FILE_DEBT_PROOFS_DOC, mime: docMimes, isPublic: false },
-        { field: MEMBER_FILE_TYPE_PASSPORT, mime: docMimes, isPublic: false },
+        { field: MEMBER_FILE_TYPE_PASSPORT, mime: docMimes, isPublic: false }
       ])
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
-
     const trx = await Database.beginTransaction()
     try {
       if (files.passport) {
@@ -201,17 +201,22 @@ class MemberController {
           file: files.passport,
           type: MEMBER_FILE_TYPE_PASSPORT,
           status: STATUS_ACTIVE,
-          member_id: id,
+          member_id: id
         })
         await memberFile.save(trx)
       }
 
       let member = await MemberService.allowEditMemberByPermission(auth.user, id)
+      if (files.debt_proof) {
+        files.debt_proof = Array.isArray(files.debt_proof) ? files.debt_proof : [files.debt_proof]
+        files.debt_proof = [...(member.debt_proof || []), ...files.debt_proof]
+      }
       const newData = member.owner_user_id ? omit(data, ['email']) : data
 
       if (data?.phone && data?.phone !== member.phone) {
         newData.phone_verified = false
       }
+
       const result = await member.updateItemWithTrx({ ...newData, ...files }, trx)
       await trx.commit()
 
@@ -306,7 +311,7 @@ class MemberController {
    *
    */
   async removeMemberDocs({ request, auth, response }) {
-    const { id, field } = request.all()
+    const { id, field, uri } = request.all()
 
     const user_id = auth.user.owner_id || auth.user.id
     const member = await MemberService.allowEditMemberByPermission(auth.user, id)
@@ -315,8 +320,18 @@ class MemberController {
       return response.res(false)
     }
 
-    await File.remove(member[field], false)
-    member[field] = null
+    member[field] = Array.isArray(member[field]) ? member[field] : [member[field]]
+    let deleteFiles = uri ? member[field].find((file) => file === uri) : member[field]
+    await File.remove(deleteFiles, false)
+
+    member[field] = uri ? member[field].filter((file) => file !== uri) : null
+
+    if (!member[field]?.length) {
+      member[field] = null
+    } else {
+      member[field] = field !== MEMBER_FILE_DEBT_PROOFS_DOC ? member[field][0] : member[field]
+    }
+
     await member.save()
 
     Event.fire('tenant::update', user_id)
@@ -333,7 +348,7 @@ class MemberController {
     const member = await MemberService.allowEditMemberByPermission(auth.user, id)
 
     const files = await File.saveRequestFiles(request, [
-      { field: 'company_logo', mime: imageMimes, isPublic: true },
+      { field: 'company_logo', mime: imageMimes, isPublic: true }
     ])
 
     const trx = await Database.beginTransaction()
@@ -370,7 +385,7 @@ class MemberController {
     const trx = await Database.beginTransaction()
     try {
       const files = await File.saveRequestFiles(request, [
-        { field: 'company_logo', mime: imageMimes, isPublic: true },
+        { field: 'company_logo', mime: imageMimes, isPublic: true }
       ])
 
       await Income.query()
@@ -419,6 +434,7 @@ class MemberController {
    */
   //MERGED TENANT
   async addMemberIncomeProof({ request, auth, response }) {
+    //NOTE: expire_date here is the month when the income is earned.
     const { income_id, ...rest } = request.all()
     const user_id = auth.user.owner_id || auth.user.id
     const income = await MemberService.getIncomeByIdAndUser(income_id, auth.user)
@@ -427,7 +443,7 @@ class MemberController {
     }
 
     const files = await File.saveRequestFiles(request, [
-      { field: 'file', mime: docMimes, isPublic: false },
+      { field: 'file', mime: docMimes, isPublic: false }
     ])
     const incomeProof = await MemberService.addMemberIncomeProof({ ...rest, ...files }, income)
     Event.fire('tenant::update', user_id)
@@ -457,6 +473,7 @@ class MemberController {
     } else {
       throw new HttpException('Invalid income proof', 400)
     }
+    //mark it with STATUS_DELETE
     await IncomeProof.query().where('id', proof.id).update({ status: STATUS_DELETE })
     Event.fire('tenant::update', user_id)
     response.res(true)
@@ -530,7 +547,7 @@ class MemberController {
 
         response.res({
           members,
-          tenant: tenant.toJSON({ isShort: true }),
+          tenant: tenant.toJSON({ isShort: true })
         })
       } catch (e) {
         console.log(e)

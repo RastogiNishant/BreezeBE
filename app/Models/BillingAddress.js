@@ -6,27 +6,14 @@ const Model = require('./BaseModel')
 
 class BillingAddress extends Model {
   static get columns() {
-    return [
-      'id',
-      'user_id',
-      'name',
-      'phone',
-      'address',
-      'address1',
-      'country',
-      'city',
-      'zipcode'
-    ]
+    return ['id', 'user_id', 'name', 'phone', 'address', 'address1', 'country', 'city', 'zipcode']
   }
 
   /**
    *
    */
   static get readonly() {
-    return [
-        'id',
-        'user_id',
-    ]
+    return ['id', 'user_id']
   }
 
   /**
@@ -35,7 +22,6 @@ class BillingAddress extends Model {
   static get Serializer() {
     return 'App/Serializers/BillingAddressSerializer'
   }
-
 }
 
 module.exports = BillingAddress

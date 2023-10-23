@@ -3,9 +3,9 @@
 const yup = require('yup')
 const Base = require('./Base')
 const { phoneSchema } = require('../Libs/schemas.js')
-const {ROLE_USER} = require('../constants')
+const { ROLE_USER } = require('../constants')
 
-class SignupAfterViewEstateInvitation extends Base{
+class SignupAfterViewEstateInvitation extends Base {
   static schema() {
     return yup.object().shape({
       email: yup.string().email().lowercase().required(),

@@ -1,21 +1,44 @@
 'use strict'
+const CityService = require('../../Services/CityService')
 const constants = require('../../constants')
+const fetch = require('node-fetch')
 const { get, map } = require('lodash')
-const File = use('App/Classes/File')
 
 // const GeoAPI = use('GeoAPI')
 // const User = use('App/Models/User')
+const File = use('App/Classes/File')
 const OptionService = use('App/Services/OptionService')
 const GeoService = use('App/Services/GeoService')
 const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const ShortenLinkService = use('App/Services/ShortenLinkService')
-const Estate = use('App/Models/Estate')
-const Logger = use('Logger')
 const Static = use('Static')
 
 class CommonController {
+  async getVersionInfo() {
+    let pdfServiceResp
+
+    try {
+      pdfServiceResp = await (
+        await fetch(`http://localhost:${(parseInt(process.env.PORT) || 3000) + 1}/status`)
+      ).json()
+    } catch (error) {
+      pdfServiceResp = { status: 'error', error: 'UNREACHABLE' }
+    }
+
+    return {
+      app: process.env.APP_NAME,
+      main: process.env.APP_URL,
+      node: process.version,
+      services: [
+        {
+          pdf: pdfServiceResp
+        }
+      ]
+    }
+  }
+
   /**
    * Just for test some api
    */
@@ -37,6 +60,7 @@ class CommonController {
       constants,
       options: await OptionService.getOptions(),
       ROOM_TYPE: OptionService.getRoomTypes(),
+      cities: await CityService.getAll()
     }
     response.res(result)
   }
@@ -157,6 +181,11 @@ class CommonController {
     }
 
     response.redirect(shortenLinkData.link)
+  }
+
+  async getProtectedUrl({ request, auth, response }) {
+    const { uri } = request.all()
+    response.res(await File.getProtectedUrl(uri))
   }
 }
 

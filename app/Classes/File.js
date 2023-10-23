@@ -41,7 +41,7 @@ class File {
     gif: File.IMAGE_GIF,
     tiff: File.IMAGE_TIFF,
     webp: File.IMAGE_WEBP,
-    heic: File.IMAGE_HEIC,
+    heic: File.IMAGE_HEIC
   }
 
   static SUPPORTED_IMAGE_FORMAT = Object.keys(File.IMAGE_MIME_TYPE)
@@ -50,7 +50,7 @@ class File {
     try {
       const options = {
         width: parseInt(process.env.THUMB_WIDTH || '100'),
-        jpegOptions: { force: true, quality: 90 },
+        jpegOptions: { force: true, quality: 90 }
       }
       const thumbnail = await imageThumbnail(buffer, options)
       return thumbnail
@@ -67,13 +67,17 @@ class File {
 
       const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.pdf`
       await exec({
-        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}`,
+        cmd: `gs -sDEVICE=pdfwrite -dCompatibilityLevel=1.4 -dPDFSETTINGS=/screen  -dNOPAUSE -dQUIET -dBATCH -sOutputFile=${outputFileName} ${filePath}`
       })
       const data = await fsPromise.readFile(outputFileName)
       fsPromise.unlink(outputFileName)
       return data
     } catch (e) {
-      throw new AppException(e.message, e.status || 500)
+      if (e?.message) {
+        throw new AppException(e.message, e.status || 500)
+      } else {
+        throw new AppException('Unable to compress PDF, ghostscript installed?', e?.status || 500)
+      }
     }
   }
 
@@ -118,7 +122,7 @@ class File {
 
       let command = `convert ${filePath} ${outputFileName}`
       await exec({
-        cmd: `${command}`,
+        cmd: `${command}`
       })
 
       const data = await fsPromise.readFile(outputFileName)
@@ -140,6 +144,7 @@ class File {
     if (!ext) {
       ext = file.extname || nth(file.clientName.toLowerCase().match(/\.([a-z]{3,4})$/i), 1)
     }
+
     if (!isEmpty(allowedTypes)) {
       if (!allowedTypes.includes(mime)) {
         throw new AppException('Invalid file mime type')
@@ -160,7 +165,7 @@ class File {
         img_data = await heicConvert({
           buffer: inputBuffer, // the HEIC file buffer
           format: 'JPEG', // output format
-          quality: 0.1, // the jpeg compression quality, between 0 and 1
+          quality: 0.1 // the jpeg compression quality, between 0 and 1
         })
 
         ext = `jpg`
@@ -173,7 +178,7 @@ class File {
 
         if (img_data) {
           img_data = await imagemin.buffer(img_data, {
-            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })],
+            plugins: [imageminPngquant({ quality: [0.6, 0.8] }), imageminMozjpeg({ quality: 80 })]
           })
         } else {
           try {
@@ -181,8 +186,8 @@ class File {
               await imagemin([file.tmpPath], {
                 plugins: [
                   imageminPngquant({ quality: [0.6, 0.8] }),
-                  imageminMozjpeg({ quality: 80 }),
-                ],
+                  imageminMozjpeg({ quality: 80 })
+                ]
               })
             )?.[0]?.data
           } catch (e) {
@@ -216,13 +221,13 @@ class File {
           fileName: filename,
           dir: dir,
           options: options,
-          disk: disk,
+          disk: disk
         })
       }
 
       return {
         filePathName: filePathName,
-        thumbnailFilePathName: thumbnailFilePathName,
+        thumbnailFilePathName: thumbnailFilePathName
       }
     } catch (e) {
       throw new AppException(e, 400)
@@ -262,10 +267,19 @@ class File {
    * Get file protected url 15 min lifetime
    */
   static async getProtectedUrl(filePathName, expiry = 900, params) {
-    if (!filePathName || trim(filePathName).length === 0) {
-      return null
+    if (Array.isArray(filePathName)) {
+      const protectedUrls = await Promise.map(filePathName, async (file) => {
+        if (file && trim(file).length > 0) {
+          return await Drive.disk('s3').getSignedUrl(file, expiry, params)
+        }
+      })
+      return protectedUrls
+    } else {
+      if (!filePathName || trim(filePathName).length === 0) {
+        return null
+      }
+      return await Drive.disk('s3').getSignedUrl(filePathName, expiry, params)
     }
-    return await Drive.disk('s3').getSignedUrl(filePathName, expiry, params)
   }
 
   static filesCount(request, field) {
@@ -290,7 +304,7 @@ class File {
     const saveFile = async ({ field, mime = null, isPublic = true }) => {
       const file = request.file(field, {
         size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT,
+        extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT
       })
       if (!file) {
         return null
@@ -307,11 +321,11 @@ class File {
           return { filePathName, thumbnailFilePathName, fileName }
         })
       )
+
       const filePathName = fileInfo.map((fi) => fi.filePathName)
       const fileName = fileInfo.map((fi) => fi.fileName)
       const thumbnailFilePathName = fileInfo.map((fi) => fi.thumbnailFilePathName)
       const fileFormat = (file._files || [file]).map((fi) => fi.headers['content-type'])
-
       return { field, filePathName, fileName, thumbnailFilePathName, fileFormat }
     }
 
@@ -328,7 +342,7 @@ class File {
                   v.thumbnailFilePathName.length > 1
                     ? v.thumbnailFilePathName
                     : v.thumbnailFilePathName[0],
-                ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0],
+                ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0]
               }
             : n,
         {}
@@ -363,7 +377,16 @@ class File {
    */
   static async remove(file, isPublic = true) {
     const disk = isPublic ? 's3public' : 's3'
-    return Drive.disk(disk).delete(file)
+    if (!file || (Array.isArray(file) && !file?.length)) {
+      return true
+    }
+
+    file = Array.isArray(file) ? file : [file]
+
+    await Promise.map(file, async (dfile) => {
+      await Drive.disk(disk).delete(dfile)
+    })
+    return true
   }
 
   static async saveFileTo({ url, ext = 'jpg' }) {
@@ -425,12 +448,12 @@ class File {
       AWS.config.update({
         accessKeyId: Env.get('S3_KEY'),
         secretAccessKey: Env.get('S3_SECRET'),
-        region: Env.get('S3_REGION'),
+        region: Env.get('S3_REGION')
       })
       const s3 = new AWS.S3()
       const params = {
         Bucket: GEWOBAG_FTP_BUCKET,
-        Delimiter: '/',
+        Delimiter: '/'
         // Prefix: 'live/',
       }
       const objects = await s3.listObjects(params).promise()
@@ -451,13 +474,13 @@ class File {
           xmls = [...xmls, xml]
           filesLastModified = {
             ...filesLastModified,
-            [objects.Contents[i].Key]: objects.Contents[i].LastModified,
+            [objects.Contents[i].Key]: objects.Contents[i].LastModified
           }
         }
       }
       return {
         xml: xmls,
-        filesLastModified,
+        filesLastModified
       }
     } catch (err) {
       console.log('getGewobagUploadedContent', err)

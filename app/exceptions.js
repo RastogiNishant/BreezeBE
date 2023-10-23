@@ -113,6 +113,15 @@ const exceptions = {
     'Your property is already published, to manipulate that property, please unpublish it first',
   ERROR_MATCH_COMMIT_DOUBLE:
     'You have already requests final match, please cancel that one first to proceed',
+  NO_BUILDING_ID_EXIST: 'NO BUILDING ID EXIST',
+  ERROR_PUBLISH_BUILDING: 'Some properties are not ready to publish',
+  BUILD_UNIT_CAN_NOT_PUBLISH_SEPRATELY:
+    'The unit which belongs to a building can not be published separately',
+  ERROR_WRONG_MATCH_STATUS: 'Already invited to this property',
+  ERROR_COMMIT_MATCH_INVITE: 'No match for that property',
+  ERROR_ALREADY_MATCH_INVITE: 'The prospect is already in that stage for that property',
+  ERROR_NO_ACTIVE_MATCH_FOUND: 'No active match with the landlord found',
+  ERROR_TENANT_NOT_MATCH_WITH_ESTATE: 'Does not match tenant with estate'
 }
 
 const exceptionCodes = {
@@ -134,6 +143,11 @@ const exceptionCodes = {
   ERROR_PROPERTY_ALREADY_RENTED_CODE: 9000600,
   ERROR_PROPERTY_INVALID_STATUS_CODE: 9000700,
   ERROR_PROPERTY_NOT_PUBLISHED_CODE: 9000800,
+  ERROR_PUBLISH_BUILDING_CODE: 9001000,
+  ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE: 9002000,
+  ERROR_WRONG_MATCH_STATUS_CODE: 10001000,
+  ERROR_COMMIT_MATCH_INVITE_CODE: 10001001,
+  ERROR_ALREADY_MATCH_INVITE_CODE: 10001002
 }
 
 const exceptionKeys = {
@@ -191,7 +205,7 @@ const exceptionKeys = {
   INVALID_IDS: 'INVALID_IDS',
   NO_ROOM_EXISTS: 'NO_ROOM_EXISTS',
   NO_IMAGE_EXIST: 'NO_IMAGE_EXIST',
-  NO_FILE_EXIST: 'NO_FILE_EXIST',
+  NO_FILE_EXIST: 'NO_FILE_EXIST'
 }
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
@@ -210,5 +224,5 @@ module.exports = {
   exceptionKeys,
   exceptionCodes,
   getExceptionMessage,
-  sleep,
+  sleep
 }

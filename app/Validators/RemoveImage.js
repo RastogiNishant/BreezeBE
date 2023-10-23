@@ -7,7 +7,7 @@ const { phoneSchema } = require('../Libs/schemas.js')
 class RemoveImage extends Base {
   static schema = () =>
     yup.object().shape({
-      uri: yup.string().required(),
+      uri: yup.string().required()
     })
 }
 

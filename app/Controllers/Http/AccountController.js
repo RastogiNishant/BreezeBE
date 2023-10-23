@@ -17,8 +17,8 @@ const {
     USER_UNIQUE,
     USER_CLOSED,
     FAILED_UPLOAD_AVATAR,
-    USER_WRONG_PASSWORD,
-  },
+    USER_WRONG_PASSWORD
+  }
 } = require('../../../app/exceptions')
 
 const { getAuthByRole } = require('../../Libs/utils')
@@ -32,7 +32,7 @@ const {
   LOG_TYPE_OPEN_APP,
   FRONTEND_USED_WEB,
   FRONTEND_USED_MOBILE,
-  ROLE_USER,
+  ROLE_USER
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -52,22 +52,30 @@ class AccountController {
           data2,
           invite_type,
           ip_based_info,
-          ...userData,
+          ...userData
         },
         trx
       )
       await trx.commit()
       logEvent(request, LOG_TYPE_SIGN_UP, user.uid, {
         role: user.role,
-        email: user.email,
+        email: user.email
       })
 
       if (user.role === ROLE_USER) {
         QueueService.getTenantMatchProperties({
           userId: user.id,
-          has_notification_sent: false,
+          has_notification_sent: false
         })
       }
+
+      await UserService.handleOutsideInvitation({
+        user,
+        email,
+        invite_type,
+        data1,
+        data2
+      })
 
       response.res(user)
     } catch (e) {
@@ -91,7 +99,7 @@ class AccountController {
         secondname,
         lang,
         ip,
-        ip_based_info,
+        ip_based_info
       })
 
       response.res(user)
@@ -212,7 +220,7 @@ class AccountController {
       logEvent(request, LOG_TYPE_SIGN_IN, user.uid, {
         method: SIGN_IN_METHOD_EMAIL,
         role,
-        email: user.email,
+        email: user.email
       })
 
       return response.res(token)
@@ -232,7 +240,7 @@ class AccountController {
     const user = await UserService.me(auth.current.user, pushToken)
     logEvent(request, LOG_TYPE_OPEN_APP, user.uid, {
       email: user.email,
-      role: user.role,
+      role: user.role
     })
     return response.res(user)
   }
@@ -405,8 +413,8 @@ class AccountController {
         status: false,
         data: {
           plan_id: plan_id,
-          payment_plan: payment_plan,
-        },
+          payment_plan: payment_plan
+        }
       }
       const purchase = await TenantPremiumPlanService.processPurchase(
         auth.user.id,
@@ -457,9 +465,9 @@ class AccountController {
               'isCancelled',
               'startDate',
               'endDate',
-              'app',
+              'app'
             ])
-          : null,
+          : null
       }
       response.res(data)
     } catch (e) {
