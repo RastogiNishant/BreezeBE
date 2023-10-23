@@ -105,7 +105,6 @@ class QueueService {
   }
 
   static estateSyncPublishEstate({ estate_id }) {
-    require('./MailService').sendEmailToOhneMakler(`Estate Sync Publish Estate`, 'barudo@gmail.com')
     Queue.addJob(ESTATE_SYNC_PUBLISH_ESTATE, { estate_id }, { delay: 400 })
   }
 
@@ -390,10 +389,6 @@ class QueueService {
             job.data.userId
           )
         case ESTATE_SYNC_PUBLISH_ESTATE:
-          await require('./MailService').sendEmailToOhneMakler(
-            `PROCESSING job ESTATE_SYNC_PUBLISH_ESTATE...`,
-            'barudo@gmail.com'
-          )
           return require('./EstateSyncService').postEstate({
             estate_id: job.data.estate_id
           })

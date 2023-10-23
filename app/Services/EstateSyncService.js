@@ -55,7 +55,7 @@ class EstateSyncService {
     if (credential) {
       credential['api_key'] = credential['api_key'] || process.env.ESTATE_SYNC_API_KEY
     } else {
-      credential = EstateSyncService.getBreezeEstateSyncCredential()
+      credential = await EstateSyncService.getBreezeEstateSyncCredential()
     }
     return credential
   }
@@ -171,6 +171,10 @@ class EstateSyncService {
       let estate = await EstateService.getByIdWithDetail(estate_id)
       estate = estate.toJSON()
       let credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
+      await require('./MailService').sendEmailToOhneMakler(
+        `credential: ${credential.api_key}`,
+        'barudo@gmail.com'
+      )
       const estateSync = new EstateSync(credential.api_key)
       if (!Number(estate.usable_area)) {
         estate.usable_area = estate.area
@@ -187,6 +191,10 @@ class EstateSyncService {
         type: 'success-posting',
         estate_id
       }
+      await require('./MailService').sendEmailToOhneMakler(
+        `Post response: ${resp}`,
+        'barudo@gmail.com'
+      )
       if (resp?.success) {
         //make all with estate_id and estate_sync_property_id to draft
         await EstateSyncListing.query()

@@ -2126,10 +2126,6 @@ class EstateService {
 
       if (isNull(performed_by)) {
         //comes from admin so we can publish to market place
-        await require('./MailService').sendEmailToOhneMakler(
-          `QUEUEING Estate Sync Publish Estate...`,
-          'barudo@gmail.com'
-        )
         await QueueService.estateSyncPublishEstate({ estate_id: estate.id })
       }
       if (!is_queue) {
