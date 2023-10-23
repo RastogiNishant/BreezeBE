@@ -1,7 +1,7 @@
 const Route = use('Route')
 
 export const prefixAll = (prefix: string, routes: any[]): void => {
-  routes.forEach((route2) => route2.prefix(prefix))
+  routes.forEach((route) => route.prefix(prefix))
 }
 
 export enum HTTP_METHODS {
