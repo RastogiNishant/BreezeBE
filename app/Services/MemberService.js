@@ -271,13 +271,6 @@ class MemberService {
           Database.raw(`COUNT(*) AS members_count`),
           Database.raw(
             `ARRAY_AGG(EXTRACT(YEAR FROM AGE(NOW(), coalesce(birthday, NOW())))::int) as members_age`
-          ),
-          Database.raw(
-            `(CASE WHEN (COUNT(*)) = 0 THEN NULL
-               ELSE
-                 SUM(COALESCE(credit_score, 0)) /
-                 COUNT(*)
-               END) AS credit_score`
           )
         )
         .where({ user_id: userId })
@@ -285,7 +278,7 @@ class MemberService {
 
       const householdTenant = await Tenant.query().where({ user_id: userId }).first()
 
-      const { members_count, credit_score } = tenantData[0] // calculated data
+      const { members_count } = tenantData[0] // calculated data
       const { minors_count, private_use, pets, pets_species, parking_space, status } =
         householdTenant // data to sync with all the tenants of all the members
 
@@ -304,8 +297,7 @@ class MemberService {
 
           const updatingFields = {
             members_count,
-            family_status,
-            credit_score: parseInt(credit_score) || null
+            family_status
           }
 
           // sync secondary member's tenant

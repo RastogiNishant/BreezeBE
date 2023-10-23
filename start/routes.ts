@@ -1,5 +1,7 @@
 'use strict'
 
+import * as fs from 'node:fs'
+
 import { generateAdonisRoutes } from './routes/_helper'
 import { apiIndexRoutes, indexRoutes } from './routes/index'
 import { administrationRoutes } from './routes/administration'
@@ -36,7 +38,7 @@ Route.group(() => {
   ])
 }).prefix('/api/v1/profile')
 
-//Room Custom Amenities
+// Room Custom Amenities
 Route.group(() => {
   Route.get('/amenities', 'RoomAmenityController.getAll').middleware([
     'valid:EstateId,RoomId',
@@ -122,7 +124,7 @@ Route.group(() => {
   Route.put('/building/:id/extend', 'EstateController.extendBuilding').middleware([
     'valid:ExtendEstate,Id'
   ])
-  //Route.get('/deactivate', 'EstateController.deactivateEstate')
+  // Route.get('/deactivate', 'EstateController.deactivateEstate')
 
   Route.get('/upcomingShows', 'MatchController.getLandlordUpcomingVisits')
   Route.get('/quickLinks', 'EstateController.getEstatesQuickLinks')
@@ -135,7 +137,7 @@ Route.group(() => {
     'EstateCanEdit'
   ])
   Route.get('/:id/link', 'EstateController.createShareLink').middleware(['valid:Id'])
-  //Estate Amenities
+  // Estate Amenities
   Route.get('/:estate_id/amenities', 'EstateAmenityController.get').middleware([
     'valid:EstateId',
     'LandlordOwnsThisEstate'
@@ -184,7 +186,7 @@ Route.group(() => {
     'valid:CreateBulkRoom,EstateId',
     'EstateCanEdit'
   ])
-  Route.get('/:estate_id/files', 'EstateController.getFiles').middleware['LandlordOwnsThisEstate']
+  Route.get('/:estate_id/files', 'EstateController.getFiles').middleware(['LandlordOwnsThisEstate'])
   Route.post('/:estate_id/files', 'EstateController.addFile').middleware([
     'valid:EstateAddFile,EstateId',
     'EstateCanEdit'
@@ -320,7 +322,7 @@ Route.group(() => {
     'valid:UpdateVisitStatusTenant'
   ])
   Route.post('/notifications/followup', 'MatchController.followupVisit').middleware([
-    'auth:jwtLandlord', //landlord for now
+    'auth:jwtLandlord', // landlord for now
     'valid:FollowupVisit'
   ])
   Route.get(
@@ -529,7 +531,6 @@ Route.group(() => {
   .prefix('api/v1/tenant/income')
   .middleware(['auth:jwt,jwtHousekeeper'])
 
-const EstateViewInvite = use('App/Models/EstateViewInvite')
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 
 Route.group(() => {
@@ -576,7 +577,7 @@ Route.group(() => {
   Route.get('/:id', 'TaskController.getTaskById').middleware(['valid:Id'])
   Route.get('/', 'TaskController.getAllTasks').middleware(['valid:TenantTaskFilter,Pagination'])
   Route.post('/', 'TaskController.createTask').middleware(['valid:CreateTask'])
-  //Route.post('/edit', 'TaskController.onEditMessage')
+  // Route.post('/edit', 'TaskController.onEditMessage')
 })
   .prefix('api/v1/connect/task')
   .middleware(['auth:jwt,jwtLandlord'])
@@ -809,7 +810,7 @@ Route.group(() => {
 
 Route.group(() => {
   Route.delete('/cancel/:action', 'MatchController.cancelAction').middleware(['valid:MatchAction'])
-  //this should be cancel-category
+  // this should be cancel-category
   Route.delete('/cancel-building/:action', 'MatchController.cancelBuildingAction').middleware([
     'valid:MatchBuildingAction'
   ])
@@ -987,11 +988,11 @@ Route.post('/api/v1/image/createthumbnail', 'ImageController.tryCreateThumbnail'
 Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
 // Force add named middleware to all requests
 const excludeRoutes = ['/api/v1/terms', '/api/v1/me', '/api/v1/logout', '/:key']
-Route.list().forEach((r) => {
+Route.list().forEach((r: { middlewareList: any[], _route: string }) => {
   if (
     Array.isArray(r.middlewareList) &&
     !excludeRoutes.includes(r._route) &&
-    !r._route.match(/\/administration/)
+    !r._route.includes('/administration')
   ) {
     if (r.middlewareList.length > 0) {
       r.middlewareList = [...r.middlewareList, 'agreement', 'plan']
@@ -1001,7 +1002,7 @@ Route.list().forEach((r) => {
 
 Route.post('/webhooks/estate-sync', 'WebhookController.estateSync')
 
-//Test to create contact from 3rd market places
+// Test to create contact from 3rd market places
 Route.group(() => {
   Route.post('/contact', 'MarketPlaceController.createContact').middleware([
     'valid:MarketPlaceContact'
@@ -1056,9 +1057,7 @@ const routeConfig = [...Route.list()]
     route: r._route,
     method: r.verbs,
     middle: r.middlewareList,
-    handler: typeof r.handler == 'function' ? r.handler.name : r.handler
+    handler: typeof r.handler === 'function' ? r.handler.name : r.handler
   }))
-
-const fs = require('fs')
 
 fs.writeFileSync('./start/route_index', JSON.stringify(routeConfig, null, 2))

@@ -2040,6 +2040,7 @@
     ],
     "middle": [
       "auth:jwtLandlord,jwtAdministrator",
+      "LandlordOwnsThisEstate",
       "agreement",
       "plan"
     ],

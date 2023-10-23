@@ -3666,7 +3666,7 @@ class MatchService {
         query.where('tenants.budget_max', '<=', params.budget_max)
       }
     }
-
+    /*
     if (
       parseInt(params?.credit_score_min || 0) !== 0 ||
       parseInt(params?.credit_score_max || 100) !== 100
@@ -3677,7 +3677,7 @@ class MatchService {
       if (params && params.credit_score_max) {
         query.where('tenants.credit_score', '<=', params.credit_score_max)
       }
-    }
+    }*/
     if (params && params.phone_verified) {
       query.where('_mb.phone_verified', true).where('_mb.is_verified', true)
     }
@@ -3749,7 +3749,7 @@ class MatchService {
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
       .select(`_mf.id_verified`)
-      .select('_mb.firstname', '_mb.secondname', '_mb.birthday', '_mb.credit_score')
+      .select('_mb.firstname', '_mb.secondname', '_mb.birthday')
       .select(
         Database.raw(`
         (case when _bd.user_id is null
@@ -3773,7 +3773,6 @@ class MatchService {
         json_build_object
           (
             'income', all_members_submitted_income_proofs,
-            'credit_score', all_members_submitted_credit_score_proofs,
             'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
           )
         as submitted_proofs
@@ -3790,7 +3789,6 @@ class MatchService {
       '_mb.last_address',
       '_mb.phone_verified',
       '_mb.is_verified',
-      '_mb.credit_score',
       '_mb.credit_history_status',
       '_mb.credit_score_issued_at',
       '_mb.debt_proof',
@@ -3843,13 +3841,6 @@ class MatchService {
       })
     )[0].count
 
-    const creditScoreLimitCount = (
-      await this.getCountLandlordMatchesWithFilterQuery(estate, filter, {
-        credit_score_min: params.credit_score_min,
-        credit_score_max: params.credit_score_max
-      })
-    )[0].count
-
     const incomeTypes = [
       INCOME_TYPE_EMPLOYEE,
       INCOME_TYPE_WORKER,
@@ -3879,7 +3870,6 @@ class MatchService {
 
     return {
       budget: budetLimitCount,
-      credit_score: creditScoreLimitCount,
       income: incomeCount,
       phoneVerified: phoneVerifiedCount,
       idVerified: idVeriedCount
@@ -4226,7 +4216,6 @@ class MatchService {
         'estates.id',
         'estates.user_id',
         'budget',
-        'credit_score',
         'rent_arrears',
         'min_age',
         'max_age',
@@ -4282,7 +4271,6 @@ class MatchService {
         'tenants.is_short_term_rent',
         Database.raw(`_me.total_income as income`), //sum of all member's income
         '_m.credit_history_status',
-        '_m.credit_score', //average
         'rent_arrears', //if at least one has true, then true
         '_me.income_proofs', //all members must submit at least 3 income proofs for each of their incomes for this to be true
         '_m.credit_score_proofs', //all members must submit their credit score proofs
@@ -4314,7 +4302,6 @@ class MatchService {
         Database.raw(`
       (select
         user_id, owner_user_id,
-        avg(credit_score) as credit_score,
         json_agg(json_build_object('status', credit_history_status)) as credit_history_status,
         count(id) as members_count,
         bool_and(coalesce(debt_proof, null) is not null) as credit_score_proofs,
@@ -4633,7 +4620,6 @@ class MatchService {
         '_m.credit_score_proofs',
         '_m.no_rent_arrears_proofs',
         '_m.rent_arrears',
-        '_m.credit_score',
         '_m.members_age',
         '_me.income_sources',
         '_me.work_exp',
@@ -4653,7 +4639,6 @@ class MatchService {
         Database.raw(`
       (select
         user_id,
-        avg(credit_score) as credit_score,
         count(id) as members_count,
         bool_and(coalesce(debt_proof, null) is not null) as credit_score_proofs,
         bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
