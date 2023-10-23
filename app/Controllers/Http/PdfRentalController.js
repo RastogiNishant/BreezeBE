@@ -7,7 +7,13 @@ class PdfRentalController {
   async generatePdf({ request, auth, response }) {
     const tenantData = {
       tenant: await TenantService.getTenantWithCertificates(auth.user.id),
-      members: await MemberService.getMembers(auth.user.id, true)
+      members: await MemberService.getMembers(auth.user.id, true).then((data) =>
+        data.map((item) => ({
+          ...item,
+          email: item.user_id === auth.user.id && !item.email ? auth.user.email : item.email,
+          phone: item.user_id === auth.user.id && !item.phone ? auth.user.phone : item.phone,
+        }))
+      )
     }
 
     const pdfServerPort = (parseInt(process.env.PORT) || 3000) + 1
