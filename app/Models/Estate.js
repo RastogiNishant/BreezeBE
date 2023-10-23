@@ -152,6 +152,7 @@ class Estate extends Model {
       'max_age',
       'hash',
       'options',
+      'credit_history_status',
       'is_duration_later',
       'min_invite_count',
       'vacant_date',
