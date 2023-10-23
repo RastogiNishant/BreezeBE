@@ -171,10 +171,6 @@ class EstateSyncService {
       let estate = await EstateService.getByIdWithDetail(estate_id)
       estate = estate.toJSON()
       let credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
-      await require('./MailService').sendEmailToOhneMakler(
-        `credential: ${credential.api_key}`,
-        'barudo@gmail.com'
-      )
       const estateSync = new EstateSync(credential.api_key)
       if (!Number(estate.usable_area)) {
         estate.usable_area = estate.area
@@ -191,10 +187,6 @@ class EstateSyncService {
         type: 'success-posting',
         estate_id
       }
-      await require('./MailService').sendEmailToOhneMakler(
-        `Post response: ${resp}`,
-        'barudo@gmail.com'
-      )
       if (resp?.success) {
         //make all with estate_id and estate_sync_property_id to draft
         await EstateSyncListing.query()
@@ -204,8 +196,16 @@ class EstateSyncService {
             estate_sync_property_id: resp.data.id,
             status: ESTATE_SYNC_LISTING_STATUS_POSTED
           })
+        await require('./MailService').sendEmailToOhneMakler(
+          `Post response: ${resp?.success} ` + JSON.stringify(resp),
+          'barudo@gmail.com'
+        )
       } else {
         //POSTING ERROR. Send websocket event
+        await require('./MailService').sendEmailToOhneMakler(
+          `Error on the Post response: ${resp?.success} ` + JSON.stringify(resp),
+          'barudo@gmail.com'
+        )
         data = {
           ...data,
           success: false,
@@ -217,7 +217,6 @@ class EstateSyncService {
           posting_error_message: resp?.data?.message
         })
         Logger.error(JSON.stringify({ post_estate_sync_error: resp }))
-        //FIXME: replace this with logger...
         await EstateSyncService.emitWebsocketEventToLandlord({
           event: WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
           user_id: estate.user_id,
