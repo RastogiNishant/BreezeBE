@@ -950,7 +950,7 @@ class MatchController {
       'final_match_date',
       'status_at',
       'unread_count',
-      'credit_score',
+      'credit_history_status',
       'email',
       'phone',
       'last_address'

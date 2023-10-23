@@ -793,7 +793,6 @@ class MarketPlaceService {
       'flat_community_planned',
       'house_certificate',
       'smoker',
-      'credit_score', //available/not available
       'application_documents_available'
     ]
     for (const [key, value] of Object.entries(info)) {
@@ -944,7 +943,6 @@ class MarketPlaceService {
       .select(Database.raw(`other_info->'income' as income`))
       .select(Database.raw(`other_info->'birthday' as birthday`))
       .select(Database.raw(`other_info->'pets' as pets`)) //pets here is boolean
-      .select(Database.raw(`other_info->'credit_score' as credit_score`))
       .select(Database.raw(`other_info->'insolvency' as insolvency`))
       .where('estate_id', estate_id)
       .where('email', email)
