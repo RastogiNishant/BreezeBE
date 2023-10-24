@@ -14,7 +14,7 @@ const MailService = use('App/Services/MailService')
 const File = use('App/Classes/File')
 
 const moment = require('moment')
-const { isArray, isEmpty, includes } = require('lodash')
+const { isArray, isEmpty, includes, isString } = require('lodash')
 const {
   ISO_DATE_FORMAT,
   ROLE_ADMIN,
@@ -565,6 +565,13 @@ class UserController {
     let { page, limit = 20, ...params } = request.all()
     if (!page || page < 1) {
       page = 1
+    }
+    if (params.global && isString(params.global)) {
+      try {
+        params.global = JSON.parse(params.global)
+      } catch (err) {
+        params.global = {}
+      }
     }
     let query = this.prospectQuery(false)
     const Filter = new UserFilter(params, query)
