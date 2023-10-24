@@ -53,6 +53,7 @@ const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const { isHoliday } = require('../../../Libs/utils')
 const Promise = require('bluebird')
 const CompanyService = require('../../../Services/CompanyService')
+const UserFilter = require('../../../Classes/UserFilter')
 
 class UserController {
   /**
@@ -94,11 +95,11 @@ class UserController {
       .orderBy(order.by, order.direction)
 
     const users = await query.fetch()
-    //FIXME: should propbably add an isAdmin param here...
+    // FIXME: should propbably add an isAdmin param here...
     response.res(users.toJSON({ isOwner: true }))
   }
 
-  //this is missing before... just the basic query on users using id
+  // this is missing before... just the basic query on users using id
   async getUser({ request, response }) {
     const user_id = request.params.user_id
     const user = await User.query().where('id', user_id).first()
@@ -179,7 +180,7 @@ class UserController {
             },
             trx
           )
-          //make owned estates draft
+          // make owned estates draft
           const estateIds = (
             await Estate.query()
               .select('*')
@@ -195,12 +196,12 @@ class UserController {
               .transacting(trx)
           }
 
-          //TODO: we should delete user deactivation schedule here also
+          // TODO: we should delete user deactivation schedule here also
           await trx.commit()
           ids.map((id) => {
             Event.fire('mautic:syncContact', id, { admin_approval_date: null })
           })
-          //send notifications
+          // send notifications
           NoticeService.landlordsDeactivated(ids, estateIds)
           UserService.emitAccountEnabled(ids, {
             activation_status: USER_ACTIVATION_STATUS_DEACTIVATED,
@@ -220,17 +221,17 @@ class UserController {
             if (!user) {
               throw new AppException('Landlord not found.', 400)
             }
-            //check if this user is already on deactivation schedule
+            // check if this user is already on deactivation schedule
             const scheduled = await UserDeactivationSchedule.query().where('user_id', id).first()
             if (scheduled) {
               throw new AppException(`Landlord ${id} is already booked for deactivation`, 400)
             }
           })
-          //FIXME: tzOffset should be coming from header or body of request
+          // FIXME: tzOffset should be coming from header or body of request
           let workingDaysAdded = 0
           let deactivateDateTime
           let daysAdded = 0
-          //calculate when the deactivation will occur.
+          // calculate when the deactivation will occur.
           do {
             daysAdded++
             deactivateDateTime = moment().utc().add(daysAdded, 'days')
@@ -250,7 +251,7 @@ class UserController {
             delay = 1000 * (moment(deactivateDateTime).utc().unix() - moment().utc().unix())
           } else {
             deactivateDateTime = deactivateDateTime.format('yyyy-MM-DDThh:mm:ss+2:00')
-            delay = 1000 * 60 * 60 * 24 * daysAdded //number of milliseconds from now. Use this on Queue
+            delay = 1000 * 60 * 60 * 24 * daysAdded // number of milliseconds from now. Use this on Queue
           }
           await Promise.map(ids, async (id) => {
             const deactivationSchedule = await UserDeactivationSchedule.create(
@@ -361,7 +362,7 @@ class UserController {
 
   async getLandlords({ request, response }) {
     let { activation_status, status, estate_status, page, limit, query, today } = request.all()
-    let { light } = request.get()
+    const { light } = request.get()
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -389,8 +390,8 @@ class UserController {
       landlordQuery.where(Database.raw(`created_at::date=CURRENT_DATE`))
     }
     const landlords = await landlordQuery.orderBy('users.id', 'asc').paginate(page, limit)
-    //console.log({ landlords: landlords.toJSON({ isOwner: true }).data[10] })
-    //let's return all info... this is admin
+    // console.log({ landlords: landlords.toJSON({ isOwner: true }).data[10] })
+    // let's return all info... this is admin
     const users = landlords.toJSON({ publicOnly: false })
     return response.res(users)
   }
@@ -400,7 +401,7 @@ class UserController {
     const trx = await Database.beginTransaction()
 
     try {
-      //don't send verification email
+      // don't send verification email
       const user = await UserService.signUp({ email, password, role }, trx, false)
       const company = await CompanyService.createCompany(
         { type: 'private', name: company_name, size: company_size, status: STATUS_ACTIVE },
@@ -411,9 +412,9 @@ class UserController {
       user.company_id = company.id
       user.status = STATUS_ACTIVE
       await user.save(trx)
-      /*await User.query()
+      /* await User.query()
         .where('id', user.id)
-        .update({ status: STATUS_ACTIVE, firstname: company_name, company_id: company.id }, trx)*/
+        .update({ status: STATUS_ACTIVE, firstname: company_name, company_id: company.id }, trx) */
       await trx.commit()
       return response.res(user)
     } catch (err) {
@@ -560,11 +561,14 @@ class UserController {
   }
 
   async getProspects({ request, response }) {
-    let { page, limit = 20 } = request.all()
+    let { page, limit = 20, ...params } = request.all()
     if (!page || page < 1) {
       page = 1
     }
-    const prospects = await this.prospectQuery(false)
+    let query = this.prospectQuery(false)
+    const Filter = new UserFilter(params, query)
+    query = Filter.process()
+    const prospects = await query
       .whereNot('users.status', STATUS_DELETE)
       .where('role', ROLE_USER)
       .orderBy('updated_at', 'desc')
@@ -598,7 +602,7 @@ class UserController {
 
       if (member.incomes && Array.isArray(member.incomes)) {
         for (let incomeCount = 0; incomeCount < member.incomes.length; incomeCount++) {
-          let income = member.incomes[incomeCount]
+          const income = member.incomes[incomeCount]
           income.income_proof = await Promise.map(income.income_proof || [], async (proof) => {
             proof.file = proof.file ? await File.getProtectedUrl(proof.file) : null
             return proof
