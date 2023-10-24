@@ -64,7 +64,6 @@ const ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION = [
 const { invert, isFunction, isEmpty } = require('lodash')
 const { calculateEnergyClassFromEfficiency } = use('App/Libs/utils')
 const ContentType = use('App/Classes/ContentType')
-const titlesToExcludeOnDescription = ['landlord.property.inside_view.rooms.model_unit']
 
 const APARTMENT_TYPE_KEYS = {
   [APARTMENT_TYPE_FLAT]: 'landlord.property.details.building_apartment.type.flat',
@@ -213,10 +212,10 @@ class EstateSync {
       return ''
     }
     const validAmenities = amenities.reduce((validAmenities, amenity) => {
-      if (
-        ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION.includes(amenity.location) &&
-        !titlesToExcludeOnDescription.includes(amenity?.option?.title)
-      ) {
+      if (ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION.includes(amenity.location)) {
+        if (l.get(`${amenity?.option?.title}`, LANG_DE) !== amenity?.option?.title) {
+          return [...validAmenities, l.get(`${amenity?.option?.title}`, LANG_DE)]
+        }
         return [...validAmenities, l.get(`${amenity?.option?.title}.message`, LANG_DE)]
       }
       return validAmenities
@@ -244,7 +243,7 @@ class EstateSync {
     if (vacant_date) {
       return vacant_date
     }
-    return 'immediately'
+    return l.get(`prospect.property.details.txt_rent_start_from_now`, LANG_DE)
   }
 
   composeHeatingType({ heating_type }) {
@@ -264,7 +263,7 @@ class EstateSync {
       return ''
     }
     const num = deposit / net_rent
-    return `${num}x base rent`
+    return `${num}` + l.get(`landlord.property.lease_price.deposit_in_monthly_rents`, LANG_DE)
   }
 
   composeLastRefurbish({ last_modernization }) {
@@ -412,10 +411,6 @@ class EstateSync {
         fields,
         attachments,
         externalId
-      }
-      console.log({ body })
-      return {
-        success: true
       }
       if (contactId) {
         body.contactId = contactId
