@@ -55,7 +55,7 @@ class EstateSyncService {
     if (credential) {
       credential['api_key'] = credential['api_key'] || process.env.ESTATE_SYNC_API_KEY
     } else {
-      credential = EstateSyncService.getBreezeEstateSyncCredential()
+      credential = await EstateSyncService.getBreezeEstateSyncCredential()
     }
     return credential
   }
@@ -196,8 +196,16 @@ class EstateSyncService {
             estate_sync_property_id: resp.data.id,
             status: ESTATE_SYNC_LISTING_STATUS_POSTED
           })
+        await require('./MailService').sendEmailToOhneMakler(
+          `Post response: ${resp?.success} ` + JSON.stringify(resp),
+          'barudo@gmail.com'
+        )
       } else {
         //POSTING ERROR. Send websocket event
+        await require('./MailService').sendEmailToOhneMakler(
+          `Error on the Post response: ${resp?.success} ` + JSON.stringify(resp),
+          'barudo@gmail.com'
+        )
         data = {
           ...data,
           success: false,
@@ -209,7 +217,6 @@ class EstateSyncService {
           posting_error_message: resp?.data?.message
         })
         Logger.error(JSON.stringify({ post_estate_sync_error: resp }))
-        //FIXME: replace this with logger...
         await EstateSyncService.emitWebsocketEventToLandlord({
           event: WEBSOCKET_EVENT_ESTATE_SYNC_POSTING,
           user_id: estate.user_id,
@@ -217,6 +224,7 @@ class EstateSyncService {
         })
       }
     } catch (e) {
+      await MailService.sendEmailToOhneMakler(`Publishing Error: ${e.message}`, 'barudo@gmail.com')
       console.log('Post Estate to Estate Sync error', e.message)
     }
   }
