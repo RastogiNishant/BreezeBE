@@ -939,6 +939,18 @@
     "handler": "Admin/UserController.testProspectActivate"
   },
   {
+    "route": "/api/v1/administration/utilities/users/generate-token/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/UserController.getAccessTokenForUser"
+  },
+  {
     "route": "/api/v1/administration/verifyUsers",
     "method": [
       "POST"
