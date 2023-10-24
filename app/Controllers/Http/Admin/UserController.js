@@ -50,7 +50,7 @@ const {
 } = require('../../../exceptions')
 const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
-const { isHoliday } = require('../../../Libs/utils')
+const { isHoliday, getAuthByRole } = require('../../../Libs/utils')
 const Promise = require('bluebird')
 const CompanyService = require('../../../Services/CompanyService')
 const UserFilter = require('../../../Classes/UserFilter')
@@ -662,6 +662,17 @@ class UserController {
     } catch (err) {
       return response.res({ tenantMemberData: data, can_activate: false, reason: err.message })
     }
+  }
+
+  async getAccessTokenForUser({ request, auth, response }) {
+    const { id } = request.all()
+    const user = await User.query().where('id', id).first()
+    if (!user) {
+      throw new HttpException('User not found')
+    }
+    const authenticator = getAuthByRole(auth, user.role)
+    const token = await authenticator.generate(user)
+    response.res(token)
   }
 }
 
