@@ -4,7 +4,7 @@ const User = use('App/Models/User')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const Event = use('Event')
-
+const DataStorage = use('DataStorage')
 const UserService = use('App/Services/UserService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
@@ -43,7 +43,8 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   INCOME_TYPE_OTHER_BENEFIT,
-  INCOME_TYPE_CHILD_BENEFIT
+  INCOME_TYPE_CHILD_BENEFIT,
+  TEMPORARY_PASSWORD_PREFIX
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD }
@@ -673,6 +674,20 @@ class UserController {
     const authenticator = getAuthByRole(auth, user.role)
     const token = await authenticator.generate(user)
     response.res(token)
+  }
+
+  async generateTemporaryPassword({ request, response }) {
+    let { email, password, role } = request.all()
+    const user = await User.query().where('email', email).where('role', role).first()
+    if (!user) {
+      throw new HttpException('User not found')
+    }
+    if (!password) {
+      password = Estate.generateRandomString(6)
+    }
+    // FIXME: Need to encrypt password
+    await DataStorage.setItem(user.id, password, TEMPORARY_PASSWORD_PREFIX, { expire: 5 * 60 })
+    response.res({ email, password, role })
   }
 }
 

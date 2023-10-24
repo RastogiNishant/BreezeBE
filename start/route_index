@@ -951,6 +951,17 @@
     "handler": "Admin/UserController.getAccessTokenForUser"
   },
   {
+    "route": "/api/v1/administration/utilities/users/temporary-password",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:AdminGeneratePassword"
+    ],
+    "handler": "Admin/UserController.generateTemporaryPassword"
+  },
+  {
     "route": "/api/v1/administration/verifyUsers",
     "method": [
       "POST"
