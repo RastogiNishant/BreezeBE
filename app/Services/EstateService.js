@@ -1974,11 +1974,11 @@ class EstateService {
     let query = null
 
     if (!includeGeography) {
-      query = Estate.query().where('build_id', build_id)
+      query = Estate.query().where('build_id', build_id).where('status', STATUS_ACTIVE)
     } else {
       if (tenant.isActive()) {
         query = this.getActiveMatchesQuery({ userId, build_id })
-      } else if (includeGeography) {
+      } else {
         query = this.getNotActiveMatchesQuery({ tenant, userId, build_id })
       }
     }
@@ -2685,7 +2685,9 @@ class EstateService {
   }
 
   static async getEstateHasTenant({ condition = {} }) {
-    const query = Estate.query().where('letting_type', LETTING_TYPE_LET).where('status', STATUS_DRAFT)
+    const query = Estate.query()
+      .where('letting_type', LETTING_TYPE_LET)
+      .where('status', STATUS_DRAFT)
     if (isEmpty(condition)) {
       return await query.first()
     }
@@ -3048,8 +3050,7 @@ class EstateService {
 
       return {
         ...estate,
-        canChangeLettingType:
-          !(isMatchCountValidToChangeLettingType || estate.current_tenant)
+        canChangeLettingType: !(isMatchCountValidToChangeLettingType || estate.current_tenant)
       }
     })
   }
