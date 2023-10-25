@@ -106,7 +106,7 @@ const {
   BUILDING_STATUS_ABRISSOBJEKT,
   BUILDING_STATUS_PROJECTED,
   BUILDING_STATUS_FULLY_REFURBISHED,
-  //cert_category
+  // cert_category
   CERT_CATEGORY_A,
   CERT_CATEGORY_B,
   CERT_CATEGORY_C,
@@ -201,7 +201,7 @@ const {
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_WITH_CHILD,
-  //Letting Status
+  // Letting Status
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
@@ -310,7 +310,8 @@ class ImportEstate extends Base {
               CERT_CATEGORY_220,
               CERT_CATEGORY_NOT
             ])
-        ),
+        )
+        .nullable(),
       category: yup.string().min(2).max(20).nullable(),
       // TODO: add rooms schema
       rooms: yup.mixed(),
@@ -348,7 +349,7 @@ class ImportEstate extends Base {
       area: yup.number().min(0).nullable(),
       living_space: yup.number().min(0).nullable(),
       usable_area: yup.number().min(0).nullable(),
-      rooms_number: yup.number().max(99).min(0).nullable(), //decimal with 1 decimal place, will truncate if more decimal places
+      rooms_number: yup.number().max(99).min(0).nullable(), // decimal with 1 decimal place, will truncate if more decimal places
       bedrooms_number: yup.number().min(0).nullable(),
       bathrooms_number: yup.number().min(0).nullable(),
       kitchen_options: yup
