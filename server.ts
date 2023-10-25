@@ -1,5 +1,4 @@
 'use strict'
-
 /*
 |--------------------------------------------------------------------------
 | Http server
@@ -16,11 +15,12 @@
 |     Also you can preload files by calling `preLoad('path/to/file')` method.
 |     Make sure to pass a relative path from the project root.
 */
+import 'newrelic'
+
 import * as http from 'node:http'
 import * as fs from 'node:fs'
 import * as https from 'node:https'
 
-import 'newrelic'
 import { Ignitor } from '@adonisjs/ignitor'
 import * as AdonisFold from '@adonisjs/fold'
 
@@ -28,12 +28,11 @@ import * as AdonisFold from '@adonisjs/fold'
 const key = '/home/ubuntu/cert/privkey.pem'
 const cert = '/home/ubuntu/cert/fullchain.pem'
 
-let httpsListener:
-  | ((handler: http.RequestListener) => ReturnType<typeof https.createServer>)
-  | null = null
+let httpListener: (handler: http.RequestListener) => ReturnType<typeof http.createServer>
 
+// https server when cert is available
 if (fs.existsSync(key)) {
-  httpsListener = (handler) => {
+  httpListener = (handler) => {
     return https.createServer(
       {
         key: fs.readFileSync(key),
@@ -42,10 +41,14 @@ if (fs.existsSync(key)) {
       handler
     )
   }
+} else {
+  httpListener = (handler) => {
+    return http.createServer(handler)
+  }
 }
 
 new Ignitor(AdonisFold)
   .appRoot(__dirname)
   .wsServer() // boot the WebSocket server
-  .fireHttpServer(httpsListener)
+  .fireHttpServer(httpListener)
   .catch(console.error)
