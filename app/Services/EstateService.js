@@ -1974,7 +1974,7 @@ class EstateService {
     let query = null
 
     if (!includeGeography) {
-      query = Estate.query().where('build_id', build_id).where('status', STATUS_ACTIVE)
+      query = Estate.query().where('build_id', build_id).whereNotIn('status', [STATUS_DELETE])
     } else {
       if (tenant.isActive()) {
         query = this.getActiveMatchesQuery({ userId, build_id })
