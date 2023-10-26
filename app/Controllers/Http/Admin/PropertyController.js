@@ -151,7 +151,7 @@ class PropertyController {
       .select(Database.raw('_u.user'))
       .whereNot('estates.status', STATUS_DELETE)
       .whereIn('estates.status', estate_status)
-      //owner
+      // owner
       .innerJoin(
         Database.select(
           Database.raw(`jsonb_build_object(
@@ -182,7 +182,7 @@ class PropertyController {
     let { activation_status, user_status, estate_status, id, page, limit } = request.all()
     page = page || 1
     limit = limit || 50
-    //FIXME: this should be from the Datatable filters
+    // FIXME: this should be from the Datatable filters
     if (!activation_status) {
       activation_status = [
         USER_ACTIVATION_STATUS_NOT_ACTIVATED,
@@ -198,14 +198,14 @@ class PropertyController {
       STATUS_OFFLINE_ACTIVE
     ]
     if (id) {
-      let query = this.getEstatesQuery({ estate_status, activation_status, user_status }).where(
+      const query = this.getEstatesQuery({ estate_status, activation_status, user_status }).where(
         'id',
         id
       )
       const estate = await query.first()
       return response.res(estate)
     }
-    //exact count for now since count(*) will return approx
+    // exact count for now since count(*) will return approx
     let buildingCount = await Building.query().whereNot('status', STATUS_DELETE).fetch()
     buildingCount = (buildingCount.toJSON() || []).length
 
@@ -214,7 +214,8 @@ class PropertyController {
       .with('categories')
       .with('user')
       .with('estates', function (e) {
-        e.withCount('visits')
+        e.whereNot('status', STATUS_DELETE)
+          .withCount('visits')
           .with('final')
           .withCount('inviteBuddies')
           .withCount('knocked')
@@ -235,7 +236,7 @@ class PropertyController {
     } else {
       buildings = (await buildings.fetch()).toJSON()
     }
-    //get all estates of the buildings so we will not anymore show them
+    // get all estates of the buildings so we will not anymore show them
     const estateIdsOnBuildings = (buildings || []).reduce((estateIdsOnBuildings, building) => {
       let estateIds = []
       for (let count = 0; count < building?.estates?.length; count++) {
@@ -244,32 +245,32 @@ class PropertyController {
       return [...estateIdsOnBuildings, ...estateIds]
     }, [])
 
-    //parse counts...
+    // parse counts...
     buildings.map((building) => {
       building.invite_count = 0
       building.final_match_count = 0
       building.visit_count = 0
       for (let count = 0; count < building?.estates?.length; count++) {
         building.estates[count].invite_count =
-          parseInt(building.estates[count]['__meta__'].knocked_count) +
-          parseInt(building.estates[count]['__meta__'].inviteBuddies_count) +
-          parseInt(building.estates[count]['__meta__'].contact_requests_count)
+          parseInt(building.estates[count].__meta__.knocked_count) +
+          parseInt(building.estates[count].__meta__.inviteBuddies_count) +
+          parseInt(building.estates[count].__meta__.contact_requests_count)
         building.invite_count +=
-          parseInt(building.estates[count]['__meta__'].knocked_count) +
-          parseInt(building.estates[count]['__meta__'].inviteBuddies_count) +
-          parseInt(building.estates[count]['__meta__'].contact_requests_count)
+          parseInt(building.estates[count].__meta__.knocked_count) +
+          parseInt(building.estates[count].__meta__.inviteBuddies_count) +
+          parseInt(building.estates[count].__meta__.contact_requests_count)
         building.estates[count].visit_count = parseInt(
-          building.estates[count]['__meta__'].visits_count
+          building.estates[count].__meta__.visits_count
         )
-        building.visit_count += parseInt(building.estates[count]['__meta__'].visits_count)
+        building.visit_count += parseInt(building.estates[count].__meta__.visits_count)
         building.estates[count].final_match_count = parseInt(
-          building.estates[count]['__meta__'].final_count
+          building.estates[count].__meta__.final_count
         )
-        building.final_match_count += parseInt(building.estates[count]['__meta__'].final_count)
+        building.final_match_count += parseInt(building.estates[count].__meta__.final_count)
       }
     })
 
-    //exact count needed... since count(*) may be approx
+    // exact count needed... since count(*) may be approx
     const estateCount = await Estate.query()
       .whereNot('status', STATUS_DELETE)
       .whereNotIn('id', estateIdsOnBuildings)
@@ -286,7 +287,7 @@ class PropertyController {
         if (from < 0) from = 0
         const to = (page - buildEstatePage) * limit - offsetCount < 0 ? limit - offsetCount : limit
 
-        let query = this.getEstatesQuery({
+        const query = this.getEstatesQuery({
           estate_status,
           activation_status,
           user_status
@@ -298,20 +299,20 @@ class PropertyController {
         } else {
           estates = await query.fetch()
         }
-        //let pages = estates.pages
+        // let pages = estates.pages
         estates = estates.rows.map((estate) => {
           estate = estate.toJSON()
           estate.invite_count =
-            parseInt(estate['__meta__'].knocked_count) +
-            parseInt(estate['__meta__'].inviteBuddies_count) +
-            parseInt(estate['__meta__'].contact_requests_count)
-          estate.visit_count = parseInt(estate['__meta__'].visits_count)
-          estate.final_match_count = parseInt(estate['__meta__'].final_count)
+            parseInt(estate.__meta__.knocked_count) +
+            parseInt(estate.__meta__.inviteBuddies_count) +
+            parseInt(estate.__meta__.contact_requests_count)
+          estate.visit_count = parseInt(estate.__meta__.visits_count)
+          estate.final_match_count = parseInt(estate.__meta__.final_count)
           return estate
         })
       }
     } else {
-      let query = this.getEstatesQuery({ estate_status, activation_status, user_status }).whereNot(
+      const query = this.getEstatesQuery({ estate_status, activation_status, user_status }).whereNot(
         'status',
         STATUS_DELETE
       )
@@ -319,16 +320,16 @@ class PropertyController {
       estates = estates.rows.map((estate) => {
         estate = estate.toJSON()
         estate.invite_count =
-          parseInt(estate['__meta__'].knocked_count) +
-          parseInt(estate['__meta__'].inviteBuddies_count) +
-          parseInt(estate['__meta__'].contact_requests_count)
-        estate.visit_count = parseInt(estate['__meta__'].visits_count)
-        estate.final_match_count = parseInt(estate['__meta__'].final_count)
+          parseInt(estate.__meta__.knocked_count) +
+          parseInt(estate.__meta__.inviteBuddies_count) +
+          parseInt(estate.__meta__.contact_requests_count)
+        estate.visit_count = parseInt(estate.__meta__.visits_count)
+        estate.final_match_count = parseInt(estate.__meta__.final_count)
         return estate
       })
     }
     estates = [...buildings, ...estates]
-    //estates = [...buildings]
+    // estates = [...buildings]
     const pages = {
       total,
       lastPage: Math.ceil(total / limit) || 1,
@@ -375,7 +376,7 @@ class PropertyController {
       estate.letting_type !== LETTING_TYPE_LET
     ) {
       // Validate is Landlord fulfilled contacts
-      //Test whether estate is still published in MarketPlace
+      // Test whether estate is still published in MarketPlace
       const isCurrentlyPublishedInMarketPlace = await EstateSyncListing.query()
         .whereIn('status', [
           ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
@@ -428,7 +429,7 @@ class PropertyController {
           .where({ estate_id: isRequestingPublish.estate_id })
           .delete()
           .transacting(trx),
-      })*/
+      }) */
       await Estate.query()
         .where('id', id)
         .update({ status: STATUS_ACTIVE, publish_status: PUBLISH_STATUS_APPROVED_BY_ADMIN }, trx)
@@ -573,7 +574,7 @@ class PropertyController {
 
   async publishBuilding({ request, response }) {
     const { id } = request.all()
-    //is24 for now...
+    // is24 for now...
     const building = await Building.query()
       .where('id', id)
       .whereNot('status', STATUS_DELETE)
