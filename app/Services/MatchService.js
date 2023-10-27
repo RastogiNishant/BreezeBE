@@ -842,10 +842,10 @@ class MatchService {
         }
       }
 
-      let maxLat = -90;
-        let maxLon = -180;
-        let minLat = 90;
-        let minLon = 180
+      let maxLat = -90
+      let maxLon = -180
+      let minLat = 90
+      let minLon = 180
 
       polygon.forEach(([lon, lat]) => {
         maxLat = Math.max(lat, maxLat)
@@ -4242,11 +4242,14 @@ class MatchService {
         'unit_category_id'
       )
       .leftJoin(
+        // 'city_id', cities.id,
         Database.raw(`
         (select estates.id as estate_id,
           case when estates.cert_category is null then
             null else 
-            json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
+            json_build_object(
+              'income_level', estates.cert_category
+            )
             end
           as wbs_certificate from estates left join cities on cities.city=estates.city)
         as _ec`),
@@ -4327,13 +4330,14 @@ class MatchService {
         }
       )
       .leftJoin(
+        // 'city_id', city_id,
         Database.raw(`
         (select
           user_id,
           array_agg(
             case when income_level is null or income_level='' then
               null else
-              json_build_object('city_id', city_id, 'income_level', income_level)
+              json_build_object('income_level', income_level)
               end
           ) as wbs_certificate
           from tenant_certificates
