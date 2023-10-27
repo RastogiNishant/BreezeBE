@@ -367,11 +367,10 @@ Route.group(() => {
   Route.post('/:user_id', 'Admin/UserController.updateUser')
 })
   .prefix('api/v1/admin/users')
-  .middleware(['auth:jwtAdministrator', 'is:admin'])
+  .middleware(['auth:jwtAdministrator'])
 
 Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middleware([
   'auth:jwtAdministrator',
-  'is:admin',
   'valid:Ids,UserVerify'
 ])
 
@@ -386,7 +385,7 @@ Route.group(() => {
   Route.delete('/', 'FeatureController.removeFeature').middleware(['valid:Ids'])
 })
   .prefix('api/v1/admin/feature')
-  .middleware(['auth:jwtAdministrator', 'is:admin'])
+  .middleware(['auth:jwtAdministrator'])
 
 Route.group(() => {
   Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])
@@ -396,7 +395,7 @@ Route.group(() => {
   Route.delete('/', 'PlanController.deletePlan').middleware(['valid:Ids'])
 })
   .prefix('api/v1/admin/plan')
-  .middleware(['auth:jwtAdministrator', 'is:admin'])
+  .middleware(['auth:jwtAdministrator'])
 
 Route.group(() => {
   Route.post('/auth/login', 'Admin/AuthController.login').middleware(['valid:AdminLogin'])
@@ -416,7 +415,7 @@ Route.group(() => {
   ])
 })
   .prefix('api/v1/admin/tenant/paymentplan')
-  .middleware(['auth:jwtAdministrator', 'is:admin'])
+  .middleware(['auth:jwtAdministrator'])
 
 Route.group(() => {
   Route.get('/', 'Admin/AgreementController.getAgreements')
@@ -926,7 +925,6 @@ Route.group(() => {
 
   Route.delete('/:id', 'TenantReportAbuseController.deleteAbuse').middleware([
     'auth:jwtAdministrator',
-    'is:admin',
     'valid:Id'
   ])
 }).prefix('api/v1/tenantReportAbuse')
