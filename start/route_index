@@ -64,8 +64,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "agreement",
       "plan"
     ],
@@ -77,8 +76,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateAgreement",
       "agreement",
       "plan"
@@ -91,8 +89,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Id",
       "agreement",
       "plan"
@@ -105,8 +102,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateAgreement,Id",
       "agreement",
       "plan"
@@ -131,7 +127,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:Ids",
       "agreement",
@@ -145,7 +141,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:CreateFeature",
       "agreement",
@@ -159,7 +155,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:CreateFeature,Id",
       "agreement",
@@ -186,7 +182,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:Ids",
       "agreement",
@@ -201,7 +197,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "agreement",
       "plan"
@@ -214,7 +210,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:CreatePlan",
       "agreement",
@@ -229,7 +225,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:Id",
       "agreement",
@@ -243,7 +239,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:CreatePlan,Id",
       "agreement",
@@ -258,7 +254,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:PlanId",
       "agreement",
@@ -272,7 +268,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:TenantPaymentPlan",
       "agreement",
@@ -286,7 +282,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:Id",
       "agreement",
@@ -301,7 +297,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:Id",
       "agreement",
@@ -315,7 +311,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:TenantPaymentPlan,Id",
       "agreement",
@@ -330,8 +326,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "agreement",
       "plan"
     ],
@@ -343,8 +338,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateAgreement",
       "agreement",
       "plan"
@@ -357,8 +351,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Id",
       "agreement",
       "plan"
@@ -371,8 +364,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateAgreement,Id",
       "agreement",
       "plan"
@@ -386,7 +378,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "pagination",
       "agreement",
@@ -401,7 +393,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "agreement",
       "plan"
@@ -414,7 +406,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "agreement",
       "plan"
@@ -427,7 +419,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:Ids,UserVerify",
       "agreement",
@@ -4860,7 +4852,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
+      "auth:jwtAdministrator",
       "is:admin",
       "valid:Id",
       "agreement",
