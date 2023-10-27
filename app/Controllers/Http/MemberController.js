@@ -108,7 +108,9 @@ class MemberController {
 
       const member = await Member.query().select('email').where('email', data.email).first()
 
-      if (member) {
+      const tenant = await User.query().select('email').where('email', data.email).first()
+
+      if (member || tenant) {
         throw new HttpException('Member already exists with this email', 400)
       }
 
@@ -522,7 +524,7 @@ class MemberController {
     }
   }
 
-  async removeInviteConnection({ request, auth, response }) {}
+  async removeInviteConnection({ request, auth, response }) { }
 
   async prepareHouseholdInvitationDetails({ auth, response }) {
     const userEmail = auth.user.email
