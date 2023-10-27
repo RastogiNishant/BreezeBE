@@ -246,17 +246,6 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
-    // WBS certificate score
-    console.log('calculating WBS Score...')
-    if (!MatchService.calculateWBSScore(prospect.wbs_certificate, estate.wbs_certificate)) {
-      if (debug) {
-        return {
-          scoreL: 0,
-          reason: 'wbs certificate mismatch'
-        }
-      }
-      return 0
-    }
     const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
