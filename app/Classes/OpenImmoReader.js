@@ -52,8 +52,8 @@ class OpenImmoReader {
 
   generateRandomString(length = 6) {
     let randomString = ''
-    var characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
-    for (var i = 0; i < length; i++) {
+    const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
+    for (let i = 0; i < length; i++) {
       randomString += characters.charAt(Math.floor(Math.random() * characters.length))
     }
     return randomString
@@ -99,23 +99,21 @@ class OpenImmoReader {
           attribute.name === 'stand' ||
           definition.name === 'user_defined_simplefield'
         ) {
-          //user_defined_extend problem
+          // user_defined_extend problem
         } else {
           if (
             has(attribute, 'use') &&
             attribute.use === 'required' &&
-            !has(value[0]['$'], attribute.name)
+            !has(value[0].$, attribute.name)
           ) {
             throw new Error(`Validation Error: Attribute ${attribute.name} missing`)
           }
           if (
             has(attribute, 'restriction') &&
-            !includes(attribute['restriction'], value[0]['$'][attribute.name])
+            !includes(attribute.restriction, value[0].$[attribute.name])
           ) {
             throw new Error(
-              `Validation Error: Illegal value ${value[0]['$'][attribute.name]} for ${
-                attribute.name
-              }`
+              `Validation Error: Illegal value ${value[0].$[attribute.name]} for ${attribute.name}`
             )
           }
         }
@@ -125,22 +123,22 @@ class OpenImmoReader {
     if (definition.sequence && isArray(definition.sequence)) {
       /** sequence */
       definition.sequence.map((sequence, index) => {
-        //FIXME sequence should have the same order as defined
+        // FIXME sequence should have the same order as defined
         if (!sequence.minOccurs && sequence.ref && !has(value[0], sequence.ref)) {
           throw new Error(`Validation Error: Missing ${sequence.ref}`)
         }
-        //recursion:
+        // recursion:
         if (value[0][sequence.ref]) {
-          //we need to test because user_defined_anyfield will fail here
+          // we need to test because user_defined_anyfield will fail here
           this.validateElement(value[0][sequence.ref], this.getDefinition(sequence.ref))
         }
       })
     } else if (definition.simple) {
-      //this will have a value and attributes ie.
-      //<email_sonstige emailart="EM_DIREKT" bemerkung="1">foo@bar.de</email_sonstige>
-      //console.log('simple', definition, value)
+      // this will have a value and attributes ie.
+      // <email_sonstige emailart="EM_DIREKT" bemerkung="1">foo@bar.de</email_sonstige>
+      // console.log('simple', definition, value)
     } else if (definition.type) {
-      //FIXME: stellplatz type
+      // FIXME: stellplatz type
       if (definition.type === 'boolean' && !this.isBoolean(value[0])) {
         throw new Error(`Validation Error: ${definition.name} must be boolean`)
       } else if (definition.type === 'date' && !this.isDate(value[0])) {
@@ -158,12 +156,13 @@ class OpenImmoReader {
       }
     }
   }
+
   isPositiveInteger(test) {
     return test.match(/^[0-9]+$/)
   }
 
   isDateTime(test) {
-    //2001-01-01T11:00:00
+    // 2001-01-01T11:00:00
     return test.match(/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$/)
   }
 
@@ -176,7 +175,7 @@ class OpenImmoReader {
   }
 
   isParkingSpaceInfo(test) {
-    //FIXME: stellplatz must have: '$': { stellplatzmiete: '1', stellplatzkaufpreis: '1', anzahl: '1' }
+    // FIXME: stellplatz must have: '$': { stellplatzmiete: '1', stellplatzkaufpreis: '1', anzahl: '1' }
     return true
   }
 
@@ -189,12 +188,12 @@ class OpenImmoReader {
   }
 
   validateRoot(json) {
-    if (!json['openimmo']) {
+    if (!json.openimmo) {
       throw new Error(`Invalid Openimmo xml.`)
     }
     const rootDefinition = this.getDefinition('openimmo')
     rootDefinition.sequence.map((sequence) => {
-      if (!sequence.minOccurs && !json['openimmo'][sequence.ref]) {
+      if (!sequence.minOccurs && !json.openimmo[sequence.ref]) {
         throw new Error(`Validation Error: Missing ${sequence.ref}`)
       }
     })
@@ -204,15 +203,15 @@ class OpenImmoReader {
     this.validateRoot(json)
     const rootDefinition = this.getDefinition('openimmo')
     rootDefinition.sequence.map((sequence) => {
-      this.validateElement(json['openimmo'][sequence.ref], this.getDefinition(sequence.ref))
+      this.validateElement(json.openimmo[sequence.ref], this.getDefinition(sequence.ref))
     })
     return json
   }
 
   processProperties(json) {
     try {
-      const transmittal = json['openimmo']['uebertragung'][0]['$']
-      const estates = json['openimmo']['anbieter'][0]['immobilie']
+      const transmittal = json.openimmo.uebertragung[0].$
+      const estates = json.openimmo.anbieter[0].immobilie
       const map = require('../../resources/openimmo/openimmo-map.json')
       const properties = estates.map((property) => {
         let obj = {}
@@ -280,7 +279,7 @@ class OpenImmoReader {
     ]
     properties.map((property) => {
       fields.map((field) => {
-        let dproperty = property[field]
+        const dproperty = property[field]
         let propertyOptions = []
         if (dproperty) {
           forOwn(options[field], (value, key) => {
@@ -309,20 +308,20 @@ class OpenImmoReader {
     properties.map((property) => {
       fields.map((field) => {
         let propertyValue
-        let dproperty = property[field]
+        const dproperty = property[field]
         if (dproperty) {
           propertyValue = options[field][dproperty]
         }
         property[field] = propertyValue
       })
-      //parse lat long
+      // parse lat long
       if (property.coord) {
         property.coord = `${property.coord.breitengrad},${property.coord.laengengrad}`
       }
-      //force dates to be of the format YYYY-MM-DD
+      // force dates to be of the format YYYY-MM-DD
       if (property.vacant_date) {
-        //vacant_date in openimmo (verfuegbar_ab) is string
-        let matches = property.vacant_date.match(/([0-9]{2})\.([0-9]{2})\.([0-9]{4})/)
+        // vacant_date in openimmo (verfuegbar_ab) is string
+        const matches = property.vacant_date.match(/([0-9]{2})\.([0-9]{2})\.([0-9]{4})/)
         if (matches) {
           property.vacant_date = `${matches[3]}-${matches[2]}-${matches[1]}`
           moment(new Date(property.vacant_date), 'YYYY/MM/DD', true)
@@ -339,10 +338,10 @@ class OpenImmoReader {
         ? `${property.construction_year}-01-01`
         : null
 
-      //last_modernization according to openimmo is a string ie. Bad 1997, K�che 2010
+      // last_modernization according to openimmo is a string ie. Bad 1997, K�che 2010
       if (property.last_modernization) {
         property.last_modernization = property.last_modernization.match(/(19|20)[0-9]{2}/)
-          ? `${property.last_modernization}-01-01`
+          ? property.last_modernization
           : null
       }
 
@@ -411,7 +410,7 @@ class OpenImmoReader {
       }
       let data
       data = await fsPromises.readFile(dfile)
-      let json = this.extractJson(data)
+      const json = this.extractJson(data)
       let properties = []
       if (json && this.validate(json)) {
         properties = this.processProperties(json)
@@ -432,7 +431,7 @@ class OpenImmoReader {
       let properties = []
       for (let i = 0; i < xmls.length; i++) {
         let property
-        let json = this.extractJson(xmls[i])
+        const json = this.extractJson(xmls[i])
         if (json && this.validate(json)) {
           property = this.processProperties(json)
           property = this.parseMultipleValuesWithOptions(property)

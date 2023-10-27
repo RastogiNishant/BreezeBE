@@ -1,7 +1,13 @@
 const Route = use('Route')
 
-export const prefixAll = (prefix: string, routes: any[]): void => {
-  routes.forEach((route) => route.prefix(prefix))
+export const prefixAll = (prefix: string, routes: Routes): Routes => {
+  const prefixRoutes = {}
+  for (const key in routes) {
+    if (routes[key] !== undefined) {
+      prefixRoutes[prefix + key] = routes[key]
+    }
+  }
+  return prefixRoutes
 }
 
 export enum HTTP_METHODS {
@@ -48,14 +54,14 @@ function isDefined<T> (arg: T | undefined | null): arg is T {
  * add middleware to all the routes
  * @returns modified routes object
  */
-export const addMiddlewareToRoutes = (routes: Routes, middleware: string[]): Routes => {
+export const addMiddlewareToRoutes = (routes: Routes, middleware: string | string[]): Routes => {
   for (const [path, route] of Object.entries(routes)) {
     for (const [method, config] of Object.entries(route)) {
       const oldMiddleware = config.middleware
       if (isDefined(oldMiddleware)) {
         routes[path][method] = {
           ...config,
-          middleware: [...middleware, ...oldMiddleware]
+          middleware: [...(Array.isArray(middleware) ? middleware : [middleware]), ...oldMiddleware]
         }
       } else {
         routes[path][method] = {
