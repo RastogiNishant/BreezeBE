@@ -583,19 +583,19 @@ class MarketPlaceService {
 
   static async createKnock({ user, data1, data2, email_verified = true }, trx) {
     try {
-      let contatRequestEmail = user.email
+      let contactRequestEmail = user.email
       if (data1 && data2) {
         const descryptedResult = await this.decryptDynamicLink({
           data1,
           data2
         })
-        contatRequestEmail = descryptedResult.email
+        contactRequestEmail = descryptedResult.email
       }
       // pending knocks are created during user creation from deeplink
       const pendingKnocks = (
         await EstateSyncContactRequest.query()
           .with('estate')
-          .where('email', contatRequestEmail)
+          .where('email', contactRequestEmail)
           .whereIn(
             'status',
             email_verified ? [STATUS_EMAIL_VERIFY] : [STATUS_DRAFT, STATUS_EMAIL_VERIFY]

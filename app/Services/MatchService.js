@@ -1234,7 +1234,7 @@ class MatchService {
         percent,
         landlord_score,
         prospect_score,
-        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+        status: MATCH_STATUS_KNOCK, // share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
         share: !!share_profile,
         buddy,
         knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
