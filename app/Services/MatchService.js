@@ -3600,10 +3600,6 @@ class MatchService {
             incomes
           on
             primaryMember.id=incomes.member_id and incomes.status = ${STATUS_ACTIVE}
-          and
-            primaryMember.email is null
-          and
-            primaryMember.owner_user_id is null
           group by
             incomes.member_id)
           as _pm
@@ -3773,6 +3769,7 @@ class MatchService {
         json_build_object
           (
             'income', all_members_submitted_income_proofs,
+            'credit_history_status', all_members_submitted_credit_score_proofs,
             'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
           )
         as submitted_proofs
