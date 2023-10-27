@@ -1,45 +1,44 @@
 'use strict'
 
 const path = require('path')
-const Helpers = use('Helpers')
 
-let providers = []
+const providers = [
+  '@adonisjs/framework/providers/AppProvider',
+  'adonis-sentry/providers/Sentry',
+  '@adonisjs/auth/providers/AuthProvider',
+  '@adonisjs/ally/providers/AllyProvider',
+  'adonis-advanced-serializer',
+  '@adonisjs/bodyparser/providers/BodyParserProvider',
+  '@adonisjs/cors/providers/CorsProvider',
+  '@adonisjs/lucid/providers/LucidProvider',
+  'adonis-lucid-filter/providers/LucidFilterProvider',
+  '@adonisjs/framework/providers/ViewProvider',
+  '@adonisjs/validator/providers/ValidatorProvider',
+  '@adonisjs/redis/providers/RedisProvider',
+  '@adonisjs/drive/providers/DriveProvider',
+  '@adonisjs/antl/providers/AntlProvider',
+  '@adonisjs/mail/providers/MailProvider',
+  'adonis-twilio-node/providers/TwilioProvider',
+  '@adonisjs/websocket/providers/WsProvider',
 
-providers.push('@adonisjs/framework/providers/AppProvider')
-providers.push('adonis-sentry/providers/Sentry')
-providers.push('@adonisjs/auth/providers/AuthProvider')
-providers.push('@adonisjs/ally/providers/AllyProvider')
-providers.push('adonis-advanced-serializer')
-providers.push('@adonisjs/bodyparser/providers/BodyParserProvider')
-providers.push('@adonisjs/cors/providers/CorsProvider')
-providers.push('@adonisjs/lucid/providers/LucidProvider')
-providers.push('adonis-lucid-filter/providers/LucidFilterProvider')
-providers.push('@adonisjs/framework/providers/ViewProvider')
-providers.push('@adonisjs/validator/providers/ValidatorProvider')
-providers.push('@adonisjs/redis/providers/RedisProvider')
-providers.push('@adonisjs/drive/providers/DriveProvider')
-providers.push('@adonisjs/antl/providers/AntlProvider')
-providers.push('@adonisjs/mail/providers/MailProvider')
-providers.push('adonis-twilio-node/providers/TwilioProvider')
-providers.push('@adonisjs/websocket/providers/WsProvider')
+  'adonis-cache/providers/CacheProvider',
 
-providers.push('adonis-cache/providers/CacheProvider')
+  'adonis-acl/providers/AclProvider',
+  path.join(__dirname, '..', 'providers', 'RequestLog/Provider'),
+  path.join(__dirname, '..', 'providers', 'GoogleOAuthProvider'),
 
-providers.push('adonis-acl/providers/AclProvider')
-providers.push(path.join(__dirname, '..', 'providers', 'RequestLog/Provider'))
-providers.push(path.join(__dirname, '..', 'providers', 'GoogleOAuthProvider'))
+  path.join(__dirname, '..', 'providers', 'Notifications/Provider'),
+  path.join(__dirname, '..', 'providers', 'Static/Provider'),
+  path.join(__dirname, '..', 'providers', 'DataStorage/Provider'),
+  path.join(__dirname, '..', 'providers', 'Localize/Provider'),
 
-providers.push(path.join(__dirname, '..', 'providers', 'Notifications/Provider'))
-providers.push(path.join(__dirname, '..', 'providers', 'Static/Provider'))
-providers.push(path.join(__dirname, '..', 'providers', 'DataStorage/Provider'))
-providers.push(path.join(__dirname, '..', 'providers', 'Localize/Provider'))
+  path.join(__dirname, '..', 'providers', 'GeoAPIProvider'),
+  path.join(__dirname, '..', 'providers', 'QueueProvider'),
 
-providers.push(path.join(__dirname, '..', 'providers', 'GeoAPIProvider'))
-providers.push(path.join(__dirname, '..', 'providers', 'QueueProvider'))
+  path.join(__dirname, '..', 'providers', 'Zendesk/Provider')
+]
 
-providers.push(path.join(__dirname, '..', 'providers', 'Zendesk/Provider'))
-
-// providers.push('barudo-adonis-swagger/providers/SwaggerProvider')
+// 'barudo-adonis-swagger/providers/SwaggerProvider',
 
 const aceProviders = [
   '@adonisjs/lucid/providers/MigrationsProvider',

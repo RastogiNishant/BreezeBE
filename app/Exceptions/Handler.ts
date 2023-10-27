@@ -1,10 +1,21 @@
 'use strict'
 
-const { get } = require('lodash')
+import { get } from 'lodash'
+import Express from 'express'
+import * as SentryRaw from '@sentry/node'
 
 const BaseExceptionHandler = use('BaseExceptionHandler')
 const Logger = use('Logger')
 const Sentry = use('Sentry')
+
+interface Error {
+  name: string
+  code: number
+  status: number
+  message: string
+  messages?: Array<{ field: string, validation: string }>
+  stack: string
+}
 
 /**
  * This class handles all exceptions thrown during
@@ -12,15 +23,24 @@ const Sentry = use('Sentry')
  *
  * @class ExceptionHandler
  */
-class ExceptionHandler extends BaseExceptionHandler {
+export class ExceptionHandler extends BaseExceptionHandler {
   /**
    * Handle exception thrown during the HTTP lifecycle
    */
-  async handle(error, { request, response }) {
+  async handle (
+    error: Error,
+    {
+      request,
+      response
+    }: { request: Express.Request, response: Express.Response }
+  ): Promise<void> {
     if (error.name === 'ValidationException') {
       return response.status(422).json({
         status: 'error',
-        data: error.messages.reduce((n, i) => ({ ...n, [i.field]: i.validation }), {})
+        data: error.messages?.reduce(
+          (n, i) => ({ ...n, [i.field]: i.validation }),
+          {}
+        )
       })
     }
 
@@ -28,7 +48,7 @@ class ExceptionHandler extends BaseExceptionHandler {
       return response.status(error.status).json({
         status: 'error',
         data: error.message,
-        code: error.code || 0
+        code: error.code ?? 0
       })
     }
 
@@ -38,7 +58,16 @@ class ExceptionHandler extends BaseExceptionHandler {
   /**
    * Report exception for logging or debugging.
    */
-  async report(error, { request, auth }) {
+  async report (
+    error: Error,
+    {
+      request,
+      auth
+    }: {
+      request: Express.Request
+      auth: { user: { username: string, id: number } }
+    }
+  ): Promise<boolean> {
     // Systems 404 HttpException do not out
     if (error.name === 'HttpException' && error.status === 404) {
       return false
@@ -50,17 +79,20 @@ class ExceptionHandler extends BaseExceptionHandler {
       return false
     }
 
-    Sentry.withScope((scope) => {
+    Sentry.withScope((scope: SentryRaw.Scope) => {
       scope.setExtra('username', get(auth, 'user.username', 'anonymous'))
       scope.setExtra('user_id', get(auth, 'user.id', null))
       scope.setExtra('data', request.all())
       Sentry.captureException(error)
     })
 
-    if (process.env.NODE_ENV) {
+    if (process.env.NODE_ENV !== undefined) {
       Logger.error(`${error.message} \n${error.stack}\n\n`)
     }
+
+    return true
   }
 }
 
-module.exports = ExceptionHandler
+// node compatible
+module.exports = new ExceptionHandler()
