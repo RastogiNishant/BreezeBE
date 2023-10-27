@@ -11,6 +11,7 @@ const HttpException = use('App/Exceptions/HttpException')
 const AppException = use('App/Exceptions/AppException')
 const { pick } = require('lodash')
 const QueueService = use('App/Services/QueueService')
+const DataStorage = use('DataStorage')
 const {
   exceptions: {
     USER_NOT_EXIST,
@@ -32,7 +33,8 @@ const {
   LOG_TYPE_OPEN_APP,
   FRONTEND_USED_WEB,
   FRONTEND_USED_MOBILE,
-  ROLE_USER
+  ROLE_USER,
+  TEMPORARY_PASSWORD_PREFIX
 } = require('../../constants')
 const { logEvent } = require('../../Services/TrackingService')
 
@@ -169,10 +171,10 @@ class AccountController {
    */
   async login({ request, auth, response }) {
     try {
-      let { email, role, password, device_token, from_web, landlord_email } = request.all()
-      let user, authenticator, token
+      const { email, role, password, device_token, from_web, landlord_email } = request.all()
+      let user, token
       const loginResult = await UserService.login({ email, role, device_token })
-      //TODO: implement test cases for admin login
+      // TODO: implement test cases for admin login
       if (loginResult?.isAdmin) {
         const authenticator = auth.authenticator('jwtAdministrator')
         const uid = Admin.getHash(email)
@@ -197,16 +199,21 @@ class AccountController {
       } else {
         user = loginResult
       }
-
-      authenticator = getAuthByRole(auth, role)
+      const authenticator = getAuthByRole(auth, role)
+      const temporaryPassword = await DataStorage.getItem(user.id, TEMPORARY_PASSWORD_PREFIX)
+      if (temporaryPassword && password === temporaryPassword) {
+        token = await authenticator.generate(user)
+        await DataStorage.remove(user.id, TEMPORARY_PASSWORD_PREFIX)
+        return response.res(token)
+      }
 
       const uid = User.getHash(email, role)
       try {
         token = await authenticator.attempt(uid, password)
       } catch (e) {
         const [message] = e.message.split(':')
-        //FIXME: message should be json here to be consistent with being a backend
-        //that provides JSON RESTful API
+        // FIXME: message should be json here to be consistent with being a backend
+        // that provides JSON RESTful API
         throw new HttpException(USER_WRONG_PASSWORD, 400, 0)
       }
       const ip = request.ip()
@@ -259,7 +266,7 @@ class AccountController {
    *
    */
   async closeAccount({ auth, response }) {
-    //TODO: check this endpoint response
+    // TODO: check this endpoint response
     await UserService.closeAccount(auth.user)
     response.res({ message: USER_CLOSED })
   }
@@ -409,11 +416,11 @@ class AccountController {
     try {
       const { plan_id, payment_plan, receipt, app } = request.all()
 
-      let ret = {
+      const ret = {
         status: false,
         data: {
-          plan_id: plan_id,
-          payment_plan: payment_plan
+          plan_id,
+          payment_plan
         }
       }
       const purchase = await TenantPremiumPlanService.processPurchase(
