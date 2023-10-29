@@ -3,6 +3,7 @@
 const User = use('App/Models/User')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
+const Match = use('App/Models/Match')
 const Event = use('Event')
 const DataStorage = use('DataStorage')
 const UserService = use('App/Services/UserService')
@@ -10,6 +11,7 @@ const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const TenantService = use('App/Services/TenantService')
+const MatchService = use('App/Services/MatchService')
 const MailService = use('App/Services/MailService')
 const File = use('App/Classes/File')
 
@@ -686,6 +688,44 @@ class UserController {
     // FIXME: Need to encrypt password
     await DataStorage.setItem(user.id, password, TEMPORARY_PASSWORD_PREFIX, { expire: 5 * 60 })
     response.res({ email, password, role })
+  }
+
+  async recalculateMatchByDate({ request, response }) {
+    let { date } = request.all()
+    date = moment(date).utc().format('YYYY-MM-DD')
+    const matches = await Match.query()
+      .where(Database.raw(`to_date("created_at"::TEXT, 'YYYY-MM-DD') = '${date}'`))
+      .fetch()
+    const trx = await Database.beginTransaction()
+    try {
+      await Promise.all(
+        matches.toJSON().map(async (match) => {
+          const prospect = await MatchService.getProspectForScoringQuery()
+            .where(`tenants.user_id`, match.user_id)
+            .first()
+          const estate = await MatchService.getEstateForScoringQuery()
+            .where('estates.id', match.estate_id)
+            .first()
+          const matchScore = await MatchService.calculateMatchPercent(prospect, estate)
+          await Match.query()
+            .where('user_id', match.user_id)
+            .where('estate_id', match.estate_id)
+            .update(
+              {
+                landlord_score: matchScore.landlord_score,
+                prospect_score: matchScore.prospect_score,
+                percent: matchScore.percent
+              },
+              trx
+            )
+        })
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (err) {
+      await trx.rollback()
+      throw new HttpException(err.message)
+    }
   }
 }
 
