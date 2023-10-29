@@ -890,6 +890,17 @@
     "handler": "Admin/AppController.calculateEstatePercent"
   },
   {
+    "route": "/api/v1/administration/utilities/matches/recalculate-match",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:RecalculateMatchByDate"
+    ],
+    "handler": "Admin/UserController.recalculateMatchByDate"
+  },
+  {
     "route": "/api/v1/administration/utilities/matchscore/:id/:estate_id",
     "method": [
       "HEAD",
