@@ -324,21 +324,21 @@ class MatchService {
         Number(userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR > 0)
     }
     log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
-    if (!creditScorePoints > 0) {
-      if (debug) {
-        return {
-          scoreL,
-          landlordBudgetScore,
-          creditScorePoints,
-          rentArrearsScore,
-          ageInRangeScore,
-          householdSizeScore,
-          petsScore,
-          reason: 'credit score zero.'
-        }
-      }
-      return 0
-    }
+    // if (!creditScorePoints > 0) {
+    //   if (debug) {
+    //     return {
+    //       scoreL,
+    //       landlordBudgetScore,
+    //       creditScorePoints,
+    //       rentArrearsScore,
+    //       ageInRangeScore,
+    //       householdSizeScore,
+    //       petsScore,
+    //       reason: 'credit score zero.'
+    //     }
+    //   }
+    //   return 0
+    // }
     scoreL += creditScorePoints * creditScoreWeight
 
     // Get rent arrears score
