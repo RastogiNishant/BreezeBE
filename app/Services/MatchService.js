@@ -3783,7 +3783,6 @@ class MatchService {
       '_mb.phone_verified',
       '_mb.is_verified',
       '_mb.credit_score',
-      '_mb.credit_history_status',
       '_mb.credit_score_issued_at',
       '_mb.debt_proof',
       '_v.date',
