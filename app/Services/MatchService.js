@@ -428,6 +428,7 @@ class MatchService {
             (prospectHouseholdSize - estateFamilySizeMin + LESSER_THAN_HOUSEHOLD_SIZE_FACTOR)) /
           LESSER_THAN_HOUSEHOLD_SIZE_FACTOR
       }
+      householdSizeScore = +householdSizeScore > 0 ? householdSizeScore : 0
     }
     log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax, householdSizeScore })
     if (!householdSizeScore > 0) {
