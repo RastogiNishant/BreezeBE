@@ -4288,7 +4288,7 @@ class MatchService {
         'tenants.residency_duration_max',
         'tenants.is_short_term_rent',
         Database.raw(
-          `case tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
+          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
         ),
         Database.raw(`_me.total_income as income`), // sum of all member's income
         '_m.credit_history_status',
