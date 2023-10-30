@@ -4272,7 +4272,13 @@ class MatchService {
         'budget_max',
         'transfer_budget_min',
         'transfer_budget_max',
-        Database.raw(`(100*budget_max/_me.total_income) as budget_max_scale`),
+        Database.raw(
+          `case 
+            when _me.total_income is not null and _me.total_income > 0
+            then (100*budget_max/_me.total_income)
+            else 0
+          end as budget_max_scale`
+        ),
         'rent_start',
         'options', //array
         'space_min',
