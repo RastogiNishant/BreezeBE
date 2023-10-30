@@ -700,8 +700,9 @@ class UserController {
       .fetch()
     const trx = await Database.beginTransaction()
     try {
-      await Promise.all(
-        matches.toJSON().map(async (match) => {
+      await Promise.map(
+        matches.toJSON(),
+        async (match) => {
           const prospect = await MatchService.getProspectForScoringQuery()
             .where(`tenants.user_id`, match.user_id)
             .first()
@@ -720,7 +721,8 @@ class UserController {
               },
               trx
             )
-        })
+        },
+        { concurrency: 20 }
       )
       await trx.commit()
       response.res(true)
