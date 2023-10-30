@@ -377,6 +377,7 @@ class MatchService {
               (min(prospect.members_age) - estate.min_age + LESSER_THAN_MIN_AGE_FACTOR)) /
             LESSER_THAN_MIN_AGE_FACTOR
         }
+        ageInRangeScore = ageInRangeScore > 0 ? ageInRangeScore : 0
       }
     }
     if (!ageInRangeScore > 0) {
@@ -427,6 +428,7 @@ class MatchService {
             (prospectHouseholdSize - estateFamilySizeMin + LESSER_THAN_HOUSEHOLD_SIZE_FACTOR)) /
           LESSER_THAN_HOUSEHOLD_SIZE_FACTOR
       }
+      householdSizeScore = +householdSizeScore > 0 ? householdSizeScore : 0
     }
     log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax, householdSizeScore })
     if (!householdSizeScore > 0) {
@@ -666,6 +668,7 @@ class MatchService {
             (estateFloors - prospectFloorMin + LESSER_THAN_FLOOR_SCORE_FACTOR)) /
           LESSER_THAN_FLOOR_SCORE_FACTOR
       }
+      floorScore = floorScore > 0 ? floorScore : 0
     }
     log({
       floor: estate.number_floors,
@@ -764,7 +767,7 @@ class MatchService {
         },
         []
       )
-      amenitiesScore = amenitiesProvidedByEstate.length / prospect.options.length
+      amenitiesScore = amenitiesProvidedByEstate.length / prospectPreferredAmenities.length
     }
     log({ estateAmenities: estate.options, prospectAmenities: prospect.options })
     scoreT += amenitiesScore * amenitiesWeight
@@ -4272,7 +4275,13 @@ class MatchService {
         'budget_max',
         'transfer_budget_min',
         'transfer_budget_max',
-        Database.raw(`(100*budget_max/_me.total_income) as budget_max_scale`),
+        Database.raw(
+          `case 
+            when _me.total_income is not null and _me.total_income > 0
+            then (100*budget_max/_me.total_income)
+            else 0
+          end as budget_max_scale`
+        ),
         'rent_start',
         'options', //array
         'space_min',
