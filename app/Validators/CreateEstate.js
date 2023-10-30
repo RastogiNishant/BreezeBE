@@ -183,7 +183,7 @@ const {
   FAMILY_STATUS_SINGLE,
   FAMILY_STATUS_NO_CHILD,
   FAMILY_STATUS_WITH_CHILD,
-  //Letting Status
+  // Letting Status
   LETTING_TYPE_LET,
   LETTING_TYPE_VOID,
   LETTING_TYPE_NA,
@@ -216,7 +216,10 @@ const {
   FURNISHING_PARTIALLY_FURNISHED,
   FURNISHING_FULLY_FURNISHED,
   INCOME_TYPE_OTHER_BENEFIT,
-  INCOME_TYPE_CHILD_BENEFIT
+  INCOME_TYPE_CHILD_BENEFIT,
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
+  CREDIT_HISTORY_STATUS_ENFORCEABLE_CLAIMS,
+  CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA
 } = require('../constants')
 const {
   getExceptionMessage,
@@ -601,7 +604,6 @@ class CreateEstate extends Base {
             otherwise: yup.number().integer()
           })
           .nullable(),
-        credit_score: yup.number().min(0).max(100).nullable(),
         rent_arrears: yup.boolean().nullable(),
         full_address: yup.boolean().nullable(),
         photo_require: yup.boolean().nullable(),
@@ -710,7 +712,17 @@ class CreateEstate extends Base {
               .nullable()
           ),
         is_not_show: yup.boolean().nullable(),
-        skip_timeslots: yup.boolean().nullable()
+        skip_timeslots: yup.boolean().nullable(),
+        credit_history_status: yup
+          .number()
+          .integer()
+          .oneOf([
+            CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
+            CREDIT_HISTORY_STATUS_ENFORCEABLE_CLAIMS,
+            CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA,
+            null
+          ])
+          .nullable()
       })
       .concat(PublishInfo.schema())
 }
