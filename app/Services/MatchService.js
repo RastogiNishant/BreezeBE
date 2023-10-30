@@ -377,9 +377,10 @@ class MatchService {
               (min(prospect.members_age) - estate.min_age + LESSER_THAN_MIN_AGE_FACTOR)) /
             LESSER_THAN_MIN_AGE_FACTOR
         }
+        ageInRangeScore = ageInRangeScore > 0 ? ageInRangeScore : 0
       }
     }
-    if (!ageInRangeScore > 0) {
+    if (!+ageInRangeScore > 0) {
       if (debug) {
         return {
           scoreL,
@@ -666,6 +667,7 @@ class MatchService {
             (estateFloors - prospectFloorMin + LESSER_THAN_FLOOR_SCORE_FACTOR)) /
           LESSER_THAN_FLOOR_SCORE_FACTOR
       }
+      floorScore = floorScore > 0 ? floorScore : 0
     }
     log({
       floor: estate.number_floors,
@@ -764,7 +766,7 @@ class MatchService {
         },
         []
       )
-      amenitiesScore = amenitiesProvidedByEstate.length / prospect.options.length
+      amenitiesScore = amenitiesProvidedByEstate.length / prospectPreferredAmenities.length
     }
     log({ estateAmenities: estate.options, prospectAmenities: prospect.options })
     scoreT += amenitiesScore * amenitiesWeight
