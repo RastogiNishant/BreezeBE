@@ -257,6 +257,16 @@ class MatchService {
       }
       return 0
     }
+    const isActivated = prospect.is_activated
+    if (!isActivated) {
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'prospect is not activated'
+        }
+      }
+      return 0
+    }
     const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
@@ -4277,6 +4287,9 @@ class MatchService {
         'tenants.residency_duration_min',
         'tenants.residency_duration_max',
         'tenants.is_short_term_rent',
+        Database.raw(
+          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
+        ),
         Database.raw(`_me.total_income as income`), // sum of all member's income
         '_m.credit_history_status',
         'rent_arrears', // if at least one has true, then true
