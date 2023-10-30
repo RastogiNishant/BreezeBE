@@ -1184,7 +1184,7 @@ Estates: [ESTATES]
       'self',
       'trainee'
     ],
-    credit_score: 95,
+    credit_history_status: [{ status: 1 }],
     budget: 30,
     rent_arrears: false,
     min_age: 25,

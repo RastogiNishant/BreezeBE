@@ -186,7 +186,6 @@ class UserService {
         if (user.sex) memberInfo.sex = user.sex
         memberInfo.birthday = otherInfo?.birthday || null
         memberInfo.insolvency_proceed = otherInfo?.insolvency ? 1 : null
-        memberInfo.credit_score = otherInfo?.credit_score || null
         const member = await MemberService.createMember(memberInfo, user.id, trx)
 
         if (otherInfo?.profession) {
