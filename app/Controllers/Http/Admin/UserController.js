@@ -3,13 +3,15 @@
 const User = use('App/Models/User')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
+const Match = use('App/Models/Match')
 const Event = use('Event')
-
+const DataStorage = use('DataStorage')
 const UserService = use('App/Services/UserService')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const NoticeService = use('App/Services/NoticeService')
 const TenantService = use('App/Services/TenantService')
+const MatchService = use('App/Services/MatchService')
 const MailService = use('App/Services/MailService')
 const File = use('App/Classes/File')
 
@@ -43,14 +45,15 @@ const {
   INCOME_TYPE_SELF_EMPLOYED,
   INCOME_TYPE_TRAINEE,
   INCOME_TYPE_OTHER_BENEFIT,
-  INCOME_TYPE_CHILD_BENEFIT
+  INCOME_TYPE_CHILD_BENEFIT,
+  TEMPORARY_PASSWORD_PREFIX
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD }
 } = require('../../../exceptions')
 const QueueService = use('App/Services/QueueService')
 const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
-const { isHoliday } = require('../../../Libs/utils')
+const { isHoliday, getAuthByRole } = require('../../../Libs/utils')
 const Promise = require('bluebird')
 const CompanyService = require('../../../Services/CompanyService')
 const UserFilter = require('../../../Classes/UserFilter')
@@ -659,6 +662,71 @@ class UserController {
       return response.res({ tenantMemberData: data, can_activate: true })
     } catch (err) {
       return response.res({ tenantMemberData: data, can_activate: false, reason: err.message })
+    }
+  }
+
+  async getAccessTokenForUser({ request, auth, response }) {
+    const { id } = request.all()
+    const user = await User.query().where('id', id).first()
+    if (!user) {
+      throw new HttpException('User not found')
+    }
+    const authenticator = getAuthByRole(auth, user.role)
+    const token = await authenticator.generate(user)
+    response.res(token)
+  }
+
+  async generateTemporaryPassword({ request, response }) {
+    let { email, password, role } = request.all()
+    const user = await User.query().where('email', email).where('role', role).first()
+    if (!user) {
+      throw new HttpException('User not found')
+    }
+    if (!password) {
+      password = Estate.generateRandomString(6)
+    }
+    // FIXME: Need to encrypt password
+    await DataStorage.setItem(user.id, password, TEMPORARY_PASSWORD_PREFIX, { expire: 5 * 60 })
+    response.res({ email, password, role })
+  }
+
+  async recalculateMatchByDate({ request, response }) {
+    let { date } = request.all()
+    date = moment(date).utc().format('YYYY-MM-DD')
+    const matches = await Match.query()
+      .where(Database.raw(`to_date("created_at"::TEXT, 'YYYY-MM-DD') = '${date}'`))
+      .fetch()
+    const trx = await Database.beginTransaction()
+    try {
+      await Promise.map(
+        matches.toJSON(),
+        async (match) => {
+          const prospect = await MatchService.getProspectForScoringQuery()
+            .where(`tenants.user_id`, match.user_id)
+            .first()
+          const estate = await MatchService.getEstateForScoringQuery()
+            .where('estates.id', match.estate_id)
+            .first()
+          const matchScore = await MatchService.calculateMatchPercent(prospect, estate)
+          await Match.query()
+            .where('user_id', match.user_id)
+            .where('estate_id', match.estate_id)
+            .update(
+              {
+                landlord_score: matchScore.landlord_score,
+                prospect_score: matchScore.prospect_score,
+                percent: matchScore.percent
+              },
+              trx
+            )
+        },
+        { concurrency: 20 }
+      )
+      await trx.commit()
+      response.res(true)
+    } catch (err) {
+      await trx.rollback()
+      throw new HttpException(err.message)
     }
   }
 }

@@ -890,6 +890,17 @@
     "handler": "Admin/AppController.calculateEstatePercent"
   },
   {
+    "route": "/api/v1/administration/utilities/matches/recalculate-match",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:RecalculateMatchByDate"
+    ],
+    "handler": "Admin/UserController.recalculateMatchByDate"
+  },
+  {
     "route": "/api/v1/administration/utilities/matchscore/:id/:estate_id",
     "method": [
       "HEAD",
@@ -912,6 +923,29 @@
       "valid:Id"
     ],
     "handler": "Admin/UserController.testProspectActivate"
+  },
+  {
+    "route": "/api/v1/administration/utilities/users/generate-token/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/UserController.getAccessTokenForUser"
+  },
+  {
+    "route": "/api/v1/administration/utilities/users/temporary-password",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:AdminGeneratePassword"
+    ],
+    "handler": "Admin/UserController.generateTemporaryPassword"
   },
   {
     "route": "/api/v1/administration/verifyUsers",

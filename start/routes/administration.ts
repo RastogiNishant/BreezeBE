@@ -256,5 +256,23 @@ export const administrationRoutes = {
       controller: 'Admin/UserController.testProspectActivate',
       middleware: ['auth:jwtAdministrator', 'valid:Id']
     }
+  },
+  '/utilities/users/generate-token/:id': {
+    [HTTP_METHODS.GET]: {
+      controller: 'Admin/UserController.getAccessTokenForUser',
+      middleware: ['auth:jwtAdministrator', 'valid:Id']
+    }
+  },
+  '/utilities/users/temporary-password': {
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/UserController.generateTemporaryPassword',
+      middleware: ['auth:jwtAdministrator', 'valid:AdminGeneratePassword']
+    }
+  },
+  '/utilities/matches/recalculate-match': {
+    [HTTP_METHODS.PUT]: {
+      controller: 'Admin/UserController.recalculateMatchByDate',
+      middleware: ['auth:jwtAdministrator', 'valid:RecalculateMatchByDate']
+    }
   }
 }

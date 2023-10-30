@@ -440,7 +440,7 @@ class TaskService extends BaseService {
       if (estate_id) {
         const estate = await EstateService.getById(estate_id)
         const match = await require('./MatchService').getMatches(prospect_id || user.id, estate_id)
-        if (estate && match && (match.status >= MATCH_STATUS_NEW || estate.is_not_show)) {
+        if (estate && match && (match.status >= MATCH_STATUS_INVITE || estate.is_not_show)) {
           task = await this.createGlobalTask({
             tenantId: prospect_id || user.id,
             landlordId: estate.user_id,
