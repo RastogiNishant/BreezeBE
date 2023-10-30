@@ -665,7 +665,7 @@ class NoticeService {
       NotificationsService.sendExpiredShowTime(notices)
     } getFinalProspectTaskIdForChat
     await Match.query()
-      .where('status', MATCH_STATUS_INVITE)
+      .where('status', MATCH_STATUS_INVITE || MATCH_STATUS_KNOCK)
       .update({ notified_at: moment().utc().format(DATE_FORMAT) })
   }
 
