@@ -1,5 +1,6 @@
 'use strict'
 
+const Sentry = require('@sentry/node')
 /**
  * @module Notifications
  */
@@ -7,8 +8,7 @@ const admin = require('firebase-admin')
 const { isArray, isString, isEmpty, isDate, reduce, toString, get, isObject } = require('lodash')
 
 class Notifications {
-  constructor(settings, Sentry) {
-    this.Sentry = Sentry
+  constructor(settings) {
     admin.initializeApp({
       credential: admin.credential.cert(settings)
     })
@@ -63,7 +63,7 @@ class Notifications {
     // message.data.click_action = 'FLUTTER_NOTIFICATION_CLICK'
 
     const options = {
-      //contentAvailable: true,
+      // contentAvailable: true,
       ttl: 30,
       priority: 'high',
       topic: 'com.breeze'
@@ -75,13 +75,13 @@ class Notifications {
       .then((result) => {
         const error = get(result, 'results.0.error')
         if (error) {
-          this.Sentry.captureException(error)
+          Sentry.captureException(error)
         }
 
         return result
       })
       .catch((e) => {
-        this.Sentry.captureException(e)
+        Sentry.captureException(e)
         console.error(`Send notification error: ${e.message}`)
       })
   }

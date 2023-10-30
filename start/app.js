@@ -4,7 +4,6 @@ const path = require('path')
 
 const providers = [
   '@adonisjs/framework/providers/AppProvider',
-  'adonis-sentry/providers/Sentry',
   '@adonisjs/auth/providers/AuthProvider',
   '@adonisjs/ally/providers/AllyProvider',
   'adonis-advanced-serializer',

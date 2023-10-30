@@ -2,11 +2,11 @@
 
 import { get } from 'lodash'
 import Express from 'express'
-import * as SentryRaw from '@sentry/node'
+import * as Sentry from '@sentry/node'
 
 const BaseExceptionHandler = use('BaseExceptionHandler')
 const Logger = use('Logger')
-const Sentry = use('Sentry')
+// const Sentry = use('Sentry')
 
 interface Error {
   name: string
@@ -68,7 +68,7 @@ export class ExceptionHandler extends BaseExceptionHandler {
       auth: { user: { username: string, id: number } }
     }
   ): Promise<boolean> {
-    // Systems 404 HttpException do not out
+    // Systems 404 HttpException do not report
     if (error.name === 'HttpException' && error.status === 404) {
       return false
     }
@@ -79,10 +79,10 @@ export class ExceptionHandler extends BaseExceptionHandler {
       return false
     }
 
-    Sentry.withScope((scope: SentryRaw.Scope) => {
-      scope.setExtra('username', get(auth, 'user.username', 'anonymous'))
-      scope.setExtra('user_id', get(auth, 'user.id', null))
+    Sentry.withScope((scope: Sentry.Scope) => {
+      scope.setExtra('url', request.request.url)
       scope.setExtra('data', request.all())
+      scope.setUser({ id: get(auth, 'user.id'), username: get(auth, 'user.username', 'anonymous') })
       Sentry.captureException(error)
     })
 
