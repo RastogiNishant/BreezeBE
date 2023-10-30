@@ -380,7 +380,7 @@ class MatchService {
         ageInRangeScore = ageInRangeScore > 0 ? ageInRangeScore : 0
       }
     }
-    if (!+ageInRangeScore > 0) {
+    if (!ageInRangeScore > 0) {
       if (debug) {
         return {
           scoreL,
