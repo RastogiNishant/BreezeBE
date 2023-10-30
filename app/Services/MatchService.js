@@ -3572,7 +3572,7 @@ class MatchService {
               select
                 incomes.member_id,
                 sum(_mip.income) as member_total_income,
-                bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
+                bool_and(submitted_proofs >= 1) as incomes_has_all_proofs
               from
                 incomes
               left join
