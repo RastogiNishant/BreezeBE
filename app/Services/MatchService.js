@@ -245,6 +245,16 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
+    const isActivated = prospect.is_activated
+    if (!isActivated) {
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'prospect is not activated'
+        }
+      }
+      return 0
+    }
     const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
@@ -4262,12 +4272,15 @@ class MatchService {
         'tenants.residency_duration_min',
         'tenants.residency_duration_max',
         'tenants.is_short_term_rent',
-        Database.raw(`_me.total_income as income`), //sum of all member's income
-        '_m.credit_score', //average
-        'rent_arrears', //if at least one has true, then true
-        '_me.income_proofs', //all members must submit at least 3 income proofs for each of their incomes for this to be true
-        '_m.credit_score_proofs', //all members must submit their credit score proofs
-        '_m.no_rent_arrears_proofs', //all members must submit no_rent_arrears_proofs
+        Database.raw(
+          `case tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
+        ),
+        Database.raw(`_me.total_income as income`), // sum of all member's income
+        '_m.credit_history_status',
+        'rent_arrears', // if at least one has true, then true
+        '_me.income_proofs', // all members must submit at least 3 income proofs for each of their incomes for this to be true
+        '_m.credit_score_proofs', // all members must submit their credit score proofs
+        '_m.no_rent_arrears_proofs', // all members must submit no_rent_arrears_proofs
         '_m.members_age',
         '_m.members_count', //adult members only
         'pets',
