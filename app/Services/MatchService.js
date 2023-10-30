@@ -3783,7 +3783,6 @@ class MatchService {
       '_mb.phone_verified',
       '_mb.is_verified',
       '_mb.credit_score',
-      '_mb.credit_history_status',
       '_mb.credit_score_issued_at',
       '_mb.debt_proof',
       '_v.date',
@@ -4276,7 +4275,6 @@ class MatchService {
           `case when tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
         ),
         Database.raw(`_me.total_income as income`), // sum of all member's income
-        '_m.credit_history_status',
         'rent_arrears', // if at least one has true, then true
         '_me.income_proofs', // all members must submit at least 3 income proofs for each of their incomes for this to be true
         '_m.credit_score_proofs', // all members must submit their credit score proofs
