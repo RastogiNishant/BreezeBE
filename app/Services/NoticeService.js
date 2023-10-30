@@ -120,7 +120,8 @@ const {
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP,
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
-  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
+  MATCH_STATUS_INVITE
 } = require('../constants')
 
 class NoticeService {
@@ -662,9 +663,9 @@ class NoticeService {
     if (notices.length) {
       await NoticeService.insertNotices(notices)
       NotificationsService.sendExpiredShowTime(notices)
-    }
+    } getFinalProspectTaskIdForChat
     await Match.query()
-      .where('status', MATCH_STATUS_KNOCK)
+      .where('status', MATCH_STATUS_INVITE)
       .update({ notified_at: moment().utc().format(DATE_FORMAT) })
   }
 
