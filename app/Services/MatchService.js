@@ -842,10 +842,10 @@ class MatchService {
         }
       }
 
-      let maxLat = -90;
-        let maxLon = -180;
-        let minLat = 90;
-        let minLon = 180
+      let maxLat = -90
+      let maxLon = -180
+      let minLat = 90
+      let minLon = 180
 
       polygon.forEach(([lon, lat]) => {
         maxLat = Math.max(lat, maxLat)
@@ -1234,7 +1234,7 @@ class MatchService {
         percent,
         landlord_score,
         prospect_score,
-        status: share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+        status: MATCH_STATUS_KNOCK, // share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
         share: !!share_profile,
         buddy,
         knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
@@ -3604,10 +3604,6 @@ class MatchService {
             incomes
           on
             primaryMember.id=incomes.member_id and incomes.status = ${STATUS_ACTIVE}
-          and
-            primaryMember.email is null
-          and
-            primaryMember.owner_user_id is null
           group by
             incomes.member_id)
           as _pm
@@ -3777,6 +3773,7 @@ class MatchService {
         json_build_object
           (
             'income', all_members_submitted_income_proofs,
+            'credit_history_status', all_members_submitted_credit_score_proofs,
             'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
           )
         as submitted_proofs
@@ -4242,11 +4239,14 @@ class MatchService {
         'unit_category_id'
       )
       .leftJoin(
+        // 'city_id', cities.id,
         Database.raw(`
         (select estates.id as estate_id,
           case when estates.cert_category is null then
             null else 
-            json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
+            json_build_object(
+              'income_level', estates.cert_category
+            )
             end
           as wbs_certificate from estates left join cities on cities.city=estates.city)
         as _ec`),
@@ -4327,13 +4327,14 @@ class MatchService {
         }
       )
       .leftJoin(
+        // 'city_id', city_id,
         Database.raw(`
         (select
           user_id,
           array_agg(
             case when income_level is null or income_level='' then
               null else
-              json_build_object('city_id', city_id, 'income_level', income_level)
+              json_build_object('income_level', income_level)
               end
           ) as wbs_certificate
           from tenant_certificates
