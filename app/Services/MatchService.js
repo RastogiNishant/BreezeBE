@@ -246,6 +246,16 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
+    const isActivated = prospect.is_activated
+    if (!isActivated) {
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'prospect is not activated'
+        }
+      }
+      return 0
+    }
     const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
@@ -369,6 +379,7 @@ class MatchService {
               (min(prospect.members_age) - estate.min_age + LESSER_THAN_MIN_AGE_FACTOR)) /
             LESSER_THAN_MIN_AGE_FACTOR
         }
+        ageInRangeScore = ageInRangeScore > 0 ? ageInRangeScore : 0
       }
     }
     if (!ageInRangeScore > 0) {
@@ -419,6 +430,7 @@ class MatchService {
             (prospectHouseholdSize - estateFamilySizeMin + LESSER_THAN_HOUSEHOLD_SIZE_FACTOR)) /
           LESSER_THAN_HOUSEHOLD_SIZE_FACTOR
       }
+      householdSizeScore = +householdSizeScore > 0 ? householdSizeScore : 0
     }
     log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax, householdSizeScore })
     if (!householdSizeScore > 0) {
@@ -678,6 +690,7 @@ class MatchService {
             (estateFloors - prospectFloorMin + LESSER_THAN_FLOOR_SCORE_FACTOR)) /
           LESSER_THAN_FLOOR_SCORE_FACTOR
       }
+      floorScore = floorScore > 0 ? floorScore : 0
     }
     log({
       floor: estate.number_floors,
@@ -776,7 +789,7 @@ class MatchService {
         },
         []
       )
-      amenitiesScore = amenitiesProvidedByEstate.length / prospect.options.length
+      amenitiesScore = amenitiesProvidedByEstate.length / prospectPreferredAmenities.length
     }
     log({ estateAmenities: estate.options, prospectAmenities: prospect.options })
     scoreT += amenitiesScore * amenitiesWeight
@@ -3519,8 +3532,8 @@ class MatchService {
           (select
             members.user_id,
             count(*) as member_count,
-            bool_and(case when members.rent_arrears_doc is not null then true else false end) as all_members_submitted_no_rent_arrears_proofs,
-            bool_and(case when members.debt_proof is not null then true else false end) as all_members_submitted_credit_score_proofs
+            bool_or(case when members.rent_arrears_doc is not null then true else false end) as some_members_submitted_no_rent_arrears_proofs,
+            bool_or(case when members.debt_proof is not null then true else false end) as some_members_submitted_credit_score_proofs
           from
             members
           group by
@@ -3539,7 +3552,7 @@ class MatchService {
             select
               members.user_id,
               sum(member_total_income) as total_income,
-              coalesce(bool_and(_mi.incomes_has_all_proofs), false) as all_members_submitted_income_proofs
+              coalesce(bool_or(_mi.incomes_has_all_proofs), false) as some_members_submitted_income_proofs
             from
               members
             left join
@@ -3548,7 +3561,7 @@ class MatchService {
               select
                 incomes.member_id,
                 sum(_mip.income) as member_total_income,
-                bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
+                bool_and(submitted_proofs >= 1) as incomes_has_all_proofs
               from
                 incomes
               left join
@@ -3593,10 +3606,6 @@ class MatchService {
             incomes
           on
             primaryMember.id=incomes.member_id and incomes.status = ${STATUS_ACTIVE}
-          and
-            primaryMember.email is null
-          and
-            primaryMember.owner_user_id is null
           group by
             incomes.member_id)
           as _pm
@@ -3756,17 +3765,18 @@ class MatchService {
       .select(
         Database.raw(`
         -- null here indicates members did not submit any income
-        (_ip.all_members_submitted_income_proofs::int
-        + _mp.all_members_submitted_no_rent_arrears_proofs::int
-        + _mp.all_members_submitted_credit_score_proofs::int)
+        (_ip.some_members_submitted_income_proofs::int
+        + _mp.some_members_submitted_no_rent_arrears_proofs::int
+        + _mp.some_members_submitted_credit_score_proofs::int)
         as total_completed_proofs`)
       )
       .select(
         Database.raw(`
         json_build_object
           (
-            'income', all_members_submitted_income_proofs,
-            'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
+            'income', some_members_submitted_income_proofs,
+            'credit_history_status', some_members_submitted_credit_score_proofs,
+            'no_rent_arrears', some_members_submitted_no_rent_arrears_proofs
           )
         as submitted_proofs
         `)
@@ -4266,6 +4276,9 @@ class MatchService {
         'tenants.residency_duration_min',
         'tenants.residency_duration_max',
         'tenants.is_short_term_rent',
+        Database.raw(
+          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
+        ),
         Database.raw(`_me.total_income as income`), // sum of all member's income
         '_m.credit_history_status',
         'rent_arrears', // if at least one has true, then true
@@ -4279,7 +4292,13 @@ class MatchService {
         'budget_max',
         'transfer_budget_min',
         'transfer_budget_max',
-        Database.raw(`(100*budget_max/_me.total_income) as budget_max_scale`),
+        Database.raw(
+          `case 
+            when _me.total_income is not null and _me.total_income > 0
+            then (100*budget_max/_me.total_income)
+            else 0
+          end as budget_max_scale`
+        ),
         'rent_start',
         'options', // array
         'space_min',
@@ -4301,8 +4320,8 @@ class MatchService {
         user_id, owner_user_id,
         json_agg(json_build_object('status', credit_history_status)) as credit_history_status,
         count(id) as members_count,
-        bool_and(coalesce(debt_proof, null) is not null) as credit_score_proofs,
-        bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
+        bool_or(coalesce(debt_proof, null) is not null) as credit_score_proofs,
+        bool_or(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
         bool_or(unpaid_rental='${YES_UNPAID_RENTAL}' is true) as rent_arrears,
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age

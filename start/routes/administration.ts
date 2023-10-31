@@ -268,5 +268,11 @@ export const administrationRoutes = {
       controller: 'Admin/UserController.generateTemporaryPassword',
       middleware: ['auth:jwtAdministrator', 'valid:AdminGeneratePassword']
     }
+  },
+  '/utilities/matches/recalculate-match': {
+    [HTTP_METHODS.PUT]: {
+      controller: 'Admin/UserController.recalculateMatchByDate',
+      middleware: ['auth:jwtAdministrator', 'valid:RecalculateMatchByDate']
+    }
   }
 }
