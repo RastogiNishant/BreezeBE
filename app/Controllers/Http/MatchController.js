@@ -971,6 +971,8 @@ class MatchController {
         { ...params }
       )
     }
+
+    const matchSortFunction = (a, b) => b.percent - a.percent || b.income - a.income
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
@@ -978,7 +980,9 @@ class MatchController {
     ).paginate(page, limit || 10)
     const extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data.data = data.data
+      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+      .sort(matchSortFunction)
 
     const contact_request_count = (
       await require('../../Services/MarketPlaceService')
@@ -988,13 +992,16 @@ class MatchController {
         .count()
     )?.[0]?.count
 
+    const contactRequestSortFunction = (a, b) => b.income - a.income
     const contact_requests_data = (
-      await require('../../Services/MarketPlaceService')
-        .getPendingKnockRequestQuery({
-          estate_id
-        })
-        .paginate(page, limit || 10)
-    ).toJSON()
+      (
+        await require('../../Services/MarketPlaceService')
+          .getPendingKnockRequestQuery({
+            estate_id
+          })
+          .paginate(page, limit || 10)
+      ).toJSON() || []
+    ).sort(contactRequestSortFunction)
 
     const contact_requests = {
       ...contact_requests_data,
@@ -1032,7 +1039,9 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data.data = data.data
+      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+      .sort(matchSortFunction)
     data = {
       ...data,
       total: buddyCount[0].count,
@@ -1052,7 +1061,9 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data.data = data.data
+      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+      .sort(matchSortFunction)
     data = {
       ...data,
       total: inviteCount[0].count,
@@ -1071,7 +1082,9 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data.data = data.data
+      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+      .sort(matchSortFunction)
     data = {
       ...data,
       total: visitCount[0].count,
@@ -1091,7 +1104,9 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, fields })
-    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data.data = data.data
+      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+      .sort(matchSortFunction)
     data = {
       ...data,
       total: topCount[0].count,
@@ -1123,7 +1138,9 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+    data.data = data.data
+      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
+      .sort(matchSortFunction)
     data = {
       ...data,
       total: finalCount[0].count,
