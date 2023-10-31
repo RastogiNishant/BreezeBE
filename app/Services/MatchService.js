@@ -3753,9 +3753,9 @@ class MatchService {
         Database.raw(`
         json_build_object
           (
-            'income', all_members_submitted_income_proofs,
-            'credit_history_status', all_members_submitted_credit_score_proofs,
-            'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
+            'income', some_members_submitted_income_proofs,
+            'credit_history_status', some_members_submitted_credit_score_proofs,
+            'no_rent_arrears', some_members_submitted_no_rent_arrears_proofs
           )
         as submitted_proofs
         `)
