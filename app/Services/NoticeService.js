@@ -1115,8 +1115,8 @@ class NoticeService {
       image: File.getPublicUrl(cover)
     }))
 
-    await NoticeService.insertNotices(notices)
-    await NotificationsService.sendLandlordEstateShowDateIsEnded(notices)
+    NoticeService.insertNotices(notices)
+    NotificationsService.sendLandlordEstateShowDateIsEnded(notices)
   }
 
   static async sendProspectsWillLoseBookingTimeSlotChance(estates) {
