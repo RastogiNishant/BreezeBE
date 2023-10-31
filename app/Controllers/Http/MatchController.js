@@ -81,7 +81,7 @@ class MatchController {
     const { estate_id, knock_anyway, share_profile, buddy } = request.all()
     try {
       const result = await MatchService.knockEstate({
-        estate_id: estate_id,
+        estate_id,
         user_id: auth.user.id,
         knock_anyway,
         share_profile,
@@ -281,10 +281,10 @@ class MatchController {
     try {
       const match = await MatchService.hasPermissionToEditProperty(estate_id, auth.user.id)
       await MatchService.addTenantProperty({
-        estate_id: estate_id,
+        estate_id,
         user_id: auth.user.id,
-        properties: properties,
-        prices: prices
+        properties,
+        prices
       })
       response.res(true)
     } catch (e) {
@@ -296,7 +296,7 @@ class MatchController {
     const { estate_id } = request.all()
     try {
       await MatchService.addTenantProperty({
-        estate_id: estate_id,
+        estate_id,
         user_id: auth.user.id,
         properties: null,
         prices: null
@@ -341,7 +341,7 @@ class MatchController {
   }
 
   async followupVisit({ request, auth, response }) {
-    let { estate_id, user_id } = request.all()
+    const { estate_id, user_id } = request.all()
     try {
       const meta = await VisitService.followupVisit(estate_id, user_id, auth)
       return response.res(true)
@@ -351,7 +351,7 @@ class MatchController {
   }
 
   async getFollowups({ request, auth, response }) {
-    let { estate_id, user_id } = request.all()
+    const { estate_id, user_id } = request.all()
     try {
       const meta = await VisitService.getFollowupMeta(estate_id, user_id)
       return response.res({
@@ -753,7 +753,7 @@ class MatchController {
         .fetch()
       const matchedEstatesJson = matchedEstates.toJSON()
 
-      let groupedEstates = []
+      const groupedEstates = []
 
       matchedEstatesJson.map(({ id, match_status }) => {
         const index = groupedEstates.findIndex((e) => e.id === id)
@@ -953,10 +953,11 @@ class MatchController {
       'credit_history_status',
       'email',
       'phone',
-      'last_address'
+      'last_address',
+      'is_activated'
     ]
 
-    let matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+    const matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
       { ...params }
@@ -970,14 +971,12 @@ class MatchController {
         { ...params }
       )
     }
-
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
       { ...params }
     ).paginate(page, limit || 10)
-
-    let extraFields = [...fields]
+    const extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
     data.data = data.data.map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
 
@@ -1011,7 +1010,7 @@ class MatchController {
     }
     const matches = data
 
-    let buddyCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+    const buddyCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { buddy: true }),
       { ...params }
@@ -1043,7 +1042,7 @@ class MatchController {
 
     const buddies = data
 
-    let inviteCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+    const inviteCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { invite: true })
     )
@@ -1062,7 +1061,7 @@ class MatchController {
 
     const invites = data
 
-    let visitCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+    const visitCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { visit: true })
     )
@@ -1081,7 +1080,7 @@ class MatchController {
 
     const visits = data
 
-    let topCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+    const topCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { top: true })
     )
@@ -1102,7 +1101,7 @@ class MatchController {
     const top = data
 
     let isFinalMatch = false
-    let finalMatchesCount = await Database.table('matches')
+    const finalMatchesCount = await Database.table('matches')
       .count('*')
       .whereIn('status', [MATCH_STATUS_FINISH])
       .whereIn('estate_id', estatesId)
@@ -1113,7 +1112,7 @@ class MatchController {
 
     const filter = isFinalMatch ? { final: true } : { commit: true }
 
-    let finalCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
+    const finalCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = filter)
     )
@@ -1240,7 +1239,7 @@ class MatchController {
   }
 
   async postThirdPartyOfferAction({ request, auth, response }) {
-    let { action, id, comment, message } = request.all()
+    const { action, id, comment, message } = request.all()
     try {
       const result = await ThirdPartyOfferService.postAction(
         auth.user.id,
