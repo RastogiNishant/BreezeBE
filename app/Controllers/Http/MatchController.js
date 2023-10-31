@@ -994,14 +994,13 @@ class MatchController {
 
     const contactRequestSortFunction = (a, b) => b.income - a.income
     const contact_requests_data = (
-      (
-        await require('../../Services/MarketPlaceService')
-          .getPendingKnockRequestQuery({
-            estate_id
-          })
-          .paginate(page, limit || 10)
-      ).toJSON() || []
-    ).sort(contactRequestSortFunction)
+      await require('../../Services/MarketPlaceService')
+        .getPendingKnockRequestQuery({
+          estate_id
+        })
+        .paginate(page, limit || 10)
+    ).toJSON()
+    contact_requests_data.data = contact_requests_data.data.sort(contactRequestSortFunction)
 
     const contact_requests = {
       ...contact_requests_data,
