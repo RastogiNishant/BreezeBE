@@ -642,6 +642,16 @@
     "handler": "Admin/NotificationController.sendNotification"
   },
   {
+    "route": "/api/v1/administration/notifications/prospect-reactivated",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/NotificationController.sendReactivateNotification"
+  },
+  {
     "route": "/api/v1/administration/plan",
     "method": [
       "DELETE"
