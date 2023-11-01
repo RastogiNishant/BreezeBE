@@ -3731,6 +3731,9 @@ class MatchService {
 
       .select([
         'tenants.*',
+        Database.raw(
+          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
+        ),
         '_u.firstname as u_firstname',
         '_u.secondname as u_secondname',
         '_u.birthday as u_birthday',
