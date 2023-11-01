@@ -74,6 +74,12 @@ export const administrationRoutes = {
       middleware: ['auth:jwtAdministrator']
     }
   },
+  '/notifications/prospect-reactivated': {
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/NotificationController.sendReactivateNotification',
+      middleware: ['auth:jwtAdministrator']
+    }
+  },
   '/verifyUsers': {
     [HTTP_METHODS.POST]: {
       controller: 'Admin/UserController.verifyUsers',
