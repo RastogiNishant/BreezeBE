@@ -16,7 +16,7 @@ const MailService = use('App/Services/MailService')
 const File = use('App/Classes/File')
 
 const moment = require('moment')
-const { isArray, isEmpty, includes, isString } = require('lodash')
+const { isArray, isEmpty, includes, isString, get } = require('lodash')
 const {
   ISO_DATE_FORMAT,
   ROLE_ADMIN,
@@ -728,6 +728,23 @@ class UserController {
       await trx.rollback()
       throw new HttpException(err.message)
     }
+  }
+
+  async testMatchability({ request, response }) {
+    const { id, estate_ids } = request.all()
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .select('_p.data as polygon')
+      .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+      .where({ 'tenants.user_id': id })
+      .first()
+    if (!tenant) {
+      throw new HttpException('Tenant not found.')
+    }
+    const polygon = get(tenant, 'polygon.data.0.0')
+    if (!polygon) {
+      throw new HttpException('Tenant has not set coordinates.')
+    }
+    response.res({ id, estate_ids })
   }
 }
 
