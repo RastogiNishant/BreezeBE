@@ -64,8 +64,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "agreement",
       "plan"
     ],
@@ -77,8 +76,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateAgreement",
       "agreement",
       "plan"
@@ -91,8 +89,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Id",
       "agreement",
       "plan"
@@ -105,8 +102,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateAgreement,Id",
       "agreement",
       "plan"
@@ -131,8 +127,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Ids",
       "agreement",
       "plan"
@@ -145,8 +140,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateFeature",
       "agreement",
       "plan"
@@ -159,8 +153,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateFeature,Id",
       "agreement",
       "plan"
@@ -186,8 +179,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Ids",
       "agreement",
       "plan"
@@ -201,8 +193,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "agreement",
       "plan"
     ],
@@ -214,8 +205,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreatePlan",
       "agreement",
       "plan"
@@ -229,8 +219,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Id",
       "agreement",
       "plan"
@@ -243,8 +232,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreatePlan,Id",
       "agreement",
       "plan"
@@ -258,8 +246,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:PlanId",
       "agreement",
       "plan"
@@ -272,8 +259,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:TenantPaymentPlan",
       "agreement",
       "plan"
@@ -286,8 +272,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Id",
       "agreement",
       "plan"
@@ -301,8 +286,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Id",
       "agreement",
       "plan"
@@ -315,8 +299,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:TenantPaymentPlan,Id",
       "agreement",
       "plan"
@@ -330,8 +313,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "agreement",
       "plan"
     ],
@@ -343,8 +325,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateAgreement",
       "agreement",
       "plan"
@@ -357,8 +338,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Id",
       "agreement",
       "plan"
@@ -371,8 +351,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:CreateAgreement,Id",
       "agreement",
       "plan"
@@ -386,8 +365,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "pagination",
       "agreement",
       "plan"
@@ -401,8 +379,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "agreement",
       "plan"
     ],
@@ -414,8 +391,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "agreement",
       "plan"
     ],
@@ -427,8 +403,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Ids,UserVerify",
       "agreement",
       "plan"
@@ -665,6 +640,16 @@
       "auth:jwtAdministrator"
     ],
     "handler": "Admin/NotificationController.sendNotification"
+  },
+  {
+    "route": "/api/v1/administration/notifications/prospect-reactivated",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/NotificationController.sendReactivateNotification"
   },
   {
     "route": "/api/v1/administration/plan",
@@ -915,6 +900,17 @@
     "handler": "Admin/AppController.calculateEstatePercent"
   },
   {
+    "route": "/api/v1/administration/utilities/matches/recalculate-match",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:RecalculateMatchByDate"
+    ],
+    "handler": "Admin/UserController.recalculateMatchByDate"
+  },
+  {
     "route": "/api/v1/administration/utilities/matchscore/:id/:estate_id",
     "method": [
       "HEAD",
@@ -925,6 +921,41 @@
       "valid:Id,EstateId"
     ],
     "handler": "Admin/AppController.calculateMatchScore"
+  },
+  {
+    "route": "/api/v1/administration/utilities/prospect-activate/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/UserController.testProspectActivate"
+  },
+  {
+    "route": "/api/v1/administration/utilities/users/generate-token/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id"
+    ],
+    "handler": "Admin/UserController.getAccessTokenForUser"
+  },
+  {
+    "route": "/api/v1/administration/utilities/users/temporary-password",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:AdminGeneratePassword"
+    ],
+    "handler": "Admin/UserController.generateTemporaryPassword"
   },
   {
     "route": "/api/v1/administration/verifyUsers",
@@ -2028,6 +2059,7 @@
     ],
     "middle": [
       "auth:jwtLandlord,jwtAdministrator",
+      "LandlordOwnsThisEstate",
       "agreement",
       "plan"
     ],
@@ -2194,7 +2226,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,Id",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2210,7 +2242,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2225,7 +2257,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,CreateRoomAmenity",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2240,7 +2272,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,UpdateRoomAmenity",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -4824,8 +4856,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtAdmin",
-      "is:admin",
+      "auth:jwtAdministrator",
       "valid:Id",
       "agreement",
       "plan"

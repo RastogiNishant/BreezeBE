@@ -143,7 +143,7 @@ class EstateController {
       const estates = await EstateService.getEstatesByUserId({
         limit: 1,
         from: 0,
-        params: { estateId }
+        params: { id: estateId }
       })
 
       // Run task to separate get coords and point of estate
@@ -259,9 +259,9 @@ class EstateController {
       }
       const result = {
         ...landlord.toJSON(),
-        company: company,
-        tenant: tenant,
-        members: members
+        company,
+        tenant,
+        members
       }
       response.res(result)
     } catch (e) {
@@ -316,7 +316,7 @@ class EstateController {
       params = request.post()
     }
 
-    let buildings = await BuildingService.getAllHasUnit(auth.user.id)
+    const buildings = await BuildingService.getAllHasUnit(auth.user.id)
 
     let result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
@@ -328,12 +328,12 @@ class EstateController {
     const filteredCounts = await EstateService.getFilteredCounts(auth.user.id, params)
     const totalEstateCounts = await EstateService.getTotalEstateCounts(auth.user.id)
     if (!EstateFilters.paramsAreUsed(params)) {
-      //no param is used
+      // no param is used
       result = { ...result, ...totalEstateCounts }
     } else {
-      //param is used
+      // param is used
       if (params.letting_type) {
-        //funnel filter was changed
+        // funnel filter was changed
         result = {
           ...result,
           all_count: totalEstateCounts.all_count,
@@ -351,7 +351,7 @@ class EstateController {
               : totalEstateCounts.na_count
         }
       } else {
-        //All is selected...
+        // All is selected...
         result = {
           ...result,
           all_count: filteredCounts.all_count,
@@ -375,7 +375,7 @@ class EstateController {
   async getBuildingEstates({ request, auth, response }) {
     const { id, limit, page, ...params } = request.all()
 
-    let result = await EstateService.getEstatesByUserId({
+    const result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
       limit: limit || -1,
       from: page ? (page - 1) * limit : -1,
@@ -459,11 +459,11 @@ class EstateController {
 
       estates = estates.map((estate) => {
         estate.invite_count =
-          parseInt(estate['__meta__'].knocked_count) +
-          parseInt(estate['__meta__'].inviteBuddies_count) +
-          parseInt(estate['__meta__'].contact_requests_count)
-        estate.visit_count = parseInt(estate['__meta__'].visits_count)
-        estate.final_match_count = parseInt(estate['__meta__'].final_count)
+          parseInt(estate.__meta__.knocked_count) +
+          parseInt(estate.__meta__.inviteBuddies_count) +
+          parseInt(estate.__meta__.contact_requests_count)
+        estate.visit_count = parseInt(estate.__meta__.visits_count)
+        estate.final_match_count = parseInt(estate.__meta__.final_count)
         return estate
       })
 
@@ -615,7 +615,7 @@ class EstateController {
       await EstateService.deactivateBuilding({ user_id: auth.user.id, build_id: id })
     }
 
-    let result = await EstateService.getEstatesByUserId({
+    const result = await EstateService.getEstatesByUserId({
       user_ids: [auth.user.id],
       params: { build_id: id }
     })
@@ -708,6 +708,7 @@ class EstateController {
 
     response.res(estates)
   }
+
   /**
    *
    */
@@ -792,7 +793,7 @@ class EstateController {
         )
         await EstateService.updateCover({ estate_id: estate.id, addImage: result[0] }, trx)
         await trx.commit()
-        //Event.fire('estate::update', estate_id)
+        // Event.fire('estate::update', estate_id)
         return response.res(result)
       } catch (e) {
         await trx.rollback()
@@ -884,6 +885,7 @@ class EstateController {
       exclude_third_party_offers
     }
   }
+
   /**
    *
    */
@@ -892,7 +894,7 @@ class EstateController {
     if (!page || page < 1) {
       page = 1
     }
-    //const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
+    // const { exclude_estates, exclude_third_party_offers } = this._processExcludes(exclude)
     const user = auth.user
     try {
       const tenant = await TenantService.getTenantQuery().where({ user_id: user.id }).first()
@@ -919,19 +921,20 @@ class EstateController {
   }
 
   async getTenantBuildingEstate({ request, auth, response }) {
-    const { id, is_social } = request.all()
+    const { id, is_social, include_geography } = request.all()
     response.res(
       await EstateService.getTenantBuildingEstates({
         user_id: auth.user.id,
         build_id: id,
-        is_social
+        is_social,
+        includeGeography: include_geography
       })
     )
   }
 
   async getThirdPartyOfferEstate({ request, auth, response }) {
     const { id } = request.all()
-    let estate = await ThirdPartyOfferService.getEstate({ userId: auth?.user?.id, id })
+    const estate = await ThirdPartyOfferService.getEstate({ userId: auth?.user?.id, id })
     if (!estate) {
       throw new HttpException('Estate not found.', 404)
     }
@@ -1100,25 +1103,25 @@ class EstateController {
     const estateId = request.params.estate_id || request.body.estate_id
     const emails = request.body.emails
 
-    //Transaction start...
+    // Transaction start...
     const trx = await Database.beginTransaction()
 
     try {
       let code
-      //check if this estate already has an invite
+      // check if this estate already has an invite
       const invitation = await EstateViewInvite.query().where('estate_id', estateId).first()
       if (invitation) {
         code = invitation.code
       } else {
         do {
-          //generate code
+          // generate code
           code = randomstring.generate(INVITE_CODE_STRING_LENGTH)
         } while (await EstateViewInvite.findBy('code', code))
       }
 
       let newInvite = new EstateViewInvite()
       if (!invitation) {
-        //this needs to be created
+        // this needs to be created
         newInvite.invited_by = auth.user.id
         newInvite.estate_id = estateId
         newInvite.code = code
@@ -1135,30 +1138,30 @@ class EstateController {
             .where('role', ROLE_USER)
             .first(trx)
           if (userExists) {
-            //we invite the user
+            // we invite the user
             await EstateViewInvitedUser.findOrCreate(
               { user_id: userExists.id, estate_view_invite_id: newInvite.id },
               { user_id: userExists.id, estate_view_invite_id: newInvite.id },
               trx
             )
           } else {
-            //we add email
+            // we add email
             await EstateViewInvitedEmail.findOrCreate(
               { email, estate_view_invite_id: newInvite.id },
               { email, estate_view_invite_id: newInvite.id },
               trx
             )
           }
-          //placeholder for now...
+          // placeholder for now...
         })
       )
       await trx.commit()
-      //transaction end
+      // transaction end
       response.res({ code })
     } catch (e) {
       await trx.rollback()
       console.log(e)
-      //transaction failed
+      // transaction failed
       throw new HttpException('Failed to invite buddies to view estate.', 412)
     }
   }
@@ -1166,7 +1169,7 @@ class EstateController {
   async export({ request, auth, response }) {
     const { lang, exclude_online } = request.all()
 
-    let query = EstateService.getEstates([auth.user.id])
+    const query = EstateService.getEstates([auth.user.id])
       .with('rooms', function (q) {
         q.with('room_amenities').with('images')
       })
@@ -1178,7 +1181,7 @@ class EstateController {
       query.whereNot('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
     }
 
-    let result = await query.fetch()
+    const result = await query.fetch()
     let rows = []
 
     if (lang) {
@@ -1186,12 +1189,12 @@ class EstateController {
       const reverseMap = AttributeTranslations.getReverseDataMap()
       await Promise.all(
         result.toJSON().map(async (row) => {
-          for (let attribute in row) {
+          for (const attribute in row) {
             if (reverseMap[attribute]) {
               if (isFunction(reverseMap[attribute])) {
                 row[attribute] = reverseMap[attribute](row[attribute])
               } else if (reverseMap[attribute][row[attribute]]) {
-                //key value pairs
+                // key value pairs
                 row[attribute] =
                   reverseMap[attribute][
                     isNumber(row[attribute]) ? parseInt(row[attribute]) : row[attribute]
@@ -1199,16 +1202,16 @@ class EstateController {
               }
             }
           }
-          const letting_type = reverseMap['let_type'][row.letting_type]
-          const letting_status = reverseMap['let_status'][row.letting_status]
+          const letting_type = reverseMap.let_type[row.letting_type]
+          const letting_status = reverseMap.let_status[row.letting_status]
 
-          if (reverseMap['let_status'][row.letting_status]) {
+          if (reverseMap.let_status[row.letting_status]) {
             row.parsed_letting_status = `${letting_type} - ${letting_status}`
           } else {
             row.parsed_letting_status = `${letting_type}`
           }
           row.breeze_id = row.six_char_code
-          let rooms_parsed = {}
+          const rooms_parsed = {}
           await row.rooms.map((room, r_index) => {
             rooms_parsed[`room_${r_index}`] =
               l.get(`${room.name.split(' ')?.[0]}.message`, lang) || ``
@@ -1226,7 +1229,7 @@ class EstateController {
       rows = result.toJSON()
       await Promise.all(
         rows.map(async (row, index) => {
-          let rooms_parsed = {}
+          const rooms_parsed = {}
           await row.rooms.map((room, r_index) => {
             rooms_parsed[`room_${r_index + 1}`] = room.type
           })
@@ -1247,7 +1250,7 @@ class EstateController {
   }
 
   async importLastActivity({ auth, request, response }) {
-    let last_import_activities = await ImportService.getLastImportActivities(auth.user.id)
+    const last_import_activities = await ImportService.getLastImportActivities(auth.user.id)
     return response.res(last_import_activities)
   }
 
@@ -1322,7 +1325,7 @@ class EstateController {
       .where('id', id)
       .where('user_id', auth.user.id)
       .whereNot('status', STATUS_DELETE)
-      .update({ letting_type: letting_type })
+      .update({ letting_type })
 
     response.res(true)
   }

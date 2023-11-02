@@ -105,7 +105,8 @@ const {
   WEBSOCKET_EVENT_MATCH_COUNT,
   YES_UNPAID_RENTAL,
   INCOME_TYPE_CHILD_BENEFIT,
-  INCOME_TYPE_OTHER_BENEFIT
+  INCOME_TYPE_OTHER_BENEFIT,
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -145,8 +146,8 @@ const inRange = (value, start, end) => {
 
 const log = (data) => {
   return false
-  //Logger.info('LOG', data)
-  //console.log(data)
+  // Logger.info('LOG', data)
+  // console.log(data)
 }
 
 class MatchService {
@@ -157,7 +158,7 @@ class MatchService {
     const vacant_date = estate.vacant_date
     const rent_end_at = estate.rent_end_at
 
-    //short duration filter doesn't meet, match percent will be 0
+    // short duration filter doesn't meet, match percent will be 0
     if (prospect.residency_duration_min && prospect.residency_duration_max) {
       // if it's inside property
       if (!estate.source_id) {
@@ -245,8 +246,9 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
-    //WBS certificate score
-    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
+    // WBS certificate score
+    console.log('calculating WBS Score...')
+    if (!MatchService.calculateWBSScore(prospect.wbs_certificate, estate.wbs_certificate)) {
       if (debug) {
         return {
           scoreL: 0,
@@ -255,11 +257,21 @@ class MatchService {
       }
       return 0
     }
+    const isActivated = prospect.is_activated
+    if (!isActivated) {
+      if (debug) {
+        return {
+          scoreL: 0,
+          reason: 'prospect is not activated'
+        }
+      }
+      return 0
+    }
     const estateBudgetRel = estate.budget ? estate.net_rent / estate.budget : 0
     const estatePrice = Estate.getFinalPrice(estate)
     const userIncome = parseFloat(prospect.income) || 0
     if (!userIncome) {
-      //added to prevent division by zero on calculation for realBudget
+      // added to prevent division by zero on calculation for realBudget
       if (debug) {
         return {
           scoreL: 0,
@@ -269,12 +281,12 @@ class MatchService {
       return 0
     }
     const realBudget = estatePrice / userIncome
-    let prospectHouseholdSize = parseInt(prospect.members_count) || 1 //adult count
-    let estateFamilySizeMax = parseInt(estate.family_size_max) || 1
-    let estateFamilySizeMin = parseInt(estate.family_size_min) || 1
+    const prospectHouseholdSize = parseInt(prospect.members_count) || 1 // adult count
+    const estateFamilySizeMax = parseInt(estate.family_size_max) || 1
+    const estateFamilySizeMin = parseInt(estate.family_size_min) || 1
 
     if (realBudget > 1) {
-      //This means estatePrice is bigger than prospect's income. Prospect can't afford it
+      // This means estatePrice is bigger than prospect's income. Prospect can't afford it
       if (debug) {
         return {
           scoreL: 0,
@@ -284,7 +296,7 @@ class MatchService {
       return 0
     }
 
-    //Landlord Budget Points...
+    // Landlord Budget Points...
     const LANDLORD_BUDGET_POINT_FACTOR = 0.1
     if (estateBudgetRel >= realBudget) {
       landlordBudgetScore = 1
@@ -317,23 +329,14 @@ class MatchService {
     scoreL += landlordBudgetScore * landlordBudgetWeight
 
     // Credit Score Points
-    const userCurrentCredit = Number(prospect.credit_score) || 0
-    const userRequiredCredit = Number(estate.credit_score) || 0
-    const CREDIT_SCORE_POINT_FACTOR = 5
-    if ((userCurrentCredit === 100 && userRequiredCredit === 100) || userRequiredCredit === 0) {
-      creditScorePoints = 1
-    } else if (userRequiredCredit === 100) {
-      creditScorePoints = 0
-    } else if (userCurrentCredit > userRequiredCredit) {
-      creditScorePoints =
-        0.9 + (0.1 / (100 - userRequiredCredit)) * (userCurrentCredit - userRequiredCredit)
-    } else {
-      creditScorePoints =
-        (0.9 / CREDIT_SCORE_POINT_FACTOR) *
-        (userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR) *
-        Number(userCurrentCredit - userRequiredCredit + CREDIT_SCORE_POINT_FACTOR > 0)
-    }
-    log({ userCurrentCredit, userRequiredCredit, creditScorePoints })
+    const creditHistoryStatuses = prospect.credit_history_status
+    let memberCount = 0
+    creditHistoryStatuses.map(({ status }) => {
+      creditScorePoints += +status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
+      memberCount++
+    })
+    creditScorePoints = creditScorePoints / memberCount
+    log({ creditScorePoints })
     if (!creditScorePoints > 0) {
       if (debug) {
         return {
@@ -369,10 +372,10 @@ class MatchService {
         return inRange(age, estate.min_age, estate.max_age)
       })
       if (isInRangeArray.every((val, i, arr) => val === arr[0]) && isInRangeArray[0] === true) {
-        //all ages are within the age range of the estate
+        // all ages are within the age range of the estate
         ageInRangeScore = 1
       } else {
-        //some ages are outside range...
+        // some ages are outside range...
         if (max(prospect.members_age) > estate.max_age) {
           ageInRangeScore =
             (1 - (max(prospect.members_age) - estate.max_age) / GREATER_THAN_MAX_AGE_FACTOR) *
@@ -387,6 +390,7 @@ class MatchService {
               (min(prospect.members_age) - estate.min_age + LESSER_THAN_MIN_AGE_FACTOR)) /
             LESSER_THAN_MIN_AGE_FACTOR
         }
+        ageInRangeScore = ageInRangeScore > 0 ? ageInRangeScore : 0
       }
     }
     if (!ageInRangeScore > 0) {
@@ -437,6 +441,7 @@ class MatchService {
             (prospectHouseholdSize - estateFamilySizeMin + LESSER_THAN_HOUSEHOLD_SIZE_FACTOR)) /
           LESSER_THAN_HOUSEHOLD_SIZE_FACTOR
       }
+      householdSizeScore = +householdSizeScore > 0 ? householdSizeScore : 0
     }
     log({ prospectHouseholdSize, estateFamilySizeMin, estateFamilySizeMax, householdSizeScore })
     if (!householdSizeScore > 0) {
@@ -481,6 +486,26 @@ class MatchService {
     return scoreLPer
   }
 
+  static calculateWBSScore(prospectWbs, estateWbs) {
+    let passedCertificates = []
+    if (estateWbs?.city_id) {
+      passedCertificates = (estateWbs.income_level || []).filter((level) => {
+        if (prospectWbs?.length) {
+          for (let count = 0; count < prospectWbs.length; count++) {
+            if (
+              level === prospectWbs[count].income_level &&
+              estateWbs.city_id === prospectWbs[count].city_id
+            ) {
+              return prospectWbs[count].income_level
+            }
+          }
+        }
+      })
+      return passedCertificates.length > 0 ? 1 : 0
+    }
+    return 1
+  }
+
   static async calculateProspectScore(prospect, estate, debug = false) {
     let prospectBudgetScore = 0
     let roomsScore = 0
@@ -519,26 +544,7 @@ class MatchService {
 
     const prospectBudgetRel = prospectBudget / 100
 
-    //WBS certificate score
-    if (estate.wbs_certificate && !isEqual(estate.wbs_certificate, prospect.wbs_certificate)) {
-      if (debug) {
-        return {
-          scoreT,
-          prospectBudgetScore,
-          roomsScore,
-          spaceScore,
-          floorScore,
-          rentStartScore,
-          aptTypeScore,
-          houseTypeScore,
-          amenitiesScore,
-          reason: 'wbs certificate mismatch'
-        }
-      }
-      return 0
-    }
-
-    //Prospect Budget Points
+    // Prospect Budget Points
     const PROSPECT_BUDGET_POINT_FACTOR = 0.1
     if (realBudget > 1) {
       prospectBudgetScore = 0
@@ -623,7 +629,7 @@ class MatchService {
     }
     scoreT += roomsScore * roomsWeight
 
-    //Space Score
+    // Space Score
     const estateArea = Number(estate.area) || 0
     const LESSER_THAN_SPACE_SCORE_FACTOR = 5.1
     const GREATER_THAN_SPACE_SCORE_FACTOR = 10.1
@@ -695,6 +701,7 @@ class MatchService {
             (estateFloors - prospectFloorMin + LESSER_THAN_FLOOR_SCORE_FACTOR)) /
           LESSER_THAN_FLOOR_SCORE_FACTOR
       }
+      floorScore = floorScore > 0 ? floorScore : 0
     }
     log({
       floor: estate.number_floors,
@@ -704,7 +711,7 @@ class MatchService {
     })
     scoreT += floorScore * floorWeight
 
-    //Rent Start Score prospect.rent_start is removed from the calculation
+    // Rent Start Score prospect.rent_start is removed from the calculation
     const vacantFrom = parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
     const now = parseInt(moment.utc().startOf('day').format('X'))
     const nextSixMonths = parseInt(moment.utc().add(6, 'M').format('X'))
@@ -754,7 +761,7 @@ class MatchService {
     log({ prospectHouseType: prospect.house_type, estateHouseType: estate.house_type })
     scoreT += houseTypeScore * houseTypeWeight
 
-    //Amenities Score
+    // Amenities Score
     const prospectPreferredAmenities = prospect.options || []
     const estateAmenities = estate.options || []
     const mandatoryAmenityIds = await EstateAmenityService.getMandatoryAmenityIds()
@@ -766,7 +773,7 @@ class MatchService {
           mandatoryAmenityIds.indexOf(prospectPreferredAmenities[count]) > -1 &&
           estateAmenities.indexOf(prospectPreferredAmenities[count]) === -1
         ) {
-          //prospect has a mandatory amenity but estate doesn't have that amenity
+          // prospect has a mandatory amenity but estate doesn't have that amenity
           if (debug) {
             return {
               scoreT: 0,
@@ -793,7 +800,7 @@ class MatchService {
         },
         []
       )
-      amenitiesScore = amenitiesProvidedByEstate.length / prospect.options.length
+      amenitiesScore = amenitiesProvidedByEstate.length / prospectPreferredAmenities.length
     }
     log({ estateAmenities: estate.options, prospectAmenities: prospect.options })
     scoreT += amenitiesScore * amenitiesWeight
@@ -848,10 +855,10 @@ class MatchService {
         }
       }
 
-      let maxLat = -90,
-        maxLon = -180,
-        minLat = 90,
-        minLon = 180
+      let maxLat = -90
+      let maxLon = -180
+      let minLat = 90
+      let minLon = 180
 
       polygon.forEach(([lon, lat]) => {
         maxLat = Math.max(lat, maxLat)
@@ -969,7 +976,7 @@ class MatchService {
   }
 
   static async createNewMatches({ tenant, only_count = false, has_notification_sent = true }, trx) {
-    //FIXME: dist is not used in EstateService.searchEstatesQuery
+    // FIXME: dist is not used in EstateService.searchEstatesQuery
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
     let { estates, categoryCounts, groupedEstates } = await EstateService.searchEstatesQuery(tenant)
     if (only_count) {
@@ -988,7 +995,7 @@ class MatchService {
         await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
       ).toJSON() || []
 
-    let passedEstates = []
+    const passedEstates = []
     let idx = 0
 
     while (idx < estates.length) {
@@ -1067,7 +1074,7 @@ class MatchService {
     }
   }
 
-  static async upsertBulkMatches(matches, trx) {
+  static async upsertBulkMatches(matches, trx = null) {
     let queries = `INSERT INTO matches 
                   ( user_id, estate_id, percent, status, landlord_score, prospect_score, status_at )    
                   VALUES 
@@ -1084,8 +1091,11 @@ class MatchService {
                   DO UPDATE SET percent = EXCLUDED.percent, landlord_score = EXCLUDED.landlord_score,
                   prospect_score = EXCLUDED.prospect_score, status = EXCLUDED.status, status_at = EXCLUDED.status_at
                 `
-
-    await Database.raw(queries).transacting(trx)
+    if (trx) {
+      await Database.raw(queries).transacting(trx)
+    } else {
+      await Database.raw(queries)
+    }
   }
 
   /**
@@ -1115,7 +1125,7 @@ class MatchService {
       ).toJSON() || []
 
     // Calculate matches for tenants to current estate
-    let passedEstates = []
+    const passedEstates = []
     let idx = 0
     while (idx < tenants.length) {
       const { percent, landlord_score, prospect_score } = await MatchService.calculateMatchPercent(
@@ -1147,7 +1157,7 @@ class MatchService {
       )
       const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
       if (superMatches?.length) {
-        //await NoticeService.prospectSuperMatch(superMatches, estateId)
+        // await NoticeService.prospectSuperMatch(superMatches, estateId)
         await NoticeService.prospectNewGreenMatch(superMatches, estate)
       }
     }
@@ -1237,8 +1247,8 @@ class MatchService {
         percent,
         landlord_score,
         prospect_score,
-        status: MATCH_STATUS_KNOCK,
-        share: share_profile ? true : false,
+        status: MATCH_STATUS_KNOCK, // share_profile ? MATCH_STATUS_TOP : MATCH_STATUS_KNOCK,
+        share: !!share_profile,
         buddy,
         knocked_at: moment.utc(new Date()).format(DATE_FORMAT),
         status_at: moment.utc(new Date()).format(DATE_FORMAT)
@@ -1310,8 +1320,8 @@ class MatchService {
   static async sendMatchKnockWebsocket({ estate_id, user_id, share_profile = false }) {
     this.emitMatch({
       data: {
-        estate_id: estate_id,
-        user_id: user_id,
+        estate_id,
+        user_id,
         old_status: MATCH_STATUS_NEW,
         share: share_profile,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
@@ -1323,8 +1333,8 @@ class MatchService {
 
     this.emitMatch({
       data: {
-        estate_id: estate_id,
-        user_id: user_id,
+        estate_id,
+        user_id,
         old_status: MATCH_STATUS_NEW,
         share: share_profile,
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
@@ -1561,7 +1571,7 @@ class MatchService {
           break
       }
 
-      //remove original estate
+      // remove original estate
       if (isMovedToNewEstate) {
         await Match.query()
           .where('user_id', userId)
@@ -1604,7 +1614,7 @@ class MatchService {
   static async inviteKnockedUser({ estate, userId, is_from_market_place = false }, trx = null) {
     const estateId = estate.id
     console.log(`inviteKnockedUser ${estateId} ${userId}`)
-    //invited from knock
+    // invited from knock
     if (!is_from_market_place) {
       const match = await Database.query()
         .table('matches')
@@ -1650,7 +1660,7 @@ class MatchService {
       .first()
 
     if (existingMatch) {
-      let query = Database.table('matches')
+      const query = Database.table('matches')
         .update({
           status: estate.is_not_show ? MATCH_STATUS_TOP : MATCH_STATUS_INVITE,
           share: estate.is_not_show,
@@ -1682,9 +1692,8 @@ class MatchService {
         { tenantId: userId, landlordId: estate.user_id, estateId: estate.id },
         trx
       )
-    }
-
-    if (!estate.is_not_show) {
+      await NoticeService.landlordMovedProspectToTop(estate.id, userId)
+    } else {
       await NoticeService.userInvite(estate.id, userId)
       MatchService.inviteEmailToProspect({ estateId: estate.id, userId })
     }
@@ -1816,7 +1825,7 @@ class MatchService {
     await MailService.inviteEmailToProspect({
       email: tenant.email,
       address: estate.address,
-      lang: lang
+      lang
     })
   }
 
@@ -1989,7 +1998,7 @@ class MatchService {
   }
 
   static async updateVisitIn(estateId, userId, inviteIn = true) {
-    await Database.table('matches').update({ inviteIn: inviteIn }).where({
+    await Database.table('matches').update({ inviteIn }).where({
       user_id: userId,
       estate_id: estateId
     })
@@ -2225,12 +2234,12 @@ class MatchService {
         estate_id: estateId
       })
 
-    /**Need to confirm status */
+    /** Need to confirm status */
 
     this.emitMatch({
       data: {
         estate_id: estateId,
-        user_id: user_id,
+        user_id,
         old_status: match.status,
         status: MATCH_STATUS_VISIT,
         share: false
@@ -2241,7 +2250,7 @@ class MatchService {
     this.emitMatch({
       data: {
         estate_id: estateId,
-        user_id: user_id,
+        user_id,
         old_status: match.status,
         status: MATCH_STATUS_VISIT,
         share: false
@@ -2573,13 +2582,13 @@ class MatchService {
         })
         .where({
           user_id: user.id,
-          estate_id: estate_id,
+          estate_id,
           status: existingMatch.status
         })
         .transacting(trx)
     } else {
       await Match.createItem(
-        { user_id: user.id, estate_id: estate_id, percent: 0, status: MATCH_STATUS_FINISH },
+        { user_id: user.id, estate_id, percent: 0, status: MATCH_STATUS_FINISH },
         trx
       )
     }
@@ -2797,6 +2806,7 @@ class MatchService {
       )
       .fetch()
   }
+
   /**
    *
    */
@@ -2958,7 +2968,8 @@ class MatchService {
         })
         .select(Database.raw(`coalesce(_t.unread_count, 0) as unread_count`))
         .select('_u.avatar', '_u.firstname', '_u.secondname', '_u.sex')
-        .where({ '_m.status': MATCH_STATUS_TOP, share: true })
+        // .where({ '_m.status': MATCH_STATUS_TOP, share: true })
+        .where({ '_m.status': MATCH_STATUS_TOP })
         .clearOrder()
         .orderBy(
           Database.raw(`case when build_id is null then estates.id else estates.build_id end`),
@@ -3147,7 +3158,7 @@ class MatchService {
       .fetch()
     const estatesJson = estates.toJSON({ isShort: true })
     const estateIds = estatesJson.map(function (item) {
-      return item['id']
+      return item.id
     })
     if (filter === 'visit') {
       const datas = await Promise.all([
@@ -3259,6 +3270,7 @@ class MatchService {
       .count('*')
     return data
   }
+
   // Find the invite matches but has available time slots
   static async getTenantInvitesCount(userId) {
     const data = await Estate.query()
@@ -3332,7 +3344,7 @@ class MatchService {
   }
 
   static async getUserToChat({ user_id, estate_id, role }) {
-    let query = Match.query()
+    const query = Match.query()
       .select('_e.user_id as estate_user_id')
       .select('matches.user_id as tenant_user_id')
       .where(function () {
@@ -3518,7 +3530,7 @@ class MatchService {
         this.on('_v.user_id', '_m.user_id').on('_v.estate_id', '_m.estate_id')
       })
       .leftJoin({ _mb: 'members' }, function () {
-        //primaryUser?
+        // primaryUser?
         this.on(
           Database.raw(
             `( _mb.user_id = tenants.user_id and _mb.owner_user_id is null ) or ( _mb.owner_user_id = tenants.user_id and _mb.owner_user_id is not null )`
@@ -3526,13 +3538,12 @@ class MatchService {
         )
       })
       .leftJoin(
-        //members have proofs for credit_score and no_rent_arrears
+        // members have proofs for credit_score and no_rent_arrears
         Database.raw(`
           (select
             members.user_id,
             count(*) as member_count,
-            bool_and(case when members.rent_arrears_doc is not null then true else false end) as all_members_submitted_no_rent_arrears_proofs,
-            bool_and(case when members.debt_proof is not null then true else false end) as all_members_submitted_credit_score_proofs
+            bool_or(case when members.debt_proof is not null then true else false end) as some_members_submitted_credit_score_proofs
           from
             members
           group by
@@ -3544,14 +3555,14 @@ class MatchService {
         }
       )
       .leftJoin(
-        //all members have proofs for income
+        // all members have proofs for income
         Database.raw(`
           -- table indicating all members under prospect submitted complete income proofs
           (-- tenant has members
             select
               members.user_id,
               sum(member_total_income) as total_income,
-              coalesce(bool_and(_mi.incomes_has_all_proofs), false) as all_members_submitted_income_proofs
+              coalesce(bool_or(_mi.incomes_has_all_proofs), false) as some_members_submitted_income_proofs
             from
               members
             left join
@@ -3560,7 +3571,7 @@ class MatchService {
               select
                 incomes.member_id,
                 sum(_mip.income) as member_total_income,
-                bool_and(submitted_proofs >= 3) as incomes_has_all_proofs
+                bool_and(submitted_proofs >= 1) as incomes_has_all_proofs
               from
                 incomes
               left join
@@ -3593,7 +3604,7 @@ class MatchService {
         }
       )
       .leftJoin(
-        //profession of primaryMember
+        // profession of primaryMember
         Database.raw(`
           (select
             (array_agg(primaryMember.user_id))[1] as user_id,
@@ -3605,10 +3616,6 @@ class MatchService {
             incomes
           on
             primaryMember.id=incomes.member_id and incomes.status = ${STATUS_ACTIVE}
-          and
-            primaryMember.email is null
-          and
-            primaryMember.owner_user_id is null
           group by
             incomes.member_id)
           as _pm
@@ -3671,7 +3678,7 @@ class MatchService {
         query.where('tenants.budget_max', '<=', params.budget_max)
       }
     }
-
+    /*
     if (
       parseInt(params?.credit_score_min || 0) !== 0 ||
       parseInt(params?.credit_score_max || 100) !== 100
@@ -3682,7 +3689,7 @@ class MatchService {
       if (params && params.credit_score_max) {
         query.where('tenants.credit_score', '<=', params.credit_score_max)
       }
-    }
+    } */
     if (params && params.phone_verified) {
       query.where('_mb.phone_verified', true).where('_mb.is_verified', true)
     }
@@ -3705,7 +3712,7 @@ class MatchService {
     { knock, buddy, invite, visit, top, commit, final },
     params
   ) {
-    let query = this.getLandlordMatchesFilterSQL(
+    const query = this.getLandlordMatchesFilterSQL(
       estate,
       { knock, buddy, invite, visit, top, commit, final },
       params
@@ -3722,7 +3729,7 @@ class MatchService {
     { knock, buddy, invite, visit, top, commit, final },
     params
   ) {
-    let query = this.getLandlordMatchesFilterSQL(
+    const query = this.getLandlordMatchesFilterSQL(
       estate,
       { knock, buddy, invite, visit, top, commit, final },
       params
@@ -3734,6 +3741,9 @@ class MatchService {
 
       .select([
         'tenants.*',
+        Database.raw(
+          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
+        ),
         '_u.firstname as u_firstname',
         '_u.secondname as u_secondname',
         '_u.birthday as u_birthday',
@@ -3754,7 +3764,7 @@ class MatchService {
       .select('_u.email', '_u.phone', '_u.status as u_status')
       .select(`_pm.profession`)
       .select(`_mf.id_verified`)
-      .select('_mb.firstname', '_mb.secondname', '_mb.birthday', '_mb.credit_score')
+      .select('_mb.firstname', '_mb.secondname', '_mb.birthday')
       .select(
         Database.raw(`
         (case when _bd.user_id is null
@@ -3768,18 +3778,18 @@ class MatchService {
       .select(
         Database.raw(`
         -- null here indicates members did not submit any income
-        (_ip.all_members_submitted_income_proofs::int
-        + _mp.all_members_submitted_no_rent_arrears_proofs::int
-        + _mp.all_members_submitted_credit_score_proofs::int)
+        (_ip.some_members_submitted_income_proofs::int
+        + _mf.id_verified::int
+        + _mp.some_members_submitted_credit_score_proofs::int)
         as total_completed_proofs`)
       )
       .select(
         Database.raw(`
         json_build_object
           (
-            'income', all_members_submitted_income_proofs,
-            'credit_score', all_members_submitted_credit_score_proofs,
-            'no_rent_arrears', all_members_submitted_no_rent_arrears_proofs
+            'passport', _mf.id_verified,
+            'income', some_members_submitted_income_proofs,
+            'credit_history_status', some_members_submitted_credit_score_proofs
           )
         as submitted_proofs
         `)
@@ -3795,7 +3805,6 @@ class MatchService {
       '_mb.last_address',
       '_mb.phone_verified',
       '_mb.is_verified',
-      '_mb.credit_score',
       '_mb.credit_history_status',
       '_mb.credit_score_issued_at',
       '_mb.debt_proof',
@@ -3848,13 +3857,6 @@ class MatchService {
       })
     )[0].count
 
-    const creditScoreLimitCount = (
-      await this.getCountLandlordMatchesWithFilterQuery(estate, filter, {
-        credit_score_min: params.credit_score_min,
-        credit_score_max: params.credit_score_max
-      })
-    )[0].count
-
     const incomeTypes = [
       INCOME_TYPE_EMPLOYEE,
       INCOME_TYPE_WORKER,
@@ -3884,12 +3886,12 @@ class MatchService {
 
     return {
       budget: budetLimitCount,
-      credit_score: creditScoreLimitCount,
       income: incomeCount,
       phoneVerified: phoneVerifiedCount,
       idVerified: idVeriedCount
     }
   }
+
   /**
    *
    */
@@ -3904,7 +3906,7 @@ class MatchService {
     // Disable TRIGGER
     await Database.raw(`SET session_replication_role = replica`)
     // Change conditions to tenant
-    let field = isTenant ? 'order_tenant' : 'order_lord'
+    const field = isTenant ? 'order_tenant' : 'order_lord'
 
     // Create new items order
     const subQuery = Database.table({ _m: 'matches' })
@@ -4045,7 +4047,7 @@ class MatchService {
       .select('status')
       .select(Database.raw(`bool_or(buddy) as buddy`))
       .select(Database.raw(`bool_or("share") as share`))
-      .where({ estate_id: estate_id })
+      .where({ estate_id })
       .groupBy('status')
       .orderBy('status', 'desc')
       .first()
@@ -4137,7 +4139,7 @@ class MatchService {
   static async updateVisitStatusLandlord(estateId, user_id, data) {
     const currentDay = moment.utc().startOf('day')
     try {
-      //TODO: handle this flow. seems wrong
+      // TODO: handle this flow. seems wrong
       const visit = await Visit.query()
         .where({ estate_id: estateId, user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
@@ -4145,7 +4147,7 @@ class MatchService {
         .first()
 
       await Database.table('visits')
-        .where({ estate_id: estateId, user_id: user_id })
+        .where({ estate_id: estateId, user_id })
         .where('date', '>', currentDay.format(DATE_FORMAT))
         .where('date', '<=', currentDay.clone().add(1, 'days').format(DATE_FORMAT))
         .update(data)
@@ -4231,7 +4233,6 @@ class MatchService {
         'estates.id',
         'estates.user_id',
         'budget',
-        'credit_score',
         'rent_arrears',
         'min_age',
         'max_age',
@@ -4253,11 +4254,14 @@ class MatchService {
         'unit_category_id'
       )
       .leftJoin(
+        // 'city_id', cities.id,
         Database.raw(`
         (select estates.id as estate_id,
           case when estates.cert_category is null then
             null else 
-            json_build_object('city_id', cities.id, 'income_level', estates.cert_category)
+            json_build_object(
+              'income_level', estates.cert_category
+            )
             end
           as wbs_certificate from estates left join cities on cities.city=estates.city)
         as _ec`),
@@ -4285,43 +4289,52 @@ class MatchService {
         'tenants.residency_duration_min',
         'tenants.residency_duration_max',
         'tenants.is_short_term_rent',
-        Database.raw(`_me.total_income as income`), //sum of all member's income
-        '_m.credit_score', //average
-        'rent_arrears', //if at least one has true, then true
-        '_me.income_proofs', //all members must submit at least 3 income proofs for each of their incomes for this to be true
-        '_m.credit_score_proofs', //all members must submit their credit score proofs
-        '_m.no_rent_arrears_proofs', //all members must submit no_rent_arrears_proofs
+        Database.raw(
+          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
+        ),
+        Database.raw(`_me.total_income as income`), // sum of all member's income
+        '_m.credit_history_status',
+        'rent_arrears', // if at least one has true, then true
+        '_me.income_proofs', // all members must submit at least 3 income proofs for each of their incomes for this to be true
+        '_m.credit_score_proofs', // all members must submit their credit score proofs
+        '_m.no_rent_arrears_proofs', // all members must submit no_rent_arrears_proofs
         '_m.members_age',
-        '_m.members_count', //adult members only
+        '_m.members_count', // adult members only
         'pets',
         'budget_min',
         'budget_max',
         'transfer_budget_min',
         'transfer_budget_max',
-        Database.raw(`(100*budget_max/_me.total_income) as budget_max_scale`),
+        Database.raw(
+          `case 
+            when _me.total_income is not null and _me.total_income > 0
+            then (100*budget_max/_me.total_income)
+            else 0
+          end as budget_max_scale`
+        ),
         'rent_start',
-        'options', //array
+        'options', // array
         'space_min',
         'space_max',
         'floor_min',
         'floor_max',
         'rooms_min',
         'rooms_max',
-        'house_type', //array
-        'apt_type', //array
+        'house_type', // array
+        'apt_type', // array
         '_tc.wbs_certificate',
         'tenants.income_level',
         'tenants.is_public_certificate'
       )
       .leftJoin(
-        //members...
+        // members...
         Database.raw(`
       (select
         user_id, owner_user_id,
-        avg(credit_score) as credit_score,
+        json_agg(json_build_object('status', credit_history_status)) as credit_history_status,
         count(id) as members_count,
-        bool_and(coalesce(debt_proof, null) is not null) as credit_score_proofs,
-        bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
+        bool_or(coalesce(debt_proof, null) is not null) as credit_score_proofs,
+        bool_or(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
         bool_or(unpaid_rental='${YES_UNPAID_RENTAL}' is true) as rent_arrears,
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
@@ -4338,25 +4351,28 @@ class MatchService {
         }
       )
       .leftJoin(
+        // 'city_id', city_id,
         Database.raw(`
         (select
           user_id,
-          status, 
-          case when income_level is null or income_level='' then
-            null else
-            json_build_object('city_id', city_id, 'income_level', income_level)
-            end
-            as wbs_certificate
+          array_agg(
+            case when income_level is null or income_level='' then
+              null else
+              json_build_object('income_level', income_level)
+              end
+          ) as wbs_certificate
           from tenant_certificates
           where expired_at > NOW()
+          and status=${STATUS_ACTIVE}
+          group by user_id
           ) as _tc
         `),
         function () {
-          this.on(Database.raw(`(tenants.user_id=_tc.user_id)`)).on(`_tc.status`, STATUS_ACTIVE)
+          this.on(Database.raw(`(tenants.user_id=_tc.user_id)`))
         }
       )
       .leftJoin(
-        //members incomes and income_proofs
+        // members incomes and income_proofs
         Database.raw(`
         (-- tenant has members
           select
@@ -4416,12 +4432,12 @@ class MatchService {
     const estateIds = matches.reduce((estateIds, match) => {
       return [...estateIds, match.estate_id]
     }, [])
-    let estates =
+    const estates =
       (
         await MatchService.getEstateForScoringQuery().whereIn('estates.id', estateIds).fetch()
       ).toJSON() || []
 
-    let passedEstates = []
+    const passedEstates = []
     let idx = 0
     prospect.incomes = await require('./MemberService').getIncomes(userId)
     while (idx < estates.length) {
@@ -4499,7 +4515,7 @@ class MatchService {
   }
 
   static async getEstatesByStatus({ estate_id, status }) {
-    let query = Match.query()
+    const query = Match.query()
     if (estate_id) {
       query.where('estate_id', estate_id)
     }
@@ -4573,7 +4589,7 @@ class MatchService {
   }
 
   static async deletePermanant({ user_id, estate_id }) {
-    let query = Match.query().delete().where('user_id', user_id)
+    const query = Match.query().delete().where('user_id', user_id)
     if (estate_id) {
       query.where('estate_id', estate_id)
     }
@@ -4634,7 +4650,6 @@ class MatchService {
         '_m.credit_score_proofs',
         '_m.no_rent_arrears_proofs',
         '_m.rent_arrears',
-        '_m.credit_score',
         '_m.members_age',
         '_me.income_sources',
         '_me.work_exp',
@@ -4650,11 +4665,10 @@ class MatchService {
         this.on('_t.user_id', '_u.id')
       })
       .leftJoin(
-        //members...
+        // members...
         Database.raw(`
       (select
         user_id,
-        avg(credit_score) as credit_score,
         count(id) as members_count,
         bool_and(coalesce(debt_proof, null) is not null) as credit_score_proofs,
         bool_and(coalesce(rent_arrears_doc, '') <> '') as no_rent_arrears_proofs,
@@ -4670,7 +4684,7 @@ class MatchService {
         }
       )
       .leftJoin(
-        //members incomes and income_proofs
+        // members incomes and income_proofs
         Database.raw(`
         (-- tenant has members
           select
@@ -4746,7 +4760,7 @@ class MatchService {
   }
 
   static async getMatchList(user_id, params = {}) {
-    let matchQuery = this.getMatchListQuery(user_id, params)
+    const matchQuery = this.getMatchListQuery(user_id, params)
     matchQuery
       .where('user_id', user_id)
       .withCount('knocked')

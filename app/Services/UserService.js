@@ -63,7 +63,8 @@ const {
   ACCOUNT_CREATION_EMAIL_NOTIFICATION_RECIPIENTS,
   LANDLORD_ACCOUNT_CREATION_EMAIL_NOTIFICATION_SUBJECT,
   PETS_NO,
-  PETS_SMALL
+  PETS_SMALL,
+  TEMPORARY_PASSWORD_PREFIX
 } = require('../constants')
 
 const {
@@ -95,7 +96,7 @@ class UserService {
    * Create user flow
    */
   static async createUser(userData, trx = null) {
-    //we need him to approve Terms and Privacy
+    // we need him to approve Terms and Privacy
     const latestTerm = await Term.query()
       .where('status', STATUS_ACTIVE)
       .orderBy('id', 'desc')
@@ -144,12 +145,14 @@ class UserService {
         data2: userData?.data2
       })
     }
-
-    if (otherInfo && !userData?.birthday && otherInfo?.birthday) {
-      userData.birthday = otherInfo.birthday
-    }
+    // userData.birthday is default 1970-01-01.
+    // So we can apply his birthday from marketplace if it is set there
+    userData.birthday =
+      userData.birthday === '1970-01-01' && otherInfo?.birthday
+        ? otherInfo.birthday
+        : userData.birthday
     const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
-
+    // return userData
     if (user.role === ROLE_USER) {
       try {
         // Create empty tenant and link to user
@@ -183,7 +186,6 @@ class UserService {
         if (user.sex) memberInfo.sex = user.sex
         memberInfo.birthday = otherInfo?.birthday || null
         memberInfo.insolvency_proceed = otherInfo?.insolvency ? 1 : null
-        memberInfo.credit_score = otherInfo?.credit_score || null
         const member = await MemberService.createMember(memberInfo, user.id, trx)
 
         if (otherInfo?.profession) {
@@ -200,49 +202,24 @@ class UserService {
       }
     }
 
-    await this.handleOutsideInvitation(
-      {
-        user,
-        email: userData?.email,
-        invite_type: userData?.invite_type,
-        data1: userData?.data1,
-        data2: userData?.data2
-      },
-      trx
-    )
-
     return user
   }
 
-  static async handleOutsideInvitation({ user, email, invite_type, data1, data2 }, trx) {
+  static async handleOutsideInvitation({ user, email, invite_type, data1, data2 }) {
     if (!invite_type || !data1 || !data2) {
       return
     }
     switch (invite_type) {
-      case OUTSIDE_LANDLORD_INVITE_TYPE: //outside landlord invitation
-        await require('./OutsideLandlordService').updateOutsideLandlordInfo(
-          {
-            new_email: email,
-            data1,
-            data2
-          },
-          trx
-        )
+      case OUTSIDE_LANDLORD_INVITE_TYPE: // outside landlord invitation
+        await require('./OutsideLandlordService').updateOutsideLandlordInfo({
+          new_email: email,
+          data1,
+          data2
+        })
         break
-      case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: //outside prospect knock invitation
-        await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 }, trx)
+      case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: // outside prospect knock on Marketplace
+        await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 })
         break
-      // case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
-      //   await require('./EstateCurrentTenantService').acceptOutsideTenant(
-      //     {
-      //       data1,
-      //       data2,
-      //       email,
-      //       user,
-      //     },
-      //     trx
-      //   )
-      //   break
     }
   }
 
@@ -332,7 +309,7 @@ class UserService {
           }/reset-password?type=forgotpassword&code=${code}&email=${encodeURIComponent(email)}`
         : `${process.env.DEEP_LINK}?type=newpassword&code=${code}`
 
-      let params = {
+      const params = {
         dynamicLinkInfo: {
           domainUriPrefix: process.env.DOMAIN_PREFIX,
           link: deepLink_URL,
@@ -360,13 +337,9 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
       const data = paramLang ? await this.getTokenWithLocale([user.id]) : null
-      const lang = paramLang
-        ? paramLang
-        : data && data.length && data[0].lang
-        ? data[0].lang
-        : user.lang
-        ? user.lang
-        : DEFAULT_LANG
+      const lang =
+        paramLang ||
+        (data && data.length && data[0].lang ? data[0].lang : user.lang ? user.lang : DEFAULT_LANG)
 
       if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
         return { shortLink, code }
@@ -451,7 +424,7 @@ class UserService {
   }
 
   static async updateDeviceToken(userId, device_token) {
-    return await User.query().where('id', userId).update({ device_token: device_token })
+    return await User.query().where('id', userId).update({ device_token })
   }
 
   /**
@@ -471,10 +444,10 @@ class UserService {
 
       await MailService.sendUserConfirmation(user.email, {
         code,
-        user: user,
+        user,
         role: user.role,
-        lang: lang,
-        forgotLink: forgotLink
+        lang,
+        forgotLink
       })
     } catch (e) {
       throw new HttpException(e.message, 400)
@@ -503,6 +476,7 @@ class UserService {
     })
     return shortLink
   }
+
   /**
    *
    */
@@ -536,14 +510,15 @@ class UserService {
       const MarketPlaceService = require('./MarketPlaceService.js')
       if (user.role === ROLE_USER) {
         if (user.source_estate_id) {
-          //If user we look for his email on estate_current_tenant and make corresponding corrections
+          // If user we look for his email on estate_current_tenant and make corresponding corrections
           await require('./EstateCurrentTenantService').updateOutsideTenantInfo(
             { user, estate_id: user.source_estate_id },
             trx
           )
           user.source_estate_id = null
         } else {
-          await MarketPlaceService.createKnock({ user }, trx)
+          // this is an email confirmation of someone who knocked on a marketplace link
+          await require('./MarketPlaceService').createKnock({ user }, trx)
         }
       }
 
@@ -566,7 +541,7 @@ class UserService {
 
     const firebaseDynamicLinks = new FirebaseDynamicLinks(process.env.FIREBASE_WEB_KEY)
 
-    let params = {
+    const params = {
       dynamicLinkInfo: {
         domainUriPrefix: process.env.DOMAIN_PREFIX,
         link: `${process.env.DEEP_LINK}?type=profile&user_id=${user.id}&role=${user.role}`,
@@ -595,8 +570,8 @@ class UserService {
     MailService.sendWelcomeMail(user, {
       code: shortLink,
       role: user.role,
-      lang: lang,
-      forgotLink: forgotLink
+      lang,
+      forgotLink
     })
     return user
   }
@@ -674,10 +649,10 @@ class UserService {
     }
 
     const isShare = user.finish || user.share
-    //TODO: WARNING: SECURITY
+    // TODO: WARNING: SECURITY
     // const isShare = true
 
-    let userData = user.toJSON({ publicOnly: !isShare })
+    const userData = user.toJSON({ publicOnly: !isShare })
     // Get tenant extend data
     const tenantQuery = Tenant.query().select('*').where('user_id', user.id)
     tenantQuery
@@ -724,7 +699,7 @@ class UserService {
       })
       .first()
 
-    return sharedMatch ? true : false
+    return !!sharedMatch
   }
 
   static async increaseUnreadNotificationCount(id) {
@@ -822,8 +797,8 @@ class UserService {
       .where({ id: userId })
       .update(
         {
-          plan_id: plan_id,
-          payment_plan: payment_plan,
+          plan_id,
+          payment_plan,
           member_plan_date: moment().utc().format('YYYY-MM-DD HH:mm:ss')
         },
         trx
@@ -842,11 +817,11 @@ class UserService {
   }
 
   static async getByIdWithRole(ids, role) {
-    return await User.query().whereIn('id', ids).where({ role: role }).pluck('id')
+    return await User.query().whereIn('id', ids).where({ role }).pluck('id')
   }
 
   static async getById(id, role) {
-    let query = User.query().where('id', id).whereNot('status', STATUS_DELETE)
+    const query = User.query().where('id', id).whereNot('status', STATUS_DELETE)
     if (role === ROLE_LANDLORD) {
       query.where('role', ROLE_LANDLORD)
       // query.where('activation_status', USER_ACTIVATION_STATUS_ACTIVATED)
@@ -870,7 +845,7 @@ class UserService {
   }
 
   static async getLangByIds({ ids, status = null }) {
-    let query = User.query()
+    const query = User.query()
       .select(['id', 'email', 'lang'])
       .whereNot('status', STATUS_DELETE)
       .whereIn('id', ids)
@@ -963,13 +938,13 @@ class UserService {
     const lang = await UserService.getUserLang([userId])
 
     const txt = l.get('landlord.email_verification.subject.message', lang) + ` ${code}`
-    await DataStorage.setItem(userId, { code: code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
+    await DataStorage.setItem(userId, { code, count: 5 }, SMS_VERIFY_PREFIX, { ttl: 3600 })
 
     if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
       return code
     }
 
-    await SMSService.send({ to: phone, txt: txt })
+    await SMSService.send({ to: phone, txt })
   }
 
   static async removeUserOwnerId(user_id, trx) {
@@ -1035,7 +1010,7 @@ class UserService {
 
     const { landlordId } = landlord
 
-    //TODO: if phone number & email are not defined???
+    // TODO: if phone number & email are not defined???
     const buddy = await Buddy.query()
       .where('user_id', landlordId)
       .where('phone', tenant.phone)
@@ -1061,7 +1036,7 @@ class UserService {
   }
 
   static async updateFreeUserPlans(old_plan_id, plan_id, trx) {
-    await User.query().where('plan_id', old_plan_id).update({ plan_id: plan_id }).transacting(trx)
+    await User.query().where('plan_id', old_plan_id).update({ plan_id }).transacting(trx)
   }
 
   static async getUserByPaymentPlan(plan_ids) {
@@ -1119,7 +1094,8 @@ class UserService {
           invite_type,
           source_estate_id,
           ip,
-          ip_based_info
+          ip_based_info,
+          activation_status: USER_ACTIVATION_STATUS_ACTIVATED
         },
         trx
       )
@@ -1169,7 +1145,7 @@ class UserService {
   }
 
   static async updateCompany({ user_id, company_id }, trx) {
-    let query = User.query().where('id', user_id).update({ company_id })
+    const query = User.query().where('id', user_id).update({ company_id })
 
     if (trx) {
       return await query.transacting(trx)
@@ -1265,6 +1241,7 @@ class UserService {
 
     return null
   }
+
   /**
    *
    * @param {*} id
@@ -1305,7 +1282,7 @@ class UserService {
       } else if (user.role == ROLE_USER) {
         user.has_final_match = await require('./MatchService').checkUserHasFinalMatch(user.id)
       }
-      //set last login
+      // set last login
       await User.query().where('id', user.id).update({ last_login: moment().utc().format() })
 
       Event.fire('mautic:syncContact', user.id, { last_openapp_date: new Date() })
@@ -1323,7 +1300,7 @@ class UserService {
     user.is_admin = false
 
     if (user.role === ROLE_LANDLORD) {
-      //TODO: we should cover this field in the tests
+      // TODO: we should cover this field in the tests
       user.has_property = await require('./EstateService').hasEstate(user.id)
     }
 
@@ -1366,7 +1343,7 @@ class UserService {
           await this.changeEmail({ user, email: data.email, from_web: data.from_web }, trx)
         }
 
-        let userData = omit(data, ['company_name', 'size', 'contact'])
+        const userData = omit(data, ['company_name', 'size', 'contact'])
         if (Object.keys(userData).length) {
           await user.updateItemWithTrx(userData, trx)
         }
@@ -1411,7 +1388,7 @@ class UserService {
       }
 
       if (user.role === ROLE_LANDLORD) {
-        //TODO: we should cover this field in the tests
+        // TODO: we should cover this field in the tests
         user = await this.me(user)
       }
 

@@ -12,6 +12,7 @@ const SMSService = use('App/Services/SMSService')
 const yup = require('yup')
 const { phoneSchema } = require('../Libs/schemas')
 const ShortenLinkService = use('App/Services/ShortenLinkService')
+const MatchService = use('App/Services/MatchService')
 const {
   DEFAULT_LANG,
   ROLE_USER,
@@ -40,7 +41,8 @@ const {
   INCOME_TYPE_PENSIONER,
   MARKETPLACE_LIST,
   SHORTENURL_LENGTH,
-  DOMAIN
+  DOMAIN,
+  MATCH_STATUS_TOP
 } = require('../constants')
 
 const familySize = {
@@ -86,7 +88,7 @@ const IMMOWELT_VARIABLE_MAP = {
   'Beruf oder Branche': 'profession',
   Haushaltsgröße: 'family_size_orig',
   Nettohaushaltseinkommen: 'income_orig',
-  'Tierfreier Haushalt': 'pets', //reversed pets
+  'Tierfreier Haushalt': 'pets', // reversed pets
   Wohnberechtigungsschein: 'house_certificate'
 }
 
@@ -108,7 +110,6 @@ const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const UserService = use('App/Services/UserService')
 const EstateSyncService = use('App/Services/EstateSyncService')
 const MailService = use('App/Services/MailService')
-const MatchService = use('App/Services/MatchService')
 const EstateService = use('App/Services/EstateService')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 
@@ -162,11 +163,8 @@ class MarketPlaceService {
     )
 
     if (!(await EstateService.isPublished(contact.estate_id))) {
-      // FIXME: we don't throw errors back to the webhook caller. It will just reschedule
-      // another call with the same content
-      throw new HttpException(NO_ACTIVE_ESTATE_EXIST, 400)
+      return
     }
-
     const contactRequest = await EstateSyncContactRequest.query()
       .where({
         email: contact.email,
@@ -184,7 +182,7 @@ class MarketPlaceService {
         await this.handlePendingKnock(contact, trx)
       await trx.commit()
 
-      //sending knock email 10 seconds later
+      // sending knock email 10 seconds later
       require('./QueueService').sendKnockRequestEmail(
         {
           link,
@@ -256,7 +254,7 @@ class MarketPlaceService {
   }
 
   static async sendContactRequestWebsocket(contact) {
-    MatchService.emitMatch({
+    await MatchService.emitMatch({
       data: {
         estate_id: contact.estate_id,
         old_status: NO_MATCH_STATUS,
@@ -268,7 +266,7 @@ class MarketPlaceService {
       role: ROLE_LANDLORD
     })
 
-    MatchService.emitMatch({
+    await MatchService.emitMatch({
       data: {
         ...contact,
         firstname: contact?.contact_info?.firstName,
@@ -319,7 +317,7 @@ class MarketPlaceService {
 
     await ShortenLinkService.create({ hash, link: shortLink })
 
-    //send invitation email to a user to come to our app
+    // send invitation email to a user to come to our app
     const user = estate.toJSON().user
     const landlord_name = `${user.firstname} ${user.secondname}`
 
@@ -415,7 +413,7 @@ class MarketPlaceService {
         .select(Database.raw(`contact_info->'firstName' as firstname`))
         .select(Database.raw(`contact_info->'lastName' as secondname`))
         .select(Database.raw(` 1 as from_market_place`))
-        //.select(Database.raw(` '${MATCH_TYPE_MARKET_PLACE}' as match_type`))
+        // .select(Database.raw(` '${MATCH_TYPE_MARKET_PLACE}' as match_type`))
         .select(Database.raw(`coalesce("publisher", '${MATCH_TYPE_MARKET_PLACE}') as match_type`))
         .select(Database.raw(`other_info->'employment' as profession`))
         .select(Database.raw(`other_info->'family_size' as members`))
@@ -479,7 +477,7 @@ class MarketPlaceService {
     const number_floors = estate.number_floors || 0
     const cover = estate.cover_thumb || estate.cover
 
-    //prepopulated user info:
+    // prepopulated user info:
     const prospect_firstname = contact_info.firstName || ``
     const prospect_secondname = contact_info.lastName || ``
     const prospect_birthday = other_info?.birthday || `1970-01-01`
@@ -505,17 +503,19 @@ class MarketPlaceService {
     uri += `&cover=${cover}`
     uri += `&is_not_show=${estate.is_not_show || false}`
 
-    const prospects = (await UserService.getByEmailWithRole([email], ROLE_USER)).toJSON()
+    const prospects = (
+      await require('./UserService').getByEmailWithRole([email], ROLE_USER)
+    ).toJSON()
 
     if (prospects?.length) {
       uri += `&user_id=${prospects[0].id}`
     }
     const lang = prospects?.[0]?.lang || DEFAULT_LANG
     uri += `&lang=${lang}&is_invited_by_landlord=${contact.is_invited_by_landlord}`
-
     const shortLink = await createDynamicLink(
       `${process.env.DEEP_LINK}?type=${OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE}${uri}`
     )
+
     return {
       code,
       shortLink,
@@ -527,34 +527,29 @@ class MarketPlaceService {
   static async createPendingKnock({ user, data1, data2 }, trx = null) {
     try {
       if (!user || user.role !== ROLE_USER) {
-        throw new HttpException(NO_USER_PASSED, e.status || 500)
+        return
       }
 
       if (!data1 || !data2) {
-        throw new HttpException(WRONG_PARAMS, e.status || 500)
+        return
       }
 
-      const { estate_id, email, code, expired_time, invited_by_landlord } =
-        await this.decryptDynamicLink({
-          data1,
-          data2
-        })
+      const { estate_id, email, code } = await this.decryptDynamicLink({
+        data1,
+        data2
+      })
       const knockRequest = await this.getKnockRequest({ estate_id, email })
-      console.log(`knockRequest ${estate_id} ${email}=`, knockRequest)
+      Logger.info(`validating knockRequest ${estate_id} ${email}=`, knockRequest)
       if (!knockRequest) {
-        throw new HttpException(NO_PROSPECT_KNOCK, 400)
+        return // the link is NOT valid no match should be created.
       }
 
       if (user.id === knockRequest.user_id && knockRequest.status === STATUS_EXPIRE) {
-        throw new HttpException(
-          MARKET_PLACE_CONTACT_EXIST,
-          400,
-          ERROR_MARKET_PLACE_CONTACT_EXIST_CODE
-        )
+        return
       }
-      console.log(`knockRequest code = ${knockRequest.code} ${code}`)
+      Logger.info(`knockRequest code = ${knockRequest.code} ${code}`)
       if (!knockRequest.code || code != knockRequest.code) {
-        throw new HttpException(NO_PROSPECT_KNOCK, 400)
+        return // we just return this or we'll end up crashing the signup process
       }
 
       /*
@@ -563,26 +558,20 @@ class MarketPlaceService {
        */
 
       if (email !== user.email && (await this.isExistRequest({ email: user.email, estate_id }))) {
-        throw new HttpException(ERROR_CONTACT_REQUEST_EXIST, 400)
+        return // we just return this or we'll end up the crashing the signup process
       }
 
-      let query = EstateSyncContactRequest.query()
+      // we update all contact requests with this email to the newly registered email.
+      await EstateSyncContactRequest.query()
         .where('email', email)
-        .where('estate_id', estate_id)
         .update({ email: user.email, status: STATUS_EMAIL_VERIFY, user_id: user.id })
-
-      if (trx) {
-        await query.transacting(trx)
-      } else {
-        await query
-      }
     } catch (e) {
       throw new HttpException(e.message, e.status, e.code || 0)
     }
   }
 
   static async isExistRequest({ email, estate_id }) {
-    let query = EstateSyncContactRequest.query()
+    const query = EstateSyncContactRequest.query()
     if (email) {
       query.where('email', email)
     }
@@ -594,19 +583,19 @@ class MarketPlaceService {
 
   static async createKnock({ user, data1, data2, email_verified = true }, trx) {
     try {
-      let contatRequestEmail = user.email
+      let contactRequestEmail = user.email
       if (data1 && data2) {
         const descryptedResult = await this.decryptDynamicLink({
           data1,
           data2
         })
-        contatRequestEmail = descryptedResult.email
+        contactRequestEmail = descryptedResult.email
       }
-
+      // pending knocks are created during user creation from deeplink
       const pendingKnocks = (
         await EstateSyncContactRequest.query()
           .with('estate')
-          .where('email', contatRequestEmail)
+          .where('email', contactRequestEmail)
           .whereIn(
             'status',
             email_verified ? [STATUS_EMAIL_VERIFY] : [STATUS_DRAFT, STATUS_EMAIL_VERIFY]
@@ -624,12 +613,13 @@ class MarketPlaceService {
 
           if (!hasMatch) {
             if (!knock.is_invited_by_landlord) {
-              await MatchService.knockEstate(
+              // user knocked on marketplace we knock him on ours.
+              await await MatchService.knockEstate(
                 {
                   estate_id: knock.estate_id,
                   user_id: user.id,
                   knock_anyway: true,
-                  share_profile: knock.estate?.is_not_show ? true : false
+                  share_profile: !!knock.estate?.is_not_show
                 },
                 trx
               )
@@ -648,7 +638,7 @@ class MarketPlaceService {
         { concurrency: 1 }
       )
 
-      //fill up tenant coord info if he doesn't add it yet.
+      // fill up tenant coord info if he doesn't add it yet.
       if (pendingKnocks?.length) {
         const tenant = await TenantService.getTenant(user.id)
         if (!tenant.address || !tenant.coord) {
@@ -803,7 +793,6 @@ class MarketPlaceService {
       'flat_community_planned',
       'house_certificate',
       'smoker',
-      'credit_score', //available/not available
       'application_documents_available'
     ]
     for (const [key, value] of Object.entries(info)) {
@@ -812,19 +801,19 @@ class MarketPlaceService {
       }
 
       if (key === 'family_size_orig') {
-        info['family_size'] = familySize[value]
+        info.family_size = familySize[value]
       }
 
       if (key === 'income_orig') {
-        info['income'] = MarketPlaceService.parseRangeIncome(value)
+        info.income = MarketPlaceService.parseRangeIncome(value)
       }
 
       if (key === 'rent_start_orig') {
-        info['rent_start'] = MarketPlaceService.parseRentStart(value)
+        info.rent_start = MarketPlaceService.parseRentStart(value)
       }
 
       if (key === 'employment_orig') {
-        info['employment'] = MarketPlaceService.parseEmployment(value)
+        info.employment = MarketPlaceService.parseEmployment(value)
       }
     }
     return info
@@ -885,25 +874,25 @@ class MarketPlaceService {
         info[key] = MarketPlaceService.parseBoolean(value)
       }
       if (key === 'pets') {
-        info['pets'] = !info['pets'] //immowelt has key: pet-free household
+        info.pets = !info.pets // immowelt has key: pet-free household
       }
 
       if (key === 'birthday') {
         if ((matches = value.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})$/))) {
-          info['birthday'] = `${matches[3]}-${matches[2]}-${matches[1]}`
+          info.birthday = `${matches[3]}-${matches[2]}-${matches[1]}`
         }
       }
 
       if (key === 'income_orig') {
-        info['income'] = MarketPlaceService.parseRangeIncome(value)
+        info.income = MarketPlaceService.parseRangeIncome(value)
       }
 
       if (key === 'family_size_orig') {
-        info['family_size'] = familySize[value]
+        info.family_size = familySize[value]
       }
 
       if (key === 'employment_orig') {
-        info['employment'] = MarketPlaceService.parseEmployment(value)
+        info.employment = MarketPlaceService.parseEmployment(value)
       }
     }
 
@@ -912,19 +901,21 @@ class MarketPlaceService {
 
   static parseOtherInfoFromMessage(message, publisher) {
     if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IS24) {
-      let matches = message.match(/Weitere Daten zum Interessenten; (.*)+/)
-      let fieldValues = [...matches[1].matchAll(/((.*?): (.*?);)/g)]
-      let is24OtherInfo = {}
-      fieldValues.map((fieldValue) => {
-        if (IS24_VARIABLE_MAP[fieldValue[2].trim()]) {
-          is24OtherInfo[IS24_VARIABLE_MAP[fieldValue[2].trim()]] = fieldValue[3]
-        }
-      })
+      const is24OtherInfo = {}
+      const matches = message.match(/Weitere Daten zum Interessenten; (.*)+/)
+      if (matches) {
+        const fieldValues = [...matches[1].matchAll(/((.*?): (.*?);)/g)]
+        fieldValues.map((fieldValue) => {
+          if (IS24_VARIABLE_MAP[fieldValue[2].trim()]) {
+            is24OtherInfo[IS24_VARIABLE_MAP[fieldValue[2].trim()]] = fieldValue[3]
+          }
+        })
+      }
       return MarketPlaceService.parseIs24OtherInfo(is24OtherInfo)
     }
 
     if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_IMMOWELT) {
-      let immoweltOtherInfo = {}
+      const immoweltOtherInfo = {}
       for (const [key, value] of Object.entries(IMMOWELT_VARIABLE_MAP)) {
         const regex = new RegExp(`${key}: (.*)`)
         const matches = message.match(regex)
@@ -953,8 +944,7 @@ class MarketPlaceService {
       .select(Database.raw(`other_info->'family_size' as members`))
       .select(Database.raw(`other_info->'income' as income`))
       .select(Database.raw(`other_info->'birthday' as birthday`))
-      .select(Database.raw(`other_info->'pets' as pets`)) //pets here is boolean
-      .select(Database.raw(`other_info->'credit_score' as credit_score`))
+      .select(Database.raw(`other_info->'pets' as pets`)) // pets here is boolean
       .select(Database.raw(`other_info->'insolvency' as insolvency`))
       .where('estate_id', estate_id)
       .where('email', email)

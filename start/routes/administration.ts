@@ -43,7 +43,7 @@ export const administrationRoutes = {
     }
   },
   // end estate-sync
-  //estates
+  // estates
   '/estates': {
     [HTTP_METHODS.GET]: {
       controller: 'Admin/PropertyController.getProperties',
@@ -74,6 +74,12 @@ export const administrationRoutes = {
       middleware: ['auth:jwtAdministrator']
     }
   },
+  '/notifications/prospect-reactivated': {
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/NotificationController.sendReactivateNotification',
+      middleware: ['auth:jwtAdministrator']
+    }
+  },
   '/verifyUsers': {
     [HTTP_METHODS.POST]: {
       controller: 'Admin/UserController.verifyUsers',
@@ -92,11 +98,11 @@ export const administrationRoutes = {
   },
   '/users/:user_id': {
     [HTTP_METHODS.GET]: {
-      controller: 'Admin/UserController.getUser', //this is missing on Admin/UserController
+      controller: 'Admin/UserController.getUser', // this is missing on Admin/UserController
       middleware: ['auth:jwtAdministrator']
     },
     [HTTP_METHODS.POST]: {
-      controller: 'Admin/UserController.updateUser', //this is missing on Admin/UserController. Note: this should be **put**
+      controller: 'Admin/UserController.updateUser', // this is missing on Admin/UserController. Note: this should be **put**
       middleware: ['auth:jwtAdministrator']
     }
   },
@@ -106,7 +112,7 @@ export const administrationRoutes = {
       middleware: ['auth:jwtAdministrator', 'valid:Id']
     }
   },
-  //feature (Controllers should be moved to app/Controllers/Http/Admin)
+  // feature (Controllers should be moved to app/Controllers/Http/Admin)
   '/feature/': {
     [HTTP_METHODS.POST]: {
       controller: 'FeatureController.createFeature',
@@ -139,8 +145,8 @@ export const administrationRoutes = {
       middleware: ['auth:jwt']
     }
   },
-  //admin plan
-  //Controllers should be moved to app/Controllers/Http/Admin
+  // admin plan
+  // Controllers should be moved to app/Controllers/Http/Admin
   '/plan/:id': {
     [HTTP_METHODS.GET]: {
       controller: 'PlanController.getPlan',
@@ -165,7 +171,7 @@ export const administrationRoutes = {
       middleware: ['auth:jwtAdministrator', 'valid:Ids']
     }
   },
-  //admin authentication
+  // admin authentication
   '/auth/login': {
     [HTTP_METHODS.POST]: {
       controller: 'Admin/AuthController.login',
@@ -249,6 +255,30 @@ export const administrationRoutes = {
     [HTTP_METHODS.GET]: {
       controller: 'Admin/AppController.calculateMatchScore',
       middleware: ['auth:jwtAdministrator', 'valid:Id,EstateId']
+    }
+  },
+  '/utilities/prospect-activate/:id': {
+    [HTTP_METHODS.GET]: {
+      controller: 'Admin/UserController.testProspectActivate',
+      middleware: ['auth:jwtAdministrator', 'valid:Id']
+    }
+  },
+  '/utilities/users/generate-token/:id': {
+    [HTTP_METHODS.GET]: {
+      controller: 'Admin/UserController.getAccessTokenForUser',
+      middleware: ['auth:jwtAdministrator', 'valid:Id']
+    }
+  },
+  '/utilities/users/temporary-password': {
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/UserController.generateTemporaryPassword',
+      middleware: ['auth:jwtAdministrator', 'valid:AdminGeneratePassword']
+    }
+  },
+  '/utilities/matches/recalculate-match': {
+    [HTTP_METHODS.PUT]: {
+      controller: 'Admin/UserController.recalculateMatchByDate',
+      middleware: ['auth:jwtAdministrator', 'valid:RecalculateMatchByDate']
     }
   }
 }

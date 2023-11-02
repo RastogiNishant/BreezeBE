@@ -35,6 +35,23 @@ const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
 const { createDynamicLink } = require('../Libs/utils')
 
+const _helper = {
+  async sendSGMail(msg) {
+    const emailTarget = msg.to
+    return await sgMail
+      .send(msg)
+      .then(() => {
+        Logger.info('Email Confirmation successfully delivered to SendGrid')
+      })
+      .catch((error) => {
+        const errorText = `Email Confirmation failed ${emailTarget} = ${error.toString()}`
+
+        Logger.error(errorText)
+        throw new HttpException(`Email Confirmation failed ${emailTarget}= ${errorText}`)
+      })
+  }
+}
+
 class MailService {
   static async sendWelcomeMail(user, { code, role, lang, forgotLink = '' }) {
     const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
@@ -45,7 +62,7 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_confirmation.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
@@ -93,6 +110,7 @@ class MailService {
       }
     )
   }
+
   static async sendcodeForgotPasswordMail(email, code, role, lang = DEFAULT_LANG) {
     const templateId = role === ROLE_LANDLORD ? LANDLORD_EMAIL_TEMPLATE : PROSPECT_EMAIL_TEMPLATE
 
@@ -102,7 +120,7 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_reset.password.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
@@ -159,7 +177,7 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('prospect.email_invite_hh_member.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
@@ -240,7 +258,7 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: 'Confirm your email',
         link: `${process.env.APP_URL}/account/change_email?code=${code}&user_id=${user_id}`
@@ -275,7 +293,7 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_verification.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
@@ -313,23 +331,7 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        Logger.error(
-          `Email Confirmation failed ${email}= ${error?.response?.body || error?.message || error}`
-        )
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   /**
@@ -344,7 +346,7 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_account_activation.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
@@ -420,7 +422,7 @@ class MailService {
     const msg = {
       to: ADMIN_NOTIFY_EMAIL,
       from: FROM_ONBOARD_EMAIL, // Use the email address or domain you verified above
-      subject: subject,
+      subject,
       text: txt
     }
 
@@ -453,12 +455,12 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('prospect.email_visit_invitation.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        intro: intro,
-        final: final,
+        intro,
+        final,
         CTA: l.get('prospect.email_visit_invitation.CTA.message', lang),
         link: INVITE_APP_LINK,
         greeting: l.get('email_signature.greeting.message', lang),
@@ -515,14 +517,14 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('prospect.email_day_of_visit_reminder.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        intro: intro,
+        intro,
         CTA: l.get('prospect.email_day_of_visit_reminder.CTA.message', lang),
         link: INVITE_APP_LINK,
-        final: final,
+        final,
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
         position: l.get('email_signature.position.message', lang),
@@ -569,7 +571,7 @@ class MailService {
           email: FromEmail,
           name: FromName
         },
-        templateId: templateId,
+        templateId,
         dynamic_template_data: {
           subject: l.get('tenant.email_landlord_invitation.subject.message', lang),
           salutation: l.get('email_signature.salutation.message', lang),
@@ -640,14 +642,14 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_connect_invitation.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        intro: intro,
-        final: final,
+        intro,
+        final,
         CTA: l.get('landlord.email_connect_invitation.CTA.message', lang),
-        link: link,
+        link,
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
         position: l.get('email_signature.position.message', lang),
@@ -714,11 +716,11 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('landlord.email_property_published.subject.message', lang),
         salutation: '',
-        intro: intro,
+        intro,
         final: '',
         CTA: l.get('landlord.email_property_published.CTA.message', lang),
         link: shortLink,
@@ -758,13 +760,13 @@ class MailService {
   }
 
   static async sendEmailToSupport({ subject, textMessage, htmlMessage = '' }) {
-    let msg = {
+    const msg = {
       to: FromEmail,
       from: {
         email: FromEmail,
         name: FromName
       },
-      subject: subject,
+      subject,
       text: textMessage
     }
 
@@ -786,7 +788,7 @@ class MailService {
   }
 
   static async sendEmailToOhneMakler(textMessage, recipient, sendToBCC = false) {
-    let msg = {
+    const msg = {
       to: recipient,
       from: {
         email: FromEmail,
@@ -825,7 +827,7 @@ class MailService {
     const message = {
       to: recipient,
       from,
-      subject: subject,
+      subject,
       text: textMessage,
       attachments: [
         {
@@ -855,7 +857,7 @@ class MailService {
 
   static getEmailAddressFormatter(estate, lang) {
     const formatter = new Intl.NumberFormat('de-DE')
-    let floor =
+    const floor =
       (estate.floor ? `${estate.floor}.` : '') +
       l.get(
         estate.floor
@@ -905,7 +907,7 @@ class MailService {
         // .replace('{Landlord_name}', `${landlord_name}`)
         .replace(/\n/g, '<br />')
 
-      let intro = l
+      const intro = l
         .get('prospect.no_reply_email_to_complete_profile.intro.message', lang)
         .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
 
@@ -919,7 +921,7 @@ class MailService {
           email: FromEmail,
           name: FromName
         },
-        templateId: templateId,
+        templateId,
         dynamic_template_data: {
           subject: l.get('prospect.no_reply_email_to_complete_profile.subject.message', lang),
           salutation: l.get('email_signature.outside_salutation.message', lang),
@@ -1008,10 +1010,10 @@ class MailService {
           email: FromEmail,
           name: FromName
         },
-        templateId: templateId,
+        templateId,
         dynamic_template_data: {
           subject,
-          salutation: salutation,
+          salutation,
           intro: introLayout,
           CTA: l.get('prospect.no_reply_email_from_listing.CTA.message', lang),
           link,
@@ -1090,7 +1092,7 @@ class MailService {
         email: FromEmail,
         name: FromName
       },
-      templateId: templateId,
+      templateId,
       dynamic_template_data: {
         subject: l.get('prospect.notification.event.incomplete_profile', lang),
         salutation: l.get('email_signature.salutation.message', lang),

@@ -68,7 +68,6 @@ const {
   DAY_FORMAT,
   REQUIRED_INCOME_PROOFS_COUNT
 } = require('../constants')
-const { getOrCreateTenant } = require('./UserService')
 const HttpException = require('../Exceptions/HttpException')
 
 const {
@@ -255,44 +254,41 @@ class TenantService extends BaseService {
       .groupBy(['_m.id', '_ip.income_id', '_i.income_type'])
   }
 
+  static async getRequiredTenantData(tenantUserId) {
+    const tenantData = await Tenant.query()
+      .select(
+        'private_use',
+        'pets',
+        '_m.*',
+        '_i.position',
+        '_i.company',
+        '_i.income_type',
+        '_i.hiring_date',
+        '_i.income',
+        '_i.employment_type',
+        '_i.income_contract_end',
+        '_i.is_earlier_employeed',
+        '_i.employeed_address',
+        '_i.employeer_phone_number',
+        '_i.probation_period'
+      )
+      .leftJoin({ _m: 'members' }, function () {
+        this.on('_m.user_id', 'tenants.user_id').on(Database.raw(`_m.child is not true`))
+      })
+      .leftJoin({ _i: 'incomes' }, function () {
+        this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
+      })
+      .where('tenants.user_id', tenantUserId)
+      .fetch()
+    return tenantData.toJSON() || []
+  }
   /**
    *
    */
   static async activateTenant(tenant, trx) {
-    const getRequiredTenantData = (tenantId) => {
-      return Database.table({ _t: 'tenants' })
-        .select(
-          '_t.private_use',
-          '_t.pets',
-          '_m.*',
-          '_i.position',
-          '_i.company',
-          '_i.income_type',
-          '_i.hiring_date',
-          '_i.income',
-          '_i.employment_type',
-          '_i.income_contract_end',
-          '_i.is_earlier_employeed',
-          '_i.employeed_address',
-          '_i.employeer_phone_number',
-          '_i.probation_period'
-        )
-        .leftJoin({ _m: 'members' }, function () {
-          this.on('_m.user_id', '_t.user_id').on(Database.raw(`"_m"."child" not in ( true )`))
-        })
-        .leftJoin({ _i: 'incomes' }, function () {
-          this.on('_i.member_id', '_m.id').on('_i.status', STATUS_ACTIVE)
-        })
-        .where('_t.id', tenantId)
-    }
-    console.log('getRequiredTenantData=')
-    const data = await getRequiredTenantData(tenant.id)
+    const data = await TenantService.getRequiredTenantData(tenant.user_id)
     const counts = await TenantService.getTenantValidProofsCount(tenant.user_id)
 
-    // if (!data.find((m) => !m.rent_proof_not_applicable) && isEmpty(counts)) {
-    //   throw new AppException('members proof not provided', 400)
-    // }
-    console.log('income proofs counts=', data)
     // Check is user has income proofs for last 3 month
     const hasUnconfirmedProofs = !!counts.find(
       (i) =>
@@ -317,6 +313,34 @@ class TenantService extends BaseService {
       throw new AppException('Member has unconfirmed proofs', ERROR_USER_INCOME_EXPIRE)
     }
 
+    let shouldCloseTrx = false
+    if (!trx) {
+      shouldCloseTrx = true
+      trx = await Database.beginTransaction()
+    }
+
+    try {
+      await TenantService.validateTenantInfo(data)
+      tenant.status = STATUS_ACTIVE
+
+      await tenant.save(trx)
+      await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
+
+      if (shouldCloseTrx) {
+        await trx.commit()
+      }
+
+      require('./MemberService').calcTenantMemberData(tenant.user_id)
+    } catch (e) {
+      if (shouldCloseTrx) {
+        await trx.rollback()
+      }
+
+      throw new AppException(e.message, 400)
+    }
+  }
+
+  static async validateTenantInfo(data) {
     const getConditionRule = (types = []) => {
       return yup.lazy(function (value, { parent }) {
         if (parent.income_type && types.includes(parent.income_type)) {
@@ -329,25 +353,26 @@ class TenantService extends BaseService {
     const schema = yup.object().shape({
       private_use: yup.boolean().required(),
       pets: yup.number().oneOf([PETS_SMALL, PETS_NO]).required(),
-      credit_score: yup
-        .number()
-        .when(['credit_score_submit_later', 'credit_score_not_applicable'], {
-          is: (credit_score_submit_later, credit_score_not_applicable) => {
-            return credit_score_submit_later || credit_score_not_applicable
-          },
-          then: yup.number().notRequired().nullable(),
-          otherwise: yup.number().min(0).max(100).required()
-        }),
+      //debt_proof is the credit credit score proof
+      debt_proof: yup.array().when(['credit_score_submit_later', 'credit_score_not_applicable'], {
+        is: (credit_score_submit_later, credit_score_not_applicable) => {
+          return credit_score_submit_later || credit_score_not_applicable
+        },
+        then: yup.array().of(yup.string()).notRequired().nullable(),
+        otherwise: yup.array().of(yup.string()).required('credit score proof is required.')
+      }),
       last_address: yup.string().required(),
       firstname: yup.string().required(),
       secondname: yup.string().required(),
-      debt_proof: yup.array().when(['rent_proof_not_applicable', 'rent_arrears_doc_submit_later'], {
-        is: (rent_proof_not_applicable, rent_arrears_doc_submit_later) => {
-          return rent_proof_not_applicable || rent_arrears_doc_submit_later
-        },
-        then: yup.array().of(yup.string()).notRequired().nullable(),
-        otherwise: yup.array().of(yup.string()).required()
-      }),
+      rent_arrears_doc: yup
+        .string()
+        .when(['rent_proof_not_applicable', 'rent_arrears_doc_submit_later'], {
+          is: (rent_proof_not_applicable, rent_arrears_doc_submit_later) => {
+            return rent_proof_not_applicable || rent_arrears_doc_submit_later
+          },
+          then: yup.string().notRequired().nullable(),
+          otherwise: yup.string().required('Rent arrears doc is required.')
+        }),
       birthday: yup.date().required(),
       birth_place: yup.string().required(),
       unpaid_rental: yup
@@ -404,32 +429,7 @@ class TenantService extends BaseService {
       ]),
       employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME])
     })
-
-    let insideTrx = false
-    if (!trx) {
-      insideTrx = true
-      trx = await Database.beginTransaction()
-    }
-
-    try {
-      await yup.array().of(schema).validate(data)
-      tenant.status = STATUS_ACTIVE
-
-      await tenant.save(trx)
-      await require('./MatchService').recalculateMatchScoresByUserId(tenant.user_id, trx)
-
-      if (insideTrx) {
-        await trx.commit()
-      }
-
-      require('./MemberService').calcTenantMemberData(tenant.user_id)
-    } catch (e) {
-      if (insideTrx) {
-        await trx.rollback()
-      }
-
-      throw new AppException(e.message, 400)
-    }
+    await yup.array().of(schema).validate(data)
   }
 
   /**
@@ -491,7 +491,7 @@ class TenantService extends BaseService {
   }
 
   static async updateSelectedAdultsCount(user, adultsCount, trx = null) {
-    const tenant = await getOrCreateTenant(user)
+    const tenant = await require('./UserService').getOrCreateTenant(user)
     tenant.selected_adults_count = adultsCount
     return tenant.save(trx)
   }
@@ -509,7 +509,7 @@ class TenantService extends BaseService {
 
   static async updateTenantAddress({ user, address }, trx) {
     if (user && address) {
-      let tenant = await getOrCreateTenant(user, trx)
+      let tenant = await require('./UserService').getOrCreateTenant(user, trx)
       tenant.address = address
 
       const { lon, lat } = (await GeoService.geeGeoCoordByAddress(address)) || {}
@@ -527,14 +527,8 @@ class TenantService extends BaseService {
     }
   }
 
-  static async getCountByFilter({ credit_score_min, credit_score_max, budget_min, budget_max }) {
+  static async getCountByFilter({ budget_min, budget_max }) {
     let query = Tenant.query()
-    if (credit_score_min) {
-      query.where('credit_score', '>=', credit_score_min)
-    }
-    if (credit_score_max) {
-      query.where('credit_score', '<=', credit_score_max)
-    }
 
     if (budget_min) {
       query.where('budget_min', '>=', budget_min)

@@ -202,10 +202,10 @@ const constants = {
   APARTMENT_TYPE_SOUTERRAIN: 7,
   APARTMENT_TYPE_PENTHOUSE: 8,
   APARTMENT_TYPE_TERRACES: 9,
-  //APARTMENT_TYPE_ETAGE: 10, REMAPPED to APARTMENT_TYPE_FLAT
+  // APARTMENT_TYPE_ETAGE: 10, REMAPPED to APARTMENT_TYPE_FLAT
   APARTMENT_TYPE_HOLIDAY: 10,
   APARTMENT_TYPE_GALLERY: 11,
-  //APARTMENT_TYPE_RAW_ATTIC: 12, REMAPPED to APARTMENT_TYPE_ATTIC
+  // APARTMENT_TYPE_RAW_ATTIC: 12, REMAPPED to APARTMENT_TYPE_ATTIC
   APARTMENT_TYPE_ATTIC: 12,
 
   // Building type
@@ -410,7 +410,7 @@ const constants = {
   GERMAN_DATE_TIME_FORMAT: 'DD.MM.YYYY, HH:mm',
   GERMAN_DATE_FORMAT: 'DD.MM.YYYY',
   DAY_FORMAT: 'YYYY-MM-DD',
-  ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', //ISO 8601
+  ISO_DATE_FORMAT: 'YYYY-MM-DD"T"HH24:MI:SS"Z"', // ISO 8601
 
   MAXIMUM_EXPIRE_PERIOD: 3 * 30, // 90 days
 
@@ -507,6 +507,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_GREEN_MATCH: 'notification_prospect_green_match',
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP: 'notification_prospect_fill_up_profile',
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED: 'notification_final_match_request_expired',
+  NOTICE_TYPE_PROSPECT_REACTIVATED: 'notification_prospect_reactivated',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,
@@ -566,6 +567,7 @@ const constants = {
   NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID: 62,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID: 63,
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID: 64,
+  NOTICE_TYPE_PROSPECT_REACTIVATED_ID: 65,
 
   TIMESLOT_STATUS_BOOK: 'new',
   TIMESLOT_STATUS_PRE_CONFIRM: 'pre',
@@ -690,6 +692,7 @@ const constants = {
   SMS_VERIFY_PREFIX: 'confirm_household_account',
   SMS_MEMBER_PHONE_VERIFY_PREFIX: 'confirm_member_phone_account',
   INVITE_OUTSIDE_TENANT: 'invite_outside_breeze',
+  TEMPORARY_PASSWORD_PREFIX: 'temporary_password',
 
   LOG_TYPE_OPEN_APP: 'open_app',
   LOG_TYPE_SIGN_UP: 'sign_up',
@@ -838,7 +841,7 @@ const constants = {
   CHAT_EDIT_STATUS_DELETED: 'deleted',
 
   CONNECT_PREVIOUS_MESSAGES_LIMIT_PER_PULL: 10,
-  CONNECT_MESSAGE_EDITABLE_TIME_LIMIT: 3600, //seconds
+  CONNECT_MESSAGE_EDITABLE_TIME_LIMIT: 3600, // seconds
   SHOW_ACTIVE_TASKS_COUNT: 3,
   ADULT_MIN_AGE: 18,
 
@@ -858,33 +861,33 @@ const constants = {
     'property_id',
     'address'
   ],
-  //whether we deactivate landlord at end of day of his/her deactivation day
-  //or at the moment his deactivation arrives.
+  // whether we deactivate landlord at end of day of his/her deactivation day
+  // or at the moment his deactivation arrives.
   DEACTIVATE_LANDLORD_AT_END_OF_DAY: false,
-  //list of holidays in Germany
-  //FIXME: this should come from a db table or from an external api
+  // list of holidays in Germany
+  // FIXME: this should come from a db table or from an external api
   GERMAN_HOLIDAYS: [
-    '2022-08-15', //assumption day
-    '2022-09-20', //world children day
-    '2022-10-03', //reformation day
-    '2022-11-01', //all saints day
-    '2022-12-25', //christmas
-    '2022-12-26', //seconday of christmas
-    '2023-01-01', //new year's day
-    '2023-01-06', //epiphany
-    '2023-03-08', //Weltfrauntag
-    '2023-04-07', //Good Friday
-    '2023-04-09', //Easter Sunday
-    '2023-04-10', //Easter Monday
-    '2023-05-01', //Labor day
-    '2023-05-29', //Whit Monday
-    '2023-06-08', //Corpus Cristi
-    '2023-08-15', //Assumption Day
-    '2023-09-20', //world children's day
-    '2023-10-03', //reformation day
-    '2023-11-01', //all saints' day
-    '2023-12-25', //christmas
-    '2023-12-26' //second day of christmas
+    '2022-08-15', // assumption day
+    '2022-09-20', // world children day
+    '2022-10-03', // reformation day
+    '2022-11-01', // all saints day
+    '2022-12-25', // christmas
+    '2022-12-26', // seconday of christmas
+    '2023-01-01', // new year's day
+    '2023-01-06', // epiphany
+    '2023-03-08', // Weltfrauntag
+    '2023-04-07', // Good Friday
+    '2023-04-09', // Easter Sunday
+    '2023-04-10', // Easter Monday
+    '2023-05-01', // Labor day
+    '2023-05-29', // Whit Monday
+    '2023-06-08', // Corpus Cristi
+    '2023-08-15', // Assumption Day
+    '2023-09-20', // world children's day
+    '2023-10-03', // reformation day
+    '2023-11-01', // all saints' day
+    '2023-12-25', // christmas
+    '2023-12-26' // second day of christmas
   ],
   CHAT_TYPE_MESSAGE: 'message',
   CHAT_TYPE_BOT_MESSAGE: 'chatbot',
@@ -957,7 +960,7 @@ const constants = {
   VALID_URL_REG_EXP:
     /^((https?|ftp):\/\/)?(www.)?(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i,
 
-  //Date period
+  // Date period
   TASK_RESOLVE_HISTORY_PERIOD: 3,
 
   CONNECT_SERVICE_INDEX: 1,
@@ -978,7 +981,7 @@ const constants = {
   INVITATION_LINK_RETRIEVAL_CODE_LENGTH: 6,
   INVITATION_LINK_RETRIEVAL_CODE_CHARACTERS: '0123456789',
   INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT: 10,
-  INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, //in minutes
+  INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, // in minutes
   INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
 
   MAX_ROOM_TYPES_TO_IMPORT: 6,
@@ -1004,10 +1007,10 @@ const constants = {
 
   SET_EMPTY_IP_BASED_USER_INFO_ON_LOGIN: true,
 
-  //MATCH WEB SOCKET
+  // MATCH WEB SOCKET
   WEBSOCKET_EVENT_MATCH: 'matchChanged',
   WEBSOCKET_EVENT_MATCH_STAGE: 'matchStageChanged',
-  //if address valid from  importing estates, websocket will be emitted
+  // if address valid from  importing estates, websocket will be emitted
   WEBSOCKET_EVENT_VALID_ADDRESS: 'addressValid',
   WEBSOCKET_EVENT_IMPORT_EXCEL: 'importedExcel',
   WEBSOCKET_EVENT_IMPORT_EXCEL_PROGRESS: 'progressingImportedExcel',
@@ -1145,7 +1148,7 @@ Estates: [ESTATES]
     'Car parking',
     'Bicycle parking',
     'Childrens playground',
-    'Rest Areas', //Park actually
+    'Rest Areas', // Park actually
     'In Green',
     'Quiet',
     'Garden',
@@ -1183,7 +1186,7 @@ Estates: [ESTATES]
       'self',
       'trainee'
     ],
-    credit_score: 95,
+    credit_history_status: [{ status: 1 }],
     budget: 30,
     rent_arrears: false,
     min_age: 25,
@@ -1216,7 +1219,7 @@ Estates: [ESTATES]
   THIRD_PARTY_OFFER_HOUSE_TYPE: 'house_type',
   THIRD_PARTY_OFFER_APARTMENT_TYPE: 'apt_type',
   THIRD_PARTY_OFFER_PROPERTY_TYPE: 'property_type',
-  PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', //Uploading
+  PREPARING_TO_UPLOAD: 'landlord.web.my-properties.txt_preparingtoupload', // Uploading
   PROPERTY_HANDLE_FINISHED: 'landlord.web.my-properties.txt_uploadpropertiescompleted',
 
   ENERGY_CLASS_USING_EFFICIENCY: [

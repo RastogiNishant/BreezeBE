@@ -79,7 +79,7 @@ const APARTMENT_TYPE_KEYS = {
 class EstateSync {
   baseUrl = `https://api.estatesync.com`
   static apartmentType = {
-    //aparmentType must be one of apartment, attic, maisonette, penthouse, loft, terrace, lowerGroundFloor, groundFloor, upperGroundFloor, floor, other
+    // aparmentType must be one of apartment, attic, maisonette, penthouse, loft, terrace, lowerGroundFloor, groundFloor, upperGroundFloor, floor, other
     attic: APARTMENT_TYPE_ATTIC,
     maisonette: APARTMENT_TYPE_MAISONETTE,
     penthouse: APARTMENT_TYPE_PENTHOUSE,
@@ -109,7 +109,7 @@ class EstateSync {
   }
 
   static energyType = {
-    //energySource must be one of oil, gas, electric, solar, geothermal, district, water, pellet, coal, wood, liquidGas
+    // energySource must be one of oil, gas, electric, solar, geothermal, district, water, pellet, coal, wood, liquidGas
     oil: FIRING_OEL,
     gas: FIRING_GAS,
     electric: FIRING_ELECTRIC,
@@ -124,7 +124,7 @@ class EstateSync {
   }
 
   static heatingType = {
-    //heatingType must be one of stove, floor, central, district, underfloor, heatPump.
+    // heatingType must be one of stove, floor, central, district, underfloor, heatPump.
     central: HEATING_TYPE_CENTRAL,
     floor: HEATING_TYPE_FLOOR,
     stove: HEATING_TYPE_OVEN
@@ -164,47 +164,47 @@ class EstateSync {
     apartmentType: this.composeApartmentType,
     availableFrom: this.composeAvailableFrom,
     net_rent: 'baseRent',
-    //commission: '5,95% incl. 19% VAT',
-    //commissionDescription: 'My first commission description for a property.',
+    // commission: '5,95% incl. 19% VAT',
+    // commissionDescription: 'My first commission description for a property.',
     construction_year: 'constructionYear',
     deposit: this.composeDeposit,
-    //description: this.composeDescription,
-    //energyCertificateStatus: 'present',
+    // description: this.composeDescription,
+    // energyCertificateStatus: 'present',
     floor: 'floor',
-    //furnishingDescription: 'My first furnishing description for a property.',
-    //hasBalcony: true,
-    //hasBuiltInKitchen: true,
-    //hasCellar: false,
-    //hasGarden: true,
-    //hasGuestToilet: false,
-    //hasLift: true,
+    // furnishingDescription: 'My first furnishing description for a property.',
+    // hasBalcony: true,
+    // hasBuiltInKitchen: true,
+    // hasCellar: false,
+    // hasGarden: true,
+    // hasGuestToilet: false,
+    // hasLift: true,
     heating_costs: 'heatingCosts',
     heatingType: this.composeHeatingType,
-    //interiorQuality: 'standard',
-    //isAccessible: true,
-    //isSuitableAsSharedFlat: false,
+    // interiorQuality: 'standard',
+    // isAccessible: true,
+    // isSuitableAsSharedFlat: false,
     lastRefurbished: this.composeLastRefurbish,
     usable_area: 'livingArea',
-    //locationDescription: 'My first location description for a property.',
-    //miscellaneousDescription: 'My first misc description for a property.',
+    // locationDescription: 'My first location description for a property.',
+    // miscellaneousDescription: 'My first misc description for a property.',
     bathrooms_number: 'numberOfBathrooms',
     bedrooms_number: 'numberOfBedrooms',
     number_floors: 'numberOfFloors',
     parking_space: 'numberOfParkingSpaces',
     rooms_number: 'numberOfRooms',
-    //parkingSpaceRent: 45,
+    // parkingSpaceRent: 45,
     parkingSpaceType: this.composeParkingSpaceType,
     pets_allowed: 'petsAllowed',
-    //requiresWBS: false,
-    //residentialEnergyCertificate: this.composeEnergyClass,
+    // requiresWBS: false,
+    // residentialEnergyCertificate: this.composeEnergyClass,
     title: this.composeTitle,
-    //'totalRent',
+    // 'totalRent',
     area: 'usableArea'
   }
 
   constructor(apiKey = '') {
     this.apiKey = apiKey
-    axios.defaults.headers.common['Authorization'] = `Bearer ${apiKey}`
+    axios.defaults.headers.common.Authorization = `Bearer ${apiKey}`
   }
 
   composeDescription({ amenities }) {
@@ -213,6 +213,9 @@ class EstateSync {
     }
     const validAmenities = amenities.reduce((validAmenities, amenity) => {
       if (ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION.includes(amenity.location)) {
+        if (l.get(`${amenity?.option?.title}`, LANG_DE) !== amenity?.option?.title) {
+          return [...validAmenities, l.get(`${amenity?.option?.title}`, LANG_DE)]
+        }
         return [...validAmenities, l.get(`${amenity?.option?.title}.message`, LANG_DE)]
       }
       return validAmenities
@@ -240,7 +243,7 @@ class EstateSync {
     if (vacant_date) {
       return vacant_date
     }
-    return 'immediately'
+    return l.get(`prospect.property.details.txt_rent_start_from_now`, LANG_DE)
   }
 
   composeHeatingType({ heating_type }) {
@@ -260,7 +263,7 @@ class EstateSync {
       return ''
     }
     const num = deposit / net_rent
-    return `${num}x base rent`
+    return `${num}` + l.get(`landlord.property.lease_price.deposit_in_monthly_rents`, LANG_DE)
   }
 
   composeLastRefurbish({ last_modernization }) {
@@ -272,7 +275,7 @@ class EstateSync {
     if (cover) {
       attachments = EstateSync.addAttachment(cover, attachments)
     }
-    //images:
+    // images:
     for (let i = 0; i < rooms.length; i++) {
       if (rooms[i].images.length > 0) {
         for (let k = 0; k < rooms[i].images.length; k++) {
@@ -280,7 +283,7 @@ class EstateSync {
         }
       }
     }
-    //files:
+    // files:
     for (let i = 0; i < files.length; i++) {
       if (ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS.indexOf(files[i].type) > -1) {
         attachments = EstateSync.addAttachment(files[i].url, attachments)
@@ -293,10 +296,10 @@ class EstateSync {
     const extension = url.split('.').pop()
     const fileType = ContentType.getContentType(extension)
     if (fileType.match(/^image/)) {
-      //EstateSync only accepts image/jpeg and application/pdf
-      attachments = [...attachments, { url: url, type: 'image/jpeg' }]
+      // EstateSync only accepts image/jpeg and application/pdf
+      attachments = [...attachments, { url, type: 'image/jpeg' }]
     } else if (fileType === 'application/pdf') {
-      attachments = [...attachments, { url: url, type: fileType }]
+      attachments = [...attachments, { url, type: fileType }]
     }
     return attachments
   }
@@ -316,7 +319,7 @@ class EstateSync {
     if (is_building) {
       return category.name
     }
-    let estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES['others']
+    let estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES.others
     const formatter = new Intl.NumberFormat('de-DE')
     if (ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]) {
       estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]
@@ -325,15 +328,15 @@ class EstateSync {
       `${APARTMENT_TYPE_KEYS[apt_type]}.message`,
       estateSyncTitleTemplate.lang
     )
-    var mapObj = {
+    const mapObj = {
       rooms_number:
         rooms_number % 1 === 0 ? parseInt(rooms_number) : formatter.format(rooms_number),
       area: area % 1 === 0 ? parseInt(area) : formatter.format(area),
-      apartmentType: apartmentType,
-      city: city
+      apartmentType,
+      city
     }
 
-    var re = new RegExp(Object.keys(mapObj).join('|'), 'gi')
+    const re = new RegExp(Object.keys(mapObj).join('|'), 'gi')
     const title = estateSyncTitleTemplate.key.replace(re, function (matched) {
       return mapObj[matched]
     })
@@ -341,18 +344,18 @@ class EstateSync {
   }
 
   composeEnergyClass(estate) {
-    let energyClass = {}
+    const energyClass = {}
     if (estate?.energy_efficiency) {
-      energyClass['energyClass'] = calculateEnergyClassFromEfficiency(estate?.energy_efficiency)
+      energyClass.energyClass = calculateEnergyClassFromEfficiency(estate?.energy_efficiency)
       const energyType = invert(EstateSync.energyType)
       if (estate?.firing?.length > 0 && energyType[estate.firing[0]]) {
-        energyClass['energySource'] = energyType[estate.firing[0]]
+        energyClass.energySource = energyType[estate.firing[0]]
       }
     }
     if (!isEmpty(energyClass)) {
-      energyClass['type'] = 'consumption'
-      //we don't have it so lets set to minimum because this is required.
-      energyClass['energyConsumption'] = 0.01
+      energyClass.type = 'consumption'
+      // we don't have it so lets set to minimum because this is required.
+      energyClass.energyConsumption = 0.01
       return energyClass
     }
   }
@@ -374,10 +377,10 @@ class EstateSync {
     const energyClass = this.composeEnergyClass(estate)
     if (!isEmpty(energyClass) && energyClass?.energyClass && energyClass?.energySource) {
       newEstate.residentialEnergyCertificate = energyClass
-    }*/
+    } */
     const description = this.composeDescription(estate)
     if (description) {
-      newEstate['description'] = description
+      newEstate.description = description
     }
 
     for (let i = 0; i < this.mustHaveValue.length; i++) {
