@@ -275,6 +275,10 @@ const mapDisplayValues = (tenant: any, members: any, t: TFunction) => {
           Array.isArray(member.passports) &&
           member.passports.length > 0 &&
           member.passports?.map((item: any) => ({ file: item.file, name: item.fileName })),
+        extra_residency_proofs: member.extra_residency_proofs?.map((item: any) => ({
+          file: item.file,
+          name: item.file,
+        })),
       };
     }),
   };
@@ -432,6 +436,7 @@ export const TenantDocument = (props: { t: TFunction, tenant: any, members?: any
           if (cur.debt_proof) acc.push(...cur.debt_proof);
           if (cur.rent_arrears_doc) acc.push(cur.rent_arrears_doc);
           if (cur.passports) acc.push(...cur.passports);
+          if (Array.isArray(cur.extra_residency_proofs)) acc.push(...cur.extra_residency_proofs);
           return acc;
         }, [])
         .map((item: any, ind: number) => {
