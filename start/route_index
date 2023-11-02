@@ -906,7 +906,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Id,EstateIds"
+      "valid:Id,AdminTestMatchability"
     ],
     "handler": "Admin/UserController.testMatchability"
   },
