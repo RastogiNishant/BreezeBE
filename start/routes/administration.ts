@@ -260,7 +260,7 @@ export const administrationRoutes = {
   '/utilities/match-ability/:id': {
     [HTTP_METHODS.POST]: {
       controller: 'Admin/UserController.testMatchability',
-      middleware: ['auth:jwtAdministrator', 'valid:Id,EstateIds']
+      middleware: ['auth:jwtAdministrator', 'valid:Id,AdminTestMatchability']
     }
   },
   '/utilities/prospect-activate/:id': {
