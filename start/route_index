@@ -900,6 +900,17 @@
     "handler": "Admin/AppController.calculateEstatePercent"
   },
   {
+    "route": "/api/v1/administration/utilities/match-ability/:id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id,EstateIds"
+    ],
+    "handler": "Admin/UserController.testMatchability"
+  },
+  {
     "route": "/api/v1/administration/utilities/matches/recalculate-match",
     "method": [
       "PUT"
