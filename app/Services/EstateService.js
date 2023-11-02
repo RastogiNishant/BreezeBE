@@ -1544,11 +1544,12 @@ class EstateService {
     return counts
   }
 
-  static async filterEstates({ tenant, estates, inside_property = false }) {
+  static async filterEstates({ tenant, estates, inside_property = false }, debug = false) {
     Logger.info(`before filterEstates count ${estates?.length}`)
 
     const budgetMax = tenant?.budget_max
     const budgetMin = tenant?.budget_min
+    const trace = [{ estateIds: estates.map((e) => e.id), stage: 'original' }]
 
     let maxTenantBudget = 0
     if (budgetMax) {
@@ -1575,6 +1576,7 @@ class EstateService {
         return budget >= minTenantBudget && budget <= maxTenantBudget
       })
     }
+    trace.push({ stage: 'after BUDGET test', estateIds: estates.map((e) => e.id) })
 
     if (process.env.DEV === 'true') {
       Logger.info(`filterEstates after budget ${estates?.length}`)
@@ -1592,6 +1594,7 @@ class EstateService {
         Logger.info(`filterEstates after transfer ${estates?.length}`)
       }
     }
+    trace.push({ stage: 'after TRANSFER BUDGET test', estateIds: estates.map((e) => e.id) })
 
     if (tenant.rent_start && inside_property) {
       estates = estates.filter(
@@ -1604,6 +1607,7 @@ class EstateService {
         Logger.info(`filterEstates after rent start ${estates?.length}`)
       }
     }
+    trace.push({ stage: 'after RENT START test', estateIds: estates.map((e) => e.id) })
 
     if (tenant.is_short_term_rent) {
       estates = estates.filter((estate) => {
@@ -1637,6 +1641,7 @@ class EstateService {
     if (process.env.DEV === 'true') {
       Logger.info(`filterEstates after short term ${estates?.length}`)
     }
+    trace.push({ stage: 'after RENT DURATION test', estateIds: estates.map((e) => e.id) })
 
     if (tenant.rooms_min !== null && tenant.rooms_max !== null) {
       estates = estates.filter(
@@ -1649,6 +1654,10 @@ class EstateService {
         Logger.info(`filterEstates after rooms ${estates?.length}`)
       }
     }
+    trace.push({
+      stage: 'after NUMBER OF ROOMS preference test',
+      estateIds: estates.map((e) => e.id)
+    })
 
     if (tenant.floor_min !== null && tenant.floor_max !== null) {
       estates = estates.filter(
@@ -1661,6 +1670,10 @@ class EstateService {
         Logger.info(`filterEstates after floors ${estates?.length}`)
       }
     }
+    trace.push({
+      stage: 'after NUMBER OF FLOORS preference test',
+      estateIds: estates.map((e) => e.id)
+    })
 
     if (tenant.space_min !== null && tenant.space_max !== null) {
       estates = estates.filter(
@@ -1672,6 +1685,10 @@ class EstateService {
         Logger.info(`filterEstates after area ${estates?.length}`)
       }
     }
+    trace.push({
+      stage: 'after AREA preference test',
+      estateIds: estates.map((e) => e.id)
+    })
 
     if (tenant.apt_type?.length) {
       estates = estates.filter(
@@ -1681,6 +1698,10 @@ class EstateService {
         Logger.info(`filterEstates apt type after ${estates?.length}`)
       }
     }
+    trace.push({
+      stage: 'after APARTMENT TYPE preference test',
+      estateIds: estates.map((e) => e.id)
+    })
 
     if (tenant.house_type?.length) {
       estates = estates.filter(
@@ -1704,6 +1725,10 @@ class EstateService {
         Logger.info(`filterEstates after public certificate ${estates?.length}`)
       }
     }
+    trace.push({
+      stage: 'after WBS Certificate test',
+      estateIds: estates.map((e) => e.id)
+    })
 
     if (tenant.income_level?.length && inside_property) {
       estates = estates.filter(
@@ -1715,6 +1740,10 @@ class EstateService {
         Logger.info(`filterEstates after income level ${estates?.length}`)
       }
     }
+    trace.push({
+      stage: 'after Certificate Income Level test',
+      estateIds: estates.map((e) => e.id)
+    })
 
     if (tenant.options?.length) {
       const options = await require('../Services/OptionService').getOptions()
@@ -1737,8 +1766,12 @@ class EstateService {
         Logger.info(`filterEstates after amenity ${estates.length}`)
       }
     }
+    trace.push({
+      stage: 'after AMENITIES preference test',
+      estateIds: estates.map((e) => e.id)
+    })
 
-    return estates
+    return debug ? trace : estates
   }
 
   static async searchEstateByPoint(point_id) {
