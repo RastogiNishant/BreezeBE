@@ -43,7 +43,7 @@ export const administrationRoutes = {
     }
   },
   // end estate-sync
-  //estates
+  // estates
   '/estates': {
     [HTTP_METHODS.GET]: {
       controller: 'Admin/PropertyController.getProperties',
@@ -98,11 +98,11 @@ export const administrationRoutes = {
   },
   '/users/:user_id': {
     [HTTP_METHODS.GET]: {
-      controller: 'Admin/UserController.getUser', //this is missing on Admin/UserController
+      controller: 'Admin/UserController.getUser', // this is missing on Admin/UserController
       middleware: ['auth:jwtAdministrator']
     },
     [HTTP_METHODS.POST]: {
-      controller: 'Admin/UserController.updateUser', //this is missing on Admin/UserController. Note: this should be **put**
+      controller: 'Admin/UserController.updateUser', // this is missing on Admin/UserController. Note: this should be **put**
       middleware: ['auth:jwtAdministrator']
     }
   },
@@ -112,7 +112,7 @@ export const administrationRoutes = {
       middleware: ['auth:jwtAdministrator', 'valid:Id']
     }
   },
-  //feature (Controllers should be moved to app/Controllers/Http/Admin)
+  // feature (Controllers should be moved to app/Controllers/Http/Admin)
   '/feature/': {
     [HTTP_METHODS.POST]: {
       controller: 'FeatureController.createFeature',
@@ -145,8 +145,8 @@ export const administrationRoutes = {
       middleware: ['auth:jwt']
     }
   },
-  //admin plan
-  //Controllers should be moved to app/Controllers/Http/Admin
+  // admin plan
+  // Controllers should be moved to app/Controllers/Http/Admin
   '/plan/:id': {
     [HTTP_METHODS.GET]: {
       controller: 'PlanController.getPlan',
@@ -171,7 +171,7 @@ export const administrationRoutes = {
       middleware: ['auth:jwtAdministrator', 'valid:Ids']
     }
   },
-  //admin authentication
+  // admin authentication
   '/auth/login': {
     [HTTP_METHODS.POST]: {
       controller: 'Admin/AuthController.login',

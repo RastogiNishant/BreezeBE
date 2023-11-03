@@ -120,7 +120,8 @@ const {
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP,
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
-  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
+  MATCH_STATUS_INVITE
 } = require('../constants')
 
 class NoticeService {
@@ -280,7 +281,7 @@ class NoticeService {
   }
 
   static async landlordEstateExpiredToKnockedProspect(data) {
-    let notices = []
+    const notices = []
     data.map(async ({ address, estate_id, cover }) => {
       const knocks =
         (await require('./MatchService').getEstatesByStatus({
@@ -477,7 +478,7 @@ class NoticeService {
       : null
 
     const notice = {
-      user_id: userId ? userId : estate.user_id,
+      user_id: userId || estate.user_id,
       type: userId ? NOTICE_TYPE_CANCEL_VISIT_LANDLORD_ID : NOTICE_TYPE_CANCEL_VISIT_ID,
       data: {
         estate_id: estate.id,
@@ -615,7 +616,7 @@ class NoticeService {
 
     result.map((r) => {
       const lang = r.lang ? r.lang : DEFAULT_LANG
-      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang: lang })
+      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang })
     })
 
     const notices = result.map(({ user_id, estate_id, address, cover }) => ({
@@ -638,8 +639,8 @@ class NoticeService {
     const notices = []
     const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
 
-    let groupIdx = 0,
-      isNoticeCreated = false
+    let groupIdx = 0;
+      let isNoticeCreated = false
     while (groupIdx < Object.keys(groupMatches).length) {
       const estate_id = Object.keys(groupMatches)[groupIdx]
       const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
@@ -664,7 +665,7 @@ class NoticeService {
       NotificationsService.sendExpiredShowTime(notices)
     }
     await Match.query()
-      .where('status', MATCH_STATUS_KNOCK)
+      .where('status', MATCH_STATUS_INVITE)
       .update({ notified_at: moment().utc().format(DATE_FORMAT) })
   }
 
@@ -753,7 +754,7 @@ class NoticeService {
    *
    */
   static async prospectSuperMatch(matches, estateId = null) {
-    let notices = []
+    const notices = []
     if (matches.length > 0) {
       const groupMatches = groupBy(matches, (match) => match.user_id)
       await P.map(Object.keys(groupMatches), async (key) => {
@@ -804,7 +805,7 @@ class NoticeService {
   }
 
   static async finalMatchConfirmExpired(estate) {
-    let notices = [
+    const notices = [
       {
         user_id: estate.user_id,
         type: NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
@@ -883,7 +884,7 @@ class NoticeService {
 
     result.map((r) => {
       const lang = r.lang ? r.lang : DEFAULT_LANG
-      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang: lang })
+      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang })
     })
 
     const notices = result.map(({ user_id, estate_id, address, cover }) => ({
@@ -1060,7 +1061,7 @@ class NoticeService {
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
-        delay: delay,
+        delay,
         user_name: prospectId ? `${notificationUser.firstname || ''}` : undefined
       },
       image: File.getPublicUrl(estate.cover)

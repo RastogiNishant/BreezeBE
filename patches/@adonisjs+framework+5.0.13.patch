@@ -1,0 +1,13 @@
+diff --git a/node_modules/@adonisjs/framework/src/Server/index.js b/node_modules/@adonisjs/framework/src/Server/index.js
+index d46eaaf..f121f90 100644
+--- a/node_modules/@adonisjs/framework/src/Server/index.js
++++ b/node_modules/@adonisjs/framework/src/Server/index.js
+@@ -51,7 +51,7 @@ class Server {
+    * @private
+    */
+   _getExceptionHandlerNamespace () {
+-    const exceptionHandlerFile = resolver.forDir('exceptions').getPath('Handler.js')
++    const exceptionHandlerFile = resolver.forDir('exceptions').getPath('Handler.ts')
+ 
+     try {
+       fs.accessSync(exceptionHandlerFile, fs.constants.R_OK)

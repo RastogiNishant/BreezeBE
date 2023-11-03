@@ -583,19 +583,19 @@ class MarketPlaceService {
 
   static async createKnock({ user, data1, data2, email_verified = true }, trx) {
     try {
-      let contatRequestEmail = user.email
+      let contactRequestEmail = user.email
       if (data1 && data2) {
         const descryptedResult = await this.decryptDynamicLink({
           data1,
           data2
         })
-        contatRequestEmail = descryptedResult.email
+        contactRequestEmail = descryptedResult.email
       }
       // pending knocks are created during user creation from deeplink
       const pendingKnocks = (
         await EstateSyncContactRequest.query()
           .with('estate')
-          .where('email', contatRequestEmail)
+          .where('email', contactRequestEmail)
           .whereIn(
             'status',
             email_verified ? [STATUS_EMAIL_VERIFY] : [STATUS_DRAFT, STATUS_EMAIL_VERIFY]
@@ -944,7 +944,7 @@ class MarketPlaceService {
       .select(Database.raw(`other_info->'family_size' as members`))
       .select(Database.raw(`other_info->'income' as income`))
       .select(Database.raw(`other_info->'birthday' as birthday`))
-      .select(Database.raw(`other_info->'pets' as pets`)) //pets here is boolean
+      .select(Database.raw(`other_info->'pets' as pets`)) // pets here is boolean
       .select(Database.raw(`other_info->'insolvency' as insolvency`))
       .where('estate_id', estate_id)
       .where('email', email)
