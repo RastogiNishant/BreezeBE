@@ -60,6 +60,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
 const NoticeService = require('./NoticeService')
 const BaseService = require('./BaseService')
+const MailService = require('./MailService')
 
 class TaskService extends BaseService {
   static async create(request, user, trx) {
@@ -446,6 +447,9 @@ class TaskService extends BaseService {
             landlordId: estate.user_id,
             estateId: estate_id
           })
+          if (user.role === ROLE_LANDLORD) {
+            await MailService.sendLandlordInviteStageProspectMessageNotification(prospect_id)
+          }
           console.log('task here=', task)
         } else {
           return null
