@@ -257,6 +257,12 @@ export const administrationRoutes = {
       middleware: ['auth:jwtAdministrator', 'valid:Id,EstateId']
     }
   },
+  '/utilities/match-ability/:id': {
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/UserController.testMatchability',
+      middleware: ['auth:jwtAdministrator', 'valid:Id,AdminTestMatchability']
+    }
+  },
   '/utilities/prospect-activate/:id': {
     [HTTP_METHODS.GET]: {
       controller: 'Admin/UserController.testProspectActivate',
