@@ -4,6 +4,8 @@ const User = use('App/Models/User')
 const Database = use('Database')
 const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
+const Amenity = use('App/Models/Amenity')
+const Tenant = use('App/Models/Tenant')
 const Event = use('Event')
 const DataStorage = use('DataStorage')
 const UserService = use('App/Services/UserService')
@@ -13,10 +15,11 @@ const NoticeService = use('App/Services/NoticeService')
 const TenantService = use('App/Services/TenantService')
 const MatchService = use('App/Services/MatchService')
 const MailService = use('App/Services/MailService')
+const EstateService = use('App/Services/EstateService')
 const File = use('App/Classes/File')
 
 const moment = require('moment')
-const { isArray, isEmpty, includes, isString } = require('lodash')
+const { isArray, isEmpty, includes, isString, get, groupBy } = require('lodash')
 const {
   ISO_DATE_FORMAT,
   ROLE_ADMIN,
@@ -46,7 +49,8 @@ const {
   INCOME_TYPE_TRAINEE,
   INCOME_TYPE_OTHER_BENEFIT,
   INCOME_TYPE_CHILD_BENEFIT,
-  TEMPORARY_PASSWORD_PREFIX
+  TEMPORARY_PASSWORD_PREFIX,
+  MATCH_STATUS_NEW
 } = require('../../../constants')
 const {
   exceptions: { ACCOUNT_NOT_VERIFIED_USER_EXIST, USER_WRONG_PASSWORD }
@@ -57,6 +61,7 @@ const { isHoliday, getAuthByRole } = require('../../../Libs/utils')
 const Promise = require('bluebird')
 const CompanyService = require('../../../Services/CompanyService')
 const UserFilter = require('../../../Classes/UserFilter')
+const MemberService = require('../../../Services/MemberService')
 
 class UserController {
   /**
@@ -380,7 +385,7 @@ class UserController {
       STATUS_DRAFT,
       STATUS_OFFLINE_ACTIVE
     ]
-    limit = 99999
+    limit = limit || 99999
     const landlordQuery = this.landlordQuery({ status, estate_status, activation_status, light })
     if (query) {
       landlordQuery.andWhere(function (d) {
@@ -437,6 +442,9 @@ class UserController {
         'users.secondname',
         Database.raw(`to_char(users.last_login, '${ISO_DATE_FORMAT}') as last_login`),
         Database.raw(`to_char(users.updated_at, '${ISO_DATE_FORMAT}') as updated_at`),
+        Database.raw(
+          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as is_activated`
+        ),
         'tenants.address',
         'ect.current_estates',
         'users.status',
@@ -728,6 +736,97 @@ class UserController {
       await trx.rollback()
       throw new HttpException(err.message)
     }
+  }
+
+  async testMatchability({ request, response }) {
+    const { id, estate_ids, include_location } = request.all()
+    const tenant = await MatchService.getProspectForScoringQuery()
+      .select('_p.data as polygon')
+      .innerJoin({ _p: 'points' }, '_p.id', 'tenants.point_id')
+      .where({ 'tenants.user_id': id })
+      .first()
+    if (!tenant) {
+      return response.res({ matchable: false, reason: 'Tenant not found.' })
+    }
+    const polygon = get(tenant, 'polygon.data.0.0')
+    if (!polygon) {
+      return response.res({ matchable: false, reason: 'Tenant has not set coordinates.' })
+    }
+    tenant.incomes = await MemberService.getIncomes(id)
+    let estates
+    if (include_location) {
+      estates = await Database.select(Database.raw(`TRUE as inside`))
+        .select('_e.*')
+        .from({ _t: 'tenants' })
+        .innerJoin({ _p: 'points' }, '_p.id', '_t.point_id')
+        .crossJoin({ _e: 'estates' })
+        // .innerJoin({ _a: 'amenities' }, '_e.id', '_a.estate_id')
+        .leftJoin({ _m: 'matches' }, function () {
+          this.on('_m.user_id', tenant.user_id).on('_m.estate_id', '_e.id')
+        })
+        .where('_t.user_id', tenant.user_id)
+        .where(function () {
+          this.orWhereNull('_m.id')
+          this.orWhere('_m.status', MATCH_STATUS_NEW)
+        })
+        .whereNotIn('_e.id', function () {
+          // Remove already liked/disliked
+          this.select('estate_id')
+            .from('likes')
+            .where('user_id', tenant.user_id)
+            .union(function () {
+              this.select('estate_id').from('dislikes').where('user_id', tenant.user_id)
+            })
+        })
+        .where('_e.status', STATUS_ACTIVE)
+        .whereRaw(Database.raw(`_ST_Intersects(_p.zone::geometry, _e.coord::geometry)`))
+      estates = estates.filter((estate) => estate_ids.includes(estate.id))
+      if (!estates.length) {
+        return response.res({
+          matchable: false,
+          reason: `No estates matched within prospect's preferred location.`
+        })
+      }
+    } else {
+      estates = await Estate.query()
+        .select(Database.raw(`TRUE as inside`))
+        .select('estates.*')
+        .where('status', STATUS_ACTIVE)
+        .whereIn('id', estate_ids)
+        .fetch()
+      estates = estates.toJSON()
+      if (!estates.length) {
+        return response.res({
+          matchable: false,
+          reason: `None of these estates are currently published.`
+        })
+      }
+    }
+    const estateIds = estates.map((estate) => estate.id)
+    const amenities = (
+      await Amenity.query()
+        .select('estate_id', 'option_id', 'location')
+        .whereIn('estate_id', estateIds)
+        .fetch()
+    ).toJSON()
+    const estateAmenities = groupBy(amenities, (amenity) => amenity.estate_id)
+    estates = estates.map((estate) => ({ ...estate, amenities: estateAmenities?.[estate.id] }))
+    const trace = await EstateService.filterEstates(
+      {
+        tenant,
+        estates,
+        inside_property: true
+      },
+      true
+    )
+    if (!trace[trace.length - 1]?.estateIds.length) {
+      return response.res({
+        matchability: false,
+        reason: 'not matched with the given estates',
+        trace
+      })
+    }
+    return response.res({ matchability: true, trace })
   }
 }
 

@@ -1,5 +1,5 @@
 declare global {
-  function use(injectorName: string): any
+  function use (injectorName: string): any
 }
 
 export {}

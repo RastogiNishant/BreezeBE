@@ -642,6 +642,16 @@
     "handler": "Admin/NotificationController.sendNotification"
   },
   {
+    "route": "/api/v1/administration/notifications/prospect-reactivated",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/NotificationController.sendReactivateNotification"
+  },
+  {
     "route": "/api/v1/administration/plan",
     "method": [
       "DELETE"
@@ -888,6 +898,17 @@
       "valid:Id"
     ],
     "handler": "Admin/AppController.calculateEstatePercent"
+  },
+  {
+    "route": "/api/v1/administration/utilities/match-ability/:id",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:Id,AdminTestMatchability"
+    ],
+    "handler": "Admin/UserController.testMatchability"
   },
   {
     "route": "/api/v1/administration/utilities/matches/recalculate-match",
@@ -2049,6 +2070,7 @@
     ],
     "middle": [
       "auth:jwtLandlord,jwtAdministrator",
+      "LandlordOwnsThisEstate",
       "agreement",
       "plan"
     ],
@@ -2215,7 +2237,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,Id",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2231,7 +2253,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2246,7 +2268,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,CreateRoomAmenity",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2261,7 +2283,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,UpdateRoomAmenity",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",

@@ -364,8 +364,8 @@ class NotificationsService {
    *
    */
   static async sendLandlordSlotsSelected(notices) {
-    let title = 'landlord.notification.event.slots_selected.message'
-    let subBody = 'landlord.notification.next.slots_selected.message'
+    const title = 'landlord.notification.event.slots_selected.message'
+    const subBody = 'landlord.notification.next.slots_selected.message'
 
     return NotificationsService.sendNotes(
       notices,
@@ -1033,6 +1033,12 @@ class NotificationsService {
         l.get(`landlord.notification.next.final_expiration`, lang)
       )
     }
+    return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async prospectReactivated(notices) {
+    const title = 'prospect.notification.event.profile.reactivated'
+    const body = 'prospect.notification.next.profile.reactivated'
     return NotificationsService.sendNotes(notices, title, body)
   }
 }

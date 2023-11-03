@@ -102,6 +102,18 @@ const authRoutes: Routes = {
 }
 
 const servicesRoutes: Routes = {
+  '/accept/outside_tenant': {
+    [HTTP_METHODS.POST]: {
+      controller: 'EstateCurrentTenantController.acceptOutsideTenant',
+      middleware: ['valid:OutsideTenantInvite']
+    }
+  },
+  '/accept/outside_tenant/already_registered': {
+    [HTTP_METHODS.POST]: {
+      controller: 'EstateCurrentTenantController.acceptAlreadyRegisterdOutsideTenant',
+      middleware: ['auth:jwt', 'valid:AlreadyRegisteredOutsideTenantInvite']
+    }
+  },
   '/calc_price': {
     [HTTP_METHODS.GET]: {
       controller: 'CommonController.calcRentPrice',
@@ -117,6 +129,24 @@ const servicesRoutes: Routes = {
     [HTTP_METHODS.GET]: {
       controller: 'CommonController.getExcelTemplate',
       middleware: ['auth:jwtLandlord,jwtAdministrator', 'valid:Lang']
+    }
+  },
+  '/notices': {
+    [HTTP_METHODS.GET]: {
+      controller: 'NoticeController.getNotices',
+      middleware: ['valid:GetNotifications', 'auth:jwt,jwtLandlord']
+    }
+  },
+  '/notices/resetCount': {
+    [HTTP_METHODS.GET]: {
+      controller: 'AccountController.resetUnreadNotificationCount',
+      middleware: ['auth:jwt,jwtLandlord']
+    }
+  },
+  '/profile/tenant/:id': {
+    [HTTP_METHODS.GET]: {
+      controller: 'AccountController.getTenantProfile',
+      middleware: ['auth:jwtLandlord', 'valid:Id']
     }
   },
   '/search/street': {
@@ -136,6 +166,12 @@ const servicesRoutes: Routes = {
       controller: 'CommonController.getReferences'
     }
   },
+  '/validate/outside_tenant/invitation': {
+    [HTTP_METHODS.POST]: {
+      controller: 'EstateCurrentTenantController.validateInvitationQRCode',
+      middleware: ['valid:AlreadyRegisteredOutsideTenantInvite']
+    }
+  },
   '/zendesk/notify': {
     [HTTP_METHODS.POST]: {
       controller: 'NoticeController.acceptZendeskNotification'
@@ -143,42 +179,8 @@ const servicesRoutes: Routes = {
   }
 }
 
-const onboardingRoutes = {
-  '/onboarding/': {
-    [HTTP_METHODS.GET]: {
-      controller: 'AccountController.onboard',
-      middleware: ['auth:jwt,jwtLandlord']
-    }
-  },
-  '/onboarding/profile': {
-    [HTTP_METHODS.GET]: {
-      controller: 'AccountController.onboardProfile',
-      middleware: ['auth:jwt,jwtLandlord']
-    }
-  },
-  '/onboarding/dashboard': {
-    [HTTP_METHODS.GET]: {
-      controller: 'AccountController.onboardDashboard',
-      middleware: ['auth:jwt,jwtLandlord']
-    }
-  },
-  '/onboarding/selection': {
-    [HTTP_METHODS.GET]: {
-      controller: 'AccountController.onboardSelection',
-      middleware: ['auth:jwt,jwtLandlord']
-    }
-  },
-  '/onboarding/verification': {
-    [HTTP_METHODS.GET]: {
-      controller: 'AccountController.onboardLandlordVerification',
-      middleware: ['auth:jwt,jwtLandlord']
-    }
-  }
-}
-
 export const apiIndexRoutes: Routes = {
   ...authRoutes,
-  ...onboardingRoutes,
   ...servicesRoutes
 }
 
@@ -205,6 +207,7 @@ export const indexRoutes: Routes = {
       controller: 'CommonController.ping'
     }
   },
+
   '/:key': {
     [HTTP_METHODS.GET]: {
       controller: 'CommonController.getOriginalUrl',
