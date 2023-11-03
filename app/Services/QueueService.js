@@ -40,7 +40,9 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_MONTHLY_JOB,
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
-  QUEUE_JOB_URGENT
+  QUEUE_JOB_URGENT,
+  SCHEDULED_MONTHLY_AT_10TH_AND_AT_10AM,
+  SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -271,7 +273,7 @@ class QueueService {
    *
    */
   static async sendEveryMonth12AM() {
-    return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
+    // return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
   static async addJobFetchPOI() {
@@ -301,6 +303,7 @@ class QueueService {
       Logger.error(`removeJobFetchPOI error ${e.message || e}`)
     }
   }
+
   /**
    *
    */
@@ -406,6 +409,12 @@ class QueueService {
             landlord_name: job.data.landlord_name,
             lang: job.data.lang
           })
+          break
+        case SCHEDULED_MONTHLY_AT_10TH_AND_AT_10AM:
+          require('./TenantService').scheduleProspectsForDeactivation()
+          break
+        case SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM:
+          require('./TenantService').handleProspectsScheduledForDeactivation()
           break
         default:
           console.log(`No job processor for: ${job.name}`)
