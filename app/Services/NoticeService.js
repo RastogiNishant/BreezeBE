@@ -281,7 +281,7 @@ class NoticeService {
   }
 
   static async landlordEstateExpiredToKnockedProspect(data) {
-    let notices = []
+    const notices = []
     data.map(async ({ address, estate_id, cover }) => {
       const knocks =
         (await require('./MatchService').getEstatesByStatus({
@@ -478,7 +478,7 @@ class NoticeService {
       : null
 
     const notice = {
-      user_id: userId ? userId : estate.user_id,
+      user_id: userId || estate.user_id,
       type: userId ? NOTICE_TYPE_CANCEL_VISIT_LANDLORD_ID : NOTICE_TYPE_CANCEL_VISIT_ID,
       data: {
         estate_id: estate.id,
@@ -616,7 +616,7 @@ class NoticeService {
 
     result.map((r) => {
       const lang = r.lang ? r.lang : DEFAULT_LANG
-      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang: lang })
+      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang })
     })
 
     const notices = result.map(({ user_id, estate_id, address, cover }) => ({
@@ -639,7 +639,7 @@ class NoticeService {
     const notices = []
     const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
 
-    let groupIdx = 0,
+    let groupIdx = 0
     // isNoticeCreated = false
     while (groupIdx < Object.keys(groupMatches).length) {
       const estate_id = Object.keys(groupMatches)[groupIdx]
@@ -648,7 +648,7 @@ class NoticeService {
         const estate = await require('./EstateService').getActiveById(estate_id)
 
         if (estate) {
-          //isNoticeCreated = true
+          // isNoticeCreated = true
           notices.push({
             user_id: estate.user_id,
             type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
@@ -754,7 +754,7 @@ class NoticeService {
    *
    */
   static async prospectSuperMatch(matches, estateId = null) {
-    let notices = []
+    const notices = []
     if (matches.length > 0) {
       const groupMatches = groupBy(matches, (match) => match.user_id)
       await P.map(Object.keys(groupMatches), async (key) => {
@@ -805,7 +805,7 @@ class NoticeService {
   }
 
   static async finalMatchConfirmExpired(estate) {
-    let notices = [
+    const notices = [
       {
         user_id: estate.user_id,
         type: NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
@@ -884,7 +884,7 @@ class NoticeService {
 
     result.map((r) => {
       const lang = r.lang ? r.lang : DEFAULT_LANG
-      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang: lang })
+      MailService.notifyVisitEmailToProspect({ email: r.email, address: r.address, lang })
     })
 
     const notices = result.map(({ user_id, estate_id, address, cover }) => ({
@@ -1061,7 +1061,7 @@ class NoticeService {
       data: {
         estate_id: estate.id,
         estate_address: estate.address,
-        delay: delay,
+        delay,
         user_name: prospectId ? `${notificationUser.firstname || ''}` : undefined
       },
       image: File.getPublicUrl(estate.cover)
