@@ -24,7 +24,8 @@ const {
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_URGENCY,
   WEBSOCKET_EVENT_TASK_UPDATED,
-  MATCH_STATUS_KNOCK
+  MATCH_STATUS_KNOCK,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE
 } = require('../constants')
 
 const WebSocket = use('App/Classes/Websocket')
@@ -448,6 +449,7 @@ class TaskService extends BaseService {
           })
           if (user.role === ROLE_LANDLORD) {
             await MailService.sendLandlordInviteStageProspectMessageNotification(prospect_id)
+            await NoticeService.notifyTaskMessageSent(prospect_id, NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE, task_id, user.role)
           }
           console.log('task here=', task)
         } else {
