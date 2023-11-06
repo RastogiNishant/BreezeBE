@@ -3705,7 +3705,9 @@ class MatchService {
     )
 
     query
-      .with('certificates')
+      .with('certificates', function (q) {
+        q.whereNot('status', STATUS_DELETE)
+      })
       .select(Database.raw(`DISTINCT ON ( "tenants"."id") "tenants"."id"`))
 
       .select([
