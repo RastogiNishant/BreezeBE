@@ -126,7 +126,8 @@ const {
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
   MATCH_STATUS_INVITE,
   NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID,
-  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE,
+  NOTICE_TYPE_PROSPECT_WARNED_TO_BE_DEACTIVATED_ID
 } = require('../constants')
 
 class NoticeService {
@@ -1512,6 +1513,15 @@ class NoticeService {
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.prospectSendCode([notice])
+  }
+
+  static async prospectScheduledForDeactivation(userIds) {
+    const notices = userIds.map((userId) => ({
+      user_id: userId,
+      type: NOTICE_TYPE_PROSPECT_WARNED_TO_BE_DEACTIVATED_ID
+    }))
+    await NoticeService.insertNotices(notices)
+    await NotificationsService.prospectScheduledForDeactivation(notices)
   }
 }
 
