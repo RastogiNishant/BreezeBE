@@ -434,6 +434,30 @@ class NoticeService {
     })
   }
 
+  static async getProspectLandlordInvite() {
+    const result = await Database.table({ _m: 'matches' })
+      .select('_m.user_id', Database.raw('COUNT(_m.user_id) AS match_count'))
+      .where('_m.status', MATCH_STATUS_INVITE)
+      .where('_m.updated_at', '>', moment.utc().add(-7, 'days').format(DATE_FORMAT))
+      .groupBy('_m.user_id')
+
+    if (isEmpty(result)) {
+      return false
+    }
+
+    const notices = result.map(({ user_id, match_count }) => ({
+      user_id,
+      type: NOTICE_TYPE_PROSPECT_LANDLORD_MATCH_ID,
+      data: { match_count }
+    }))
+
+    await NoticeService.insertNotices(notices)
+    const CHUNK_SIZE = 50
+    await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.getProspectLandlordInvite, {
+      concurrency: 1
+    })
+  }
+
   /**
    *
    */
@@ -665,6 +689,7 @@ class NoticeService {
     }
     await Match.query()
       .where('status', MATCH_STATUS_KNOCK)
+      .whereNull('notified_at')
       .update({ notified_at: moment().utc().format(DATE_FORMAT) })
   }
 
