@@ -241,6 +241,7 @@ class QueueService {
   }
 
   static async sendEveryDayMidday() {
+    const NoticeService = require('./NoticeService')
     return Promise.all([
       wrapException(NoticeService.sendLandlordNewProperty),
       wrapException(NoticeService.sandLandlord7DaysInactive),
@@ -253,7 +254,7 @@ class QueueService {
    *
    */
   static async sendFriday14H() {
-    return Promise.all([wrapException(NoticeService.sendProspectNewMatches)])
+    return Promise.all([wrapException(require('./NoticeService').sendProspectNewMatches)])
   }
 
   /**
@@ -261,7 +262,7 @@ class QueueService {
    */
   static async sendEveryDay9AM() {
     return Promise.all([
-      wrapException(NoticeService.prospectProfileExpiring),
+      wrapException(require('./NoticeService').prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
       wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
       wrapException(require('./MarketPlaceService').sendReminderEmail),
@@ -363,8 +364,6 @@ class QueueService {
           return QueueService.sendFriday14H()
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
-        case SCHEDULED_MONTHLY_JOB:
-          return QueueService.sendEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:
