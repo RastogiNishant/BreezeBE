@@ -449,7 +449,12 @@ class TaskService extends BaseService {
           })
           if (user.role === ROLE_LANDLORD) {
             await MailService.sendLandlordInviteStageProspectMessageNotification(prospect_id)
-            await NoticeService.notifyTaskMessageSent(prospect_id, NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE, task_id, user.role)
+            await NoticeService.notifyTaskMessageSent(
+              prospect_id,
+              l.get(NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE, DEFAULT_LANG),
+              task.id,
+              ROLE_USER
+            )
           }
           console.log('task here=', task)
         } else {
