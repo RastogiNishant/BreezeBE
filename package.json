@@ -11,7 +11,7 @@
     "node": ">=14.0.0"
   },
   "scripts": {
-    "postinstall": "cd _services/pdf && npm i",
+    "postinstall": "patch-package && cd _services/pdf && npm i",
     "start": "npm-run-all --parallel start:backend start:service:pdf",
     "start:backend": "NODE_OPTIONS='--max-old-space-size=8192' nodemon server.ts",
     "start:service:pdf": "cd _services/pdf && npm start",
