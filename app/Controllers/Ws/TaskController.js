@@ -83,7 +83,7 @@ class TaskController extends BaseController {
       await ChatService.updateChatMessage({ id, message, attachments })
       attachments = await this.getAbsoluteUrl(attachments)
 
-      WebSocket.publichToTask({
+      WebSocket.publishToTask({
         event: 'messageEdited',
         taskId: this.taskId,
         estateId: this.estateId,
@@ -112,7 +112,7 @@ class TaskController extends BaseController {
       }
       await ChatService.removeChatMessage(id)
 
-      WebSocket.publichToTask({
+      WebSocket.publishToTask({
         event: 'messageRemoved',
         taskId: this.taskId,
         estateId: this.estateId,
@@ -130,7 +130,7 @@ class TaskController extends BaseController {
     try {
       const lastChat = await super._markLastRead(this.taskId)
       if (lastChat) {
-        WebSocket.publichToTask({
+        WebSocket.publishToTask({
           event: WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
           taskId: this.taskId,
           estateId: this.estateId,
@@ -213,8 +213,9 @@ class TaskController extends BaseController {
 
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
+      // FIXME: send email here...
 
-      WebSocket.publichToTask({
+      WebSocket.publishToTask({
         event: 'message',
         taskId: this.taskId,
         estateId: this.estateId,
