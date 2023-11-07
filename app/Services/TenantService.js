@@ -618,6 +618,43 @@ class TenantService extends BaseService {
         .update({ request_certificate_at, request_certificate_city_id })
     }
   }
+
+  static async scheduleProspectsForDeactivation() {
+    const startOf = moment()
+      .utc()
+      .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
+      .startOf('month')
+      .format('YYYY-MM-DD')
+
+    const expiringIncomeProofs = await IncomeProof.query()
+      .select('income_proofs.*')
+      .where('income_proofs.expire_date', '<=', startOf)
+      // expire_date = null should not be deleted
+      .whereNotNull('income_proofs.expire_date')
+      .where('income_proofs.status', STATUS_ACTIVE)
+      .innerJoin({ _i: 'incomes' }, function () {
+        this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
+      })
+      .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
+      .innserJoin({ _t: 'tenants' }, '_m.user_id', '_t.user_id')
+      .select('_m.user_id')
+      .select(
+        Database.raw(
+          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as tenant_is_active`
+        )
+      )
+      .fetch()
+    await Promise.map(
+      expiringIncomeProofs.toJSON() || [],
+      (proof) => {
+        if (proof.tenant_is_active) {
+        }
+      },
+      { concurrency: 1 }
+    )
+  }
+
+  static async handleProspectsScheduledForDeactivation() {}
 }
 
 module.exports = TenantService
