@@ -30,10 +30,11 @@ class QueueEngine {
    *
    */
   async init() {
-    // TODO: add scheduled jobs here
+    const Logger = use('Logger')
+
     try {
       const QueueService = use('App/Services/QueueService')
-      const Logger = use('Logger')
+
       this.commonWorker = new Worker(
         COMMON_QUEUE,
         async (job) => {
@@ -42,6 +43,14 @@ class QueueEngine {
         { connection: this.connection, concurrency: 10 }
       )
 
+      // reset list repeating jobs -- to clear old lingering repeating jobs
+      const repeatingJobs = await this.commonQueue.getRepeatableJobs()
+      for (const repeatingJob of repeatingJobs) {
+        Logger.info(`[Queue] removing repeating job ${repeatingJob.key} `)
+        await this.commonQueue.removeRepeatableByKey(repeatingJob.key)
+      }
+
+      // ---- init repeatable jobs
       // Run every 1 min
       this.commonQueue
         .add(
@@ -156,6 +165,17 @@ class QueueEngine {
           removeOnComplete: true,
           removeOnFail: true
         }
+      )
+
+      // queue needs short break for processing otherwise the get Jobs
+      // is missing the now new scheduled repeating jobs
+      await new Promise((resolve) => setTimeout(resolve, 100))
+
+      // log state of queue
+      const allJobsAfterSetup = await this.commonQueue.getJobs()
+      Logger.info(
+        '[Queue] --- setup complete following job list --- \n' +
+          allJobsAfterSetup.map((job) => `${job.name} - ${job.id}`).join(' \n')
       )
     } catch (e) {
       Logger.error(`QueueEngine init error ${e.message || e}`)

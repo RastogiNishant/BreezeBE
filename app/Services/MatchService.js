@@ -3634,7 +3634,7 @@ class MatchService {
         Database.raw(`
             (select
               members.user_id,
-              bool_and(member_has_id) as id_verified
+              bool_and(case when member_has_id is not null then true else false end) as id_verified
             from members
             left join
               (select
@@ -3736,7 +3736,9 @@ class MatchService {
     )
 
     query
-      .with('certificates')
+      .with('certificates', function (q) {
+        q.whereNot('status', STATUS_DELETE)
+      })
       .select(Database.raw(`DISTINCT ON ( "tenants"."id") "tenants"."id"`))
 
       .select([

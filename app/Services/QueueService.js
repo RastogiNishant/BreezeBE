@@ -219,6 +219,7 @@ class QueueService {
       wrapException(NoticeService.getProspectVisitIn3H),
       wrapException(NoticeService.getProspectVisitIn48H),
       wrapException(NoticeService.expiredShowTime),
+      wrapException(NoticeService.getProspectLandlordInvite),
       wrapException(QueueJobService.updatePOI)
     ])
   }
@@ -261,6 +262,7 @@ class QueueService {
    *
    */
   static async sendEveryDay9AM() {
+    const NoticeService = require('./NoticeService')
     return Promise.all([
       wrapException(require('./NoticeService').prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
@@ -277,33 +279,34 @@ class QueueService {
     // return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
-  static async addJobFetchPOI() {
-    try {
-      const job = await Queue.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
-      job?.remove()
-      await Queue.addJob(
-        SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
-        {},
-        {
-          jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
-          repeat: { cron: '*/15 * * * *' },
-          removeOnComplete: true,
-          removeOnFail: true
-        }
-      )
-    } catch (e) {
-      Logger.error(`addJobFetchPOI error ${e.message || e}`)
-    }
-  }
+  // no called from anywhere
+  // static async addJobFetchPOI() {
+  //   try {
+  //     const job = await Queue.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
+  //     job?.remove()
+  //     await Queue.addJob(
+  //       SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+  //       {},
+  //       {
+  //         jobId: SCHEDULED_EVERY_15MINUTE_NIGHT_JOB,
+  //         repeat: { cron: '*/15 * * * *' },
+  //         removeOnComplete: true,
+  //         removeOnFail: true
+  //       }
+  //     )
+  //   } catch (e) {
+  //     Logger.error(`addJobFetchPOI error ${e.message || e}`)
+  //   }
+  // }
 
-  static async removeJobFetchPOI() {
-    try {
-      const job = await Queue?.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
-      job?.remove()
-    } catch (e) {
-      Logger.error(`removeJobFetchPOI error ${e.message || e}`)
-    }
-  }
+  // static async removeJobFetchPOI() {
+  //   try {
+  //     const job = await Queue?.getJobById(SCHEDULED_EVERY_15MINUTE_NIGHT_JOB)
+  //     job?.remove()
+  //   } catch (e) {
+  //     Logger.error(`removeJobFetchPOI error ${e.message || e}`)
+  //   }
+  // }
 
   /**
    *
