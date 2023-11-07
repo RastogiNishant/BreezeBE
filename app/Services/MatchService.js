@@ -1483,7 +1483,8 @@ class MatchService {
       if (match.status === MATCH_STATUS_NEW && match.buddy) {
         match.status = MATCH_STATUS_KNOCK
       }
-
+      // we set new match's status to MATCH_STATUS_KNOCK for now. Anyway,
+      // landlord can move this guy to other stages
       const newMatch = {
         ...match,
         estate_id: newEstateId,
@@ -1493,6 +1494,8 @@ class MatchService {
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
         status: MATCH_STATUS_KNOCK
       }
+      // add new match
+      await Match.createItem(newMatch, trx)
       // Remove previous one
       await Match.query()
         .where('user_id', userId)
