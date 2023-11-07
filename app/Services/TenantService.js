@@ -14,8 +14,8 @@ const IncomeProof = use('App/Models/IncomeProof')
 const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
-//prevent circular dependency comment MemberService
-//const MemberService = use('App/Services/MemberService')
+// prevent circular dependency comment MemberService
+// const MemberService = use('App/Services/MemberService')
 const Promise = require('bluebird')
 const {
   MEMBER_FILE_TYPE_RENT,
@@ -168,7 +168,7 @@ class TenantService extends BaseService {
   }
 
   static async getTenantWithCertificates(userId) {
-    let tenantWithCertificate = await Tenant.query()
+    const tenantWithCertificate = await Tenant.query()
       .select('*')
       .select('_tc.wbs_certificate')
       .leftJoin(
@@ -212,6 +212,7 @@ class TenantService extends BaseService {
 
     return tenantWithCertificate
   }
+
   /**
    * Get Tenant with linked point
    */
@@ -282,6 +283,7 @@ class TenantService extends BaseService {
       .fetch()
     return tenantData.toJSON() || []
   }
+
   /**
    *
    */
@@ -353,7 +355,7 @@ class TenantService extends BaseService {
     const schema = yup.object().shape({
       private_use: yup.boolean().required(),
       pets: yup.number().oneOf([PETS_SMALL, PETS_NO]).required(),
-      //debt_proof is the credit credit score proof
+      // debt_proof is the credit credit score proof
       debt_proof: yup.array().when(['credit_score_submit_later', 'credit_score_not_applicable'], {
         is: (credit_score_submit_later, credit_score_not_applicable) => {
           return credit_score_submit_later || credit_score_not_applicable
@@ -418,16 +420,13 @@ class TenantService extends BaseService {
       position: getConditionRule([
         INCOME_TYPE_EMPLOYEE,
         INCOME_TYPE_CIVIL_SERVANT,
-        INCOME_TYPE_FREELANCER,
         INCOME_TYPE_WORKER
       ]),
       company: getConditionRule([
         INCOME_TYPE_EMPLOYEE,
         INCOME_TYPE_CIVIL_SERVANT,
-        INCOME_TYPE_FREELANCER,
         INCOME_TYPE_WORKER
-      ]),
-      employment_type: getConditionRule([HIRING_TYPE_FULL_TIME, HIRING_TYPE_FULL_TIME])
+      ])
     })
     await yup.array().of(schema).validate(data)
   }
@@ -509,7 +508,7 @@ class TenantService extends BaseService {
 
   static async updateTenantAddress({ user, address }, trx) {
     if (user && address) {
-      let tenant = await require('./UserService').getOrCreateTenant(user, trx)
+      const tenant = await require('./UserService').getOrCreateTenant(user, trx)
       tenant.address = address
 
       const { lon, lat } = (await GeoService.geeGeoCoordByAddress(address)) || {}
@@ -528,7 +527,7 @@ class TenantService extends BaseService {
   }
 
   static async getCountByFilter({ budget_min, budget_max }) {
-    let query = Tenant.query()
+    const query = Tenant.query()
 
     if (budget_min) {
       query.where('budget_min', '>=', budget_min)
