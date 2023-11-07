@@ -51,6 +51,10 @@ class Localization {
         //   File.logFile(this._data, 'locales.json')
         // }
       } catch (e) {
+        const Sentry = use('Sentry')
+        Sentry.captureException(e, {
+          file: 'providers/Localize'
+        })
         console.log('Loading location failure', e)
       }
     }
