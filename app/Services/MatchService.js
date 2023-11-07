@@ -106,9 +106,14 @@ const {
   YES_UNPAID_RENTAL,
   INCOME_TYPE_CHILD_BENEFIT,
   INCOME_TYPE_OTHER_BENEFIT,
-  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
+  NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE,
+  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
 } = require('../constants')
 
+const {
+  exceptions: { ERROR_DATE_NOT_MATCH_WITH_PROSPECT_VISIT_DATE }
+} = require('../../app/exceptions')
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
   exceptions: {
@@ -132,6 +137,7 @@ const {
   }
 } = require('../exceptions')
 const QueueService = require('./QueueService')
+const { generateAddress, createDynamicLink } = require('../Libs/utils')
 
 /**
  * Check is item in data range
@@ -3815,6 +3821,7 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',
+      '_m.profile_status',
       '_m.share as share',
       '_m.status as status',
       '_m.user_id',
@@ -4843,6 +4850,82 @@ class MatchService {
       match: matches?.[placeNumber],
       place_num: placeNumber + 1
     }
+  }
+
+  static async requestTenantToShareProfile(prospectId, landlordId, date, estateId) {
+    const visitDate = moment.utc(date, DATE_FORMAT).format(DATE_FORMAT)
+    const getVisit = await Visit.query()
+      .where({ user_id: prospectId })
+      .where({ estate_id: estateId })
+      .where({ date: visitDate })
+      .fetch()
+
+    const visit = getVisit.toJSON()
+
+    if (visit.length === 0) {
+      // Move match status to next
+      await Match.query()
+        .update({
+          profile_status: NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE
+        })
+        .where({
+          user_id: prospectId,
+          estate_id: estateId
+        })
+      throw new AppException(ERROR_DATE_NOT_MATCH_WITH_PROSPECT_VISIT_DATE, 404)
+    }
+
+    const estate = (await EstateService.getMatchEstate(estateId, landlordId)).toJSON()
+
+    const address = generateAddress({
+      street: estate?.street,
+      house_number: estate?.house_number,
+      zip: estate?.postcode,
+      city: estate?.city,
+      country: estate?.country
+    })
+
+    const prospectUser = await User.query().where('id', prospectId).first()
+    const landlordUser = await User.query().where('id', landlordId).first()
+    const landlord = `${landlordUser?.firstname} ${landlordUser?.secondname}`
+
+    await NoticeService.notifyTenantByLandlordToShareProfile(
+      prospectId,
+      landlord,
+      address,
+      visitDate
+    )
+
+    const shareLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}/profile/request?landlord=${landlord}&address=${address}&date=${visitDate}`
+    )
+
+    MailService.sendRequestToTenantForShareProfile({
+      prospectEmail: prospectUser?.email,
+      estate,
+      landlord,
+      shareLink
+    })
+
+    await Match.query()
+      .update({
+        profile_status: LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
+      })
+      .where({
+        user_id: prospectId,
+        estate_id: estateId
+      })
+  }
+
+  static async prospectRespondToProfileSharingRequest(userId, estateId, profileStatus) {
+    return await Match.query()
+      .update({
+        profile_status: profileStatus
+      })
+      .where({
+        user_id: userId,
+        estate_id: estateId
+      })
   }
 }
 

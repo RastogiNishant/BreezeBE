@@ -3811,6 +3811,32 @@
     "handler": "MatchController.changeOrder"
   },
   {
+    "route": "/api/v1/match/profile/request",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:RequestProspectProfile",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.requestTenantToShareProfile"
+  },
+  {
+    "route": "/api/v1/match/profile/response",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwt",
+      "valid:ShareProfileStatus",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.prospectRespondToProfileSharingRequest"
+  },
+  {
     "route": "/api/v1/match/request",
     "method": [
       "POST"
