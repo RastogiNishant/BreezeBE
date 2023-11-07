@@ -638,6 +638,7 @@ class TenantService extends BaseService {
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
       .innserJoin({ _t: 'tenants' }, '_m.user_id', '_t.user_id')
       .select('_m.user_id')
+      .select(Database.raw(`_m.id as member_id`))
       .select(
         Database.raw(
           `case when tenants.status='${STATUS_ACTIVE}' then true else false end as tenant_is_active`
@@ -646,8 +647,13 @@ class TenantService extends BaseService {
       .fetch()
     await Promise.map(
       expiringIncomeProofs.toJSON() || [],
-      (proof) => {
+      async (proof) => {
         if (proof.tenant_is_active) {
+          const validIncomeProofs = await IncomeProof.query()
+            .where('income_proofs.status', STATUS_ACTIVE)
+            .where('income_proofs.income_id', proof.income_id)
+            .where('income_proofs.expire_date')
+            .first()
         }
       },
       { concurrency: 1 }
