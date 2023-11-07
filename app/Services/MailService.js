@@ -622,8 +622,9 @@ class MailService {
       country: task?.property_address?.country
     })
     const shortMsg = `<b>${task.address_detail || ``}, ${address}</b>: \n 
-                      <b>${l.get(task.title, lang)}</b>:<br/>${l.get(task.description, lang) || ``
-      } `
+                      <b>${l.get(task.title, lang)}</b>:<br/>${
+                        l.get(task.description, lang) || ``
+                      } `
 
     const intro = l
       .get('landlord.email_connect_invitation.intro.message', lang)
@@ -878,11 +879,13 @@ class MailService {
     const country = startCase(estate?.country || '')
 
     address += `<br/>`
-    address += `${street} ${estate?.house_number || ''},<br/> ${estate?.zip || ''
-      } ${city}, <br/> ${country}`
+    address += `${street} ${estate?.house_number || ''},<br/> ${
+      estate?.zip || ''
+    } ${city}, <br/> ${country}`
 
-    const coverImage = `<table width='100%'><tr><td><img style = "width:100%; height:150px; border-radius: 5%" src = '${estate.cover ? estate.cover : ESTATE_NO_IMAGE_COVER_URL
-      }'/></td></tr></table>`
+    const coverImage = `<table width='100%'><tr><td><img style = "width:100%; height:150px; border-radius: 5%" src = '${
+      estate.cover ? estate.cover : ESTATE_NO_IMAGE_COVER_URL
+    }'/></td></tr></table>`
     const addressLayout = `<tr><td>
       <table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
         <tr valign="top">
@@ -974,8 +977,9 @@ class MailService {
 
       let prospectName = l.get('prospect.settings.menu.txt_prospect.message', lang)
       if (contact?.contact_info?.firstName || contact?.contact_info?.lastName) {
-        prospectName = `${contact?.contact_info?.firstName || ''} ${contact?.contact_info?.lastName || ''
-          }`
+        prospectName = `${contact?.contact_info?.firstName || ''} ${
+          contact?.contact_info?.lastName || ''
+        }`
       }
       const salutation = l
         .get('email_signature.outside_salutation.message', lang)
@@ -1073,9 +1077,9 @@ class MailService {
     )
   }
 
-  static async sendToSupportLandlordPublishedOneEstate({ landlord }) { }
+  static async sendToSupportLandlordPublishedOneEstate({ landlord }) {}
 
-  static async sendToSupportLandlordConnectedOneEstate() { }
+  static async sendToSupportLandlordConnectedOneEstate() {}
 
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
@@ -1137,7 +1141,7 @@ class MailService {
       },
       templateId,
       subject: l.get('prospect.email_message_from_landlord.subject.message'),
-      text: `REPLY \n ${l.get('prospect.email_message_from_landlord.CTA.message')} \n ${t.get(
+      text: `REPLY \n ${l.get('prospect.email_message_from_landlord.CTA.message')} \n ${l.get(
         'prospect.email_account_inactivity_deletion.final.message'
       )} \n ${l.get('prospect.email_message_from_landlord.final.message')}`
     }
