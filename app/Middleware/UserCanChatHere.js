@@ -68,9 +68,9 @@ class UserCanChatHere {
     // get this user from the task itself
     if (!chatUser) {
       query = Task.query()
-        .select(Database.raw(`estates.user as estate_user_id`))
+        .select(Database.raw(`estates.user_id as estate_user_id`))
         .select(Database.raw(`tasks.tenant_id as tenant_user_id`))
-        .where('estate_id', estate_id)
+        .where('tasks.estate_id', estate_id)
         .innerJoin('estates', 'estates.id', 'tasks.estate_id')
       if (role === ROLE_LANDLORD) {
         chatUser = await query.where('estates.user_id', user_id).first()
