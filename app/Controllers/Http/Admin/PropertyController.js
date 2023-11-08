@@ -75,7 +75,7 @@ class PropertyController {
         'estates.updated_at',
         'estates.build_id',
         Database.raw(
-          `case when status='${STATUS_ACTIVE}' 
+          `case when status='${STATUS_ACTIVE}'
     then true else false end
     as "unpublishable"`
         ),
@@ -137,9 +137,9 @@ class PropertyController {
       'is_not_duration_later_but_available_end_at_is_null',
         ((is_duration_later is false or is_duration_later is null)
         and (available_end_at is null) is true) is true,
-      'is_duration_later_but_no_min_invite_count', 
+      'is_duration_later_but_no_min_invite_count',
         (is_duration_later is true and min_invite_count < 1) is true,
-      'available_end_at_is_past', 
+      'available_end_at_is_past',
         ((available_end_at is not null) is true and available_end_at < NOW()) is true,
       'available_start_at_is_later_than_available_end_at',
         ((available_end_at is not null) is true and
@@ -582,6 +582,7 @@ class PropertyController {
     if (!building) {
       throw new HttpException('Building not found.')
     }
+    let publisher = null
     if (process.env.NODE_ENV === 'localhost') {
       publisher = 'immobilienscout-24-sandbox'
     } else {
