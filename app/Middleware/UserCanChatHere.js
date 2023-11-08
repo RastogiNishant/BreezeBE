@@ -29,15 +29,15 @@ class UserCanChatHere {
       }
       request.estate_id = matches[1]
     } else if ((matches = socket.topic.match(/^task:([0-9]+)brz([0-9]+)$/))) {
+      const task = await this._getTask(matches[2], matches[1])
+      if (!task) {
+        throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
+      }
       //brz - is the divider between estate and task id
       //estate task chat
       chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role)
       if (!chatUser) {
         throw new HttpException(`User cannot send message to this topic.`, 403, 1102)
-      }
-      const task = await this._getTask(matches[2], matches[1])
-      if (!task) {
-        throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
       }
       request.task_id = task.id
       request.estate_id = matches[1]
@@ -65,9 +65,18 @@ class UserCanChatHere {
       chatUser = await query.where('estate_current_tenants.user_id ', user_id).first()
     }
 
-    // check if this estate has a top match
+    // get this user from the task itself
     if (!chatUser) {
-      chatUser = await MatchService.getUserToChat({ user_id, estate_id, role })
+      query = Task.query()
+        .select(Database.raw(`estates.user_id as estate_user_id`))
+        .select(Database.raw(`tasks.tenant_id as tenant_user_id`))
+        .where('tasks.estate_id', estate_id)
+        .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+      if (role === ROLE_LANDLORD) {
+        chatUser = await query.where('estates.user_id', user_id).first()
+      } else {
+        chatUser = await query.where('tasks.tenant_id', user_id).first()
+      }
     }
 
     return chatUser

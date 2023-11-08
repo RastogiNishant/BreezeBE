@@ -68,7 +68,7 @@ class WebSocket {
     })
   }
 
-  static publichToTask({ event, taskId, estateId, data }) {
+  static publishToTask({ event, taskId, estateId, data }) {
     WebSocket.publish({
       topic: `${WEBSOCKET_TASK_REDIS_KEY}:${estateId}brz${taskId}`,
       channel: 'task:*',

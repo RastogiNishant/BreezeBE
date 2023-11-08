@@ -440,15 +440,12 @@ class TaskService extends BaseService {
       if (estate_id) {
         const estate = await EstateService.getById(estate_id)
         const match = await require('./MatchService').getMatches(prospect_id || user.id, estate_id)
-        if (estate && match && match.status >= MATCH_STATUS_KNOCK) {
+        if (estate && match?.status >= MATCH_STATUS_KNOCK) {
           task = await this.createGlobalTask({
             tenantId: prospect_id || user.id,
             landlordId: estate.user_id,
             estateId: estate_id
           })
-          if (user.role === ROLE_LANDLORD) {
-            await MailService.sendLandlordInviteStageProspectMessageNotification(prospect_id)
-          }
           console.log('task here=', task)
         } else {
           return null
