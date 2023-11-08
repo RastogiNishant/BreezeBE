@@ -3567,11 +3567,7 @@ class MatchService {
         Database.raw(`
             (select
               members.user_id,
-<<<<<<< HEAD
-              bool_and(case when member_has_id is not null then true else false end) as id_verified
-=======
               bool_or(case when member_has_id is not null then true else false end) as id_verified
->>>>>>> master
             from members
             left join
               (select
@@ -3726,15 +3722,9 @@ class MatchService {
         Database.raw(`
         json_build_object
           (
-<<<<<<< HEAD
-            'income', some_members_submitted_income_proofs,
-            'credit_history_status', some_members_submitted_credit_score_proofs,
-            'passport', _mf.id_verified
-=======
             'passport', _mf.id_verified,
             'income', some_members_submitted_income_proofs,
             'credit_history_status', some_members_submitted_credit_score_proofs
->>>>>>> master
           )
         as submitted_proofs
         `)
