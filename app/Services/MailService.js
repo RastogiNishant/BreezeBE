@@ -1133,6 +1133,24 @@ class MailService {
       }
     )
   }
+
+  static async sendLandlordInviteStageProspectMessageNotification(recipient) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+    const message = {
+      to: recipient,
+      from: {
+        email: FromEmail,
+        name: FromName
+      },
+      templateId,
+      subject: l.get('prospect.email_message_from_landlord.subject.message'),
+      text: `REPLY \n ${l.get('prospect.email_message_from_landlord.CTA.message')} \n ${l.get(
+        'prospect.email_account_inactivity_deletion.final.message'
+      )} \n ${l.get('prospect.email_message_from_landlord.final.message')}`
+    }
+
+    return await _helper.sendSGMail(message)
+  }
 }
 
 module.exports = MailService

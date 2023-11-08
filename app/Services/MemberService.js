@@ -72,13 +72,13 @@ class MemberService {
     try {
       const member = await Member.query().select('id').where('owner_user_id', owner_id).first()
 
-      //TODO: check
+      // TODO: check
       if (!member) {
         if (hasOwnerId) {
           throw new HttpException('You are not the member anymore', 400)
         }
 
-        //Default: the first member for specific user will be household because he doesn't set his member as owner_user_id
+        // Default: the first member for specific user will be household because he doesn't set his member as owner_user_id
 
         const members = await Member.query()
           .select('id')
@@ -116,7 +116,7 @@ class MemberService {
   static async limitMemberDataByPermission(user, members) {
     const myMemberId = await this.getMemberIdByOwnerId(user)
     const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
-    let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
+    const userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
     userIds.push(user.id)
 
     members = members.map((member) => {
@@ -165,7 +165,7 @@ class MemberService {
               )
               income = {
                 ...income,
-                proofs: proofs
+                proofs
               }
               return income
             })
@@ -336,7 +336,7 @@ class MemberService {
       }
       await DataStorage.setItem(
         memberId,
-        { code: code, count: 5 },
+        { code, count: 5 },
         SMS_MEMBER_PHONE_VERIFY_PREFIX,
         {
           ttl: 3600
@@ -391,6 +391,7 @@ class MemberService {
     await DataStorage.remove(memberId, SMS_MEMBER_PHONE_VERIFY_PREFIX)
     return true
   }
+
   /**
    *
    */
@@ -405,6 +406,7 @@ class MemberService {
       .where('is_verified', true)
       .first()
   }
+
   static async createMainMember(user_id, trx) {
     const houseHold = await this.getHouseHold(user_id)
     if (!houseHold) {
@@ -514,7 +516,7 @@ class MemberService {
       income.income_type === INCOME_TYPE_OTHER_BENEFIT ||
       income.income_type === INCOME_TYPE_CHILD_BENEFIT
     ) {
-      //these income types are not to be deletable...
+      // these income types are not to be deletable...
       data.expire_date = null
     }
 
@@ -554,7 +556,7 @@ class MemberService {
   static async sendInvitationCode({ member, id, userId, isExisting_user = false }, trx) {
     try {
       if (!member) {
-        member = await Member.findByOrFail({ id: id, user_id: userId })
+        member = await Member.findByOrFail({ id, user_id: userId })
       }
 
       if (member && !member.email) {
@@ -793,7 +795,7 @@ class MemberService {
     const incomeProofs = await IncomeProof.query()
       .select('income_proofs.*')
       .where('income_proofs.expire_date', '<=', startOf)
-      //expire_date = null should not be deleted
+      // expire_date = null should not be deleted
       .whereNotNull('income_proofs.expire_date')
       .where('income_proofs.status', STATUS_ACTIVE)
       .innerJoin({ _i: 'incomes' }, function () {
@@ -803,22 +805,22 @@ class MemberService {
       .select('_m.user_id')
       .fetch()
 
-    let incomeProofsToDelete = []
-    let usersToDeactivate = []
+    const incomeProofsToDelete = []
+    const usersToDeactivate = []
     incomeProofs.rows.map(async ({ user_id, id }) => {
       incomeProofsToDelete.push(id)
       if (!usersToDeactivate.includes(user_id)) {
-        Event.fire('tenant::update', user_id)
-        NoticeService.prospectAccountDeactivated(user_id)
-        usersToDeactivate.push(user_id)
+        // Event.fire('tenant::update', user_id)
+        // NoticeService.prospectAccountDeactivated(user_id)
+        // usersToDeactivate.push(user_id)
       }
     })
     const trx = await Database.beginTransaction()
     try {
       if (incomeProofsToDelete.length) {
-        await IncomeProof.query()
-          .whereIn('id', incomeProofsToDelete)
-          .update({ status: STATUS_DELETE }, trx)
+        // await IncomeProof.query()
+        //   .whereIn('id', incomeProofsToDelete)
+        //   .update({ status: STATUS_DELETE }, trx)
       }
       await trx.commit()
     } catch (err) {
@@ -848,7 +850,7 @@ class MemberService {
                   const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
                   await File.saveThumbnailToDisk({
                     image: url,
-                    fileName: fileName,
+                    fileName,
                     dir: `${url_strs[0]}`,
                     options,
                     disk: 's3',
@@ -900,7 +902,7 @@ class MemberService {
       throw new HttpException('Failure uploading image', 422)
     }
 
-    let memberFile = new MemberFile()
+    const memberFile = new MemberFile()
     memberFile.merge({
       file: files[doc],
       type: file_type,
@@ -987,7 +989,7 @@ class MemberService {
       return
     }
 
-    let incomeIds = []
+    const incomeIds = []
     members.map((member) => {
       incomeIds.concat(member.incomes.map((income) => income.id))
     })

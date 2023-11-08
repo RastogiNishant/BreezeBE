@@ -73,7 +73,7 @@ class TaskController extends BaseController {
 
   async onEditMessage({ message, attachments, id }) {
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
+      const messageAge = await ChatService.getChatMessageAge(id)
       if (isBoolean(messageAge) && !messageAge) {
         throw new AppException('Chat message not found.')
       }
@@ -83,7 +83,7 @@ class TaskController extends BaseController {
       await ChatService.updateChatMessage({ id, message, attachments })
       attachments = await this.getAbsoluteUrl(attachments)
 
-      WebSocket.publichToTask({
+      WebSocket.publishToTask({
         event: 'messageEdited',
         taskId: this.taskId,
         estateId: this.estateId,
@@ -112,7 +112,7 @@ class TaskController extends BaseController {
       }
       await ChatService.removeChatMessage(id)
 
-      WebSocket.publichToTask({
+      WebSocket.publishToTask({
         event: 'messageRemoved',
         taskId: this.taskId,
         estateId: this.estateId,
@@ -130,7 +130,7 @@ class TaskController extends BaseController {
     try {
       const lastChat = await super._markLastRead(this.taskId)
       if (lastChat) {
-        WebSocket.publichToTask({
+        WebSocket.publishToTask({
           event: WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
           taskId: this.taskId,
           estateId: this.estateId,
@@ -154,7 +154,7 @@ class TaskController extends BaseController {
   }
 
   async onMessage(message) {
-    //FIXME: make slim controller
+    // FIXME: make slim controller
     try {
       const chat = await this._saveToChats(message, this.taskId)
 
@@ -187,8 +187,8 @@ class TaskController extends BaseController {
           : `landlord:${this.estate_user_id}`
 
       const task = await TaskService.get(this.taskId)
-      //broadcast taskMessageReceived event to either tenant or landlord
-      //taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
+      // broadcast taskMessageReceived event to either tenant or landlord
+      // taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
 
       const messageReceivedData = {
         topic: this.socket.topic,
@@ -213,8 +213,9 @@ class TaskController extends BaseController {
 
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
+      // FIXME: send email here...
 
-      WebSocket.publichToTask({
+      WebSocket.publishToTask({
         event: 'message',
         taskId: this.taskId,
         estateId: this.estateId,

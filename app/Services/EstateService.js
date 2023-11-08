@@ -1664,8 +1664,7 @@ class EstateService {
       estates = estates.filter(
         (estate) =>
           estate.floor === null ||
-          (estate.floor >= (tenant.floor_min || 0) &&
-            estate.rooms_number <= (tenant.floor_max || 20))
+          (estate.floor >= (tenant.floor_min || 0) && estate.floor <= (tenant.floor_max || 20))
       )
       if (process.env.DEV === 'true') {
         Logger.info(`filterEstates after floors ${estates?.length}`)

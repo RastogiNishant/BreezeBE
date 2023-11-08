@@ -24,7 +24,8 @@ const {
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_URGENCY,
   WEBSOCKET_EVENT_TASK_UPDATED,
-  MATCH_STATUS_KNOCK
+  MATCH_STATUS_KNOCK,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE
 } = require('../constants')
 
 const WebSocket = use('App/Classes/Websocket')
@@ -59,6 +60,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
 const NoticeService = require('./NoticeService')
 const BaseService = require('./BaseService')
+const MailService = require('./MailService')
 
 class TaskService extends BaseService {
   static async create(request, user, trx) {
@@ -439,7 +441,7 @@ class TaskService extends BaseService {
       if (estate_id) {
         const estate = await EstateService.getById(estate_id)
         const match = await require('./MatchService').getMatches(prospect_id || user.id, estate_id)
-        if (estate && match && match.status >= MATCH_STATUS_KNOCK) {
+        if (estate && match?.status >= MATCH_STATUS_KNOCK) {
           task = await this.createGlobalTask({
             tenantId: prospect_id || user.id,
             landlordId: estate.user_id,
