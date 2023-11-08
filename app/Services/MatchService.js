@@ -1488,8 +1488,10 @@ class MatchService {
       throw new AppException(ERROR_COMMIT_MATCH_INVITE, 400, ERROR_COMMIT_MATCH_INVITE_CODE)
     }
 
-    const newMatch = await Match.query().where({ estate_id: newEstateId, user_id: userId }).first()
-    if (newMatch?.status >= match.status) {
+    const existingMatch = await Match.query()
+      .where({ estate_id: newEstateId, user_id: userId })
+      .first()
+    if (existingMatch?.status >= match.status) {
       throw new AppException(ERROR_ALREADY_MATCH_INVITE, 400, ERROR_ALREADY_MATCH_INVITE_CODE)
     }
 
@@ -1514,8 +1516,11 @@ class MatchService {
         status_at: moment.utc(new Date()).format(DATE_FORMAT),
         status: MATCH_STATUS_KNOCK
       }
-      // add new match
-      await Match.createItem(newMatch, trx)
+      if (existingMatch) {
+        await existingMatch.updateItemWithTrx(newMatch, trx)
+      } else {
+        await Match.createItem(newMatch, trx)
+      }
       // Remove previous one
       await Match.query()
         .where('user_id', userId)
