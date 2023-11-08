@@ -246,17 +246,6 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
-    // WBS certificate score
-    console.log('calculating WBS Score...')
-    if (!MatchService.calculateWBSScore(prospect.wbs_certificate, estate.wbs_certificate)) {
-      if (debug) {
-        return {
-          scoreL: 0,
-          reason: 'wbs certificate mismatch'
-        }
-      }
-      return 0
-    }
     const isActivated = prospect.is_activated
     if (!isActivated) {
       if (debug) {
@@ -334,24 +323,10 @@ class MatchService {
     creditHistoryStatuses.map(({ status }) => {
       creditScorePoints += +status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
       memberCount++
+      return creditScorePoints
     })
     creditScorePoints = creditScorePoints / memberCount
     log({ creditScorePoints })
-    if (!creditScorePoints > 0) {
-      if (debug) {
-        return {
-          scoreL,
-          landlordBudgetScore,
-          creditScorePoints,
-          rentArrearsScore,
-          ageInRangeScore,
-          householdSizeScore,
-          petsScore,
-          reason: 'credit score zero.'
-        }
-      }
-      return 0
-    }
     scoreL += creditScorePoints * creditScoreWeight
 
     // Get rent arrears score
