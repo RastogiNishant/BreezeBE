@@ -3454,7 +3454,6 @@ class MatchService {
           (select
             members.user_id,
             count(*) as member_count,
-            bool_or(case when members.rent_arrears_doc is not null then true else false end) as some_members_submitted_no_rent_arrears_proofs,
             bool_or(case when members.debt_proof is not null then true else false end) as some_members_submitted_credit_score_proofs
           from
             members
@@ -3546,7 +3545,7 @@ class MatchService {
         Database.raw(`
             (select
               members.user_id,
-              bool_and(case when member_has_id is not null then true else false end) as id_verified
+              bool_or(case when member_has_id is not null then true else false end) as id_verified
             from members
             left join
               (select
@@ -3693,7 +3692,7 @@ class MatchService {
         Database.raw(`
         -- null here indicates members did not submit any income
         (_ip.some_members_submitted_income_proofs::int
-        + _mp.some_members_submitted_no_rent_arrears_proofs::int
+        + _mf.id_verified::int
         + _mp.some_members_submitted_credit_score_proofs::int)
         as total_completed_proofs`)
       )
@@ -3701,9 +3700,9 @@ class MatchService {
         Database.raw(`
         json_build_object
           (
+            'passport', _mf.id_verified,
             'income', some_members_submitted_income_proofs,
-            'credit_history_status', some_members_submitted_credit_score_proofs,
-            'no_rent_arrears', some_members_submitted_no_rent_arrears_proofs
+            'credit_history_status', some_members_submitted_credit_score_proofs
           )
         as submitted_proofs
         `)
