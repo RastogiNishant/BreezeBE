@@ -4255,7 +4255,7 @@ class MatchService {
         // members...
         Database.raw(`
       (select
-        user_id, owner_user_id,
+        user_id,
         json_agg(json_build_object('status', credit_history_status)) as credit_history_status,
         count(id) as members_count,
         bool_or(coalesce(debt_proof, null) is not null) as credit_score_proofs,
@@ -4264,16 +4264,11 @@ class MatchService {
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
       from members
-      group by user_id,owner_user_id
+      group by user_id
       ) as _m
       `),
-        function () {
-          this.on(
-            Database.raw(
-              `( _m.user_id = tenants.user_id and _m.owner_user_id is null ) or ( _m.owner_user_id = tenants.user_id and _m.owner_user_id is not null )`
-            )
-          )
-        }
+        '_m.user_id',
+        'tenants.user_id'
       )
       .leftJoin(
         // 'city_id', city_id,
