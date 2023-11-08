@@ -3545,7 +3545,7 @@ class MatchService {
         Database.raw(`
             (select
               members.user_id,
-              bool_and(case when member_has_id is not null then true else false end) as id_verified
+              bool_or(case when member_has_id is not null then true else false end) as id_verified
             from members
             left join
               (select
