@@ -261,7 +261,10 @@ class MailService {
       templateId,
       dynamic_template_data: {
         subject: 'Confirm your email',
-        link: `${process.env.APP_URL}/account/change_email?code=${code}&user_id=${user_id}`
+        // @FIXME undefined
+        link: `${process.env.APP_URL}/account/change_email?code=${code}&user_id=${
+          undefined /* was user_id */
+        }`
       }
     }
 

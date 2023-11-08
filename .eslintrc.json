@@ -39,7 +39,8 @@
       "no-lone-blocks": "warn",
       "n/no-deprecated-api": "warn",
       "no-useless-return": "warn",
-      "no-control-regex": "warn"
+      "no-control-regex": "warn",
+      "no-template-curly-in-string": "warn"
     },
     "plugins": [
       "prettier"
