@@ -435,7 +435,6 @@ class NoticeService {
     })
   }
 
-
   static async getProspectLandlordInvite() {
     const result = await Database.table({ _m: 'matches' })
       .select('_m.user_id', Database.raw('COUNT(_m.user_id) AS match_count'))
@@ -459,7 +458,6 @@ class NoticeService {
       concurrency: 1
     })
   }
-
 
   /**
    *
@@ -665,16 +663,16 @@ class NoticeService {
     const notices = []
     const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
 
-    let groupIdx = 0;
-      let isNoticeCreated = false
+    let groupIdx = 0
+    // isNoticeCreated = false
     while (groupIdx < Object.keys(groupMatches).length) {
       const estate_id = Object.keys(groupMatches)[groupIdx]
       const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
       if (!Object.keys(freeTimeSlots).length) {
         const estate = await require('./EstateService').getActiveById(estate_id)
 
-        if (!isNoticeCreated && estate) {
-          isNoticeCreated = true
+        if (estate) {
+          // isNoticeCreated = true
           notices.push({
             user_id: estate.user_id,
             type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
