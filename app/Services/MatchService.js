@@ -323,25 +323,10 @@ class MatchService {
     creditHistoryStatuses.map(({ status }) => {
       creditScorePoints += +status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
       memberCount++
+      return creditScorePoints
     })
     creditScorePoints = creditScorePoints / memberCount
     log({ creditScorePoints })
-    if (!creditScorePoints > 0) {
-      if (debug) {
-        return {
-          scoreL,
-          landlordBudgetScore,
-          creditScorePoints,
-          rentArrearsScore,
-          ageInRangeScore,
-          householdSizeScore,
-          petsScore,
-          reason: 'credit score zero.'
-        }
-      }
-      return 0
-    }
-
     scoreL += creditScorePoints * creditScoreWeight
 
     // Get rent arrears score
