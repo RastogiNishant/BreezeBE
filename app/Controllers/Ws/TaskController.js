@@ -8,16 +8,19 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
-  WEBSOCKET_TASK_REDIS_KEY
+  WEBSOCKET_TASK_REDIS_KEY,
+  DEFAULT_LANG
 } = require('../../constants')
 const WebSocket = use('App/Classes/Websocket')
 const {
   exceptions: { MESSAGE_NOT_SAVED }
 } = require('../../exceptions')
+const User = use('App/Models/User')
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
 const TaskService = use('App/Services/TaskService')
+const MailService = use('App/Services/MailService')
 const { isBoolean } = require('lodash')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
@@ -73,7 +76,7 @@ class TaskController extends BaseController {
 
   async onEditMessage({ message, attachments, id }) {
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
+      const messageAge = await ChatService.getChatMessageAge(id)
       if (isBoolean(messageAge) && !messageAge) {
         throw new AppException('Chat message not found.')
       }
@@ -154,7 +157,6 @@ class TaskController extends BaseController {
   }
 
   async onMessage(message) {
-    //FIXME: make slim controller
     try {
       const chat = await this._saveToChats(message, this.taskId)
 
@@ -187,8 +189,8 @@ class TaskController extends BaseController {
           : `landlord:${this.estate_user_id}`
 
       const task = await TaskService.get(this.taskId)
-      //broadcast taskMessageReceived event to either tenant or landlord
-      //taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
+      // broadcast taskMessageReceived event to either tenant or landlord
+      // taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
 
       const messageReceivedData = {
         topic: this.socket.topic,
@@ -214,6 +216,22 @@ class TaskController extends BaseController {
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
       // FIXME: send email here...
+      if (this.user.role === ROLE_LANDLORD) {
+        const recipient = await User.query()
+          .select('email', 'lang')
+          .where('id', this.tenant_user_id)
+          .first()
+        if (recipient) {
+          await MailService.sendToProspectThatLandlordSentMessage({
+            // email: recipient.email,
+            email: 'barudo@gmail.com',
+            message: chat.text,
+            lang: 'de', // recipient.lang || DEFAULT_LANG,
+            estate_id: this.estateId,
+            topic: `task:${this.estateId}brz${this.taskId}`
+          })
+        }
+      }
 
       WebSocket.publishToTask({
         event: 'message',
