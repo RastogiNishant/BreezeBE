@@ -8,7 +8,8 @@ const {
   countBy,
   groupBy,
   uniqBy,
-  isEqual
+  isEqual,
+  isNull
 } = require('lodash')
 const { props } = require('bluebird')
 const Promise = require('bluebird')
@@ -323,25 +324,10 @@ class MatchService {
     creditHistoryStatuses.map(({ status }) => {
       creditScorePoints += +status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
       memberCount++
+      return creditScorePoints
     })
     creditScorePoints = creditScorePoints / memberCount
     log({ creditScorePoints })
-    if (!creditScorePoints > 0) {
-      if (debug) {
-        return {
-          scoreL,
-          landlordBudgetScore,
-          creditScorePoints,
-          rentArrearsScore,
-          ageInRangeScore,
-          householdSizeScore,
-          petsScore,
-          reason: 'credit score zero.'
-        }
-      }
-      return 0
-    }
-
     scoreL += creditScorePoints * creditScoreWeight
 
     // Get rent arrears score
@@ -702,7 +688,9 @@ class MatchService {
     scoreT += floorScore * floorWeight
 
     // Rent Start Score prospect.rent_start is removed from the calculation
-    const vacantFrom = parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
+    const vacantFrom = isNull(estate.vacant_date)
+      ? parseInt(moment.utc().startOf('day').format('X'))
+      : parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
     const now = parseInt(moment.utc().startOf('day').format('X'))
     const nextSixMonths = parseInt(moment.utc().add(6, 'M').format('X'))
     const nextYear = parseInt(moment.utc().add(1, 'y').format('X'))
@@ -718,23 +706,6 @@ class MatchService {
       if (rentStartScore < 0) rentStartScore = 0
     }
     log({ vacantFrom, now, nextSixMonths, nextYear, rentStartScore })
-    if (rentStartScore <= 0) {
-      if (debug) {
-        return {
-          scoreT,
-          prospectBudgetScore,
-          roomsScore,
-          spaceScore,
-          floorScore,
-          rentStartScore,
-          aptTypeScore,
-          houseTypeScore,
-          amenitiesScore,
-          reason: 'rent start score zero'
-        }
-      }
-      return 0
-    }
     scoreT += rentStartScore * rentStartWeight
 
     // Apartment type is equal
@@ -4270,7 +4241,7 @@ class MatchService {
         // members...
         Database.raw(`
       (select
-        user_id, owner_user_id,
+        user_id,
         json_agg(json_build_object('status', credit_history_status)) as credit_history_status,
         count(id) as members_count,
         bool_or(coalesce(debt_proof, null) is not null) as credit_score_proofs,
@@ -4279,16 +4250,11 @@ class MatchService {
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
       from members
-      group by user_id,owner_user_id
+      group by user_id
       ) as _m
       `),
-        function () {
-          this.on(
-            Database.raw(
-              `( _m.user_id = tenants.user_id and _m.owner_user_id is null ) or ( _m.owner_user_id = tenants.user_id and _m.owner_user_id is not null )`
-            )
-          )
-        }
+        '_m.user_id',
+        'tenants.user_id'
       )
       .leftJoin(
         // 'city_id', city_id,
