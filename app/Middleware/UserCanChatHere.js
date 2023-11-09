@@ -66,16 +66,16 @@ class UserCanChatHere {
     }
 
     // get this user from the task itself
-    if (!chatUser) {
+    if (!chatUser && task_id) {
       query = Task.query()
         .select(Database.raw(`estates.user_id as estate_user_id`))
         .select(Database.raw(`tasks.tenant_id as tenant_user_id`))
         .where('tasks.estate_id', estate_id)
+        .where('tasks.id', task_id)
         .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+
       if (role === ROLE_LANDLORD) {
-        query = query.where('estates.user_id', user_id)
-        if (task_id) query = query.where('tasks.id', task_id)
-        chatUser = await query.first()
+        chatUser = await query.where('estates.user_id', user_id).first()
       } else {
         chatUser = await query.where('tasks.tenant_id', user_id).first()
       }
