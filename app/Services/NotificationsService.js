@@ -1041,6 +1041,16 @@ class NotificationsService {
     const body = 'prospect.notification.next.profile.reactivated'
     return NotificationsService.sendNotes(notices, title, body)
   }
+
+  static async prospectSendCode(notices) {
+    const title = 'prospect.notification.event.sharing_profile_request'
+    const body = 'prospect.notification.next.sharing_profile_request'
+    return NotificationsService.sendNotes(
+      notices,
+      (data, lang) => `${rc(l.get(title, lang), [{ landlord: data?.landlord }])}`,
+      body
+    )
+  }
 }
 
 module.exports = NotificationsService

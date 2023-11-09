@@ -1152,6 +1152,71 @@ class MailService {
     return await _helper.sendSGMail(message)
   }
 
+  static async sendRequestToTenantForShareProfile({
+    prospectEmail,
+    estate,
+    landlord,
+    shareLink,
+    lang = DEFAULT_LANG
+  }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+    const subject = l
+      .get('prospect.email_request_sharing_profile_after_visit.subject.message', lang)
+      .replace('{landlord}', landlord)
+
+    const intro = l
+      .get('prospect.email_request_sharing_profile_after_visit.intro.message', lang)
+      .replace('{landlord}', landlord)
+      .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
+    const msg = {
+      to: trim(prospectEmail),
+      from: {
+        email: FromEmail,
+        name: FromName
+      },
+      templateId,
+      dynamic_template_data: {
+        subject,
+        salutation: l.get('email_signature.salutation.message', lang),
+        CTA: l.get('prospect.email_request_sharing_profile_after_visit.CTA.message', lang),
+        intro,
+        link: shareLink,
+        final: l.get('prospect.email_request_sharing_profile_after_visit.final.message', lang),
+        greeting: l.get('email_signature.greeting.message', lang),
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        )
+      }
+    }
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+          throw new HttpException(error.response.body)
+        } else {
+          throw new HttpException(error)
+        }
+      }
+    )
+  }
+
   static async sendToProspectThatLandlordSentMessage({
     email,
     message,
