@@ -1094,7 +1094,7 @@ class MailService {
       dynamic_template_data: {
         subject: l.get('prospect.notification.event.incomplete_profile', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        CTA: l.get('prospect.email_message_from_landlord.CTA.message', lang),
+        CTA: l.get('prospect.email_day_of_visit_reminder.CTA.message', lang),
         intro: l.get('prospect.notification.next.incomplete_profile', lang),
         link: INVITE_APP_LINK,
         greeting: l.get('email_signature.greeting.message', lang),
@@ -1178,7 +1178,7 @@ class MailService {
       dynamic_template_data: {
         subject: l.get('prospect.email_message_from_landlord.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        CTA: l.get('prospect.email_day_of_visit_reminder.CTA.message', lang),
+        CTA: l.get('prospect.email_message_from_landlord.CTA.message', lang),
         intro:
           estateAddress +
           `<br /><br />` +
