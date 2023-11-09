@@ -73,7 +73,7 @@ class TaskController extends BaseController {
 
   async onEditMessage({ message, attachments, id }) {
     try {
-      let messageAge = await ChatService.getChatMessageAge(id)
+      const messageAge = await ChatService.getChatMessageAge(id)
       if (isBoolean(messageAge) && !messageAge) {
         throw new AppException('Chat message not found.')
       }
@@ -154,7 +154,7 @@ class TaskController extends BaseController {
   }
 
   async onMessage(message) {
-    //FIXME: make slim controller
+    // FIXME: make slim controller
     try {
       const chat = await this._saveToChats(message, this.taskId)
 
@@ -187,8 +187,8 @@ class TaskController extends BaseController {
           : `landlord:${this.estate_user_id}`
 
       const task = await TaskService.get(this.taskId)
-      //broadcast taskMessageReceived event to either tenant or landlord
-      //taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
+      // broadcast taskMessageReceived event to either tenant or landlord
+      // taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
 
       const messageReceivedData = {
         topic: this.socket.topic,

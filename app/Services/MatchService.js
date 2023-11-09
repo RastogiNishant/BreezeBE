@@ -3722,9 +3722,9 @@ class MatchService {
         Database.raw(`
         json_build_object
           (
+            'passport', _mf.id_verified,
             'income', some_members_submitted_income_proofs,
-            'credit_history_status', some_members_submitted_credit_score_proofs,
-            'passport', _mf.id_verified
+            'credit_history_status', some_members_submitted_credit_score_proofs
           )
         as submitted_proofs
         `)

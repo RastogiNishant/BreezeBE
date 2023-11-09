@@ -1133,6 +1133,7 @@ class MailService {
       }
     )
   }
+
   static async sendLandlordInviteStageProspectMessageNotification(recipient) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const message = {

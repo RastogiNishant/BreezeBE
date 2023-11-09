@@ -35,7 +35,7 @@ class WebSocket {
     this.redisSubscriber.subscribe(topic, (err, count) => {
       if (err) {
         console.error('Error subscribing to channel:', err)
-        return
+        
       }
     })
   }
@@ -44,7 +44,7 @@ class WebSocket {
     this.redisPublisher?.publish(topic, JSON.stringify({ event, data, channel }), (err, count) => {
       if (err) {
         console.error('Error publishing message:', err)
-        return
+        
       }
     })
   }
