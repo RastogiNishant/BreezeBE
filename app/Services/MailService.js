@@ -1094,7 +1094,7 @@ class MailService {
       dynamic_template_data: {
         subject: l.get('prospect.notification.event.incomplete_profile', lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        CTA: l.get('prospect.email_day_of_visit_reminder.CTA.message', lang),
+        CTA: l.get('prospect.email_message_from_landlord.CTA.message', lang),
         intro: l.get('prospect.notification.next.incomplete_profile', lang),
         link: INVITE_APP_LINK,
         greeting: l.get('email_signature.greeting.message', lang),
@@ -1131,6 +1131,7 @@ class MailService {
       }
     )
   }
+
   static async sendLandlordInviteStageProspectMessageNotification(recipient) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const message = {
@@ -1147,6 +1148,67 @@ class MailService {
     }
 
     return await _helper.sendSGMail(message)
+  }
+
+  static async sendToProspectThatLandlordSentMessage({
+    email,
+    message,
+    estate_id,
+    topic,
+    lang = DEFAULT_LANG
+  }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+    const shortLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}?type=MESSAGE_SENT&estate_id=${estate_id}&topic=${topic}`
+    )
+    const msg = {
+      to: trim(email),
+      from: {
+        email: FromEmail,
+        name: FromName
+      },
+      templateId,
+      dynamic_template_data: {
+        subject: l.get('prospect.email_message_from_landlord.subject.message', lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        CTA: l.get('prospect.email_day_of_visit_reminder.CTA.message', lang),
+        intro: l
+          .get('prospect.email_message_from_landlord.intro.message', lang)
+          .replace('{{message_content}}', message),
+        link: shortLink,
+        greeting: l.get('email_signature.greeting.message', lang),
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        )
+      }
+    }
+    return sgMail.send(msg).then(
+      () => {
+        console.log('Email delivery successfully')
+      },
+      (error) => {
+        console.log('Email delivery failed', error)
+        if (error.response) {
+          console.error(error.response.body)
+          throw new HttpException(error.response.body)
+        } else {
+          throw new HttpException(error)
+        }
+      }
+    )
   }
 }
 
