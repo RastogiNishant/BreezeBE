@@ -21,8 +21,8 @@ class UserCanChatHere {
     let matches
     let chatUser
     if ((matches = socket.topic.match(/^estate:([0-9]+)$/))) {
-      //estate chat...
-      //make sure that the user is the current tenant or the owner of this estate
+      // estate chat...
+      // make sure that the user is the current tenant or the owner of this estate
       chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role)
       if (!chatUser) {
         throw new HttpException(`User cannot send message to this topic.`, 403, 1101)
@@ -33,9 +33,9 @@ class UserCanChatHere {
       if (!task) {
         throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
       }
-      //brz - is the divider between estate and task id
-      //estate task chat
-      chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role)
+      // brz - is the divider between estate and task id
+      // estate task chat
+      chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role, task.id)
       if (!chatUser) {
         throw new HttpException(`User cannot send message to this topic.`, 403, 1102)
       }
@@ -49,7 +49,7 @@ class UserCanChatHere {
     await next()
   }
 
-  async _hasPermissionToChat(estate_id, user_id, role = ROLE_LANDLORD) {
+  async _hasPermissionToChat(estate_id, user_id, role = ROLE_LANDLORD, task_id = null) {
     let chatUser
 
     // check if this estate has a final match
@@ -73,7 +73,9 @@ class UserCanChatHere {
         .where('tasks.estate_id', estate_id)
         .innerJoin('estates', 'estates.id', 'tasks.estate_id')
       if (role === ROLE_LANDLORD) {
-        chatUser = await query.where('estates.user_id', user_id).first()
+        query = query.where('estates.user_id', user_id)
+        if (task_id) query = query.where('tasks.id', task_id)
+        chatUser = await query.first()
       } else {
         chatUser = await query.where('tasks.tenant_id', user_id).first()
       }
@@ -83,7 +85,7 @@ class UserCanChatHere {
   }
 
   async _getTask(task_id, estate_id) {
-    let task = await Task.query().where('id', task_id).where('estate_id', estate_id).first()
+    const task = await Task.query().where('id', task_id).where('estate_id', estate_id).first()
     return task
   }
 }
