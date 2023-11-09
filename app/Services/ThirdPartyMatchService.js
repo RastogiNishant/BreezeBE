@@ -34,7 +34,7 @@ class ThirdPartyMatchService {
     }
 
     Logger.info(`ThirdPartyOfferService.searchTenantEstatesQuery after ${new Date().toISOString()}`)
-    let passedEstates = []
+    const passedEstates = []
     let idx = 0
     const MatchService = require('./MatchService')
     tenant.incomes = await require('./MemberService').getIncomes(tenant.user_id)
@@ -44,7 +44,7 @@ class ThirdPartyMatchService {
     const OhneMakler = require('../Classes/OhneMakler')
     while (idx < estates.length) {
       let estate = estates[idx]
-      let amenities = OhneMakler.getOptionIds(estate.amenities, hashOptions)
+      const amenities = OhneMakler.getOptionIds(estate.amenities, hashOptions)
       estate = {
         ...estate,
         options: amenities,
@@ -126,7 +126,7 @@ class ThirdPartyMatchService {
           .fetch()
       ).toJSON() || []
     // Calculate matches for tenants to current estate
-    let passedEstates = []
+    const passedEstates = []
     let idx = 0
     const options = await require('../Services/OptionService').getOptions()
     const hashOptions = groupBy(options, 'title')
@@ -197,7 +197,7 @@ class ThirdPartyMatchService {
     if (has_notification_sent) {
       const superMatches = matches.filter(({ percent }) => percent >= MATCH_SCORE_GOOD_MATCH)
 
-      //TODO:
+      // TODO:
       /*
        * this will send many notifications to users which are not good
        * Approach: need to save start time in match table before calling matchByEstates while calculating new matches
@@ -208,6 +208,7 @@ class ThirdPartyMatchService {
       }
     }
   }
+
   static async upsertSingleMatch(match, trx) {
     const thirdPartyMatch = await this.getNewMatch({
       user_id: match.user_id,
