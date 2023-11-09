@@ -8,16 +8,20 @@ const {
   TASK_STATUS_RESOLVED,
   TASK_STATUS_UNRESOLVED,
   WEBSOCKET_EVENT_TASK_MESSAGE_ALL_READ,
-  WEBSOCKET_TASK_REDIS_KEY
+  WEBSOCKET_TASK_REDIS_KEY,
+  DEFAULT_LANG
 } = require('../../constants')
 const WebSocket = use('App/Classes/Websocket')
 const {
   exceptions: { MESSAGE_NOT_SAVED }
 } = require('../../exceptions')
+const User = use('App/Models/User')
+const Estate = use('App/Models/Estate')
 const BaseController = require('./BaseController')
 const AppException = use('App/Exceptions/AppException')
 const ChatService = use('App/Services/ChatService')
 const TaskService = use('App/Services/TaskService')
+const MailService = use('App/Services/MailService')
 const { isBoolean } = require('lodash')
 const NoticeService = use('App/Services/NoticeService')
 const Logger = use('Logger')
@@ -154,7 +158,6 @@ class TaskController extends BaseController {
   }
 
   async onMessage(message) {
-    // FIXME: make slim controller
     try {
       const chat = await this._saveToChats(message, this.taskId)
 
@@ -214,6 +217,26 @@ class TaskController extends BaseController {
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
       // FIXME: send email here...
+      if (this.user.role === ROLE_LANDLORD) {
+        const recipient = await User.query()
+          .select('email', 'lang', 'sex', 'firstname', 'secondname', 'avatar')
+          .where('id', this.tenant_user_id)
+          .first()
+        const estate = await Estate.query().where('id', this.estateId).first()
+        if (recipient) {
+          await MailService.sendToProspectThatLandlordSentMessage({
+            email: recipient.email,
+            message: chat.text,
+            recipient,
+            lang: recipient.lang || DEFAULT_LANG,
+            estate_id: this.estateId,
+            estate,
+            task_id: this.taskId,
+            type: task.type,
+            topic: `task:${this.estateId}brz${this.taskId}`
+          })
+        }
+      }
 
       WebSocket.publishToTask({
         event: 'message',
