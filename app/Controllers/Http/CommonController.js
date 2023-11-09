@@ -13,7 +13,6 @@ const CommonService = use('App/Services/CommonService')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const ShortenLinkService = use('App/Services/ShortenLinkService')
-
 const Static = use('Static')
 
 class CommonController {

@@ -435,7 +435,6 @@ class NoticeService {
     })
   }
 
-
   static async getProspectLandlordInvite() {
     const result = await Database.table({ _m: 'matches' })
       .select('_m.user_id', Database.raw('COUNT(_m.user_id) AS match_count'))
@@ -459,7 +458,6 @@ class NoticeService {
       concurrency: 1
     })
   }
-
 
   /**
    *

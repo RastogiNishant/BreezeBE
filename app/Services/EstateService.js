@@ -782,6 +782,8 @@ class EstateService {
           }
         }
       }
+
+      updateData = { ...omit(updateData, ['category']) }
       await estate.updateItemWithTrx(updateData, trx)
 
       if (estate.build_id) {
@@ -4323,7 +4325,7 @@ class EstateService {
         {
           id: build_id,
           user_id,
-          published: buildingPublishStatus,
+          published: PUBLISH_STATUS_INIT,
           marketplace_estate_ids: null
         },
         trx
