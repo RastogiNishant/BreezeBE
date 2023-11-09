@@ -973,7 +973,8 @@ class MatchController {
       )
     }
 
-    const matchSortFunction = (a, b) => b.percent - a.percent || b.income - a.income
+    const matchSortFunction = (a, b) =>
+      b.percent - a.percent || b.is_activated - a.is_activated || b.income - a.income
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
