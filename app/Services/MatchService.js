@@ -8,7 +8,8 @@ const {
   countBy,
   groupBy,
   uniqBy,
-  isEqual
+  isEqual,
+  isNull
 } = require('lodash')
 const { props } = require('bluebird')
 const Promise = require('bluebird')
@@ -687,7 +688,9 @@ class MatchService {
     scoreT += floorScore * floorWeight
 
     // Rent Start Score prospect.rent_start is removed from the calculation
-    const vacantFrom = parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
+    const vacantFrom = isNull(estate.vacant_date)
+      ? parseInt(moment.utc().startOf('day').format('X'))
+      : parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
     const now = parseInt(moment.utc().startOf('day').format('X'))
     const nextSixMonths = parseInt(moment.utc().add(6, 'M').format('X'))
     const nextYear = parseInt(moment.utc().add(1, 'y').format('X'))
@@ -703,23 +706,6 @@ class MatchService {
       if (rentStartScore < 0) rentStartScore = 0
     }
     log({ vacantFrom, now, nextSixMonths, nextYear, rentStartScore })
-    if (rentStartScore <= 0) {
-      if (debug) {
-        return {
-          scoreT,
-          prospectBudgetScore,
-          roomsScore,
-          spaceScore,
-          floorScore,
-          rentStartScore,
-          aptTypeScore,
-          houseTypeScore,
-          amenitiesScore,
-          reason: 'rent start score zero'
-        }
-      }
-      return 0
-    }
     scoreT += rentStartScore * rentStartWeight
 
     // Apartment type is equal
