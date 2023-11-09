@@ -123,7 +123,8 @@ const {
   MAX_FLOOR_COUNT,
   FURNISHED_GERMAN_NAME,
   PUBLISH_TYPE_ONLINE_MARKET,
-  MAXIMUM_EXPIRE_PERIOD
+  MAXIMUM_EXPIRE_PERIOD,
+  MATCH_STATUS_KNOCK
 } = require('../constants')
 
 const {
@@ -1918,10 +1919,11 @@ class EstateService {
         )
       )
       .select(Database.raw('1 as rooms_min'))
+      .select('_m.status as match_status')
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.estate_id', 'estates.id')
           .onIn('_m.user_id', [userId])
-          .onIn('_m.status', [MATCH_STATUS_NEW])
+          .onIn('_m.status', [MATCH_STATUS_NEW, MATCH_STATUS_KNOCK])
       })
       .whereNot('_m.buddy', true)
       .where('estates.status', STATUS_ACTIVE)

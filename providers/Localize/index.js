@@ -20,8 +20,8 @@ class Localization {
    *
    */
   async init() {
-    //during test, if we go through pulling localization, response.res not found will result
-    //FIXME: find a way to handle this when localization is to be tested.
+    // during test, if we go through pulling localization, response.res not found will result
+    // FIXME: find a way to handle this when localization is to be tested.
     const File = use('App/Classes/File')
 
     if (

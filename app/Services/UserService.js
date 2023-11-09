@@ -217,20 +217,9 @@ class UserService {
           data2
         })
         break
-      case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: // outside prospect knock invitation
+      case OUTSIDE_PROSPECT_KNOCK_INVITE_TYPE: // outside prospect knock on Marketplace
         await require('./MarketPlaceService.js').createPendingKnock({ user, data1, data2 })
         break
-      // case OUTSIDE_TENANT_INVITE_TYPE: //outside tenant invitation
-      //   await require('./EstateCurrentTenantService').acceptOutsideTenant(
-      //     {
-      //       data1,
-      //       data2,
-      //       email,
-      //       user,
-      //     },
-      //     trx
-      //   )
-      //   break
     }
   }
 
@@ -348,11 +337,9 @@ class UserService {
       })
       await DataStorage.setItem(user.id, { code }, 'forget_password', { ttl: 3600 })
       const data = paramLang ? await this.getTokenWithLocale([user.id]) : null
-      const lang = paramLang || (data && data.length && data[0].lang
-        ? data[0].lang
-        : user.lang
-        ? user.lang
-        : DEFAULT_LANG)
+      const lang =
+        paramLang ||
+        (data && data.length && data[0].lang ? data[0].lang : user.lang ? user.lang : DEFAULT_LANG)
 
       if (process.env.NODE_ENV === TEST_ENVIRONMENT) {
         return { shortLink, code }
@@ -530,6 +517,7 @@ class UserService {
           )
           user.source_estate_id = null
         } else {
+          // this is an email confirmation of someone who knocked on a marketplace link
           await require('./MarketPlaceService').createKnock({ user }, trx)
         }
       }
@@ -1106,7 +1094,8 @@ class UserService {
           invite_type,
           source_estate_id,
           ip,
-          ip_based_info
+          ip_based_info,
+          activation_status: USER_ACTIVATION_STATUS_ACTIVATED
         },
         trx
       )

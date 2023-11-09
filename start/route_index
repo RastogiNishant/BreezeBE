@@ -2070,6 +2070,7 @@
     ],
     "middle": [
       "auth:jwtLandlord,jwtAdministrator",
+      "LandlordOwnsThisEstate",
       "agreement",
       "plan"
     ],
@@ -2236,7 +2237,7 @@
       "DELETE"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,Id",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2252,7 +2253,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2267,7 +2268,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,CreateRoomAmenity",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",
@@ -2282,7 +2283,7 @@
       "PUT"
     ],
     "middle": [
-      "auth:jwtLandlord",
+      "auth:jwtLandlord,jwtAdministrator",
       "valid:EstateId,RoomId,UpdateRoomAmenity",
       "LandlordOwnsThisEstate",
       "RoomBelongsToEstate",

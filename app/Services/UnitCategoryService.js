@@ -57,7 +57,7 @@ class UnitCategoryService {
   }
 
   static async getAllByQuery({ id }) {
-    let query = UnitCategory.query()
+    const query = UnitCategory.query()
     if (id) {
       query.whereIn('id', Array.isArray(id) ? id : [id])
     }
@@ -77,7 +77,7 @@ class UnitCategoryService {
   }
 
   static async getCategoryRepresentative(categoryId) {
-    //FIXME: representative should have been preselected during import/creation of unit.
+    // FIXME: representative should have been preselected during import/creation of unit.
     const representative = await Estate.query()
       .where('unit_category_id', categoryId)
       .whereNot('status', STATUS_DELETE)
