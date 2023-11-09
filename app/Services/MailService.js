@@ -1153,14 +1153,21 @@ class MailService {
   static async sendToProspectThatLandlordSentMessage({
     email,
     message,
+    recipient,
     estate_id,
+    estate,
     topic,
+    task_id,
+    type,
     lang = DEFAULT_LANG
   }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
+    const { sex, firstname, secondname, avatar } = recipient
     const shortLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}?type=MESSAGE_SENT&estate_id=${estate_id}&topic=${topic}`
+      `${process.env.DEEP_LINK}?type=PROSPECT_RECEIVES_MESSAGE&estate_id=${estate_id}&email=${email}&topic=${topic}&task_id=${task_id}` +
+        `&firstname=${firstname}&secondname=${secondname}&avatar=${avatar}&type=${type}&sex=${sex}`
     )
+    const estateAddress = this.getEmailAddressFormatter(estate, lang)
     const msg = {
       to: trim(email),
       from: {
@@ -1172,9 +1179,12 @@ class MailService {
         subject: l.get('prospect.email_message_from_landlord.subject.message', lang),
         salutation: l.get('email_signature.salutation.message', lang),
         CTA: l.get('prospect.email_day_of_visit_reminder.CTA.message', lang),
-        intro: l
-          .get('prospect.email_message_from_landlord.intro.message', lang)
-          .replace('{{message_content}}', message),
+        intro:
+          estateAddress +
+          `<br /><br />` +
+          l
+            .get('prospect.email_message_from_landlord.intro.message', lang)
+            .replace('{{message_content}}', message),
         link: shortLink,
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
