@@ -122,7 +122,9 @@ const {
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
   MATCH_STATUS_INVITE,
-  NOTICE_TYPE_PROSPECT_WARNED_TO_BE_DEACTIVATED_ID
+  NOTICE_TYPE_PROSPECT_WARNED_TO_BE_DEACTIVATED_ID,
+  NOTICE_TYPE_TENANT_PROFILE_SHARING_REQUEST_ID,
+  NOTICE_TYPE_PROSPECT_SHARE_PROFILE
 } = require('../constants')
 
 class NoticeService {
@@ -436,7 +438,6 @@ class NoticeService {
     })
   }
 
-
   static async getProspectLandlordInvite() {
     const result = await Database.table({ _m: 'matches' })
       .select('_m.user_id', Database.raw('COUNT(_m.user_id) AS match_count'))
@@ -460,7 +461,6 @@ class NoticeService {
       concurrency: 1
     })
   }
-
 
   /**
    *
@@ -1049,6 +1049,8 @@ class NoticeService {
         return NotificationsService.prospectFillUpProfileReminder([notice])
       case NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED:
         return NotificationsService.finalConfirmRequestExpired([notice])
+      case NOTICE_TYPE_PROSPECT_SHARE_PROFILE:
+        return NotificationsService.prospectSendCode([notice])
     }
   }
 
@@ -1481,6 +1483,17 @@ class NoticeService {
     }))
     await NoticeService.insertNotices(notices)
     await NotificationsService.prospectScheduledForDeactivation(notices)
+  }
+
+  static async notifyTenantByLandlordToShareProfile(prospectId, landlord, address, date) {
+    const notice = {
+      user_id: prospectId,
+      type: NOTICE_TYPE_TENANT_PROFILE_SHARING_REQUEST_ID,
+      data: { landlord, estate_address: address, date }
+    }
+
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.prospectSendCode([notice])
   }
 }
 

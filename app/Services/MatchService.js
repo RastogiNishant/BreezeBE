@@ -8,7 +8,8 @@ const {
   countBy,
   groupBy,
   uniqBy,
-  isEqual
+  isEqual,
+  isNull
 } = require('lodash')
 const { props } = require('bluebird')
 const Promise = require('bluebird')
@@ -106,9 +107,14 @@ const {
   YES_UNPAID_RENTAL,
   INCOME_TYPE_CHILD_BENEFIT,
   INCOME_TYPE_OTHER_BENEFIT,
-  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA
+  CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
+  NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE,
+  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
 } = require('../constants')
 
+const {
+  exceptions: { ERROR_DATE_NOT_MATCH_WITH_PROSPECT_VISIT_DATE }
+} = require('../../app/exceptions')
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
   exceptions: {
@@ -132,6 +138,7 @@ const {
   }
 } = require('../exceptions')
 const QueueService = require('./QueueService')
+const { generateAddress, createDynamicLink } = require('../Libs/utils')
 
 /**
  * Check is item in data range
@@ -246,17 +253,6 @@ class MatchService {
       householdSizeWeight +
       petsWeight
 
-    // WBS certificate score
-    console.log('calculating WBS Score...')
-    if (!MatchService.calculateWBSScore(prospect.wbs_certificate, estate.wbs_certificate)) {
-      if (debug) {
-        return {
-          scoreL: 0,
-          reason: 'wbs certificate mismatch'
-        }
-      }
-      return 0
-    }
     const isActivated = prospect.is_activated
     if (!isActivated) {
       if (debug) {
@@ -334,24 +330,10 @@ class MatchService {
     creditHistoryStatuses.map(({ status }) => {
       creditScorePoints += +status === CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA ? 1 : 0
       memberCount++
+      return creditScorePoints
     })
     creditScorePoints = creditScorePoints / memberCount
     log({ creditScorePoints })
-    if (!creditScorePoints > 0) {
-      if (debug) {
-        return {
-          scoreL,
-          landlordBudgetScore,
-          creditScorePoints,
-          rentArrearsScore,
-          ageInRangeScore,
-          householdSizeScore,
-          petsScore,
-          reason: 'credit score zero.'
-        }
-      }
-      return 0
-    }
     scoreL += creditScorePoints * creditScoreWeight
 
     // Get rent arrears score
@@ -712,7 +694,9 @@ class MatchService {
     scoreT += floorScore * floorWeight
 
     // Rent Start Score prospect.rent_start is removed from the calculation
-    const vacantFrom = parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
+    const vacantFrom = isNull(estate.vacant_date)
+      ? parseInt(moment.utc().startOf('day').format('X'))
+      : parseInt(moment.utc(estate.vacant_date).startOf('day').format('X'))
     const now = parseInt(moment.utc().startOf('day').format('X'))
     const nextSixMonths = parseInt(moment.utc().add(6, 'M').format('X'))
     const nextYear = parseInt(moment.utc().add(1, 'y').format('X'))
@@ -728,23 +712,6 @@ class MatchService {
       if (rentStartScore < 0) rentStartScore = 0
     }
     log({ vacantFrom, now, nextSixMonths, nextYear, rentStartScore })
-    if (rentStartScore <= 0) {
-      if (debug) {
-        return {
-          scoreT,
-          prospectBudgetScore,
-          roomsScore,
-          spaceScore,
-          floorScore,
-          rentStartScore,
-          aptTypeScore,
-          houseTypeScore,
-          amenitiesScore,
-          reason: 'rent start score zero'
-        }
-      }
-      return 0
-    }
     scoreT += rentStartScore * rentStartWeight
 
     // Apartment type is equal
@@ -1498,8 +1465,10 @@ class MatchService {
       throw new AppException(ERROR_COMMIT_MATCH_INVITE, 400, ERROR_COMMIT_MATCH_INVITE_CODE)
     }
 
-    const newMatch = await Match.query().where({ estate_id: newEstateId, user_id: userId }).first()
-    if (newMatch?.status >= match.status) {
+    const existingMatch = await Match.query()
+      .where({ estate_id: newEstateId, user_id: userId })
+      .first()
+    if (existingMatch?.status >= match.status) {
       throw new AppException(ERROR_ALREADY_MATCH_INVITE, 400, ERROR_ALREADY_MATCH_INVITE_CODE)
     }
 
@@ -1510,98 +1479,44 @@ class MatchService {
 
     const trx = await Database.beginTransaction()
     try {
-      let newStatus = match.status
       if (match.status === MATCH_STATUS_NEW && match.buddy) {
         match.status = MATCH_STATUS_KNOCK
       }
-
-      let isMovedToNewEstate = true
+      // we set new match's status to MATCH_STATUS_KNOCK for now. Anyway,
+      // landlord can move this guy to other stages
       const newMatch = {
         ...match,
         estate_id: newEstateId,
         percent,
         landlord_score,
         prospect_score,
-        status_at: moment.utc(new Date()).format(DATE_FORMAT)
+        status_at: moment.utc(new Date()).format(DATE_FORMAT),
+        status: MATCH_STATUS_KNOCK
       }
-
-      switch (match.status) {
-        case MATCH_STATUS_KNOCK:
-        case MATCH_STATUS_INVITE:
-          await this.matchInviteAfter({ userId, estate: newEstate }, trx)
-          if (newEstate.is_not_show) {
-            newStatus = MATCH_STATUS_TOP
-          } else {
-            newStatus = MATCH_STATUS_INVITE
-          }
-
-          break
-        case MATCH_STATUS_VISIT:
-        case MATCH_STATUS_SHARE:
-          await this.upsertBulkMatches([newMatch], trx)
-          break
-        case MATCH_STATUS_TOP:
-          await this.toTop(
-            {
-              estateId: newEstateId,
-              tenantId: userId,
-              landlordId: estate.user_id,
-              match: newMatch
-            },
-            trx
-          )
-          break
-        case MATCH_STATUS_COMMIT:
-          if (!(await MatchService.canRequestFinalCommit(newEstateId))) {
-            throw new HttpException(ERROR_MATCH_COMMIT_DOUBLE, 400, ERROR_MATCH_COMMIT_DOUBLE_CODE)
-          }
-
-          await MatchService.requestFinalConfirm(
-            {
-              estateId: newEstateId,
-              tenantId: userId,
-              match: newMatch
-            },
-            trx
-          )
-          console.log('matchMoveToNewEstate=', MATCH_STATUS_COMMIT)
-          break
-        default:
-          isMovedToNewEstate = false
-          break
+      if (existingMatch) {
+        await existingMatch.updateItemWithTrx(newMatch, trx)
+      } else {
+        await Match.createItem(newMatch, trx)
       }
+      // Remove previous one
+      await Match.query()
+        .where('user_id', userId)
+        .where('estate_id', estateId)
+        .delete()
+        .transacting(trx)
 
-      // remove original estate
-      if (isMovedToNewEstate) {
-        await Match.query()
-          .where('user_id', userId)
-          .where('estate_id', estateId)
-          .delete()
-          .transacting(trx)
-      }
-
+      // send websocket event
       this.emitMatch({
         data: {
           estate_id: newEstateId,
           user_id: userId,
           old_status: newMatch?.status || NO_MATCH_STATUS,
-          status: newStatus
+          status: MATCH_STATUS_KNOCK
         },
         role: ROLE_USER
       })
-      await trx.commit()
 
-      if (isMovedToNewEstate) {
-        this.emitMatch({
-          data: {
-            estate_id: estateId,
-            user_id: userId,
-            old_status: match.status,
-            status: NO_MATCH_STATUS
-          },
-          role: ROLE_USER
-        })
-      }
+      await trx.commit()
     } catch (e) {
       await trx.rollback()
       throw new HttpException(e.message, e.status || 400, e.code || 0)
@@ -3634,7 +3549,7 @@ class MatchService {
         Database.raw(`
             (select
               members.user_id,
-              bool_and(case when member_has_id is not null then true else false end) as id_verified
+              bool_or(case when member_has_id is not null then true else false end) as id_verified
             from members
             left join
               (select
@@ -3817,6 +3732,7 @@ class MatchService {
       '_v.tenant_status AS visit_status',
       '_v.tenant_delay AS delay',
       '_m.buddy',
+      '_m.profile_status',
       '_m.share as share',
       '_m.status as status',
       '_m.user_id',
@@ -4332,7 +4248,7 @@ class MatchService {
         // members...
         Database.raw(`
       (select
-        user_id, owner_user_id,
+        user_id,
         json_agg(json_build_object('status', credit_history_status)) as credit_history_status,
         count(id) as members_count,
         bool_or(coalesce(debt_proof, null) is not null) as credit_score_proofs,
@@ -4341,16 +4257,11 @@ class MatchService {
         -- sum(income) as income,
         json_agg(extract(year from age(${Database.fn.now()}, birthday)) :: int) as members_age
       from members
-      group by user_id,owner_user_id
+      group by user_id
       ) as _m
       `),
-        function () {
-          this.on(
-            Database.raw(
-              `( _m.user_id = tenants.user_id and _m.owner_user_id is null ) or ( _m.owner_user_id = tenants.user_id and _m.owner_user_id is not null )`
-            )
-          )
-        }
+        '_m.user_id',
+        'tenants.user_id'
       )
       .leftJoin(
         // 'city_id', city_id,
@@ -4845,6 +4756,82 @@ class MatchService {
       match: matches?.[placeNumber],
       place_num: placeNumber + 1
     }
+  }
+
+  static async requestTenantToShareProfile(prospectId, landlordId, date, estateId) {
+    const visitDate = moment.utc(date, DATE_FORMAT).format(DATE_FORMAT)
+    const getVisit = await Visit.query()
+      .where({ user_id: prospectId })
+      .where({ estate_id: estateId })
+      .where({ date: visitDate })
+      .fetch()
+
+    const visit = getVisit.toJSON()
+
+    if (visit.length === 0) {
+      // Move match status to next
+      await Match.query()
+        .update({
+          profile_status: NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE
+        })
+        .where({
+          user_id: prospectId,
+          estate_id: estateId
+        })
+      throw new AppException(ERROR_DATE_NOT_MATCH_WITH_PROSPECT_VISIT_DATE, 404)
+    }
+
+    const estate = (await EstateService.getMatchEstate(estateId, landlordId)).toJSON()
+
+    const address = generateAddress({
+      street: estate?.street,
+      house_number: estate?.house_number,
+      zip: estate?.postcode,
+      city: estate?.city,
+      country: estate?.country
+    })
+
+    const prospectUser = await User.query().where('id', prospectId).first()
+    const landlordUser = await User.query().where('id', landlordId).first()
+    const landlord = `${landlordUser?.firstname} ${landlordUser?.secondname}`
+
+    await NoticeService.notifyTenantByLandlordToShareProfile(
+      prospectId,
+      landlord,
+      address,
+      visitDate
+    )
+
+    const shareLink = await createDynamicLink(
+      `${process.env.DEEP_LINK}/profile/request?landlord=${landlord}&address=${address}&date=${visitDate}`
+    )
+
+    MailService.sendRequestToTenantForShareProfile({
+      prospectEmail: prospectUser?.email,
+      estate,
+      landlord,
+      shareLink
+    })
+
+    await Match.query()
+      .update({
+        profile_status: LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
+      })
+      .where({
+        user_id: prospectId,
+        estate_id: estateId
+      })
+  }
+
+  static async prospectRespondToProfileSharingRequest(userId, estateId, profileStatus) {
+    return await Match.query()
+      .update({
+        profile_status: profileStatus
+      })
+      .where({
+        user_id: userId,
+        estate_id: estateId
+      })
   }
 }
 

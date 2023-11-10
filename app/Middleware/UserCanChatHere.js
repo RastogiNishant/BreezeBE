@@ -21,23 +21,23 @@ class UserCanChatHere {
     let matches
     let chatUser
     if ((matches = socket.topic.match(/^estate:([0-9]+)$/))) {
-      //estate chat...
-      //make sure that the user is the current tenant or the owner of this estate
+      // estate chat...
+      // make sure that the user is the current tenant or the owner of this estate
       chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role)
       if (!chatUser) {
         throw new HttpException(`User cannot send message to this topic.`, 403, 1101)
       }
       request.estate_id = matches[1]
     } else if ((matches = socket.topic.match(/^task:([0-9]+)brz([0-9]+)$/))) {
-      //brz - is the divider between estate and task id
-      //estate task chat
-      chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role)
-      if (!chatUser) {
-        throw new HttpException(`User cannot send message to this topic.`, 403, 1102)
-      }
       const task = await this._getTask(matches[2], matches[1])
       if (!task) {
         throw new HttpException(`Task not found or you are not allowed on this task`, 403, 1103)
+      }
+      // brz - is the divider between estate and task id
+      // estate task chat
+      chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role, task.id)
+      if (!chatUser) {
+        throw new HttpException(`User cannot send message to this topic.`, 403, 1102)
       }
       request.task_id = task.id
       request.estate_id = matches[1]
@@ -49,7 +49,7 @@ class UserCanChatHere {
     await next()
   }
 
-  async _hasPermissionToChat(estate_id, user_id, role = ROLE_LANDLORD) {
+  async _hasPermissionToChat(estate_id, user_id, role = ROLE_LANDLORD, task_id = null) {
     let chatUser
 
     // check if this estate has a final match
@@ -65,16 +65,27 @@ class UserCanChatHere {
       chatUser = await query.where('estate_current_tenants.user_id ', user_id).first()
     }
 
-    // check if this estate has a top match
-    if (!chatUser) {
-      chatUser = await MatchService.getUserToChat({ user_id, estate_id, role })
+    // get this user from the task itself
+    if (!chatUser && task_id) {
+      query = Task.query()
+        .select(Database.raw(`estates.user_id as estate_user_id`))
+        .select(Database.raw(`tasks.tenant_id as tenant_user_id`))
+        .where('tasks.estate_id', estate_id)
+        .where('tasks.id', task_id)
+        .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+
+      if (role === ROLE_LANDLORD) {
+        chatUser = await query.where('estates.user_id', user_id).first()
+      } else {
+        chatUser = await query.where('tasks.tenant_id', user_id).first()
+      }
     }
 
     return chatUser
   }
 
   async _getTask(task_id, estate_id) {
-    let task = await Task.query().where('id', task_id).where('estate_id', estate_id).first()
+    const task = await Task.query().where('id', task_id).where('estate_id', estate_id).first()
     return task
   }
 }
