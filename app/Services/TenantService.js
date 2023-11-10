@@ -652,8 +652,11 @@ class TenantService extends BaseService {
           const validIncomeProofs = await IncomeProof.query()
             .where('income_proofs.status', STATUS_ACTIVE)
             .where('income_proofs.income_id', proof.income_id)
-            .where('income_proofs.expire_date')
-            .first()
+            .where('income_proofs.expire_date', '>', startOf)
+            .fetch()
+          if ((validIncomeProofs.toJSON() || []).length < REQUIRED_INCOME_PROOFS_COUNT) {
+            // we warn prospect
+          }
         }
       },
       { concurrency: 1 }
