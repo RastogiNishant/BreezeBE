@@ -506,6 +506,7 @@ class UserController {
                 'secondname', members.secondname,
                 'rent_arrears', members.rent_arrears_doc,
                 'debt_proof', members.debt_proof,
+                'phone', members.phone,
                 'files', mf.files,
                 'incomes', mi.member_incomes,
                 'unpaid_rental', members.unpaid_rental,
