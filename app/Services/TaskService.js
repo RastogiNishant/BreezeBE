@@ -24,8 +24,8 @@ const {
   TASK_COMMON_TYPE,
   TASK_ORDER_BY_URGENCY,
   WEBSOCKET_EVENT_TASK_UPDATED,
-  MATCH_STATUS_INVITE,
-  MATCH_STATUS_NEW
+  MATCH_STATUS_KNOCK,
+  NOTICE_TYPE_LANDLORD_SENT_TASK_MESSAGE
 } = require('../constants')
 
 const WebSocket = use('App/Classes/Websocket')
@@ -60,6 +60,7 @@ const TaskFilters = require('../Classes/TaskFilters')
 const ChatService = require('./ChatService')
 const NoticeService = require('./NoticeService')
 const BaseService = require('./BaseService')
+const MailService = require('./MailService')
 
 class TaskService extends BaseService {
   static async create(request, user, trx) {
@@ -73,7 +74,7 @@ class TaskService extends BaseService {
     let task = {
       ...data,
       creator_role: user.role,
-      tenant_id: tenant_id,
+      tenant_id,
       status: TASK_STATUS_NEW,
       status_changed_by: user.role
     }
@@ -136,11 +137,11 @@ class TaskService extends BaseService {
       task_id,
       answer
     } = data
-    let { attachments } = data
+    const { attachments } = data
 
     const lang = user.lang ?? DEFAULT_LANG
 
-    //FIXME: predefined_message_id should be required?
+    // FIXME: predefined_message_id should be required?
     const predefinedMessage = await PredefinedMessage.query()
       .where('id', predefined_message_id)
       .firstOrFail()
@@ -270,14 +271,14 @@ class TaskService extends BaseService {
          * Here figma design goes
          * https://www.figma.com/file/HlARfzphIIBod970Libkze/Prospects?node-id=19939-577&t=5gpiYu1FQFMSlWOz-0
          */
-        //unassigned task
+        // unassigned task
         if (!task.estate_id) {
           await require('./OutsideLandlordService').noticeInvitationToLandlord({
             user,
             task_id: task.id
           })
         } else {
-          //assigned task
+          // assigned task
           await this.sendTaskCreated({ estate_id: task.estate_id })
         }
       }
@@ -321,7 +322,7 @@ class TaskService extends BaseService {
     } else {
       taskResult = await taskRow.updateItem({ ...task })
     }
-    //tasks.landlord_id is not always populated
+    // tasks.landlord_id is not always populated
     const estate = await EstateService.getById(task.estate_id)
     let user_id = taskRow.tenant_id
     let role = ROLE_USER
@@ -404,7 +405,7 @@ class TaskService extends BaseService {
   }
 
   static async getTaskById({ id, estate_id, prospect_id, user }) {
-    let taskQuery = Task.query()
+    const taskQuery = Task.query()
 
     if (id) {
       taskQuery.where('id', id)
@@ -440,7 +441,7 @@ class TaskService extends BaseService {
       if (estate_id) {
         const estate = await EstateService.getById(estate_id)
         const match = await require('./MatchService').getMatches(prospect_id || user.id, estate_id)
-        if (estate && match && (match.status >= MATCH_STATUS_INVITE || estate.is_not_show)) {
+        if (estate && match?.status >= MATCH_STATUS_KNOCK) {
           task = await this.createGlobalTask({
             tenantId: prospect_id || user.id,
             landlordId: estate.user_id,
@@ -473,7 +474,7 @@ class TaskService extends BaseService {
   }
 
   static async getUnassignedTask(id) {
-    let task = await Task.query().where('id', id).with('user').first()
+    const task = await Task.query().where('id', id).with('user').first()
     if (!task) {
       throw new HttpException(NO_TASK_FOUND, 400)
     }
@@ -514,7 +515,7 @@ class TaskService extends BaseService {
     page = -1,
     limit = -1
   }) {
-    let query = Task.query()
+    const query = Task.query()
       .with('user')
       .whereNull('estate_id')
       .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
@@ -554,7 +555,7 @@ class TaskService extends BaseService {
     page = -1,
     limit = -1
   }) {
-    let taskQuery = Task.query()
+    const taskQuery = Task.query()
       .select('tasks.*')
       .select(
         Database.raw(
@@ -703,7 +704,7 @@ class TaskService extends BaseService {
   }
 
   static async count({ estate_id, status, urgency, role }) {
-    let query = Database.table('tasks')
+    const query = Database.table('tasks')
       .count('*')
       .where('estate_id', estate_id)
       .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_ARCHIVED])
@@ -775,7 +776,7 @@ class TaskService extends BaseService {
       throw new HttpException('No Estate provided', 400)
     }
 
-    //to check if the user has permission
+    // to check if the user has permission
     if (role === ROLE_LANDLORD) {
       await EstateService.hasPermission({ id: estate_id, user_id })
     }

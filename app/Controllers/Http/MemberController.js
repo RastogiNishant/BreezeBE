@@ -50,10 +50,10 @@ class MemberController {
       userId = owner.owner_id
     }
 
-    let members = await MemberService.getMembers(userId)
+    const members = await MemberService.getMembers(userId)
     const myMemberId = await MemberService.getMemberIdByOwnerId(auth.user)
     const memberPermissions = (await MemberPermissionService.getMemberPermission(myMemberId)).rows
-    let userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
+    const userIds = memberPermissions ? memberPermissions.map((mp) => mp.user_id) : []
     userIds.push(auth.user.id)
     response.res({ members, permittedUserIds: userIds })
   }
@@ -181,8 +181,8 @@ class MemberController {
    *
    */
   async updateMember({ request, auth, response }) {
-    //FIXME: id must be checked whether this id is a member of the current user
-    //this will cause sql query if NOT.
+    // FIXME: id must be checked whether this id is a member of the current user
+    // this will cause sql query if NOT.
     const { id, ...data } = request.all()
     let files
     try {
@@ -198,7 +198,7 @@ class MemberController {
     const trx = await Database.beginTransaction()
     try {
       if (files.passport) {
-        let memberFile = new MemberFile()
+        const memberFile = new MemberFile()
         memberFile.merge({
           file: files.passport,
           type: MEMBER_FILE_TYPE_PASSPORT,
@@ -236,7 +236,7 @@ class MemberController {
    *
    */
   async removeMember({ request, auth, response }) {
-    //TODO: add condition to prevent user delete main adult
+    // TODO: add condition to prevent user delete main adult
     const { id } = request.all()
     const trx = await Database.beginTransaction()
 
@@ -245,9 +245,9 @@ class MemberController {
       if (!member) {
         throw new HttpException('Member not exists', 400)
       } else if (auth.user.owner_id && auth.user.owner_id === member.user_id) {
-        //TODO: add one more condition to check if this member is belong to authenticated user by "owner_user_id"
-        //if user trying to disconnect from the tenant that invited
-        //we will process it as, tenant is trying to remove household
+        // TODO: add one more condition to check if this member is belong to authenticated user by "owner_user_id"
+        // if user trying to disconnect from the tenant that invited
+        // we will process it as, tenant is trying to remove household
         member = await Member.query().where('owner_user_id', auth.user.id).first()
       } else if (member.user_id !== auth.user.id && member.owner_user_id !== auth.user.id) {
         throw new HttpException('Permission denied', 400)
@@ -294,11 +294,11 @@ class MemberController {
     const trx = await Database.beginTransaction()
     try {
       if (visibility_to_other === VISIBLE_TO_NOBODY) {
-        //hidden
+        // hidden
         await MemberPermissionService.deletePermission(member_id, trx)
       }
       if (visibility_to_other === VISIBLE_TO_SPECIFIC) {
-        //Event.fire('memberPermission:create', member_id, auth.user.id)
+        // Event.fire('memberPermission:create', member_id, auth.user.id)
         await MemberPermissionService.createMemberPermission(member_id, auth.user.id, trx)
       }
       await trx.commit()
@@ -323,7 +323,7 @@ class MemberController {
     }
 
     member[field] = Array.isArray(member[field]) ? member[field] : [member[field]]
-    let deleteFiles = uri ? member[field].find((file) => file === uri) : member[field]
+    const deleteFiles = uri ? member[field].find((file) => file === uri) : member[field]
     await File.remove(deleteFiles, false)
 
     member[field] = uri ? member[field].filter((file) => file !== uri) : null
@@ -343,7 +343,7 @@ class MemberController {
   /**
    *
    */
-  //MERGED TENANT
+  // MERGED TENANT
   async addMemberIncome({ request, auth, response }) {
     const { id, ...data } = request.all()
 
@@ -369,7 +369,7 @@ class MemberController {
   /**
    *
    */
-  //MERGED TENANT
+  // MERGED TENANT
   async editIncome({ request, auth, response }) {
     const { income_id, id, ...rest } = request.all()
 
@@ -408,7 +408,7 @@ class MemberController {
   /**
    *
    */
-  //MERGED TENANT
+  // MERGED TENANT
   async removeMemberIncome({ request, auth, response }) {
     const { income_id } = request.all()
     const user_id = auth.user.owner_id || auth.user.id
@@ -434,9 +434,9 @@ class MemberController {
   /**
    *
    */
-  //MERGED TENANT
+  // MERGED TENANT
   async addMemberIncomeProof({ request, auth, response }) {
-    //NOTE: expire_date here is the month when the income is earned.
+    // NOTE: expire_date here is the month when the income is earned.
     const { income_id, ...rest } = request.all()
     const user_id = auth.user.owner_id || auth.user.id
     const income = await MemberService.getIncomeByIdAndUser(income_id, auth.user)
@@ -455,11 +455,11 @@ class MemberController {
   /**
    *
    */
-  //MERGED TENANT
+  // MERGED TENANT
   async removeMemberIncomeProof({ request, auth, response }) {
     const { id } = request.all()
     const user_id = auth.user.owner_id || auth.user.id
-    let proofQuery = IncomeProof.query()
+    const proofQuery = IncomeProof.query()
       .select('income_proofs.*')
       .innerJoin({ _i: 'incomes' }, function () {
         this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
@@ -475,7 +475,7 @@ class MemberController {
     } else {
       throw new HttpException('Invalid income proof', 400)
     }
-    //mark it with STATUS_DELETE
+    // mark it with STATUS_DELETE
     await IncomeProof.query().where('id', proof.id).update({ status: STATUS_DELETE })
     Event.fire('tenant::update', user_id)
     response.res(true)

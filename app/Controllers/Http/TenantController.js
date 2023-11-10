@@ -25,7 +25,7 @@ const {
   MEMBER_FILE_TYPE_EXTRA_DEBT,
   MEMBER_FILE_TYPE_EXTRA_PASSPORT,
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
-  LOG_TYPE_DEACTIVATED_PROFILE,
+  LOG_TYPE_DEACTIVATED_PROFILE
 } = require('../../constants')
 
 const { logEvent } = require('../../Services/TrackingService')
@@ -38,12 +38,12 @@ class TenantController {
     const { user_id, file_id, file_type, member_id } = request.all()
     if (auth.user.role === ROLE_USER) {
       if (+auth.user.id !== +user_id && +auth.user.owner_id !== +user_id) {
-        //MERGED TENANT
+        // MERGED TENANT
         throw new HttpException('No access', 403)
       }
     } else if (auth.user.role === ROLE_LANDLORD) {
-      //TODO: WARNING: SECURITY
-      let hasAccess = true
+      // TODO: WARNING: SECURITY
+      const hasAccess = true
       // let hasAccess = await UserService.landlordHasAccessTenant(auth.user.id, user_id)
       // if (!hasAccess) {
       //   const fileOwner = await User.query().where('id', user_id).first()
@@ -96,8 +96,8 @@ class TenantController {
    */
   async updateTenant({ request, auth, response }) {
     const data = request.all()
+    Logger.info(`updateTenant start ${auth.user.id} ${new Date().toISOString()}`)
     const trx = await Database.beginTransaction()
-
     try {
       const tenant = await UserService.getOrCreateTenant(auth.user, trx)
 
@@ -124,14 +124,7 @@ class TenantController {
         Object.keys(omit(data, ['only_count'])),
         ...Tenant.updateIgnoreFields
       ).length
-
-      if (shouldDeactivateTenant) {
-        tenant.notify_sent = [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID]
-        tenant.status = STATUS_DRAFT
-      } else {
-      }
       await tenant.updateItemWithTrx(omit(data, ['only_count']), trx)
-
       await trx.commit()
 
       // Add tenant anchor zone processing
@@ -141,6 +134,7 @@ class TenantController {
       }
 
       if (shouldDeactivateTenant) {
+        // this event is enough to deactivate tenant if ever
         Event.fire('tenant::update', auth.user.id)
       }
       Logger.info(`Before QueueService ${auth.user.id} ${moment.utc(new Date()).toISOString()}`)
@@ -199,8 +193,8 @@ class TenantController {
   }
 
   async detail({ request, auth, response }) {
-    let tenant = await TenantService.getTenantWithCertificates(auth.user.id)
-    let members = await MemberService.getMembers(auth.user.id, true)
+    const tenant = await TenantService.getTenantWithCertificates(auth.user.id)
+    const members = await MemberService.getMembers(auth.user.id, true)
     response.res({
       tenant,
       members
@@ -272,7 +266,7 @@ class TenantController {
       city = await CityService.get(request_certificate_city_id)
     }
 
-    //TODO: need to send wbs link from city table. coming soon
+    // TODO: need to send wbs link from city table. coming soon
     response.res({
       request_certificate_at,
       city
