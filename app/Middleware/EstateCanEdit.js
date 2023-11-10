@@ -10,7 +10,8 @@ const {
     WRONG_PARAMS,
     NO_ESTATE_EXIST,
     ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE
-  }
+  },
+  exceptionCodes: { ERROR_PROPERTY_AREADY_PUBLISHED_CODE }
 } = require('../exceptions')
 class EstateCanEdit {
   async handle({ auth, request }, next) {
@@ -36,7 +37,11 @@ class EstateCanEdit {
     }
 
     if (estate.publish_status === PUBLISH_STATUS_APPROVED_BY_ADMIN) {
-      throw new HttpException(ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE, 400)
+      throw new HttpException(
+        ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE,
+        400,
+        ERROR_PROPERTY_AREADY_PUBLISHED_CODE
+      )
     }
 
     await next()
