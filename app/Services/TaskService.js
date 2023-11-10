@@ -964,6 +964,16 @@ class TaskService extends BaseService {
       })
     }
   }
+
+  static async getGlobalTaskByEstateIdAndTenantId({ tenantId, estateId }) {
+    const task = await Task.query()
+      .select('id')
+      .where('type', TASK_SYSTEM_TYPE)
+      .where('tenant_id', tenantId)
+      .where('estate_id', estateId)
+      .first()
+    return task ? task.id : null
+  }
 }
 
 module.exports = TaskService
