@@ -183,21 +183,23 @@ class TaskController extends BaseController {
         },
         topic: this.socket.topic
       }
-
-      const recipientTopic =
-        this.user.role === ROLE_LANDLORD
-          ? `tenant:${this.tenant_user_id}`
-          : `landlord:${this.estate_user_id}`
-
       const task = await TaskService.get(this.taskId)
       // broadcast taskMessageReceived event to either tenant or landlord
       // taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
-
+      const estate = await Estate.query().select('property_id').where('id', this.estateId).first()
       const messageReceivedData = {
         topic: this.socket.topic,
+        message: chat.text,
         urgency: task?.urgency,
         estate_id: this.estateId,
-        user_id: this.user.id
+        user_id: this.user.id,
+        property_id: estate?.property_id,
+        sender: {
+          id: this.user.id,
+          firstname: this.user.firstname,
+          secondname: this.user.secondname,
+          avatar: this.user.avatar
+        }
       }
 
       if (this.user.role === ROLE_LANDLORD) {
@@ -216,7 +218,6 @@ class TaskController extends BaseController {
 
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
-      // FIXME: send email here...
       if (this.user.role === ROLE_LANDLORD) {
         const recipient = await User.query()
           .select('email', 'lang', 'sex', 'firstname', 'secondname', 'avatar')
