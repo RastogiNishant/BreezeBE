@@ -440,6 +440,7 @@ class UserController {
         'users.email',
         'users.firstname',
         'users.secondname',
+        'users.phone',
         Database.raw(`to_char(users.last_login, '${ISO_DATE_FORMAT}') as last_login`),
         Database.raw(`to_char(users.updated_at, '${ISO_DATE_FORMAT}') as updated_at`),
         Database.raw(
