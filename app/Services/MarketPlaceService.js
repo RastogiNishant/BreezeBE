@@ -444,7 +444,7 @@ class MarketPlaceService {
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
 
-  static async createDynamicLink({ contact, estate, email, other_info, contact_info }) {
+  static async  createDynamicLink({ contact, estate, email, other_info, contact_info }) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {

@@ -454,6 +454,14 @@ Route.group(() => {
     'auth:jwt',
     'valid:ChooseTimeslot'
   ])
+  Route.post('/profile/request', 'MatchController.requestTenantToShareProfile').middleware([
+    'auth:jwtLandlord',
+    'valid:RequestProspectProfile'
+  ])
+  Route.post('/profile/response', 'MatchController.prospectRespondToProfileSharingRequest').middleware([
+    'auth:jwt',
+    'valid:ShareProfileStatus'
+  ])
   Route.post('/visit/inviteIn', 'MatchController.inviteTenantInToVisit').middleware([
     'auth:jwtLandlord',
     'valid:InviteInToVisit'

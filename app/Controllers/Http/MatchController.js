@@ -48,7 +48,8 @@ const {
   LETTING_STATUS_TERMINATED,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
-  STATUS_OFFLINE_ACTIVE
+  STATUS_OFFLINE_ACTIVE,
+  LOG_TYPE_REQUEST_PROFILE
 } = require('../../constants')
 const { createDynamicLink } = require('../../Libs/utils')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
@@ -972,7 +973,8 @@ class MatchController {
       )
     }
 
-    const matchSortFunction = (a, b) => b.percent - a.percent || b.income - a.income
+    const matchSortFunction = (a, b) =>
+      b.percent - a.percent || b.is_activated - a.is_activated || b.income - a.income
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
@@ -1347,6 +1349,36 @@ class MatchController {
       response.res(true)
     } catch (err) {
       throw new HttpException(err.message, 400)
+    }
+  }
+
+  async requestTenantToShareProfile({ request, auth, response }) {
+    const userId = auth.user.id
+    const { prospectId, date, estateId } = request.all()
+    try {
+      await MatchService.requestTenantToShareProfile(prospectId, userId, date, estateId)
+      logEvent(request, LOG_TYPE_REQUEST_PROFILE, userId, { prospectId, role: ROLE_USER }, false)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
+  async prospectRespondToProfileSharingRequest({ request, auth, response }) {
+    const userId = auth.user.id
+    const { estateId, profileStatus } = request.all()
+    try {
+      await MatchService.prospectRespondToProfileSharingRequest(userId, estateId, profileStatus)
+      return response.res(true)
+    } catch (e) {
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
     }
   }
 }
