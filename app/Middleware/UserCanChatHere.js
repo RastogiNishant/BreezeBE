@@ -35,7 +35,7 @@ class UserCanChatHere {
       }
       // brz - is the divider between estate and task id
       // estate task chat
-      chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role)
+      chatUser = await this._hasPermissionToChat(matches[1], auth.user.id, auth.user.role, task.id)
       if (!chatUser) {
         throw new HttpException(`User cannot send message to this topic.`, 403, 1102)
       }
@@ -49,7 +49,7 @@ class UserCanChatHere {
     await next()
   }
 
-  async _hasPermissionToChat(estate_id, user_id, role = ROLE_LANDLORD) {
+  async _hasPermissionToChat(estate_id, user_id, role = ROLE_LANDLORD, task_id = null) {
     let chatUser
 
     // check if this estate has a final match
@@ -66,12 +66,14 @@ class UserCanChatHere {
     }
 
     // get this user from the task itself
-    if (!chatUser) {
+    if (!chatUser && task_id) {
       query = Task.query()
         .select(Database.raw(`estates.user_id as estate_user_id`))
         .select(Database.raw(`tasks.tenant_id as tenant_user_id`))
         .where('tasks.estate_id', estate_id)
+        .where('tasks.id', task_id)
         .innerJoin('estates', 'estates.id', 'tasks.estate_id')
+
       if (role === ROLE_LANDLORD) {
         chatUser = await query.where('estates.user_id', user_id).first()
       } else {
