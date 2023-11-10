@@ -975,6 +975,10 @@ class MatchController {
       )
     }
 
+    // @TODO: performance (bad db performance)
+    // step one load all global tasks for estate
+    // get unread message count for taskId list
+    // access that data later
     const getUnreadMessagesCount = async (estateId, tenantId) => {
       const taskId = await TaskService.getGlobalTaskByEstateIdAndTenantId({ tenantId, estateId })
       if (taskId) {
