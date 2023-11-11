@@ -57,7 +57,7 @@ class EstateSerializer extends BaseSerializer {
     }
 
     if (isDate(item.last_modernization)) {
-      item.last_modernization = moment(item.last_modernization).format('YYYY-MM-DD')
+      item.last_modernization = moment(item.last_modernization).format('YYYY')
     }
 
     // const options = item.constructor.options
