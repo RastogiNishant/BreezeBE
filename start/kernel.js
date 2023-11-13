@@ -1,7 +1,5 @@
 'use strict'
 
-const EstateFoundByHash = require('../app/Middleware/EstateFoundByHash')
-
 /** @type {import('@adonisjs/framework/src/Server')} */
 const Server = use('Server')
 
@@ -15,6 +13,7 @@ const Server = use('Server')
 |
 */
 const globalMiddleware = [
+  'App/Middleware/SentryTransaction',
   'App/Middleware/QueryParse',
   'Adonis/Middleware/BodyParser',
   'App/Middleware/ConvertEmptyStringsToNull'
