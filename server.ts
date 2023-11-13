@@ -36,10 +36,8 @@ Sentry.init({
   attachStacktrace: true,
   // include local var values
   includeLocalVariables: true,
-
   // production only report 1 in 5
   tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.2 : 1.0,
-
   // filter not needed traces
   beforeBreadcrumb (breadcrumb) {
     // ignore outgoing traffic logging
@@ -50,7 +48,16 @@ Sentry.init({
     }
 
     return breadcrumb
-  }
+  },
+  // trace performance of transactions automatically
+  integrations: [
+    // enable HTTP calls tracing
+    new Sentry.Integrations.Http({ tracing: true }),
+    // enable postgres calls tracing
+    new Sentry.Integrations.Postgres(),
+    // auto discover
+    ...Sentry.autoDiscoverNodePerformanceMonitoringIntegrations()
+  ]
 })
 
 // TODO: change hardcoded cert paths
