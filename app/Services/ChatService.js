@@ -368,39 +368,11 @@ class ChatService {
       .whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
 
     if (role === ROLE_LANDLORD) {
-      /*
-      query.innerJoin(
-        Database.raw(
-          `(select users.id, json_build_object(
-            'id', users.id,
-            'firstname', users.firstname,
-            'secondname', users.secondname,
-            'avatar', users.avatar
-          ) as sender from users
-          group by users.id) as _sender`
-        ),
-        'tasks.tenant_id',
-        '_sender.id'
-      ) */
       query.where('estates.user_id', userId)
     } else if (role === ROLE_USER) {
-      query.innerJoin(
-        Database.raw(
-          `(select users.id, json_build_object(
-            'id', users.id,
-            'firstname', users.firstname,
-            'secondname', users.secondname,
-            'avatar', users.avatar
-          ) as sender from users 
-          group by users.id as _sender`
-        ),
-        'estates.user_id',
-        '_sender.id'
-      )
       query.where('tasks.tenant_id', userId)
     }
     query.where('unread_role', role)
-    // query.where('unread_count', '>', 0)
 
     taskEstates = await query.fetch()
     taskEstates = taskEstates.toJSON() || []
