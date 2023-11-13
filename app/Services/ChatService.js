@@ -21,7 +21,8 @@ const {
   STATUS_DELETE,
   LETTING_TYPE_LET,
   TASK_STATUS_NEW,
-  TASK_STATUS_INPROGRESS
+  TASK_STATUS_INPROGRESS,
+  DATE_FORMAT
 } = require('../constants')
 const {
   exceptions: { MESSAGE_ATTACHMENT_WRONG_FORMAT }
@@ -68,12 +69,12 @@ class ChatService {
   }
 
   static async save({ message, user_id, task_id }, trx = null) {
-    let data = {}
+    const data = {}
 
     if (typeof message === 'object' && typeof message.message === 'string') {
       data.text = message.message
     } else if (typeof message === 'object') {
-      //message.message is not defined
+      // message.message is not defined
       data.text = ''
     } else {
       data.text = message
@@ -124,13 +125,13 @@ class ChatService {
     if (lastId) {
       query.where('chats.id', '<', lastId)
     }
-    let lastMessages = await query.fetch()
+    const lastMessages = await query.fetch()
     return lastMessages
   }
 
   static async getUnreadMessagesCount(taskId, userId) {
-    //for unread messages
-    let counts = []
+    // for unread messages
+    const counts = []
 
     const lastReadMarkerDate = await Chat.query()
       .select(Database.raw(`to_char(created_at, '${ISO_DATE_FORMAT}') as created_at`))
@@ -152,7 +153,7 @@ class ChatService {
     let count = 0
     if (lastReadMarkerDate && lastSentDate) {
       if (lastReadMarkerDate.created_at >= lastSentDate.created_at) {
-        //we're going to count the messages after lastReadMarkerDate
+        // we're going to count the messages after lastReadMarkerDate
         const unreadByMarker = await Chat.query()
           .select(Database.raw(`count(*) as unread_messages`))
           .where(
@@ -218,7 +219,7 @@ class ChatService {
   }
 
   static async getChatMessageAge(id) {
-    let ret = await Chat.query()
+    const ret = await Chat.query()
       .select(Database.raw(`extract(EPOCH from (now() - created_at)) as difference`))
       .where('id', id)
       .first()
@@ -254,6 +255,7 @@ class ChatService {
       .update({ text: '', attachments: null, edit_status: CHAT_EDIT_STATUS_DELETED })
       .transacting(trx)
   }
+
   static async removeChatMessage(id) {
     const result = await Chat.query()
       .where('id', id)
@@ -284,14 +286,14 @@ class ChatService {
               user_id: sender_id,
               url: await File.getProtectedUrl(attachment),
               uri: attachment,
-              thumb: thumb
+              thumb
             }
           }
 
           return {
             url: attachment,
             uri: attachment,
-            thumb: thumb
+            thumb
           }
         })
       )
@@ -300,6 +302,7 @@ class ChatService {
       throw new HttpException(e.message, 400)
     }
   }
+
   static async getItemsWithAbsoluteUrl(items) {
     if (!items || !items.length) {
       return null
@@ -337,7 +340,7 @@ class ChatService {
   }
 
   static async getChatsByTask({ task_id, has_attachment }) {
-    let query = Chat.query()
+    const query = Chat.query()
       .whereNot('edit_status', CHAT_EDIT_STATUS_DELETED)
       .where('task_id', task_id)
 
@@ -351,37 +354,96 @@ class ChatService {
   static async getUserUnreadMessages(userId, role) {
     let taskEstates
 
-    let query = Task.query()
+    const query = Task.query()
       .select(
         'tasks.id as task_id',
         'tasks.unread_role',
-        'tasks.unread_count',
         'estates.id as estate_id',
+        'estates.property_id',
         'tasks.urgency'
       )
       .innerJoin('estates', function () {
-        this.on('estates.id', 'tasks.estate_id')
-          .onNotIn('estates.status', [STATUS_DELETE])
-          .on('estates.letting_type', LETTING_TYPE_LET)
-      })
-      .innerJoin('estate_current_tenants', function () {
-        this.on('estate_current_tenants.estate_id', 'estates.id').on(
-          'estate_current_tenants.status',
-          STATUS_ACTIVE
-        )
+        this.on('estates.id', 'tasks.estate_id').onNotIn('estates.status', [STATUS_DELETE])
       })
       .whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
 
     if (role === ROLE_LANDLORD) {
+      /*
+      query.innerJoin(
+        Database.raw(
+          `(select users.id, json_build_object(
+            'id', users.id,
+            'firstname', users.firstname,
+            'secondname', users.secondname,
+            'avatar', users.avatar
+          ) as sender from users
+          group by users.id) as _sender`
+        ),
+        'tasks.tenant_id',
+        '_sender.id'
+      ) */
       query.where('estates.user_id', userId)
     } else if (role === ROLE_USER) {
-      query.where('estate_current_tenants.user_id', userId)
+      query.innerJoin(
+        Database.raw(
+          `(select users.id, json_build_object(
+            'id', users.id,
+            'firstname', users.firstname,
+            'secondname', users.secondname,
+            'avatar', users.avatar
+          ) as sender from users 
+          group by users.id as _sender`
+        ),
+        'estates.user_id',
+        '_sender.id'
+      )
+      query.where('tasks.tenant_id', userId)
     }
     query.where('unread_role', role)
-    query.where('unread_count', '>', 0)
+    // query.where('unread_count', '>', 0)
 
     taskEstates = await query.fetch()
-
+    taskEstates = taskEstates.toJSON() || []
+    await Promise.map(
+      taskEstates,
+      async (task, index) => {
+        const unreadMessages = await Chat.query()
+          .select(
+            'chats.id',
+            'chats.text as message',
+            Database.raw(`to_char(chats.created_at, '${ISO_DATE_FORMAT}') as created_at`),
+            Database.raw(`_u.sender`)
+          )
+          .innerJoin(
+            Database.raw(`
+              (select 
+                users.id,
+                json_build_object(
+                  'id', users.id,
+                  'firstname', users.firstname,
+                  'secondname', users.secondname,
+                  'avatar', users.avatar
+                ) as sender from users) as _u`),
+            '_u.id',
+            'chats.sender_id'
+          )
+          .where('chats.sender_id', '<>', userId)
+          .where('chats.task_id', task.task_id)
+          .where(
+            'chats.id',
+            '>',
+            Database.raw(
+              `(select id from chats where type='last-read-marker' and task_id='${task.task_id}' and sender_id='${userId}')`
+            )
+          )
+          .where('chats.type', '<>', 'last-read-marker')
+          .orderBy('chats.created_at', 'asc')
+          .fetch()
+        taskEstates[index].unread_messages = unreadMessages.toJSON() || []
+        taskEstates[index].unread_count = (unreadMessages.toJSON() || []).length
+      },
+      { concurrency: 1 }
+    )
     return taskEstates
   }
 }
