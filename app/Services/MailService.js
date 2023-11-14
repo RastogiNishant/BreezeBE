@@ -1,6 +1,6 @@
 'use strict'
 
-const { trim, capitalize, startCase } = require('lodash')
+const { trim, capitalize, startCase, isArray } = require('lodash')
 const l = use('Localize')
 const moment = require('moment')
 const { generateAddress, parseFloorDirection } = use('App/Libs/utils')
@@ -1085,9 +1085,8 @@ class MailService {
 
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
-
     const msg = {
-      to: trim(email),
+      to: isArray(email) ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -1217,26 +1216,36 @@ class MailService {
     )
   }
 
-  static async sendToProspectThatLandlordSentMessage({
-    email,
-    message,
-    recipient,
-    estate_id,
-    estate,
-    topic,
-    task_id,
-    type,
-    lang = DEFAULT_LANG
-  }) {
+  static async sendToProspectThatLandlordSentMessage(
+    {
+      email,
+      message,
+      recipient = null,
+      estate_id,
+      estate,
+      topic = null,
+      task_id = null,
+      type = null,
+      lang = DEFAULT_LANG
+    },
+    eventType = 'PROSPECT_RECEIVES_MESSAGE'
+  ) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
-    const { sex, firstname, secondname, avatar } = recipient
-    const shortLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}?type=PROSPECT_RECEIVES_MESSAGE&estate_id=${estate_id}&email=${email}&topic=${topic}&task_id=${task_id}` +
-        `&firstname=${firstname}&secondname=${secondname}&avatar=${avatar}&type=${type}&sex=${sex}`
-    )
+    let shortLink
+    if (eventType === 'PROSPECT_RECEIVES_MESSAGE') {
+      const { sex, firstname, secondname, avatar } = recipient
+      shortLink = await createDynamicLink(
+        `${process.env.DEEP_LINK}?type=${eventType}&estate_id=${estate_id}&email=${email}&topic=${topic}&task_id=${task_id}` +
+          `&firstname=${firstname}&secondname=${secondname}&avatar=${avatar}&type=${type}&sex=${sex}`
+      )
+    } else {
+      shortLink = await createDynamicLink(
+        `${process.env.DEEP_LINK}?type=${eventType}&estate_id=${estate_id}`
+      )
+    }
     const estateAddress = this.getEmailAddressFormatter(estate, lang)
     const msg = {
-      to: trim(email),
+      to: isArray(email) ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
