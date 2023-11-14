@@ -48,7 +48,8 @@ const {
   LETTING_STATUS_TERMINATED,
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
-  STATUS_OFFLINE_ACTIVE
+  STATUS_OFFLINE_ACTIVE,
+  LOG_TYPE_REQUEST_PROFILE
 } = require('../../constants')
 const { createDynamicLink } = require('../../Libs/utils')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
@@ -59,6 +60,9 @@ const {
   exceptions: { UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE },
   exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE_CODE }
 } = require('../../exceptions')
+const TaskService = use('App/Services/TaskService')
+const ChatService = use('App/Services/ChatService')
+const Promise = use('bluebird')
 
 class MatchController {
   /**
@@ -972,7 +976,22 @@ class MatchController {
       )
     }
 
-    const matchSortFunction = (a, b) => b.percent - a.percent || b.income - a.income
+    // @TODO: performance (bad db performance)
+    // step one load all global tasks for estate
+    // get unread message count for taskId list
+    // access that data later
+    const getUnreadMessagesCount = async (estateId, tenantId) => {
+      const taskId = await TaskService.getGlobalTaskByEstateIdAndTenantId({ tenantId, estateId })
+      if (taskId) {
+        const unreadMessages = await ChatService.getUnreadMessagesCount(taskId, user.id)
+        console.log({ unreadMessages })
+        return unreadMessages
+      }
+      return null
+    }
+
+    const matchSortFunction = (a, b) =>
+      b.percent - a.percent || b.is_activated - a.is_activated || b.income - a.income
     let tenants = await MatchService.getLandlordMatchesWithFilterQuery(
       estate,
       (filters = { knock: true }),
@@ -980,9 +999,16 @@ class MatchController {
     ).paginate(page, limit || 10)
     const extraFields = [...fields]
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data
-      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
-      .sort(matchSortFunction)
+    data.data = await Promise.map(
+      data.data,
+      async (i) => ({
+        ...i,
+        avatar: File.getPublicUrl(i.avatar),
+        unread_messages: await getUnreadMessagesCount(estate_id, i.user_id)
+      }),
+      { concurrency: 1 }
+    )
+    data.data = data.data.sort(matchSortFunction)
 
     const contact_request_count = (
       await require('../../Services/MarketPlaceService')
@@ -1016,6 +1042,7 @@ class MatchController {
     }
     const matches = data
 
+    // Buddies
     const buddyCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { buddy: true }),
@@ -1038,9 +1065,16 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data
-      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
-      .sort(matchSortFunction)
+    data.data = await Promise.map(
+      data.data,
+      async (i) => ({
+        ...i,
+        avatar: File.getPublicUrl(i.avatar),
+        unread_messages: await getUnreadMessagesCount(estate_id, i.user_id)
+      }),
+      { concurrency: 1 }
+    )
+    data.data = data.data.sort(matchSortFunction)
     data = {
       ...data,
       total: buddyCount[0].count,
@@ -1050,6 +1084,7 @@ class MatchController {
 
     const buddies = data
 
+    // Invites
     const inviteCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { invite: true })
@@ -1060,9 +1095,16 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data
-      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
-      .sort(matchSortFunction)
+    data.data = await Promise.map(
+      data.data,
+      async (i) => ({
+        ...i,
+        avatar: File.getPublicUrl(i.avatar),
+        unread_messages: await getUnreadMessagesCount(estate_id, i.user_id)
+      }),
+      { concurrency: 1 }
+    )
+    data.data = data.data.sort(matchSortFunction)
     data = {
       ...data,
       total: inviteCount[0].count,
@@ -1071,6 +1113,7 @@ class MatchController {
 
     const invites = data
 
+    // Visits
     const visitCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { visit: true })
@@ -1081,9 +1124,16 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data
-      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
-      .sort(matchSortFunction)
+    data.data = await Promise.map(
+      data.data,
+      async (i) => ({
+        ...i,
+        avatar: File.getPublicUrl(i.avatar),
+        unread_messages: await getUnreadMessagesCount(estate_id, i.user_id)
+      }),
+      { concurrency: 1 }
+    )
+    data.data = data.data.sort(matchSortFunction)
     data = {
       ...data,
       total: visitCount[0].count,
@@ -1092,6 +1142,7 @@ class MatchController {
 
     const visits = data
 
+    // Top
     const topCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
       estate,
       (filters = { top: true })
@@ -1103,9 +1154,16 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, fields })
-    data.data = data.data
-      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
-      .sort(matchSortFunction)
+    data.data = await Promise.map(
+      data.data,
+      async (i) => ({
+        ...i,
+        avatar: File.getPublicUrl(i.avatar),
+        unread_messages: await getUnreadMessagesCount(estate_id, i.user_id)
+      }),
+      { concurrency: 1 }
+    )
+    data.data = data.data.sort(matchSortFunction)
     data = {
       ...data,
       total: topCount[0].count,
@@ -1137,9 +1195,16 @@ class MatchController {
     ).paginate(page, limit || 10)
 
     data = tenants.toJSON({ isShort: true, extraFields })
-    data.data = data.data
-      .map((i) => ({ ...i, avatar: File.getPublicUrl(i.avatar) }))
-      .sort(matchSortFunction)
+    data.data = await Promise.map(
+      data.data,
+      async (i) => ({
+        ...i,
+        avatar: File.getPublicUrl(i.avatar),
+        unread_messages: await getUnreadMessagesCount(estate_id, i.user_id)
+      }),
+      { concurrency: 1 }
+    )
+    data.data = data.data.sort(matchSortFunction)
     data = {
       ...data,
       total: finalCount[0].count,
@@ -1347,6 +1412,36 @@ class MatchController {
       response.res(true)
     } catch (err) {
       throw new HttpException(err.message, 400)
+    }
+  }
+
+  async requestTenantToShareProfile({ request, auth, response }) {
+    const userId = auth.user.id
+    const { prospectId, date, estateId } = request.all()
+    try {
+      await MatchService.requestTenantToShareProfile(prospectId, userId, date, estateId)
+      logEvent(request, LOG_TYPE_REQUEST_PROFILE, userId, { prospectId, role: ROLE_USER }, false)
+      return response.res(true)
+    } catch (e) {
+      Logger.error(e)
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
+    }
+  }
+
+  async prospectRespondToProfileSharingRequest({ request, auth, response }) {
+    const userId = auth.user.id
+    const { estateId, profileStatus } = request.all()
+    try {
+      await MatchService.prospectRespondToProfileSharingRequest(userId, estateId, profileStatus)
+      return response.res(true)
+    } catch (e) {
+      if (e.name === 'AppException') {
+        throw new HttpException(e.message, 400)
+      }
+      throw e
     }
   }
 }
