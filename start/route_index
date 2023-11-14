@@ -3713,6 +3713,7 @@
     ],
     "middle": [
       "auth:jwtLandlord",
+      "valid:NotifyOutsideProspectToFillUpProfile",
       "agreement",
       "plan"
     ],

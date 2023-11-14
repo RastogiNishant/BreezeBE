@@ -409,7 +409,7 @@ Route.get(
 Route.post(
   '/api/v1/match/landlord/estate/notifyprospect-fillupprofile',
   'MatchController.notifyOutsideProspectToFillUpProfile'
-).middleware(['auth:jwtLandlord'])
+).middleware(['auth:jwtLandlord', 'valid:NotifyOutsideProspectToFillUpProfile'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord'
@@ -454,6 +454,14 @@ Route.group(() => {
     'auth:jwt',
     'valid:ChooseTimeslot'
   ])
+  Route.post('/profile/request', 'MatchController.requestTenantToShareProfile').middleware([
+    'auth:jwtLandlord',
+    'valid:RequestProspectProfile'
+  ])
+  Route.post(
+    '/profile/response',
+    'MatchController.prospectRespondToProfileSharingRequest'
+  ).middleware(['auth:jwt', 'valid:ShareProfileStatus'])
   Route.post('/visit/inviteIn', 'MatchController.inviteTenantInToVisit').middleware([
     'auth:jwtLandlord',
     'valid:InviteInToVisit'
