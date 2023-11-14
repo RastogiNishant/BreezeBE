@@ -15,34 +15,9 @@
       "ecmaVersion": "latest"
     },
     "rules": {
-      "no-unused-vars": "warn",
-      "camelcase": "warn",
-      "spaced-comment": "warn",
-      "eqeqeq": "warn",
-      "no-useless-constructor": "warn",
-      "new-cap": "warn",
-      "no-useless-escape": "warn",
-      "no-useless-catch": "warn",
-      "no-empty-pattern": "warn",
-      "prefer-const": "warn",
-      "lines-between-class-members": "warn",
-      "array-callback-return": "warn",
-      "no-unused-expressions": "warn",
-      "dot-notation": "warn",
-      "no-case-declarations": "warn",
-      "no-unneeded-ternary": "warn",
-      "one-var": "warn",
-      "no-empty": "warn",
-      "no-new": "warn",
-      "no-dupe-keys": "warn",
-      "no-useless-computed-key": "warn",
-      "no-lone-blocks": "warn",
-      "n/no-deprecated-api": "warn",
-      "no-useless-return": "warn",
-      "no-control-regex": "warn",
-      "no-template-curly-in-string": "warn"
     },
     "plugins": [
-      "prettier"
+      "prettier",
+      "eslint-plugin-only-warn"
     ]
 }

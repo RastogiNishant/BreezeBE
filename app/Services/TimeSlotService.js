@@ -1,7 +1,7 @@
 const { props } = require('bluebird')
 const { range, findIndex, get, omit } = require('lodash')
 const moment = require('moment')
-const { DATE_FORMAT, DAY_FORMAT, ESTATE_NOT_EXISTS } = require('../constants')
+const { DATE_FORMAT, DAY_FORMAT } = require('../constants')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
@@ -27,7 +27,7 @@ class TimeSlotService {
     end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
-    // Checks is time slot crossing existing
+    //Checks is time slot crossing existing
     const existing = await this.getCrossTimeslotQuery(
       { end_at, start_at, estate_id },
       user_id
@@ -444,7 +444,7 @@ class TimeSlotService {
       }
 
       const estate_ids = await EstateService.getEstateIdsInBuilding(slot.estate_id)
-      const slots = await this.getSameTimeSlotInBuilding({
+      let slots = await this.getSameTimeSlotInBuilding({
         estateId: estate_ids,
         start_at: moment(slot.start_at).format(DATE_FORMAT),
         end_at: moment(slot.end_at).format(DATE_FORMAT)

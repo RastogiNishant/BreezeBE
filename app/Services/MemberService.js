@@ -334,9 +334,14 @@ class MemberService {
       if (!member) {
         throw new HttpException('No member exists', 400)
       }
-      await DataStorage.setItem(memberId, { code, count: 5 }, SMS_MEMBER_PHONE_VERIFY_PREFIX, {
-        ttl: 3600
-      })
+      await DataStorage.setItem(
+        memberId,
+        { code, count: 5 },
+        SMS_MEMBER_PHONE_VERIFY_PREFIX,
+        {
+          ttl: 3600
+        }
+      )
 
       const data = await require('./UserService').getTokenWithLocale([
         member.owner_user_id || member.user_id
@@ -351,7 +356,6 @@ class MemberService {
   }
 
   static async confirmSMS(memberId, phone, code) {
-    // make sure the member id is a valid one
     const member = await Member.query()
       .select('id')
       .where('id', memberId)
@@ -365,10 +369,10 @@ class MemberService {
     }
 
     if (parseInt(data.code) !== parseInt(code)) {
-      await DataStorage.remove(memberId, SMS_MEMBER_PHONE_VERIFY_PREFIX)
+      await DataStorage.remove(user.id, SMS_MEMBER_PHONE_VERIFY_PREFIX)
 
       if (parseInt(data.count) <= 0) {
-        throw new HttpException('Your confirmation code is not valid', 400)
+        throw new HttpException('Your code invalid any more', 400)
       }
 
       await DataStorage.setItem(

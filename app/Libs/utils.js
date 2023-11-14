@@ -71,7 +71,7 @@ const getGeoRange = (x, y, dist = 50) => {
 
 const getAuthByRole = (auth, role) => {
   switch (+role) {
-    case ROLE_USER:
+    case ROLE_USER || ROLE_:
       return auth.authenticator('jwt')
     case ROLE_LANDLORD:
       return auth.authenticator('jwtLandlord')

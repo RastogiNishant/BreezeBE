@@ -1043,7 +1043,7 @@ class UserService {
     if (isArray(plan_ids)) {
       return (await User.query().whereIn('plan_id', plan_ids).fetch()).rows
     } else {
-      return await User.query().where('plan_id', plan_ids).first()
+      return await User.query().where('plan_id', plan_id).first()
     }
   }
 

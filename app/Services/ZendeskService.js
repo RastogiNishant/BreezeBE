@@ -11,9 +11,8 @@
 
 class ZendeskService {
   static isValidSignature(signature, body, timestamp) {
-    // @FIXME: undefined => SIGNING_SECRET_ALGORITHM + SIGNING_SECRET
-    const hmac = crypto.createHmac(undefined, undefined)
-    const sig = hmac.update(timestamp + body).digest('base64')
+    let hmac = crypto.createHmac(SIGNING_SECRET_ALGORITHM, SIGNING_SECRET)
+    let sig = hmac.update(timestamp + body).digest('base64')
 
     return Buffer.compare(Buffer.from(signature), Buffer.from(sig.toString('base64'))) === 0
   }
@@ -23,12 +22,11 @@ class ZendeskService {
       req.rawBody = buf.toString('utf8')
     }
   }
-
   static createToken(id, name, email) {
     const jwt = require('jsonwebtoken')
     const payload = {
-      name,
-      email,
+      name: name,
+      email: email,
       external_id: id
     }
 

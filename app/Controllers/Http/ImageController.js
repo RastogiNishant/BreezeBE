@@ -12,7 +12,7 @@ const fs = require('fs/promises')
 
 class ImageController {
   async compressImage({ request, response }) {
-    // response.res(true)
+    //response.res(true)
     try {
       const image = request.file('file', {
         size: process.env.MAX_IMAGE_SIZE || '20M',
@@ -92,7 +92,7 @@ class ImageController {
       response.res(true)
     } catch (e) {
       console.log(e)
-      throw new HttpException(e?.message, e?.status || 500)
+      throw new HttpException(err.message, e.status || 500)
     }
   }
 

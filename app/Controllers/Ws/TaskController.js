@@ -70,8 +70,8 @@ class TaskController extends BaseController {
         )
       }
     } catch (e) {
-      Logger.error(`onGetPreviousMessages error ${e?.message}`)
-      this.emitError(e?.message)
+      Logger.error(`onGetPreviousMessages error ${e.message}`)
+      this.emitError(err.message)
     }
   }
 
@@ -108,7 +108,7 @@ class TaskController extends BaseController {
     try {
       const chat = await ChatService.getChatMessageAge(id)
       const messageAge = chat?.difference || false
-      if (isBoolean(messageAge)) {
+      if (isBoolean(messageAge) && !result) {
         throw new AppException('Chat message not found.')
       }
       if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
