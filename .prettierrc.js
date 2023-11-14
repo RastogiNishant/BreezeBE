@@ -4,5 +4,6 @@ module.exports = {
   singleQuote: true,
   trailingComma: 'none',
   semi: false,
-  endOfLine: 'auto'
+  endOfLine: 'auto',
+  spaceBeforeFunctionParen: true
 }
