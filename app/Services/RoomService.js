@@ -163,7 +163,6 @@ class RoomService {
   static async getFavoriteRoom(estate_id) {
     return await Room.query().where('estate_id', estate_id).where('favorite', true).first()
   }
-
   /**
    *
    */
@@ -182,7 +181,7 @@ class RoomService {
   }
 
   static async addRoomPhoto(request, { user, room_id }) {
-    let userIds = [user.id]
+    const userIds = [user.id]
     if (user.role === ROLE_PROPERTY_MANAGER) {
       userIds = await require('./EstatePermissionService').getLandlordIds(
         user.id,
@@ -217,7 +216,7 @@ class RoomService {
       ])
 
       if (!files?.file) {
-        throw new HttpException('No file data was attached to this request', 400)
+        throw new HttpException(e.message, 400)
       }
 
       const paths = Array.isArray(files.file) ? files.file : [files.file]
@@ -237,7 +236,7 @@ class RoomService {
         { room: room.toJSON(), addImage: images[0] },
         trx
       )
-      // Event.fire('estate::update', room.estate_id)
+      //Event.fire('estate::update', room.estate_id)
       await trx.commit()
 
       await require('./EstateService').updatePercentAndIsPublished({ estate_id: room.estate_id })
@@ -282,7 +281,7 @@ class RoomService {
    *
    */
   static async createBulkRooms(estate_id, data) {
-    const roomsWithPhotos = RoomService.extractBulkData(estate_id, data)
+    let roomsWithPhotos = RoomService.extractBulkData(estate_id, data)
     const columns = Room.columns
 
     if (roomsWithPhotos && roomsWithPhotos.length) {
@@ -296,11 +295,11 @@ class RoomService {
 
       const ret = await Room.createMany(rooms)
       const images = roomsWithPhotos.map((rp, index) =>
-        assign(pick(rp, ['photos']), { room_id: ret[index].id })
+        assign(pick(rp, ['photos']), { room_id: ret[index]['id'] })
       )
       // Separately run task to save images for rooms
       QueueService.savePropertyBulkImages(images)
-      // ImageService.savePropertyBulkImages(images)
+      //ImageService.savePropertyBulkImages(images)
     }
   }
 
@@ -487,7 +486,7 @@ class RoomService {
         })
 
         const addRooms = []
-        const deleteRoomIdsByType = []
+        let deleteRoomIdsByType = []
         differentRooms.map((element) => {
           if (element && element.operation === 'add') {
             element.rooms.map((room, index) => {

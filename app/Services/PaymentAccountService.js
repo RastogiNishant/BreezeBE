@@ -1,6 +1,5 @@
 'use strict'
 
-const moment = require('moment')
 const HttpException = require('../Exceptions/HttpException')
 const { PAYMENT_METHOD_STRIPE, DATE_FORMAT, STATUS_ACTIVE } = require('../constants')
 
@@ -43,7 +42,7 @@ class PaymentAccountService {
   }
 
   static async getByUserId({ user_id, account_id }) {
-    const query = PaymentAccount.query()
+    let query = PaymentAccount.query()
 
     if (user_id) {
       query.where('user_id', user_id)

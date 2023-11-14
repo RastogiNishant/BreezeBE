@@ -30,7 +30,7 @@ class CompanyService {
    *
    */
   static async getUserCompany(userId, companyId = null) {
-    const query = Company.query()
+    let query = Company.query()
       .select('companies.*')
       .innerJoin({ _u: 'users' }, function () {
         this.on('_u.company_id', 'companies.id').on('_u.id', userId)
@@ -87,7 +87,6 @@ class CompanyService {
     }
 
     const trx = await Database.beginTransaction()
-    const User = use('App/Models/User')
     try {
       await User.query().update({ company_id: null }).where('company_id', companyId)
       const company = await Company.query().where('id', companyId).update({ status: STATUS_DELETE })
@@ -95,7 +94,7 @@ class CompanyService {
       return company
     } catch (e) {
       await trx.rollback()
-      throw new HttpException(e?.message, e?.status || 500)
+      throw new HttpException(e.message, e.status || 500)
     }
   }
 
@@ -129,7 +128,7 @@ class CompanyService {
 
     const user = await require('./UserService').getById(user_id)
     if (!user) {
-      throw new HttpException('User not exists', 500)
+      throw new HttpException('User not exists', e.status || 500)
     }
 
     let contact
@@ -138,7 +137,7 @@ class CompanyService {
         {
           ...data,
           company_id: user.company_id,
-          user_id
+          user_id: user_id
         },
         trx
       )
@@ -146,7 +145,7 @@ class CompanyService {
       contact = await Contact.createItem({
         ...data,
         company_id: user.company_id,
-        user_id
+        user_id: user_id
       })
     }
     return contact

@@ -217,7 +217,7 @@ const {
 } = require('../exceptions')
 const moment = require('moment')
 
-const extractValue = (key, value) => {
+extractValue = (key, value) => {
   const values = AVAILABLE_LANGUAGES.map((lang) => escapeStr(l.get(key, lang)))
   const filterValues = values.filter((v) => escapeStr(v) === escapeStr(value))
   if (filterValues && filterValues.length) {
@@ -226,7 +226,7 @@ const extractValue = (key, value) => {
   return null
 }
 
-const escapeStr = (v) => {
+escapeStr = (v) => {
   return (v || '')
     .toString()
     .toLowerCase()
@@ -234,26 +234,26 @@ const escapeStr = (v) => {
     .replace(/[^a-zà-ž\u0370-\u03FF\u0400-\u04FF]/g, '_')
 }
 
-// // items to percent
-// toPercent = (i) => {
-//   i = trim(i)
-//   if (i.includes('%')) {
-//     i = i.replace('%', '')
-//   }
-//   if (isNaN(parseFloat(i))) {
-//     i = NULL
-//   } else {
-//     i = parseInt(parseFloat(i) * 100)
-//   }
+// items to percent
+toPercent = (i) => {
+  i = trim(i)
+  if (i.includes('%')) {
+    i = i.replace('%', '')
+  }
+  if (isNaN(parseFloat(i))) {
+    i = NULL
+  } else {
+    i = parseInt(parseFloat(i) * 100)
+  }
 
-//   return i
-// }
+  return i
+}
 
-// toInteger = (i) => {
-//   return parseInt(i) || 0
-// }
+toInteger = (i) => {
+  return parseInt(i) || 0
+}
 
-const toBool = (v) => {
+toBool = (v) => {
   switch (escapeStr(v)) {
     case 'no':
     case 'nein':
@@ -267,7 +267,7 @@ const toBool = (v) => {
   }
 }
 
-const reverseBool = (value) => {
+reverseBool = (value) => {
   switch (value) {
     case true:
       return l.get('yes.message', this.lang)
@@ -278,12 +278,11 @@ const reverseBool = (value) => {
   }
 }
 
-const extractDate = (date) => {
-  let match
+extractDate = (date) => {
   if (!date) {
     return null
   } else if (
-    typeof date === 'string' &&
+    typeof date == 'string' &&
     (match = date.match(/^([0-9]{2})\.([0-9]{2})\.([0-9]{4})/))
   ) {
     return `${match[3]}-${match[2]}-${match[1]}`
@@ -293,10 +292,9 @@ const extractDate = (date) => {
   return null
 }
 
-const reverseExtractDate = (date) => {
-  let match
+reverseExtractDate = (date) => {
   if (
-    typeof date === 'string' &&
+    typeof date == 'string' &&
     (match = date.match(/^([0-9]{4})\-([0-9]{2})\-([0-9]{2})/)) &&
     this.lang === 'de'
   ) {
@@ -306,7 +304,7 @@ const reverseExtractDate = (date) => {
 }
 
 const mapCertCategories = () => {
-  const certCategoryMap = {}
+  let certCategoryMap = {}
   for (let count = 0; count < certCategories.length; count++) {
     AVAILABLE_LANGUAGES.map((lang) => {
       certCategoryMap[l.get(certCategories[count], lang)] = certCategories[count]
@@ -325,7 +323,6 @@ class EstateAttributeTranslations {
     last_modernization: reverseExtractDate,
     rent_end_at: reverseExtractDate
   }
-
   dataMapping = {
     property_type: {
       apartment: PROPERTY_TYPE_APARTMENT,
@@ -345,7 +342,7 @@ class EstateAttributeTranslations {
       penthouse: APARTMENT_TYPE_PENTHOUSE,
       terrassen: APARTMENT_TYPE_TERRACES,
       attika: APARTMENT_TYPE_ATTIC
-      // TODO: need to add more type here but later
+      //TODO: need to add more type here but later
     },
     // Building type
     house_type: {
@@ -517,7 +514,7 @@ class EstateAttributeTranslations {
     stp_garage: (i) => parseInt(i) || 0,
     cert_category: (content) => {
       const certs = String(content).split(/[+,]/)
-      const certCategoryMap = mapCertCategories()
+      let certCategoryMap = mapCertCategories()
       let cert_category = []
       if (certs.length > 0) {
         cert_category = certs
@@ -536,9 +533,9 @@ class EstateAttributeTranslations {
     number_floors: (i) => parseInt(i) || 1,
     floor: (i) => {
       switch (escapeStr(i)) {
-        case extractValue(`property.attribute.APARTMENT_TYPE.Ground_floor.message`, escapeStr(i)): // 'Ground floor':
+        case extractValue(`property.attribute.APARTMENT_TYPE.Ground_floor.message`, escapeStr(i)): //'Ground floor':
           return 0
-        case extractValue(`apt_roof_floor.message`, escapeStr(i)): // 'Root floor':
+        case extractValue(`apt_roof_floor.message`, escapeStr(i)): //'Root floor':
           return 21
         default:
           return parseInt(i) || null
@@ -579,7 +576,7 @@ class EstateAttributeTranslations {
 
   constructor(lang = 'en') {
     this.setLang(lang)
-    const dataMap = {
+    let dataMap = {
       property_type: {
         keys: [
           'property.attribute.PROPERTY_TYPE.Apartment.message',
@@ -1075,7 +1072,7 @@ class EstateAttributeTranslations {
         ],
         values: [CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA, CREDIT_HISTORY_STATUS_SOME_NEGATIVE_DATA]
       }
-      /* , */
+      /* ,*/
     }
     this.dataMap = dataMap
   }
@@ -1087,7 +1084,7 @@ class EstateAttributeTranslations {
   getMap() {
     const dataMap = this.dataMap
     let keyValue
-    for (const attribute in dataMap) {
+    for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
         throw new HttpException(SETTINGS_ERROR, 400, 110198)
@@ -1110,7 +1107,7 @@ class EstateAttributeTranslations {
   getReverseDataMap() {
     const dataMap = this.dataMap
     let keyValue
-    for (const attribute in dataMap) {
+    for (let attribute in dataMap) {
       keyValue = {}
       if (dataMap[attribute].keys.length !== dataMap[attribute].values.length) {
         throw new HttpException(SETTINGS_ERROR, 400, 110176)

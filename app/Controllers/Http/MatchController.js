@@ -1566,6 +1566,7 @@ class MatchController {
           await trx.rollback()
           throw new HttpException('Error sending chat.')
         }
+        break
       case 'email':
         const users = await User.query().whereIn('id', recipients).fetch()
         const email = (users.toJSON({ isOwner: true }) || []).map((user) => user.email)

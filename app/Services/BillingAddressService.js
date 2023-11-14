@@ -1,5 +1,4 @@
 'use strict'
-const AppException = use('App/Exceptions/AppException')
 const BillingAddress = use('App/Models/BillingAddress')
 
 class BillingAddressService {
@@ -10,7 +9,6 @@ class BillingAddressService {
     const address = await BillingAddress.createItem(data)
     return { address }
   }
-
   /**
    *
    */
@@ -26,7 +24,6 @@ class BillingAddressService {
 
     return billingAddress
   }
-
   /**
    *
    */
