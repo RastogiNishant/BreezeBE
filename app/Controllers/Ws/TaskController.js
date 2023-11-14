@@ -218,6 +218,8 @@ class TaskController extends BaseController {
 
       const recipient = this.user.role === ROLE_LANDLORD ? this.tenant_user_id : this.estate_user_id
       NoticeService.notifyTaskMessageSent(recipient, chat.text, this.taskId, this.user.role)
+
+      // send email here...
       if (this.user.role === ROLE_LANDLORD) {
         const recipient = await User.query()
           .select('email', 'lang', 'sex', 'firstname', 'secondname', 'avatar')
