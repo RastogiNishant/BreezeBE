@@ -131,6 +131,12 @@ const indexRoutes: Routes = {
       middleware: ['valid:MatchFilter,Pagination']
     }
   },
+  '/match/contact-multiple': {
+    [HTTP_METHODS.POST]: {
+      controller: 'MatchController.contactMultiple',
+      middleware: ['valid:MatchContactMultiple']
+    }
+  },
   '/quickLinks': {
     [HTTP_METHODS.GET]: {
       controller: 'EstateController.getEstatesQuickLinks'

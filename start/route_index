@@ -2749,6 +2749,19 @@
     "handler": "MatchController.getMatchList"
   },
   {
+    "route": "/api/v1/estates/match/contact-multiple",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:MatchContactMultiple",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.contactMultiple"
+  },
+  {
     "route": "/api/v1/estates/match/invite",
     "method": [
       "POST"
