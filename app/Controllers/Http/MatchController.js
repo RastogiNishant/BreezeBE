@@ -1164,7 +1164,7 @@ class MatchController {
     const { id } = request.all()
     try {
       await require('../../Services/MarketPlaceService').sendManualReminder({
-        contactRequestId: id,
+        contactRequestIds: id,
         landlordId: auth.user.id,
         lang: auth.user.lang
       })

@@ -757,23 +757,27 @@ class MarketPlaceService {
     }
   }
 
-  static async sendManualReminder({ contactRequestId, landlordId, lang = DEFAULT_LANG }) {
+  static async sendManualReminder({ contactRequestIds, landlordId, lang = DEFAULT_LANG }) {
     try {
-      let contactRequest = await EstateSyncContactRequest.query()
+      let contactRequests = await EstateSyncContactRequest.query()
         .with('estate')
-        .where('id', contactRequestId)
-        .first()
+        .whereIn('id', contactRequestIds)
+        .fetch()
 
-      if (contactRequest) contactRequest = contactRequest.toJSON()
+      if (contactRequests) contactRequests = contactRequests.toJSON()
       else throw new HttpException(ERROR_CONTACT_REQUEST_NO_EXIST, 400)
-
-      if (!contactRequest?.estate || contactRequest?.estate?.user_id !== landlordId) {
-        throw new HttpException(ERROR_CONTACT_REQUEST_NO_EXIST, 400)
-      }
+      console.log({ contactRequests })
+      const recipientEmails = []
+      await Promise.map(contactRequests, async (contactRequest) => {
+        if (!contactRequest?.estate || contactRequest?.estate?.user_id !== landlordId) {
+          throw new HttpException(ERROR_CONTACT_REQUEST_NO_EXIST, 400)
+        }
+        recipientEmails.push(contactRequest?.email)
+      })
 
       /* Notify to user for complete profile via email */
       await MailService.sendToProspectForFillUpProfile({
-        email: contactRequest?.email,
+        email: recipientEmails,
         lang
       })
     } catch (e) {

@@ -1085,9 +1085,8 @@ class MailService {
 
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
-
     const msg = {
-      to: trim(email),
+      to: isArray(email) ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
