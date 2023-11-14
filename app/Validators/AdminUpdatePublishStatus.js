@@ -18,6 +18,7 @@ class AdminUpdatePublishStatus extends Base {
           .required('missing field: ids')
           .typeError('ids must be an array of integers')
       }),
+      retainOldMatches: yup.boolean().default(true),
       id: yup
         .number()
         .integer()
