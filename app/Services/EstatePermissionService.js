@@ -19,7 +19,7 @@ class EstatePermissionService {
    */
   static async requestPermissionToLandlordById(userId, landlordIds) {
     if (!landlordIds || !landlordIds.length) {
-      new HttpException('There is no landlord Ids provided', 400)
+      throw new HttpException('There are no landlord Ids provided', 400)
     }
     try {
       const data = await Promise.all(
@@ -155,7 +155,6 @@ class EstatePermissionService {
       .first()
 
     return estatePermission
-    return []
   }
 }
 module.exports = EstatePermissionService

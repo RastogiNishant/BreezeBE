@@ -54,6 +54,7 @@ const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE }
 } = require('../../../exceptions')
 const NoticeService = require('../../../Services/NoticeService')
+const Logger = use('Logger')
 
 class PropertyController {
   getEstatesQuery({ estate_status, activation_status, user_status }) {

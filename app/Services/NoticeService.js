@@ -12,6 +12,7 @@ const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
 const NotificationsService = use('App/Services/NotificationsService')
 const MailService = use('App/Services/MailService')
+const AppException = use('App/Exceptions/AppException')
 const Logger = use('Logger')
 
 const {
@@ -25,7 +26,7 @@ const {
   NOTICE_TYPE_LANDLORD_MATCH_ID,
   NOTICE_TYPE_LANDLORD_DECISION_ID,
   NOTICE_TYPE_PROSPECT_NEW_MATCH_ID,
-  NOTICE_TYPE_PROSPECT_MATCH_LEFT_ID,
+  NOTICE_TYPE_PROSPECT_LANDLORD_MATCH_ID,
   NOTICE_TYPE_PROSPECT_INVITE_ID,
   NOTICE_TYPE_PROSPECT_VISIT3H_ID,
   NOTICE_TYPE_PROSPECT_VISIT90M_ID,
@@ -448,6 +449,7 @@ class NoticeService {
       return false
     }
 
+    // @TODO check this code is actually working
     const notices = result.map(({ user_id, match_count }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_LANDLORD_MATCH_ID,
@@ -455,6 +457,7 @@ class NoticeService {
     }))
 
     await NoticeService.insertNotices(notices)
+    // @TODO fix: this will only send the first 50 notifications
     const CHUNK_SIZE = 50
     await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.getProspectLandlordInvite, {
       concurrency: 1
@@ -985,8 +988,6 @@ class NoticeService {
         return NotificationsService.sendLandlordNewProperty([notice])
       case NOTICE_TYPE_LANDLORD_TIME_FINISHED:
         return NotificationsService.sendEstateExpired([notice])
-      case NOTICE_TYPE_LANDLORD_CONFIRM_VISIT:
-        return NotificationsService.sendLandlordSlotsSelected([notice])
       case NOTICE_TYPE_LANDLORD_VISIT30M:
         return NotificationsService.sendLandlordVisitIn30m([notice])
       case NOTICE_TYPE_LANDLORD_MATCH:
@@ -1035,7 +1036,6 @@ class NoticeService {
         return NotificationsService.sendMinKnockReached([notice])
       case NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED:
         return NotificationsService.sendGreenMinKnockReached([notice])
-
       case NOTICE_TYPE_PROSPECT_LIKE_EXPIRING:
         return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
       case NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK:
