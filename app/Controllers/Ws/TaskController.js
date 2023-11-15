@@ -188,12 +188,14 @@ class TaskController extends BaseController {
       // taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
       const estate = await Estate.query().select('property_id').where('id', this.estateId).first()
       const messageReceivedData = {
+        id: chat.id,
         topic: this.socket.topic,
         message: chat.text,
         urgency: task?.urgency,
         estate_id: this.estateId,
         user_id: this.user.id,
         property_id: estate?.property_id,
+        created_at: moment(chat.created_at).utc().format(),
         sender: {
           id: this.user.id,
           firstname: this.user.firstname,
