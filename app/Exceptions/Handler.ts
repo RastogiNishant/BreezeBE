@@ -1,12 +1,10 @@
-'use strict'
+import type AdonisRequest from '@adonisjs/framework/src/Request'
+import type AdonisResponse from '@adonisjs/framework/src/Response'
 
-import { get } from 'lodash'
-import Express from 'express'
 import * as Sentry from '@sentry/node'
 
 const BaseExceptionHandler = use('BaseExceptionHandler')
 const Logger = use('Logger')
-// const Sentry = use('Sentry')
 
 interface Error {
   name: string
@@ -32,7 +30,7 @@ export class ExceptionHandler extends BaseExceptionHandler {
     {
       request,
       response
-    }: { request: Express.Request, response: Express.Response }
+    }: { request: AdonisRequest, response: AdonisResponse }
   ): Promise<void> {
     if (error.name === 'ValidationException') {
       return response.status(422).json({
@@ -64,8 +62,8 @@ export class ExceptionHandler extends BaseExceptionHandler {
       request,
       auth
     }: {
-      request: Express.Request
-      auth: { user: { username: string, id: number } }
+      request: AdonisRequest
+      auth: { user?: { username: string, id: number, email: string } }
     }
   ): Promise<boolean> {
     // Systems 404 HttpException do not report
@@ -82,7 +80,7 @@ export class ExceptionHandler extends BaseExceptionHandler {
     Sentry.withScope((scope: Sentry.Scope) => {
       scope.setExtra('url', request.request.url)
       scope.setExtra('data', request.all())
-      scope.setUser({ id: get(auth, 'user.id'), username: get(auth, 'user.username', 'anonymous') })
+      scope.setUser({ id: auth.user?.id, username: auth.user?.username ?? auth.user?.email ?? 'anonymous' })
       Sentry.captureException(error)
     })
 
