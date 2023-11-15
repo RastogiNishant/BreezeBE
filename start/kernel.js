@@ -16,7 +16,8 @@ const globalMiddleware = [
   'App/Middleware/SentryTransaction',
   'App/Middleware/QueryParse',
   'Adonis/Middleware/BodyParser',
-  'App/Middleware/ConvertEmptyStringsToNull'
+  'App/Middleware/ConvertEmptyStringsToNull',
+  'App/Middleware/CompressEndpoints'
 ]
 
 /*
