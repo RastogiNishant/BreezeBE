@@ -3,6 +3,7 @@
 /** @typedef {import('@adonisjs/framework/src/Response')} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 const [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER] = require('../constants')
+const HttpException = use('App/Exceptions/HttpException')
 
 class RoleIsValid {
   /**
@@ -12,7 +13,7 @@ class RoleIsValid {
    */
   async handle({ request }, next) {
     // call next to advance the request
-    let roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
+    const roles = [ROLE_USER, ROLE_LANDLORD, ROLE_PROPERTY_MANAGER, ROLE_HOUSEKEEPER]
     const role = request.role
     if (!roles.includes(role)) {
       throw new HttpException('Invalid user role', 401)

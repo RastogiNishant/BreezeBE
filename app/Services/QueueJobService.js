@@ -204,7 +204,7 @@ class QueueJobService {
     }
   }
 
-  //Finds and handles the estates that available date is over
+  // Finds and handles the estates that available date is over
   static async handleToExpireEstates() {
     const estates = (await QueueJobService.fetchToExpireEstates()).rows.map((i) => {
       return {
@@ -307,6 +307,7 @@ class QueueJobService {
 
       .fetch()
   }
+
   static async fetchToExpireEstates() {
     return Estate.query()
       .select('id')
@@ -329,7 +330,7 @@ class QueueJobService {
       .fetch()
   }
 
-  //Finds and handles the estates that show date is over between now and 5 minutes before
+  // Finds and handles the estates that show date is over between now and 5 minutes before
   static async handleShowDateEndedEstates() {
     const showedEstates = (await QueueJobService.fetchShowDateEndedEstatesFor5Minutes()).rows
     const estateIds = showedEstates.map((e) => e.id)
@@ -478,7 +479,7 @@ class QueueJobService {
           .where('percent', '>=', ESTATE_COMPLETENESS_BREAKPOINT)
           .first()
         if (+otherEstates.affected === 0) {
-          //this is the first one(s)... we need to notify support
+          // this is the first one(s)... we need to notify support
           subject = COMPLETE_CERTAIN_PERCENT_EMAIL_SUBJECT
         }
         break
@@ -542,7 +543,7 @@ class QueueJobService {
         object: {
           oobj_id: estate.source_id,
           prospect: {
-            surname: titleFromGender(prospect.sex), //weird...
+            surname: titleFromGender(prospect.sex), // weird...
             first: prospect.firstname,
             last: prospect.secondname,
             street: estate.street,
@@ -558,7 +559,7 @@ class QueueJobService {
     const xmlmessage = toXML(obj)
     let recipient = ``
     if (process.env.NODE_ENV === 'production' && !process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL) {
-      //if production
+      // if production
       recipient = prospect.contact.email
     } else {
       recipient = process.env.TEST_OHNE_MAKLER_RECIPIENT_EMAIL
@@ -611,7 +612,7 @@ class QueueJobService {
           portal_obj_id: estate.id,
           oobj_id: estate.property_id,
           expose_url: deepLink,
-          vermarktungsart: 'Miete', //temporary for demo purpose. this is marketing type
+          vermarktungsart: 'Miete', // temporary for demo purpose. this is marketing type
           strasse: `${estate.street} ${estate.house_number}`,
           ort: `${estate.zip} ${estate.city}`,
           interessent: {
@@ -730,9 +731,10 @@ class QueueJobService {
       return
     }
 
-    let knocked = await require('./MatchService').hasInteracted({ userId, estateId })
+    const knocked = await require('./MatchService').hasInteracted({ userId, estateId })
     if (!knocked) {
-      await NoticeService.notifyProspectWhoLikedButNotKnocked(estateIsStillPublished, userId)
+      // @TODO @FIXME undefined was estateIsStillPublished
+      await NoticeService.notifyProspectWhoLikedButNotKnocked(undefined, userId)
     }
   }
 }
