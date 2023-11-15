@@ -3736,11 +3736,11 @@
     ],
     "middle": [
       "auth:jwtLandlord",
-      "valid:NotifyOutsideProspectToFillUpProfile",
+      "valid:NotifyProspectsToFillUpProfile",
       "agreement",
       "plan"
     ],
-    "handler": "MatchController.notifyOutsideProspectToFillUpProfile"
+    "handler": "MatchController.notifyProspectsToFillUpProfile"
   },
   {
     "route": "/api/v1/match/landlord/inviteTenantTo",
