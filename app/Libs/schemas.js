@@ -6,14 +6,14 @@ const {
   exceptionKeys: { MATCH, POSITIVE_NUMBER }
 } = require('../exceptions')
 
-const { validationRegexp } = require('../helper')
+const { validationRegExp } = require('../helper')
 
 const SCHEMAS = {
   id: yup.number().positive().typeError(getExceptionMessage('id', POSITIVE_NUMBER)),
 
   phone: yup
     .string()
-    .matches(validationRegexp.PHONE_REG_EXP, getExceptionMessage(undefined, MATCH)),
+    .matches(validationRegExp.PHONE_REG_EXP, getExceptionMessage(undefined, MATCH)),
 
   verificationCode: yup.string().matches(/^\d{6}$/),
 

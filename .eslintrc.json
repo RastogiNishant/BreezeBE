@@ -34,12 +34,10 @@
       "one-var": "warn",
       "no-empty": "warn",
       "no-new": "warn",
-      "no-dupe-keys": "warn",
       "no-useless-computed-key": "warn",
       "no-lone-blocks": "warn",
       "n/no-deprecated-api": "warn",
       "no-useless-return": "warn",
-      "no-control-regex": "warn",
       "no-template-curly-in-string": "warn"
     },
     "plugins": [
