@@ -409,7 +409,7 @@ Route.get(
 Route.post(
   '/api/v1/match/landlord/estate/notifyprospect-fillupprofile',
   'MatchController.notifyOutsideProspectToFillUpProfile'
-).middleware(['auth:jwtLandlord'])
+).middleware(['auth:jwtLandlord', 'valid:NotifyOutsideProspectToFillUpProfile'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord'

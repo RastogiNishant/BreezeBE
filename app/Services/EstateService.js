@@ -23,6 +23,7 @@ const GeoService = use('App/Services/GeoService')
 const CompanyService = use('App/Services/CompanyService')
 const NoticeService = use('App/Services/NoticeService')
 const RoomService = use('App/Services/RoomService')
+const MailService = use('App/Services/MailService')
 const QueueService = use('App/Services/QueueService')
 const WebSocket = use('App/Classes/Websocket')
 const User = use('App/Models/User')
@@ -1600,9 +1601,13 @@ class EstateService {
     if (tenant.rent_start && inside_property) {
       estates = estates.filter(
         (estate) =>
+          // estate vacant_date not set
           !estate.vacant_date ||
+          // estate vacant_date is greater than rent_start
           moment.utc(estate.vacant_date).format(DAY_FORMAT) >=
-            moment.utc(tenant.rent_start).format(DAY_FORMAT)
+            moment.utc(tenant.rent_start).format(DAY_FORMAT) ||
+          // estate.vacant_date is lesser than today
+          moment.utc(estate.vacant_date).format(DAY_FORMAT) <= moment.utc().format(DAY_FORMAT)
       )
       if (process.env.DEV === 'true') {
         Logger.info(`filterEstates after rent start ${estates?.length}`)
@@ -2041,7 +2046,14 @@ class EstateService {
    *
    */
   static async publishEstate(
-    { estate, publishers, performed_by = null, is_queue = false, is_build_publish = false },
+    {
+      estate,
+      publishers,
+      performed_by = null,
+      is_queue = false,
+      is_build_publish = false,
+      retainOldMatches = true
+    },
     trx
   ) {
     const user = await User.query().where('id', estate.user_id).first()
@@ -2130,33 +2142,42 @@ class EstateService {
         )
       }
 
-      await props({
-        delMatches: Database.table('matches')
-          .where({ estate_id: estate.id })
-          .delete()
-          .transacting(trx),
-        delLikes: Database.table('likes').where({ estate_id: estate.id }).delete().transacting(trx),
-        delDislikes: Database.table('dislikes')
-          .where({ estate_id: estate.id })
-          .delete()
-          .transacting(trx)
-      })
+      if (!retainOldMatches) {
+        await props({
+          delMatches: Database.table('matches')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx),
+          delLikes: Database.table('likes')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx),
+          delDislikes: Database.table('dislikes')
+            .where({ estate_id: estate.id })
+            .delete()
+            .transacting(trx)
+        })
+      }
 
-      const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
-      const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` // fixme: make a deeplink
-      let textMessage =
-        `Landlord: ${user.firstname} ${user.secondname}\r\n` +
-        `Landlord Email: ${user.email}\r\n` +
-        `Estate Address: ${capitalize(estate.address)}\r\n` +
-        `Scheduled to be available on: ${moment(new Date(estate.available_start_at)).format(
-          GERMAN_DATE_FORMAT
-        )}\r\n` +
-        `Url: ${link}\r\n` +
-        `Marketplace Publishers:\r\n`
-      publishers?.map((publisher) => {
-        textMessage += ` - ${publisher}\r\n`
-      })
-      // FIXME: textMessage is NOT sent anymore to support@breeze4me.de
+      if (performed_by) {
+        // this is performed by landlord, we need to send to admin to request publish approval
+        const subject = LANDLORD_REQUEST_PUBLISH_EMAIL_SUBJECT
+        const link = `${ADMIN_URLS[process.env.NODE_ENV]}/properties?id=${estate.id}` // fixme: make a deeplink
+        let textMessage =
+          `Landlord: ${user.firstname} ${user.secondname}\r\n` +
+          `Landlord Email: ${user.email}\r\n` +
+          `Estate Address: ${capitalize(estate.address)}\r\n` +
+          `Scheduled to be available on: ${moment(new Date(estate.available_start_at)).format(
+            GERMAN_DATE_FORMAT
+          )}\r\n` +
+          `Url: ${link}\r\n` +
+          `Marketplace Publishers:\r\n`
+        publishers?.map((publisher) => {
+          textMessage += ` - ${publisher}\r\n`
+        })
+
+        await MailService.sendTextEmail('support@breeze4me.de', subject, textMessage)
+      }
 
       await Estate.query()
         .where('id', estate.id)
