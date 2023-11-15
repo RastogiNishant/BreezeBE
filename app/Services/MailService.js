@@ -1,6 +1,6 @@
 'use strict'
 
-const { trim, capitalize, startCase } = require('lodash')
+const { trim, capitalize, startCase, isArray } = require('lodash')
 const l = use('Localize')
 const moment = require('moment')
 const { generateAddress, parseFloorDirection } = use('App/Libs/utils')
