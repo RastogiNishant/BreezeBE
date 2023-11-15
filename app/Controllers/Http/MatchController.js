@@ -8,11 +8,13 @@ const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
 const Admin = use('App/Models/Admin')
 const User = use('App/Models/User')
+const Match = use('App/Models/Match')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
-const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith } = require('lodash')
+const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith, intersection } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -1235,13 +1237,56 @@ class MatchController {
   }
 
   async notifyProspectsToFillUpProfile({ request, auth, response }) {
-    const { emails } = request.all()
+    const { emails, estate_id } = request.all()
     try {
       // FIXME: filter valid emails:
       // 1. when match must not be activated yet
-      // 2. when from contact requests
+      // 2. valid from contact requests
+      const estate = await Estate.query()
+        .whereNot('status', STATUS_DELETE)
+        .where('id', estate_id)
+        .where('user_id', auth.user.id)
+        .first()
+      if (!estate) {
+        throw new HttpException('Estate not found.')
+      }
+      const matches = await Match.query()
+        .select('email')
+        .innerJoin('users', 'users.id', 'matches.user_id')
+        .innerJoin('tenants', 'tenants.user_id', 'users.id')
+        .where('matches.status', '>', MATCH_STATUS_NEW)
+        .whereNot('tenats.status', STATUS_ACTIVE)
+        .where('matches.estate_id', estate_id)
+        .fetch()
+      let validEmails = (matches.toJSON() || []).map((match) => match.email)
+      let contactRequests
+      if (estate.unit_category_id) {
+        contactRequests = await EstateSyncContactRequest.query()
+          .select('email')
+          .innerJoin('estates', 'estate_sync_contact_requests.estate_id', 'estates.id')
+          .whereIn(
+            'estates.id',
+            Database.raw(
+              `(select id from estates where unit_category_id in (
+                select unit_category_id from estates where id='${estate_id}')
+              )`
+            )
+          )
+          .fetch()
+        validEmails = [
+          ...validEmails,
+          ...(contactRequests.toJSON() || []).map((contactRequest) => contactRequest.email)
+        ]
+      } else {
+        contactRequests = await EstateSyncContactRequest.query()
+          .select('email')
+          .where('estate_id', estate_id)
+          .fetch()
+        validEmails = (contactRequests.toJSON() || []).map((contactRequest) => contactRequest.email)
+      }
+      const recipientEmails = intersection(emails, validEmails)
       await MailService.sendToProspectForFillUpProfile({
-        email: emails
+        email: recipientEmails
       })
       response.res(true)
     } catch (e) {
