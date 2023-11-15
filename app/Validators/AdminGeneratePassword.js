@@ -3,7 +3,7 @@
 const yup = require('yup')
 const { id } = require('../Libs/schemas.js')
 const Base = require('./Base')
-const { ROLE_LANDLORD, ROLE_USER } = require('../constants.js')
+const { ROLE_LANDLORD, ROLE_USER } = require('../constants')
 
 class AdminGeneratePassword extends Base {
   static schema = () =>
