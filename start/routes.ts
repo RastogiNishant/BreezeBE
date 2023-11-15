@@ -408,8 +408,8 @@ Route.get(
 /* Notify prospect match user on email to fillup profile */
 Route.post(
   '/api/v1/match/landlord/estate/notifyprospect-fillupprofile',
-  'MatchController.notifyOutsideProspectToFillUpProfile'
-).middleware(['auth:jwtLandlord', 'valid:NotifyOutsideProspectToFillUpProfile'])
+  'MatchController.notifyProspectsToFillUpProfile'
+).middleware(['auth:jwtLandlord', 'valid:NotifyProspectsToFillUpProfile'])
 
 Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
   'auth:jwtLandlord'
