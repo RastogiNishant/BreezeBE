@@ -30,8 +30,6 @@ const {
   SALUTATION_MS_LABEL,
   SALUTATION_SIR_OR_MADAM_LABEL,
   TENANT_INVITATION_EXPIRATION_DATE,
-  EMAIL_REG_EXP,
-  PHONE_REG_EXP,
   MATCH_STATUS_NEW,
   ERROR_OUTSIDE_TENANT_INVITATION_INVALID,
   ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED,
@@ -50,6 +48,8 @@ const {
   CONNECT_ESTATE,
   OUTSIDE_TENANT_INVITE_TYPE
 } = require('../constants')
+
+const { validationRegExp } = require('../helper')
 
 const {
   exceptions: {
@@ -186,10 +186,10 @@ class EstateCurrentTenantService extends BaseService {
         user.sex === GENDER_MALE
           ? SALUTATION_MR_LABEL
           : user.sex === GENDER_FEMALE
-          ? SALUTATION_MS_LABEL
-          : user.sex === GENDER_NEUTRAL
-          ? SALUTATION_NEUTRAL_LABEL
-          : SALUTATION_SIR_OR_MADAM_LABEL,
+            ? SALUTATION_MS_LABEL
+            : user.sex === GENDER_NEUTRAL
+              ? SALUTATION_NEUTRAL_LABEL
+              : SALUTATION_SIR_OR_MADAM_LABEL,
       salutation_int: user.sex || GENDER_ANY
     })
 
@@ -446,7 +446,8 @@ class EstateCurrentTenantService extends BaseService {
       )
 
       const validLinks = links.filter(
-        (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
+        (link) =>
+          link.email && trim(link.email) !== '' && validationRegExp.EMAIL_REG_EXP.test(link.email)
       )
 
       failureCount += (links.length || 0) - (validLinks.length || 0)
@@ -660,7 +661,9 @@ class EstateCurrentTenantService extends BaseService {
     )
     const validLinks = links.filter(
       (link) =>
-        link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number)
+        link.phone_number &&
+        trim(link.phone_number) !== '' &&
+        validationRegExp.PHONE_REG_EXP.test(link.phone_number)
     )
 
     failureCount += (links.length || 0) - (validLinks.length || 0)
@@ -1039,8 +1042,8 @@ class EstateCurrentTenantService extends BaseService {
       user.sex === 1
         ? SALUTATION_MR_LABEL
         : user.sex === 2
-        ? SALUTATION_MS_LABEL
-        : SALUTATION_SIR_OR_MADAM_LABEL
+          ? SALUTATION_MS_LABEL
+          : SALUTATION_SIR_OR_MADAM_LABEL
 
     await currentTenant.save(trx)
 
@@ -1202,8 +1205,8 @@ class EstateCurrentTenantService extends BaseService {
           data.sex === 1
             ? SALUTATION_MR_LABEL
             : data.sex === 2
-            ? SALUTATION_MS_LABEL
-            : SALUTATION_SIR_OR_MADAM_LABEL
+              ? SALUTATION_MS_LABEL
+              : SALUTATION_SIR_OR_MADAM_LABEL
         ect.salutation_int = data.sex
       }
       if (data.secondname) ect.surname = data.secondname
