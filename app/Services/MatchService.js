@@ -42,7 +42,7 @@ const WebSocket = use('App/Classes/Websocket')
 
 const {
   exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE }
-} = require('../../exceptions')
+} = require('../exceptions')
 const {
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
