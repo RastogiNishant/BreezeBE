@@ -3,7 +3,7 @@
 const yup = require('yup')
 const { id } = require('../Libs/schemas.js')
 const Base = require('./Base')
-const { TASK_COMMON_TYPE, TASK_SYSTEM_TYPE } = require('../constants.js')
+const { TASK_COMMON_TYPE, TASK_SYSTEM_TYPE } = require('../constants')
 
 class TaskId extends Base {
   static schema = () =>

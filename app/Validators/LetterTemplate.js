@@ -1,7 +1,7 @@
 'use strict'
 
 const yup = require('yup')
-const { LETTER_GREETING_STYLE } = require('../constants.js')
+const { LETTER_GREETING_STYLE } = require('../constants')
 const { id } = require('../Libs/schemas.js')
 const Base = require('./Base')
 
