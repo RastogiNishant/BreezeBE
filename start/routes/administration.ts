@@ -286,5 +286,11 @@ export const administrationRoutes = {
       controller: 'Admin/UserController.recalculateMatchByDate',
       middleware: ['auth:jwtAdministrator', 'valid:RecalculateMatchByDate']
     }
+  },
+  '/utilities/contact-requests': {
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/UtilityController.uploadContactRequest',
+      middleware: ['auth:jwtAdministrator']
+    }
   }
 }
