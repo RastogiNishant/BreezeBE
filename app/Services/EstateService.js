@@ -1599,9 +1599,13 @@ class EstateService {
     if (tenant.rent_start && inside_property) {
       estates = estates.filter(
         (estate) =>
+          // estate vacant_date not set
           !estate.vacant_date ||
+          // estate vacant_date is greater than rent_start
           moment.utc(estate.vacant_date).format(DAY_FORMAT) >=
-            moment.utc(tenant.rent_start).format(DAY_FORMAT)
+            moment.utc(tenant.rent_start).format(DAY_FORMAT) ||
+          // estate.vacant_date is lesser than today
+          moment.utc(estate.vacant_date).format(DAY_FORMAT) <= moment.utc().format(DAY_FORMAT)
       )
       if (process.env.DEV === 'true') {
         Logger.info(`filterEstates after rent start ${estates?.length}`)
