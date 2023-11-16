@@ -214,8 +214,8 @@ class Estate extends Model {
    */
   static get options() {
     return {
-      //bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
-      //kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
+      // bath_options: [BATH_TUB, BATH_WINDOW, BATH_BIDET, BATH_URINAL, BATH_SHOWER],
+      // kitchen_options: [KITCHEN_OPEN, KITCHEN_PANTRY, KITCHEN_BUILTIN],
       equipment: [
         EQUIPMENT_STACK,
         EQUIPMENT_AIR_CONDITIONED,
@@ -242,8 +242,8 @@ class Estate extends Model {
 
   static generateRandomString(length = 6) {
     let randomString = ''
-    var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
-    for (var i = 0; i < length; i++) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
+    for (let i = 0; i < length; i++) {
       randomString += characters.charAt(Math.floor(Math.random() * characters.length))
     }
     return randomString
@@ -322,13 +322,16 @@ class Estate extends Model {
         !(instance.dirty.heating_costs || instance.dirty.additional_costs)
       ) {
         instance.extra_costs = Number(instance.dirty.extra_costs)
-        //need confirmation...
+        // need confirmation...
         instance.additional_costs = 0
         instance.heating_costs = 0
       }
-
       if (instance.construction_year?.length === 4) {
         instance.construction_year = `${instance.construction_year}-01-01`
+      }
+
+      if (String(instance.last_modernization).length === 4) {
+        instance.last_modernization = `${instance.last_modernization}-01-01`
       }
 
       delete instance.is_coord_changed
@@ -357,7 +360,7 @@ class Estate extends Model {
     try {
       const hash = Estate.getHash(id)
       const share_link = await createDynamicLink(`${process.env.DEEP_LINK}/invite?code=${hash}`)
-      let estateInfo = {
+      const estateInfo = {
         hash,
         share_link
       }
@@ -430,6 +433,7 @@ class Estate extends Model {
       .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
       .where('type', TASK_COMMON_TYPE)
   }
+
   all_tasks() {
     return this.hasMany('App/Models/Task', 'id', 'estate_id')
       .whereNotIn('status', [TASK_STATUS_DELETE, TASK_STATUS_DRAFT])
@@ -491,6 +495,7 @@ class Estate extends Model {
       MATCH_STATUS_COMMIT
     ])
   }
+
   final() {
     return this.hasMany('App/Models/Match').whereIn('status', [MATCH_STATUS_FINISH])
   }
@@ -501,6 +506,7 @@ class Estate extends Model {
   invite() {
     return this.hasMany('App/Models/Match').where({ status: MATCH_STATUS_KNOCK })
   }
+
   /**
    *
    */
@@ -525,6 +531,7 @@ class Estate extends Model {
       STATUS_DRAFT
     ])
   }
+
   /**
    *
    */
@@ -587,7 +594,7 @@ class Estate extends Model {
    *
    */
   static getFinalPrice(e) {
-    return parseFloat(e.net_rent) || 0 //+ (parseFloat(e.additional_costs) || 0)
+    return parseFloat(e.net_rent) || 0 // + (parseFloat(e.additional_costs) || 0)
   }
 
   /**
