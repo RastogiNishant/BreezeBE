@@ -1160,13 +1160,14 @@ class MatchController {
     })
   }
 
-  async notifyOutsideProspectToFillUpProfile({ request, auth, response }) {
-    const { id } = request.all()
+  async notifyProspectsToFillUpProfile({ request, auth, response }) {
+    const { emails } = request.all()
     try {
-      await require('../../Services/MarketPlaceService').sendManualReminder({
-        contactRequestIds: id,
-        landlordId: auth.user.id,
-        lang: auth.user.lang
+      // FIXME: filter valid emails:
+      // 1. when match must not be activated yet
+      // 2. when from contact requests
+      await MailService.sendToProspectForFillUpProfile({
+        email: emails
       })
       response.res(true)
     } catch (e) {
