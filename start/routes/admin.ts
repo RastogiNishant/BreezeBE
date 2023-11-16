@@ -7,7 +7,7 @@ export const adminRoutes = {
       middleware: ['auth:jwtLandlord', 'valid:UpdateUserValidationStatus']
     }
   },
-  '/agreements/': {
+  '/agreements': {
     [HTTP_METHODS.GET]: {
       controller: 'Admin/AgreementController.getAgreements',
       middleware: ['auth:jwtAdministrator']
@@ -33,7 +33,7 @@ export const adminRoutes = {
       middleware: ['valid:AdminLogin']
     }
   },
-  '/feature/': {
+  '/feature': {
     [HTTP_METHODS.POST]: {
       controller: 'FeatureController.createFeature',
       middleware: ['auth:jwtAdministrator', 'valid:CreateFeature']
@@ -91,7 +91,7 @@ export const adminRoutes = {
       middleware: ['auth:jwtAdministrator', 'valid:Id']
     }
   },
-  '/tenant/paymentplan/': {
+  '/tenant/paymentplan': {
     [HTTP_METHODS.GET]: {
       controller: 'TenantPaymentPlanController.getTenantPaymentPlan',
       middleware: ['auth:jwtAdministrator', 'valid:PlanId']
@@ -101,7 +101,7 @@ export const adminRoutes = {
       middleware: ['auth:jwtAdministrator', 'valid:TenantPaymentPlan']
     }
   },
-  '/terms/': {
+  '/terms': {
     [HTTP_METHODS.GET]: {
       controller: 'Admin/AgreementController.getTerms',
       middleware: ['auth:jwtAdministrator']
