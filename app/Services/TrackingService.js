@@ -3,12 +3,12 @@ const Amplitude = require('@amplitude/node')
 const { Identify } = require('@amplitude/identify')
 const fetch = require('node-fetch')
 const User = use('App/Models/User')
-
+const AppException = use('App/Exceptions/AppException')
 const { get } = require('lodash')
 
 const AMPLITUDE_API_KEY = Env.get('AMPLITUDE_API_KEY')
 
-var amplitudeClient = Amplitude.init(AMPLITUDE_API_KEY)
+const amplitudeClient = Amplitude.init(AMPLITUDE_API_KEY)
 
 const logEvent = async (
   request,

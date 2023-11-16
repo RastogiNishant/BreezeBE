@@ -8,11 +8,13 @@ const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
 const Admin = use('App/Models/Admin')
 const User = use('App/Models/User')
+const Match = use('App/Models/Match')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
-const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith } = require('lodash')
+const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith, intersection } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
@@ -1234,15 +1236,61 @@ class MatchController {
     })
   }
 
-  async notifyOutsideProspectToFillUpProfile({ request, auth, response }) {
-    const { id } = request.all()
+  async notifyProspectsToFillUpProfile({ request, auth, response }) {
+    const { emails, estate_id } = request.all()
     try {
-      await require('../../Services/MarketPlaceService').sendManualReminder({
-        contactRequestIds: id,
-        landlordId: auth.user.id,
-        lang: auth.user.lang
-      })
-      response.res(true)
+      const estate = await Estate.query()
+        .whereNot('status', STATUS_DELETE)
+        .where('id', estate_id)
+        .where('user_id', auth.user.id)
+        .first()
+      if (!estate) {
+        throw new HttpException('Estate not found.')
+      }
+      const matches = await Match.query()
+        .select('email')
+        .innerJoin('users', 'users.id', 'matches.user_id')
+        .innerJoin('tenants', 'tenants.user_id', 'users.id')
+        .where('matches.status', '>', MATCH_STATUS_NEW)
+        // we are allowed only to send to tenants that are NOT Activated
+        .whereNot('tenants.status', STATUS_ACTIVE)
+        .where('matches.estate_id', estate_id)
+        .fetch()
+      let validEmails = (matches.toJSON() || []).map((match) => match.email)
+      let contactRequests
+      if (estate.unit_category_id) {
+        // estate belongs to a category, we should fetch emails of contact requests belonging
+        // to the category representative
+        contactRequests = await EstateSyncContactRequest.query()
+          .select('email')
+          .innerJoin('estates', 'estate_sync_contact_requests.estate_id', 'estates.id')
+          .whereIn(
+            'estates.id',
+            Database.raw(
+              `(select id from estates where unit_category_id in (
+                select unit_category_id from estates where id='${estate_id}')
+              )`
+            )
+          )
+          .fetch()
+      } else {
+        contactRequests = await EstateSyncContactRequest.query()
+          .select('email')
+          .where('estate_id', estate_id)
+          .fetch()
+      }
+      validEmails = [
+        ...validEmails,
+        ...(contactRequests.toJSON() || []).map((contactRequest) => contactRequest.email)
+      ]
+      const recipientEmails = intersection(emails, validEmails)
+      // we send only to valid emails
+      if (recipientEmails.length) {
+        await MailService.sendToProspectForFillUpProfile({
+          email: recipientEmails
+        })
+      }
+      response.res({ emails_sent: recipientEmails.length })
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -1566,7 +1614,6 @@ class MatchController {
           await trx.rollback()
           throw new HttpException('Error sending chat.')
         }
-        break
       case 'email':
         const users = await User.query().whereIn('id', recipients).fetch()
         const email = (users.toJSON({ isOwner: true }) || []).map((user) => user.email)

@@ -1,6 +1,7 @@
 const Excel = require('exceljs')
 const { get, has, trim, isEmpty, reduce, isString, isFunction } = require('lodash')
 const AppException = use('App/Exceptions/AppException')
+const { validationRegExp } = require('../helper')
 
 class ExcelReader {
   constructor() {
@@ -30,48 +31,27 @@ class ExcelReader {
   /**
    *
    */
-  mapDataToEntity(row) {
-    const [
-      num, // 'No.',
-      name, // 'Street',
-      phone, // 'House Number',
-      email // 'Extra Address',
-    ] = row
-
-    const result = {
-      no,
-      name,
-      phone,
-      email
-    }
-  }
-
-  /**
-   *
-   */
   async readFile(filePath) {
-    var workbook = new Excel.Workbook()
+    const workbook = new Excel.Workbook()
     const result = []
-    const again = await workbook.xlsx.readFile(filePath)
+    await workbook.xlsx.readFile(filePath)
 
-    var worksheet = workbook.getWorksheet(1)
+    const worksheet = workbook.getWorksheet(1)
     try {
       worksheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
-        if (rowNumber != 1) {
-          let name = row.values[2]
-          let phone = JSON.stringify(row.values[3])
-          let email = row.values[4] || ''
-          var pattern =
-            /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i
+        if (rowNumber !== 1) {
+          const name = row.values[2]
+          const phone = JSON.stringify(row.values[3])
+          const email = row.values[4] || ''
 
-          if (
-            !pattern.test(email.toLowerCase()) ||
+          const dropRow =
+            !validationRegExp.EMAIL_REG_EXP.test(email.toLowerCase()) ||
             name === 'Name' ||
             email === 'Email' ||
             phone === 'Tel.'
-          ) {
-          } else {
-            result.push({ name: name, phone: phone, email: email })
+
+          if (!dropRow) {
+            result.push({ name, phone, email })
           }
         }
       })

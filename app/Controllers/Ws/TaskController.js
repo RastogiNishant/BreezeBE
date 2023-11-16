@@ -70,8 +70,8 @@ class TaskController extends BaseController {
         )
       }
     } catch (e) {
-      Logger.error(`onGetPreviousMessages error ${e.message}`)
-      this.emitError(err.message)
+      Logger.error(`onGetPreviousMessages error ${e?.message}`)
+      this.emitError(e?.message)
     }
   }
 
@@ -108,7 +108,7 @@ class TaskController extends BaseController {
     try {
       const chat = await ChatService.getChatMessageAge(id)
       const messageAge = chat?.difference || false
-      if (isBoolean(messageAge) && !result) {
+      if (isBoolean(messageAge)) {
         throw new AppException('Chat message not found.')
       }
       if (messageAge > CONNECT_MESSAGE_EDITABLE_TIME_LIMIT) {
@@ -188,12 +188,14 @@ class TaskController extends BaseController {
       // taskMessageReceived represents other side has unread message, in other words, one side sends message, other side has not read this message yet
       const estate = await Estate.query().select('property_id').where('id', this.estateId).first()
       const messageReceivedData = {
+        id: chat.id,
         topic: this.socket.topic,
         message: chat.text,
         urgency: task?.urgency,
         estate_id: this.estateId,
         user_id: this.user.id,
         property_id: estate?.property_id,
+        created_at: moment(chat.created_at).utc().format(),
         sender: {
           id: this.user.id,
           firstname: this.user.firstname,

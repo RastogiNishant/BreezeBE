@@ -1,10 +1,75 @@
+export enum SUPPORTED_LANGUAGES {
+  DE = 'de',
+  EN = 'en'
+}
+
+interface IAppConfig {
+  DEFAULT_LANG: SUPPORTED_LANGUAGES
+  SUPPORTED_LANGUAGE_LIST: string[]
+}
+
+export const APP_CONFIG: IAppConfig = {
+  DEFAULT_LANG: SUPPORTED_LANGUAGES.DE,
+  SUPPORTED_LANGUAGE_LIST: Object.values(SUPPORTED_LANGUAGES)
+}
+
+export enum APP_ROLES {
+  LANDLORD = 1,
+  ADMIN = 2,
+  USER = 3,
+  PROPERTY_MANAGER = 4
+}
+
+export enum FILE_TYPE {
+  COVER = 'cover',
+  PLAN = 'plan',
+  CUSTOM = 'custom',
+  DOC = 'doc',
+  IMAGE = 'image',
+  EXTERNAL = 'external',
+  GALLERY = 'gallery',
+  UNASSIGNED = 'unassigned',
+  ENERGY_CERTIFICATE = 'energy_certificate',
+}
+
+export enum ENVIRONMENT {
+  TEST = 'test',
+  DEV = 'development'
+}
+
+export enum USER_ACTIVATION_STATUS {
+  NOT_ACTIVATED = 1,
+  ACTIVATED = 2,
+  DEACTIVATED = 3,
+}
+
+export enum DEVICE_TYPE {
+  ANDROID = 'android',
+  IOS = 'ios',
+}
+
+export enum CURRENCY {
+  EUR = 'EUR',
+  USD = 'USD',
+  UAH = 'UAH',
+}
+
+export enum SALUTATION_LABEL {
+  MR = 'landlord.profile.user_details.salut.mr.message',
+  MS = 'landlord.profile.user_details.salut.ms.message',
+  SIR_OR_MADAM = 'landlord.profile.user_details.salut.sir_madam.message',
+  NEUTRAL = 'landlord.profile.user_details.salut.not_def.message',
+}
+
 const constants = {
   DOMAIN: 'breeze4me.de',
-  TEST_ENVIRONMENT: 'test',
-  DEV_ENVIRONMENT: 'development',
-  USER_ACTIVATION_STATUS_NOT_ACTIVATED: 1,
-  USER_ACTIVATION_STATUS_ACTIVATED: 2,
-  USER_ACTIVATION_STATUS_DEACTIVATED: 3,
+
+  TEST_ENVIRONMENT: ENVIRONMENT.TEST,
+  DEV_ENVIRONMENT: ENVIRONMENT.DEV,
+
+  USER_ACTIVATION_STATUS_NOT_ACTIVATED: USER_ACTIVATION_STATUS.NOT_ACTIVATED,
+  USER_ACTIVATION_STATUS_ACTIVATED: USER_ACTIVATION_STATUS.ACTIVATED,
+  USER_ACTIVATION_STATUS_DEACTIVATED: USER_ACTIVATION_STATUS.DEACTIVATED,
 
   ERROR_AGREEMENT_CONFIRM: 10020,
   ERROR_TERMS_CONFIRM: 10030,
@@ -22,19 +87,20 @@ const constants = {
   ERROR_OUTSIDE_TENANT_INVITATION_ALREADY_USED: 10302,
   ERROR_OUTSIDE_LANDLORD_INVITATION_INVALID: 10303,
 
-  LANG_EN: 'en',
-  LANG_DE: 'de',
-  AVAILABLE_LANGUAGES: ['en', 'de'],
-  DEFAULT_LANG: 'de',
-  FILE_TYPE_COVER: 'cover',
-  FILE_TYPE_PLAN: 'plan',
-  FILE_TYPE_CUSTOM: 'custom',
-  FILE_TYPE_DOC: 'doc',
-  FILE_TYPE_IMAGE: 'image',
-  FILE_TYPE_EXTERNAL: 'external',
-  FILE_TYPE_GALLERY: 'gallery',
-  FILE_TYPE_UNASSIGNED: 'unassigned',
-  FILE_TYPE_ENERGY_CERTIFICATE: 'energy_certificate',
+  LANG_EN: SUPPORTED_LANGUAGES.EN,
+  LANG_DE: SUPPORTED_LANGUAGES.DE,
+  AVAILABLE_LANGUAGES: APP_CONFIG.SUPPORTED_LANGUAGE_LIST,
+  DEFAULT_LANG: APP_CONFIG.DEFAULT_LANG,
+
+  FILE_TYPE_COVER: FILE_TYPE.COVER,
+  FILE_TYPE_PLAN: FILE_TYPE.PLAN,
+  FILE_TYPE_CUSTOM: FILE_TYPE.CUSTOM,
+  FILE_TYPE_DOC: FILE_TYPE.DOC,
+  FILE_TYPE_IMAGE: FILE_TYPE.IMAGE,
+  FILE_TYPE_EXTERNAL: FILE_TYPE.EXTERNAL,
+  FILE_TYPE_GALLERY: FILE_TYPE.GALLERY,
+  FILE_TYPE_UNASSIGNED: FILE_TYPE.UNASSIGNED,
+  FILE_TYPE_ENERGY_CERTIFICATE: FILE_TYPE.ENERGY_CERTIFICATE,
 
   MAX_MINOR_COUNT: 15,
 
@@ -61,12 +127,12 @@ const constants = {
   MEMBER_FILE_PASSPORT_DOC: 'passport',
   MEMBER_FILE_EXTRA_PASSPORT_DOC: 'extra_passport',
 
-  DEVICE_TYPE_ANDROID: 'android',
-  DEVICE_TYPE_IOS: 'ios',
+  DEVICE_TYPE_ANDROID: DEVICE_TYPE.ANDROID,
+  DEVICE_TYPE_IOS: DEVICE_TYPE.IOS,
 
-  CURRENCY_EUR: 'EUR',
-  CURRENCY_USD: 'USD',
-  CURRENCY_UAH: 'UAH',
+  CURRENCY_EUR: CURRENCY.EUR,
+  CURRENCY_USD: CURRENCY.USD,
+  CURRENCY_UAH: CURRENCY.UAH,
 
   STATUS_ACTIVE: 1,
   STATUS_DELETE: 2,
@@ -79,20 +145,20 @@ const constants = {
   IS_PRIVATE: 1,
   IS_PUBLIC: 2,
 
-  ROLE_ADMIN: 2,
-  ROLE_LANDLORD: 1,
-  ROLE_USER: 3,
-  ROLE_PROPERTY_MANAGER: 4,
+  ROLE_LANDLORD: APP_ROLES.LANDLORD,
+  ROLE_ADMIN: APP_ROLES.ADMIN,
+  ROLE_USER: APP_ROLES.USER,
+  ROLE_PROPERTY_MANAGER: APP_ROLES.PROPERTY_MANAGER,
 
   GENDER_MALE: 1,
   GENDER_FEMALE: 2,
   GENDER_NEUTRAL: 4,
   GENDER_ANY: 3,
 
-  SALUTATION_MR_LABEL: 'landlord.profile.user_details.salut.mr.message',
-  SALUTATION_MS_LABEL: 'landlord.profile.user_details.salut.ms.message',
-  SALUTATION_SIR_OR_MADAM_LABEL: 'landlord.profile.user_details.salut.sir_madam.message',
-  SALUTATION_NEUTRAL_LABEL: 'landlord.profile.user_details.salut.not_def.message',
+  SALUTATION_MR_LABEL: SALUTATION_LABEL.MR,
+  SALUTATION_MS_LABEL: SALUTATION_LABEL.MS,
+  SALUTATION_SIR_OR_MADAM_LABEL: SALUTATION_LABEL.SIR_OR_MADAM,
+  SALUTATION_NEUTRAL_LABEL: SALUTATION_LABEL.NEUTRAL,
 
   OCCUPATION_TYPE_OCCUPIED_OWN: 1,
   OCCUPATION_TYPE_OCCUPIED_TENANT: 2,
@@ -720,7 +786,7 @@ const constants = {
   LOG_TYPE_DEACTIVATED_PROFILE: 'deactivated_profile',
   LOG_TYPE_KNOCKED: 'knocked',
   LOG_TYPE_VISITED: 'visited',
-  LOG_TYPE_REQUEST_PROFILE:'request_profile',
+  LOG_TYPE_REQUEST_PROFILE: 'request_profile',
 
   SIGN_IN_METHOD_GOOGLE: 'google',
   SIGN_IN_METHOD_APPLE: 'apple',
@@ -877,7 +943,7 @@ const constants = {
   GERMAN_HOLIDAYS: [
     '2022-08-15', // assumption day
     '2022-09-20', // world children day
-    '2022-10-03', // reformation day
+    '2022-10-03', // reunion day
     '2022-11-01', // all saints day
     '2022-12-25', // christmas
     '2022-12-26', // seconday of christmas
@@ -892,10 +958,11 @@ const constants = {
     '2023-06-08', // Corpus Cristi
     '2023-08-15', // Assumption Day
     '2023-09-20', // world children's day
-    '2023-10-03', // reformation day
+    '2023-10-31', // reformation day
     '2023-11-01', // all saints' day
     '2023-12-25', // christmas
-    '2023-12-26' // second day of christmas
+    '2023-12-26', // second day of christmas
+    '2024-01-01' // new year
   ],
   CHAT_TYPE_MESSAGE: 'message',
   CHAT_TYPE_BOT_MESSAGE: 'chatbot',
@@ -962,12 +1029,6 @@ const constants = {
   ESTATE_INVALID_ADDRESS_LABEL: 'Error',
   ESTATE_ALL_ADDRESS_LABEL: 'All',
 
-  EMAIL_REG_EXP:
-    /^((([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+(\.([a-z]|\d|[!#\$%&'\*\+\-\/=\?\^_`{\|}~]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])+)*)|((\x22)((((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(([\x01-\x08\x0b\x0c\x0e-\x1f\x7f]|\x21|[\x23-\x5b]|[\x5d-\x7e]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(\\([\x01-\x09\x0b\x0c\x0d-\x7f]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF]))))*(((\x20|\x09)*(\x0d\x0a))?(\x20|\x09)+)?(\x22)))@((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))$/i,
-  PHONE_REG_EXP: /^\+[1-9]{1,2}[0-9]{9,11}$/,
-  VALID_URL_REG_EXP:
-    /^((https?|ftp):\/\/)?(www.)?(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i,
-
   // Date period
   TASK_RESOLVE_HISTORY_PERIOD: 3,
 
@@ -983,14 +1044,13 @@ const constants = {
   PROSPECT_ACTOR: 'prospect',
   LANDLORD_ACTOR: 'landlord',
 
-  TEST_ENVIRONMENT: 'test',
   LETTER_GREETING_STYLE: [0, 1, 2, 3, 4],
 
   INVITATION_LINK_RETRIEVAL_CODE_LENGTH: 6,
   INVITATION_LINK_RETRIEVAL_CODE_CHARACTERS: '0123456789',
   INVITATION_LINK_RETRIEVAL_MAX_TRIES_LIMIT: 10,
   INVITATION_LINK_RETRIEVAL_TRIES_RESET_TIME: 1, // in minutes
-  INVITATION_LINK_RETRIEVAL_TRIES_KEY: `userRetrieveInvitationLinkFailedTries`,
+  INVITATION_LINK_RETRIEVAL_TRIES_KEY: 'userRetrieveInvitationLinkFailedTries',
 
   MAX_ROOM_TYPES_TO_IMPORT: 6,
 
@@ -1243,7 +1303,7 @@ Estates: [ESTATES]
   ],
 
   ESTATE_SYNC_ATTACHMENT_VALID_CONTENT_TYPE: ['image/jpeg', 'application/pdf'],
-  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: ['external', 'plan', 'custom'],
+  ESTATE_SYNC_VALID_FILE_TYPE_ATTACHMENTS: [FILE_TYPE.EXTERNAL, FILE_TYPE.PLAN, FILE_TYPE.CUSTOM],
   ESTATE_SYNC_TITLE_TEMPLATES: {
     germany: {
       key: 'rooms_number Zimmer area m² apartmentType in city',
@@ -1431,4 +1491,15 @@ Estates: [ESTATES]
   IS24_PUBLISHING_STATUS_PUBLISHED: 3
 }
 
-module.exports = constants
+module.exports = {
+  ...constants,
+  SUPPORTED_LANGUAGES,
+  APP_CONFIG,
+  APP_ROLES,
+  FILE_TYPE,
+  ENVIRONMENT,
+  USER_ACTIVATION_STATUS,
+  DEVICE_TYPE,
+  CURRENCY,
+  SALUTATION_LABEL
+}

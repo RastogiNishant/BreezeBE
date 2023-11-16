@@ -888,6 +888,16 @@
     "handler": "Admin/UserController.updateUser"
   },
   {
+    "route": "/api/v1/administration/utilities/contact-requests",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/UtilityController.uploadContactRequest"
+  },
+  {
     "route": "/api/v1/administration/utilities/estates/:id/percent",
     "method": [
       "HEAD",
@@ -3726,11 +3736,11 @@
     ],
     "middle": [
       "auth:jwtLandlord",
-      "valid:NotifyOutsideProspectToFillUpProfile",
+      "valid:NotifyProspectsToFillUpProfile",
       "agreement",
       "plan"
     ],
-    "handler": "MatchController.notifyOutsideProspectToFillUpProfile"
+    "handler": "MatchController.notifyProspectsToFillUpProfile"
   },
   {
     "route": "/api/v1/match/landlord/inviteTenantTo",

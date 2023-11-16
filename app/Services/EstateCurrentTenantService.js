@@ -30,8 +30,6 @@ const {
   SALUTATION_MS_LABEL,
   SALUTATION_SIR_OR_MADAM_LABEL,
   TENANT_INVITATION_EXPIRATION_DATE,
-  EMAIL_REG_EXP,
-  PHONE_REG_EXP,
   MATCH_STATUS_NEW,
   ERROR_OUTSIDE_TENANT_INVITATION_INVALID,
   ERROR_OUTSIDE_TENANT_INVITATION_EXPIRED,
@@ -50,6 +48,8 @@ const {
   CONNECT_ESTATE,
   OUTSIDE_TENANT_INVITE_TYPE
 } = require('../constants')
+
+const { validationRegExp } = require('../helper')
 
 const {
   exceptions: {
@@ -83,7 +83,7 @@ class EstateCurrentTenantService extends BaseService {
       throw new HttpException('Estate id not passed', 400)
     }
 
-    const shouldCommitTrx = trx ? false : true
+    const shouldCommitTrx = !trx
 
     if (shouldCommitTrx) {
       trx = await Database.beginTransaction()
@@ -128,7 +128,7 @@ class EstateCurrentTenantService extends BaseService {
         await currentTenant.save(trx)
       }
 
-      //send email to support for connect
+      // send email to support for connect
 
       if (shouldCommitTrx) {
         await trx.commit()
@@ -179,22 +179,22 @@ class EstateCurrentTenantService extends BaseService {
       email: user.email,
       contract_end: moment().utc().add(1, 'years').format(DAY_FORMAT),
       phone_number:
-        //TODO: add user's phone verification logic here when we have phone verification flow for user
+        // TODO: add user's phone verification logic here when we have phone verification flow for user
         member?.phone && member?.phone_verified ? member.phone : user.phone_number || '',
       status: STATUS_ACTIVE,
       salutation:
         user.sex === GENDER_MALE
           ? SALUTATION_MR_LABEL
           : user.sex === GENDER_FEMALE
-          ? SALUTATION_MS_LABEL
-          : user.sex === GENDER_NEUTRAL
-          ? SALUTATION_NEUTRAL_LABEL
-          : SALUTATION_SIR_OR_MADAM_LABEL,
+            ? SALUTATION_MS_LABEL
+            : user.sex === GENDER_NEUTRAL
+              ? SALUTATION_NEUTRAL_LABEL
+              : SALUTATION_SIR_OR_MADAM_LABEL,
       salutation_int: user.sex || GENDER_ANY
     })
 
     await currentTenant.save(trx)
-    //send email to support for connect
+    // send email to support for connect
     const estate = await Estate.query().select('id', 'user_id').where('id', estate_id).first()
     require('./QueueService').sendEmailToSupportForLandlordUpdate({
       type: CONNECT_ESTATE,
@@ -249,7 +249,7 @@ class EstateCurrentTenantService extends BaseService {
     currentTenant = await this.getCurrentTenantByEstateId({ estate_id })
 
     if (!currentTenant) {
-      //Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
+      // Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
       const newCurrentTenant = await EstateCurrentTenantService.addCurrentTenant(
         {
           data,
@@ -261,7 +261,7 @@ class EstateCurrentTenantService extends BaseService {
       return newCurrentTenant
     } else {
       data = await this.correctData(data)
-      //update values except email if no registered user...
+      // update values except email if no registered user...
       if (!currentTenant.user_id) {
         currentTenant.fill({
           id: currentTenant.id,
@@ -304,7 +304,7 @@ class EstateCurrentTenantService extends BaseService {
     notDisconnected = false,
     connected = false
   }) {
-    let query = EstateCurrentTenant.query()
+    const query = EstateCurrentTenant.query()
       .where('estate_id', estate_id)
       .whereNotIn('status', [STATUS_DELETE, STATUS_EXPIRE])
 
@@ -446,7 +446,8 @@ class EstateCurrentTenantService extends BaseService {
       )
 
       const validLinks = links.filter(
-        (link) => link.email && trim(link.email) !== '' && EMAIL_REG_EXP.test(link.email)
+        (link) =>
+          link.email && trim(link.email) !== '' && validationRegExp.EMAIL_REG_EXP.test(link.email)
       )
 
       failureCount += (links.length || 0) - (validLinks.length || 0)
@@ -538,41 +539,42 @@ class EstateCurrentTenantService extends BaseService {
     } catch (e) {
       reason = e.message
       await trx.rollback()
-    } finally {
-      let ret = {}
-      if (currentTenant) {
-        if (email) {
-          inviteResult = await this.inviteTenantToAppByEmail({ ids: [currentTenant.id], user_id })
-          ret = {
+    }
+
+    let ret = {}
+    if (currentTenant) {
+      if (email) {
+        inviteResult = await this.inviteTenantToAppByEmail({ ids: [currentTenant.id], user_id })
+        ret = {
+          successCount: inviteResult.successCount,
+          failureCount: inviteResult.failureCount,
+          email: {
             successCount: inviteResult.successCount,
-            failureCount: inviteResult.failureCount,
-            email: {
-              successCount: inviteResult.successCount,
-              failureCount: inviteResult.failureCount
-            }
-          }
-          return ret
-        } else if (phone) {
-          inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
-          ret = {
-            successCount: inviteResult.successCount,
-            failureCount: inviteResult.failureCount,
-            phone: {
-              successCount: inviteResult.successCount,
-              failureCount: inviteResult.failureCount
-            }
+            failureCount: inviteResult.failureCount
           }
         }
         return ret
+      } else if (phone) {
+        inviteResult = await this.inviteTenantToAppBySMS({ ids: [currentTenant.id], user_id })
+        ret = {
+          successCount: inviteResult.successCount,
+          failureCount: inviteResult.failureCount,
+          phone: {
+            successCount: inviteResult.successCount,
+            failureCount: inviteResult.failureCount
+          }
+        }
       }
-      return {
-        failureCount: 1,
-        reason
-      }
+      return ret
+    }
+    return {
+      failureCount: 1,
+      reason
     }
   }
+
   static async inviteTenantToApp({ user_id, invites }) {
-    let result = {
+    const result = {
       email: {},
       phone: {},
       reason: []
@@ -659,7 +661,9 @@ class EstateCurrentTenantService extends BaseService {
     )
     const validLinks = links.filter(
       (link) =>
-        link.phone_number && trim(link.phone_number) !== '' && PHONE_REG_EXP.test(link.phone_number)
+        link.phone_number &&
+        trim(link.phone_number) !== '' &&
+        validationRegExp.PHONE_REG_EXP.test(link.phone_number)
     )
 
     failureCount += (links.length || 0) - (validLinks.length || 0)
@@ -754,7 +758,7 @@ class EstateCurrentTenantService extends BaseService {
       if (!shouldTrxProceed) {
         await trx.rollback()
       }
-      throw new AppException('Error found while creating links.', e.status || 500)
+      throw new AppException('Error found while creating links.', err?.status || 500)
     }
   }
 
@@ -774,12 +778,12 @@ class EstateCurrentTenantService extends BaseService {
 
       await EstateCurrentTenant.query()
         .where('id', estateCurrentTenant.id)
-        .update({ code: code, invite_sent_at: time }, trx)
+        .update({ code, invite_sent_at: time }, trx)
 
       const txtSrc = JSON.stringify({
         id: estateCurrentTenant.id,
         estate_id: estateCurrentTenant.estate_id,
-        code: code,
+        code,
         expired_time: time
       })
 
@@ -842,7 +846,7 @@ class EstateCurrentTenantService extends BaseService {
           role: ROLE_USER,
           secondname: estateCurrentTenant.surname,
           phone: estateCurrentTenant.phone_number,
-          password: password
+          password
         }
         user = await UserService.signUp(
           {
@@ -1021,7 +1025,7 @@ class EstateCurrentTenantService extends BaseService {
       throw new HttpException('Invalid data provided, cannot find tenant', 400)
     }
 
-    //TODO: add user's phone verification logic here when we have phone verification flow for user
+    // TODO: add user's phone verification logic here when we have phone verification flow for user
     const member = await MemberService.getMember(null, user.id, user.owner_id)
     if (member?.phone && member?.phone_verified) {
       currentTenant.phone_number = member.phone
@@ -1038,8 +1042,8 @@ class EstateCurrentTenantService extends BaseService {
       user.sex === 1
         ? SALUTATION_MR_LABEL
         : user.sex === 2
-        ? SALUTATION_MS_LABEL
-        : SALUTATION_SIR_OR_MADAM_LABEL
+          ? SALUTATION_MS_LABEL
+          : SALUTATION_SIR_OR_MADAM_LABEL
 
     await currentTenant.save(trx)
 
@@ -1193,7 +1197,7 @@ class EstateCurrentTenantService extends BaseService {
 
   static async updateEstateTenant(data, user, trx) {
     if (data.email || data.sex || data.secondname) {
-      let ect = {}
+      const ect = {}
 
       if (data.email) ect.email = data.email
       if (data.sex) {
@@ -1201,8 +1205,8 @@ class EstateCurrentTenantService extends BaseService {
           data.sex === 1
             ? SALUTATION_MR_LABEL
             : data.sex === 2
-            ? SALUTATION_MS_LABEL
-            : SALUTATION_SIR_OR_MADAM_LABEL
+              ? SALUTATION_MS_LABEL
+              : SALUTATION_SIR_OR_MADAM_LABEL
         ect.salutation_int = data.sex
       }
       if (data.secondname) ect.surname = data.secondname

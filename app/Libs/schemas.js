@@ -6,21 +6,21 @@ const {
   exceptionKeys: { MATCH, POSITIVE_NUMBER }
 } = require('../exceptions')
 
-const { PHONE_REG_EXP } = require('../constants')
-const phoneSchema = yup.string().matches(PHONE_REG_EXP, getExceptionMessage(undefined, MATCH))
+const { validationRegExp } = require('../helper')
 
-const verificationCodeSchema = yup.string().matches(/^\d{6}$/)
+const SCHEMAS = {
+  id: yup.number().positive().typeError(getExceptionMessage('id', POSITIVE_NUMBER)),
 
-const id = yup.number().positive().typeError(getExceptionMessage('id', POSITIVE_NUMBER))
+  phone: yup
+    .string()
+    .matches(validationRegExp.PHONE_REG_EXP, getExceptionMessage(undefined, MATCH)),
 
-const pagination = yup.object().shape({
-  page: yup.number().positive(),
-  limit: yup.number().positive()
-})
+  verificationCode: yup.string().matches(/^\d{6}$/),
 
-module.exports = {
-  phoneSchema,
-  verificationCodeSchema,
-  id,
-  pagination
+  pagination: yup.object().shape({
+    page: yup.number().positive(),
+    limit: yup.number().positive()
+  })
 }
+
+module.exports = SCHEMAS
