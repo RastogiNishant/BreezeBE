@@ -14,6 +14,7 @@ import { onboardRoutes } from './routes/onboard'
 import { onboardingRoutes } from './routes/onboarding'
 import { userRoutes } from './routes/users'
 import { visitRoutes } from './routes/visit'
+import { adminRoutes } from './routes/admin'
 
 const Route = use('Route')
 const API_BASE = '/api/v1'
@@ -21,6 +22,7 @@ const API_BASE = '/api/v1'
 generateAdonisRoutes(indexRoutes)
 generateAdonisRoutes(apiIndexRoutes, `${API_BASE}`)
 generateAdonisRoutes(administrationRoutes, `${API_BASE}/administration`)
+generateAdonisRoutes(adminRoutes, `${API_BASE}/admin`)
 generateAdonisRoutes(buildingRoutes, `${API_BASE}/building`)
 generateAdonisRoutes(estatesRoutes, `${API_BASE}/estates`)
 generateAdonisRoutes(estateSyncRoutes, `${API_BASE}/estate-sync`)
@@ -40,86 +42,7 @@ generateAdonisRoutes(visitRoutes, `${API_BASE}/visit`)
  * e.g. estates.rooms.ts for all room related endpoints
  */
 
-// Admin user edit part
-Route.post('api/v1/admin/login', 'Admin/UserController.login').middleware(['guest', 'valid:SignIn'])
-
-Route.group(() => {
-  Route.get('/', 'Admin/UserController.getUsers').middleware(['pagination'])
-  Route.get('/:user_id', 'Admin/UserController.getUser')
-  Route.post('/:user_id', 'Admin/UserController.updateUser')
-})
-  .prefix('api/v1/admin/users')
-  .middleware(['auth:jwtAdministrator'])
-
-Route.post('api/v1/admin/verifyUsers', 'Admin/UserController.verifyUsers').middleware([
-  'auth:jwtAdministrator',
-  'valid:Ids,UserVerify'
-])
-
-Route.put('api/v1/admin/activation', 'Admin/UserController.updateActivationStatus').middleware([
-  'auth:jwtLandlord',
-  'valid:UpdateUserValidationStatus'
-])
-
-Route.group(() => {
-  Route.post('/', 'FeatureController.createFeature').middleware(['valid:CreateFeature'])
-  Route.put('/', 'FeatureController.updateFeature').middleware(['valid:CreateFeature,Id'])
-  Route.delete('/', 'FeatureController.removeFeature').middleware(['valid:Ids'])
-})
-  .prefix('api/v1/admin/feature')
-  .middleware(['auth:jwtAdministrator'])
-
-Route.group(() => {
-  Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])
-  Route.get('/', 'PlanController.getPlanAll')
-  Route.post('/', 'PlanController.createPlan').middleware(['valid:CreatePlan'])
-  Route.put('/:id', 'PlanController.updatePlan').middleware(['valid:CreatePlan,Id'])
-  Route.delete('/', 'PlanController.deletePlan').middleware(['valid:Ids'])
-})
-  .prefix('api/v1/admin/plan')
-  .middleware(['auth:jwtAdministrator'])
-
-Route.group(() => {
-  Route.post('/auth/login', 'Admin/AuthController.login').middleware(['valid:AdminLogin'])
-}).prefix('api/v1/admin')
-
-Route.group(() => {
-  Route.get('/:id', 'TenantPaymentPlanController.getTenantPaymentPlanById').middleware(['valid:Id'])
-  Route.get('/', 'TenantPaymentPlanController.getTenantPaymentPlan').middleware(['valid:PlanId'])
-  Route.post('/', 'TenantPaymentPlanController.createTenantPaymentPlan').middleware([
-    'valid:TenantPaymentPlan'
-  ])
-  Route.put('/:id', 'TenantPaymentPlanController.updateTenantPaymentPlan').middleware([
-    'valid:TenantPaymentPlan,Id'
-  ])
-  Route.delete('/:id', 'TenantPaymentPlanController.deleteTenantPaymentPlan').middleware([
-    'valid:Id'
-  ])
-})
-  .prefix('api/v1/admin/tenant/paymentplan')
-  .middleware(['auth:jwtAdministrator'])
-
-Route.group(() => {
-  Route.get('/', 'Admin/AgreementController.getAgreements')
-  Route.post('/', 'Admin/AgreementController.createAgreement').middleware(['valid:CreateAgreement'])
-  Route.put('/:id', 'Admin/AgreementController.updateAgreement').middleware([
-    'valid:CreateAgreement,Id'
-  ])
-  Route.delete('/:id', 'Admin/AgreementController.deleteAgreement').middleware(['valid:Id'])
-})
-  .prefix('api/v1/admin/agreements')
-  .middleware(['auth:jwtAdministrator'])
-
 // Terms
-Route.group(() => {
-  Route.get('/', 'Admin/AgreementController.getTerms')
-  Route.post('/', 'Admin/AgreementController.createTerm').middleware(['valid:CreateAgreement'])
-  Route.put('/:id', 'Admin/AgreementController.updateTerm').middleware(['valid:CreateAgreement,Id'])
-  Route.delete('/:id', 'Admin/AgreementController.deleteTerm').middleware(['valid:Id'])
-})
-  .prefix('api/v1/admin/terms')
-  .middleware(['auth:jwtAdministrator'])
-
 Route.group(() => {
   Route.get('/', 'CommonController.getTermsAndConditions')
   Route.post('/', 'CommonController.acceptTermsAndConditions').middleware([
