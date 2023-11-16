@@ -142,7 +142,7 @@ export const administrationRoutes = {
   '/image/compress_pdf': {
     [HTTP_METHODS.POST]: {
       controller: 'ImageController.testCompressPDF',
-      middleware: ['auth:jwt']
+      middleware: ['auth:jwtAdministrator']
     }
   },
   // admin plan
