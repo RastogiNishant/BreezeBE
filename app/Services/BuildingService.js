@@ -1,6 +1,7 @@
 'use strict'
 const { toLower, isNull } = require('lodash')
 const Building = use('App/Models/Building')
+const Match = use('App/Models/Match')
 const Promise = require('bluebird')
 const HttpException = require('../Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
@@ -172,9 +173,58 @@ class BuildingService {
       params: { ...params, build_id, isStatusSort: true }
     })
 
+    // exact count unique prospects
+    // matches
+    const matchesOnBuildingsQuery =
+      (
+        await Database.raw(`
+        select count(*) as prospect_count, build_id from
+        (
+          select distinct on (matches.user_id) matches.user_id, buildings.id as build_id
+          from matches
+          inner join estates on estates.id=matches.estate_id
+          inner join buildings on buildings.id=estates.build_id where matches.status>1
+        ) as distinct_query
+        group by build_id
+      `)
+      ).rows || []
+    const matchesOnBuildings = matchesOnBuildingsQuery.reduce(
+      (matchesOnBuildings, matchBuilding) => ({
+        ...matchesOnBuildings,
+        [matchBuilding.build_id]: matchBuilding.prospect_count
+      }),
+      {}
+    )
+    // Contact requests...
+    const contactRequestsOnBuildingsQuery =
+      (
+        await Database.raw(`
+      select count(*) prospect_count, build_id from
+      (
+        select 
+          distinct on (estate_sync_contact_requests.email) estate_sync_contact_requests.email,
+          buildings.id as build_id
+        from estate_sync_contact_requests
+        inner join estates on estates.id=estate_sync_contact_requests.estate_id
+        inner join buildings on buildings.id=estates.build_id
+        where estate_sync_contact_requests.user_id is null
+      ) as disctinct_query
+      group by build_id
+    `)
+      ).rows || []
+
+    const contactRequestsOnBuildings = contactRequestsOnBuildingsQuery.reduce(
+      (contactRequestBuildings, cr) => ({
+        ...contactRequestBuildings,
+        [cr.build_id]: cr.prospect_count
+      }),
+      {}
+    )
     buildings = buildings.map((building) => ({
       ...building,
-      estates: (estates?.data || []).filter((estate) => estate.build_id === building.id)
+      estates: (estates?.data || []).filter((estate) => estate.build_id === building.id),
+      prospect_count:
+        Number(contactRequestsOnBuildings[building.id]) + Number(matchesOnBuildings[building.id])
     }))
     return buildings
   }
