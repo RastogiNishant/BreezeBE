@@ -113,7 +113,8 @@ const {
   INCOME_TYPE_OTHER_BENEFIT,
   CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
   NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE,
-  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
+  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED,
+  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED
 } = require('../constants')
 
 const {
@@ -4807,7 +4808,7 @@ class MatchService {
     )
 
     const shareLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}/profile/request?landlord=${landlord}&address=${address}&date=${visitDate}`
+      `${process.env.DEEP_LINK}/profile/request?landlord=${landlord}&address=${address}&date=${visitDate}&estate_id=${estate.id}`
     )
 
     MailService.sendRequestToTenantForShareProfile({
@@ -4830,7 +4831,8 @@ class MatchService {
   static async prospectRespondToProfileSharingRequest(userId, estateId, profileStatus) {
     return await Match.query()
       .update({
-        profile_status: profileStatus
+        profile_status: profileStatus,
+        share: profileStatus === LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED
       })
       .where({
         user_id: userId,
