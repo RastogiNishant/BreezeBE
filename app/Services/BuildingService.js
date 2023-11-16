@@ -1,5 +1,5 @@
 'use strict'
-const { toLower, isNull } = require('lodash')
+const { toLower, isNull, get } = require('lodash')
 const Building = use('App/Models/Building')
 const Match = use('App/Models/Match')
 const Promise = require('bluebird')
@@ -10,7 +10,14 @@ const Database = use('Database')
 const {
   exceptions: { NO_BUILDING_ID_EXIST }
 } = require('../exceptions')
-const { PUBLISH_STATUS_INIT, STATUS_DELETE } = require('../constants')
+const {
+  PUBLISH_STATUS_INIT,
+  STATUS_DELETE,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE
+} = require('../constants')
 class BuildingService {
   static async upsert({ user_id, data }) {
     if (!data.building_id) {
@@ -175,7 +182,7 @@ class BuildingService {
 
     // exact count unique prospects
     // matches
-    const matchesOnBuildingsQuery =
+    let matchesOnBuildingsQuery =
       (
         await Database.raw(`
         select count(*) as prospect_count, build_id from
@@ -183,14 +190,59 @@ class BuildingService {
           select distinct on (matches.user_id) matches.user_id, buildings.id as build_id
           from matches
           inner join estates on estates.id=matches.estate_id
-          inner join buildings on buildings.id=estates.build_id where matches.status>1
+          inner join buildings on buildings.id=estates.build_id where matches.status=${MATCH_STATUS_KNOCK}
         ) as distinct_query
         group by build_id
       `)
       ).rows || []
-    const matchesOnBuildings = matchesOnBuildingsQuery.reduce(
-      (matchesOnBuildings, matchBuilding) => ({
-        ...matchesOnBuildings,
+    const inviteMatchesOnBuildings = matchesOnBuildingsQuery.reduce(
+      (inviteMatchesOnBuildings, matchBuilding) => ({
+        ...inviteMatchesOnBuildings,
+        [matchBuilding.build_id]: matchBuilding.prospect_count
+      }),
+      {}
+    )
+    matchesOnBuildingsQuery =
+      (
+        await Database.raw(`
+      select count(*) as prospect_count, build_id from
+      (
+        select distinct on (matches.user_id) matches.user_id, buildings.id as build_id
+        from matches
+        inner join estates on estates.id=matches.estate_id
+        inner join buildings on buildings.id=estates.build_id where matches.status in (
+          ${MATCH_STATUS_INVITE},
+          ${MATCH_STATUS_VISIT},
+          ${MATCH_STATUS_SHARE}
+        )
+      ) as distinct_query
+      group by build_id
+    `)
+      ).rows || []
+    const showMatchesOnBuildings = matchesOnBuildingsQuery.reduce(
+      (inviteMatchesOnBuildings, matchBuilding) => ({
+        ...inviteMatchesOnBuildings,
+        [matchBuilding.build_id]: matchBuilding.prospect_count
+      }),
+      {}
+    )
+    matchesOnBuildingsQuery =
+      (
+        await Database.raw(`
+      select count(*) as prospect_count, build_id from
+      (
+        select distinct on (matches.user_id) matches.user_id, buildings.id as build_id
+        from matches
+        inner join estates on estates.id=matches.estate_id
+        inner join buildings on buildings.id=estates.build_id where matches.status >
+          ${MATCH_STATUS_SHARE}
+      ) as distinct_query
+      group by build_id
+    `)
+      ).rows || []
+    const decideMatchesOnBuildings = matchesOnBuildingsQuery.reduce(
+      (inviteMatchesOnBuildings, matchBuilding) => ({
+        ...inviteMatchesOnBuildings,
         [matchBuilding.build_id]: matchBuilding.prospect_count
       }),
       {}
@@ -223,8 +275,19 @@ class BuildingService {
     buildings = buildings.map((building) => ({
       ...building,
       estates: (estates?.data || []).filter((estate) => estate.build_id === building.id),
-      prospect_count:
-        Number(contactRequestsOnBuildings[building.id]) + Number(matchesOnBuildings[building.id])
+      invite_count:
+        (get(contactRequestsOnBuildings, building.id)
+          ? Number(contactRequestsOnBuildings[building.id])
+          : 0) +
+        (get(inviteMatchesOnBuildings, building.id)
+          ? Number(inviteMatchesOnBuildings[building.id])
+          : 0),
+      show_count: get(showMatchesOnBuildings, building.id)
+        ? Number(showMatchesOnBuildings[building.id])
+        : 0,
+      decide_count: get(decideMatchesOnBuildings, building.id)
+        ? Number(decideMatchesOnBuildings[building.id])
+        : 0
     }))
     return buildings
   }
