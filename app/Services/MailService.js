@@ -902,7 +902,7 @@ class MailService {
     return addressLayout
   }
 
-  static async reminderKnockSignUpEmail({ link, email, estate, lang = DEFAULT_LANG }) {
+  static async reminderKnockSignUpEmail({ link, email, recipient, estate, lang = DEFAULT_LANG }) {
     try {
       const templateId = PROSPECT_EMAIL_TEMPLATE
       const final = l
@@ -927,7 +927,9 @@ class MailService {
         templateId,
         dynamic_template_data: {
           subject: l.get('prospect.no_reply_email_to_complete_profile.subject.message', lang),
-          salutation: l.get('email_signature.outside_salutation.message', lang),
+          salutation: l
+            .get('email_signature.outside_salutation.message', lang)
+            .replace('{{prospect_name}}', recipient),
           intro: introLayout,
           CTA: l.get('prospect.no_reply_email_to_complete_profile.CTA.message', lang),
           link,
