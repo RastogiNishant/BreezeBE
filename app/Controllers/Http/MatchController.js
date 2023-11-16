@@ -1239,9 +1239,6 @@ class MatchController {
   async notifyProspectsToFillUpProfile({ request, auth, response }) {
     const { emails, estate_id } = request.all()
     try {
-      // FIXME: filter valid emails:
-      // 1. when match must not be activated yet
-      // 2. valid from contact requests
       const estate = await Estate.query()
         .whereNot('status', STATUS_DELETE)
         .where('id', estate_id)
@@ -1255,12 +1252,15 @@ class MatchController {
         .innerJoin('users', 'users.id', 'matches.user_id')
         .innerJoin('tenants', 'tenants.user_id', 'users.id')
         .where('matches.status', '>', MATCH_STATUS_NEW)
-        .whereNot('tenats.status', STATUS_ACTIVE)
+        // we are allowed only to send to tenants that are NOT Activated
+        .whereNot('tenants.status', STATUS_ACTIVE)
         .where('matches.estate_id', estate_id)
         .fetch()
       let validEmails = (matches.toJSON() || []).map((match) => match.email)
       let contactRequests
       if (estate.unit_category_id) {
+        // estate belongs to a category, we should fetch emails of contact requests belonging
+        // to the category representative
         contactRequests = await EstateSyncContactRequest.query()
           .select('email')
           .innerJoin('estates', 'estate_sync_contact_requests.estate_id', 'estates.id')
@@ -1273,22 +1273,24 @@ class MatchController {
             )
           )
           .fetch()
-        validEmails = [
-          ...validEmails,
-          ...(contactRequests.toJSON() || []).map((contactRequest) => contactRequest.email)
-        ]
       } else {
         contactRequests = await EstateSyncContactRequest.query()
           .select('email')
           .where('estate_id', estate_id)
           .fetch()
-        validEmails = (contactRequests.toJSON() || []).map((contactRequest) => contactRequest.email)
       }
+      validEmails = [
+        ...validEmails,
+        ...(contactRequests.toJSON() || []).map((contactRequest) => contactRequest.email)
+      ]
       const recipientEmails = intersection(emails, validEmails)
-      await MailService.sendToProspectForFillUpProfile({
-        email: recipientEmails
-      })
-      response.res(true)
+      // we send only to valid emails
+      if (recipientEmails.length) {
+        await MailService.sendToProspectForFillUpProfile({
+          email: recipientEmails
+        })
+      }
+      response.res({ emails_sent: recipientEmails.length })
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
