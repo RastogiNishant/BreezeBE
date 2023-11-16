@@ -4523,7 +4523,6 @@
     ],
     "middle": [
       "auth:jwt",
-      "auth:jwt",
       "valid:ThirdPartyOffersAction",
       "agreement",
       "plan"
