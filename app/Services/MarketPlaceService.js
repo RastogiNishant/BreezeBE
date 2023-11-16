@@ -714,13 +714,19 @@ class MarketPlaceService {
       const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
       const contacts = (
         await EstateSyncContactRequest.query()
+          .select(
+            'email',
+            'estate_id',
+            Database.raw(
+              `CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient`
+            )
+          )
           .where('created_at', '<=', yesterday)
           .whereNotNull('link')
           .where('status', STATUS_DRAFT)
           .where('email_sent', false)
           .fetch()
       ).rows
-
       if (!contacts?.length) {
         return
       }
@@ -731,7 +737,6 @@ class MarketPlaceService {
       const estates = await require('./EstateService').getAllPublishedEstatesByIds({
         ids: estate_ids
       })
-
       await Promise.map(
         contacts,
         async (contact) => {
@@ -741,6 +746,7 @@ class MarketPlaceService {
             await MailService.reminderKnockSignUpEmail({
               link: contact.link,
               email: contact.email,
+              recipient: contact.recipient,
               estate,
               lang: estate.user?.lang || DEFAULT_LANG
             })
