@@ -109,8 +109,7 @@ const exceptions = {
   ERROR_PLAN_SELECT: 'Your trial has been ended',
   ERROR_WRONG_ROLE: 'You have wrong role',
   ERROR_NO_AUTHENTICATE: 'You have no permission',
-  ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE:
-    'Your property is already published, to manipulate that property, please unpublish it first',
+  ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE: 'landlord.property.already_published',
   ERROR_MATCH_COMMIT_DOUBLE:
     'You have already requests final match, please cancel that one first to proceed',
   NO_BUILDING_ID_EXIST: 'NO BUILDING ID EXIST',
