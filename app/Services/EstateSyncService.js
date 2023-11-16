@@ -224,7 +224,10 @@ class EstateSyncService {
         })
       }
     } catch (e) {
-      await MailService.sendEmailToOhneMakler(`Publishing Error: ${e.message}`, 'barudo@gmail.com')
+      await require('./MailService').sendEmailToOhneMakler(
+        `Publishing Error: ${e.message}`,
+        'barudo@gmail.com'
+      )
       console.log('Post Estate to Estate Sync error', e.message)
     }
   }
