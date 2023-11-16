@@ -322,7 +322,6 @@ class EstateAttributeTranslations {
     available_date: reverseExtractDate,
     from_date: reverseExtractDate,
     vacant_date: reverseExtractDate,
-    last_modernization: reverseExtractDate,
     rent_end_at: reverseExtractDate
   }
 
@@ -507,13 +506,13 @@ class EstateAttributeTranslations {
     available_date: extractDate,
     from_date: extractDate,
     vacant_date: extractDate,
-    last_modernization: extractDate,
     rent_end_at: extractDate,
     minors: toBool,
     pets_allowed: {
       PETS_NO: 1,
       PETS_SMALL: 2
     },
+    last_modernization: (i) => parseInt(i) || 0,
     stp_garage: (i) => parseInt(i) || 0,
     cert_category: (content) => {
       const certs = String(content).split(/[+,]/)
