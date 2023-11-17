@@ -1,7 +1,7 @@
 'use strict'
 
 const moment = require('moment')
-const { isString, pick, isEmpty } = require('lodash')
+const { isString, pick, isEmpty, isNull } = require('lodash')
 const hash = require('../Libs/hash')
 const { generateAddress } = use('App/Libs/utils')
 const Database = use('Database')
@@ -330,7 +330,10 @@ class Estate extends Model {
         instance.construction_year = `${instance.construction_year}-01-01`
       }
 
-      if (String(instance.last_modernization).length === 4) {
+      if (
+        !isNull(instance.last_modernization) &&
+        String(instance.last_modernization).length === 4
+      ) {
         instance.last_modernization = `${instance.last_modernization}-01-01`
       }
 
