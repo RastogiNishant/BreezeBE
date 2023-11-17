@@ -358,6 +358,7 @@ class ChatService {
       .select(
         'tasks.id as task_id',
         'tasks.unread_role',
+        'tasks.unread_count',
         'estates.id as estate_id',
         'estates.property_id',
         'tasks.urgency'
@@ -365,6 +366,7 @@ class ChatService {
       .innerJoin('estates', function () {
         this.on('estates.id', 'tasks.estate_id').onNotIn('estates.status', [STATUS_DELETE])
       })
+      .where('tasks.unread_count', '>', 0)
       .whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
 
     if (role === ROLE_LANDLORD) {
@@ -376,6 +378,7 @@ class ChatService {
 
     taskEstates = await query.fetch()
     taskEstates = taskEstates.toJSON() || []
+
     await Promise.map(
       taskEstates,
       async (task, index) => {
@@ -401,18 +404,10 @@ class ChatService {
           )
           .where('chats.sender_id', '<>', userId)
           .where('chats.task_id', task.task_id)
-          .where(
-            'chats.id',
-            '>',
-            Database.raw(
-              `(select id from chats where type='last-read-marker' and task_id='${task.task_id}' and sender_id='${userId}')`
-            )
-          )
           .where('chats.type', '<>', 'last-read-marker')
-          .orderBy('chats.created_at', 'asc')
+          .orderBy('chats.created_at', 'desc')
           .fetch()
-        taskEstates[index].unread_messages = unreadMessages.toJSON() || []
-        taskEstates[index].unread_count = (unreadMessages.toJSON() || []).length
+        taskEstates[index].unread_messages = (unreadMessages.toJSON() || []).reverse()
       },
       { concurrency: 1 }
     )
