@@ -4837,6 +4837,11 @@ class MatchService {
         user_id: prospectId,
         estate_id: estateId
       })
+    return {
+      estate_id: estateId,
+      user_id: prospectId,
+      profile_status: LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
+    }
   }
 
   static async prospectRespondToProfileSharingRequest(userId, estateId, profileStatus) {
