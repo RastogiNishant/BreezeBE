@@ -1,6 +1,6 @@
-import { HTTP_METHODS } from './_helper'
+import { HTTP_METHODS, Routes } from './_helper'
 
-const paymentRoutes = {
+const paymentRoutes: Routes = {
   '/payment': {
     [HTTP_METHODS.GET]: {
       controller: 'PaymentController.getUserPayments',
@@ -33,7 +33,7 @@ const paymentRoutes = {
   }
 }
 
-const indexRoutes = {
+const indexRoutes: Routes = {
   '/activate': {
     [HTTP_METHODS.POST]: {
       controller: 'LandlordController.activate',
@@ -79,7 +79,7 @@ const indexRoutes = {
   }
 }
 
-export const landlordRoutes = {
+export const landlordRoutes: Routes = {
   ...paymentRoutes,
   // index last, due to keys in path
   ...indexRoutes

@@ -1,22 +1,24 @@
-'use strict'
-
 import * as fs from 'node:fs'
 
 import { generateAdonisRoutes } from './routes/_helper'
 import { apiIndexRoutes, indexRoutes } from './routes/index'
 import { administrationRoutes } from './routes/administration'
+import { adminRoutes } from './routes/admin'
 import { buildingRoutes } from './routes/building'
+import { connectRoutes } from './routes/connect'
+import { currentTenantRoutes } from './routes/current_tenant'
 import { estatesRoutes } from './routes/estates'
 import { estateSyncRoutes } from './routes/estateSync'
 import { galleryRoutes } from './routes/gallery'
 import { landlordRoutes } from './routes/landlord'
+import { landlordsRoutes } from './routes/landlords'
+import { matchRoutes } from './routes/match'
 import { onboardRoutes } from './routes/onboard'
 import { onboardingRoutes } from './routes/onboarding'
 import { userRoutes } from './routes/users'
-import { visitRoutes } from './routes/visit'
-import { adminRoutes } from './routes/admin'
 import { tenantRoutes } from './routes/tenant'
-import { connectRoutes } from './routes/connect'
+import { termsRoutes } from './routes/terms'
+import { visitRoutes } from './routes/visit'
 
 const Route = use('Route')
 const API_BASE = '/api/v1'
@@ -27,13 +29,17 @@ generateAdonisRoutes(administrationRoutes, `${API_BASE}/administration`)
 generateAdonisRoutes(adminRoutes, `${API_BASE}/admin`)
 generateAdonisRoutes(buildingRoutes, `${API_BASE}/building`)
 generateAdonisRoutes(connectRoutes, `${API_BASE}/connect`)
+generateAdonisRoutes(currentTenantRoutes, `${API_BASE}/current_tenant`)
 generateAdonisRoutes(estatesRoutes, `${API_BASE}/estates`)
 generateAdonisRoutes(estateSyncRoutes, `${API_BASE}/estate-sync`)
 generateAdonisRoutes(galleryRoutes, `${API_BASE}/gallery`)
 generateAdonisRoutes(landlordRoutes, `${API_BASE}/landlord`)
+generateAdonisRoutes(landlordsRoutes, `${API_BASE}/landlords`)
+generateAdonisRoutes(matchRoutes, `${API_BASE}/match`)
 generateAdonisRoutes(onboardRoutes, `${API_BASE}/onboard`)
 generateAdonisRoutes(onboardingRoutes, `${API_BASE}/onboarding`)
 generateAdonisRoutes(tenantRoutes, `${API_BASE}/tenant`)
+generateAdonisRoutes(termsRoutes, `${API_BASE}/terms`)
 generateAdonisRoutes(userRoutes, `${API_BASE}/users`)
 generateAdonisRoutes(visitRoutes, `${API_BASE}/visit`)
 
@@ -45,15 +51,6 @@ generateAdonisRoutes(visitRoutes, `${API_BASE}/visit`)
  * subset of functions on a deeper nested route move them into a seperate file
  * e.g. estates.rooms.ts for all room related endpoints
  */
-
-// Terms
-Route.group(() => {
-  Route.get('/', 'CommonController.getTermsAndConditions')
-  Route.post('/', 'CommonController.acceptTermsAndConditions').middleware([
-    'auth:jwtLandlord,jwt',
-    'valid:AcceptTerms'
-  ])
-}).prefix('api/v1/terms')
 
 Route.get('api/v1/url/', 'CommonController.getProtectedUrl').middleware([
   'auth:jwtLandlord,jwt',
@@ -82,102 +79,11 @@ Route.group(() => {
   .prefix('api/v1/view-estate-invitations')
   .middleware(['auth:jwt'])
 
-Route.group(() => {
-  Route.get('/myTenants', 'LandlordController.getAllTenants')
-  Route.get('/tenant_budget_count', 'TenantController.tenantCountByBudget').middleware([
-    'valid:BudgetFilter'
-  ])
-  Route.get('/tenant_credit_score_count', 'TenantController.tenantCountByCreditScore').middleware([
-    'valid:CreditScoreFilter'
-  ])
-  Route.get('/tenant_count', 'TenantController.tenantCount')
-})
-  .prefix('api/v1/landlords')
-  .middleware(['auth:jwtLandlord'])
-
-Route.group(() => {
-  Route.get('/', 'LandlordController.landlords')
-  Route.get('/getLandlords', 'LandlordController.landlords')
-  Route.get('/toggle', 'LandlordController.toggleStatus')
-  Route.post('/buddies/import', 'BuddyController.importBuddies')
-  Route.get('/buddies/get', 'BuddyController.getBuddies')
-  Route.delete('/buddies', 'BuddyController.removeBuddies')
-})
-  .prefix('api/v1/landlords')
-  .middleware(['auth:jwtLandlord,jwt'])
-
 Route.get('/map', 'MapController.getMap')
-
-Route.get('/api/v1/match/tenant', 'MatchController.getMatchesListTenant').middleware([
-  'auth:jwt',
-  'valid:MatchListTenant,Pagination'
-])
-
-Route.get(
-  '/api/v1/match/tenant/check/commitedAlready',
-  'MatchController.checkTenantMatchCommitedAlready'
-).middleware(['auth:jwt'])
-
-Route.get('/api/v1/match/tenant/upcoming', 'MatchController.getTenantUpcomingVisits').middleware([
-  'auth:jwt'
-])
-Route.get('/api/v1/match/tenant/count', 'MatchController.getMatchesCountsTenant').middleware([
-  'auth:jwt',
-  'valid:MatchListTenant,Pagination'
-])
-Route.get(
-  '/api/v1/match/tenant/stage/count',
-  'MatchController.getMatchesStageCountsTenant'
-).middleware(['auth:jwt'])
-
-Route.get('/api/v1/match/tenant/search', 'MatchController.searchForTenant').middleware([
-  'auth:jwt',
-  'valid:Pagination,EstateFilter'
-])
-Route.get('/api/v1/match/landlord/search', 'MatchController.searchForLandlord').middleware([
-  'auth:jwtLandlord',
-  'valid:Pagination,EstateFilter'
-])
-
-Route.get('/api/v1/match/landlord', 'MatchController.getMatchesListLandlord').middleware([
-  'auth:jwtLandlord',
-  'valid:MatchListLandlord,Pagination'
-])
 
 /**
  * sent email to current tenant for a specific estate
  */
-Route.group(() => {
-  Route.post('', 'MatchController.inviteTenantToEstate').middleware([
-    'valid:InviteInToVisit,InviteTo'
-  ])
-  Route.delete('', 'MatchController.removeTenantEdit').middleware(['valid:InviteInToVisit'])
-})
-  .prefix('/api/v1/match/landlord/inviteTenantTo')
-  .middleware(['auth:jwtLandlord'])
-
-Route.group(() => {
-  Route.post('', 'MatchController.updateProperty').middleware(['valid:EstateId,TenantProperty'])
-  Route.put('', 'MatchController.updateProperty').middleware(['valid:EstateId,TenantProperty'])
-  Route.delete('', 'MatchController.deleteProperty').middleware(['valid:EstateId'])
-})
-  .prefix('/api/v1/match/tenant/property')
-  .middleware(['auth:jwt'])
-
-Route.get(
-  '/api/v1/match/landlord/estate',
-  'MatchController.getMatchesSummaryLandlordEstate'
-).middleware(['auth:jwtLandlord,jwtAdministrator', 'valid:MatchListLandlord,Pagination'])
-
-/* Notify prospect match user on email to fillup profile */
-Route.post(
-  '/api/v1/match/landlord/estate/notifyprospect-fillupprofile',
-  'MatchController.notifyProspectsToFillUpProfile'
-).middleware(['auth:jwtLandlord', 'valid:NotifyProspectsToFillUpProfile'])
-
-Route.get('/api/v1/match/landlord/summary', 'MatchController.getLandlordSummary').middleware([
-  'auth:jwtLandlord'
-])
 
 Route.group(() => {
   Route.post('/', 'FeedbackController.create').middleware([
@@ -187,87 +93,6 @@ Route.group(() => {
   Route.get('/', 'FeedbackController.getAll').middleware(['auth:jwtAdministrator'])
 }).prefix('/api/v1/feedback')
 
-// MATCH FLOW
-Route.group(() => {
-  Route.post('/knock', 'MatchController.knockEstate').middleware(['auth:jwt', 'valid:Knock'])
-  Route.get('/knock', 'MatchController.getKnockPlacesNumber').middleware([
-    'auth:jwt',
-    'valid:EstateId'
-  ])
-
-  Route.delete('/knock', 'MatchController.removeKnock').middleware(['auth:jwt'])
-  // invite
-  Route.post('/invite', 'MatchController.matchToInvite').middleware([
-    'auth:jwtLandlord',
-    'valid:MatchInvite'
-  ])
-  Route.post('/move', 'MatchController.matchMoveToNewEstate').middleware([
-    'auth:jwtLandlord',
-    'valid:MatchMoveToNewEstate'
-  ])
-  Route.delete('/invite', 'MatchController.removeInvite').middleware([
-    'auth:jwtLandlord',
-    'valid:MatchInvite'
-  ])
-  Route.delete('/invite/:estate_id', 'MatchController.removeInviteByTenant').middleware([
-    'auth:jwt',
-    'valid:EstateId'
-  ])
-  // Choose timeslot
-  Route.post('/visit', 'MatchController.chooseVisitTimeslot').middleware([
-    'auth:jwt',
-    'valid:ChooseTimeslot'
-  ])
-  Route.post('/profile/request', 'MatchController.requestTenantToShareProfile').middleware([
-    'auth:jwtLandlord',
-    'valid:RequestProspectProfile'
-  ])
-  Route.post(
-    '/profile/response',
-    'MatchController.prospectRespondToProfileSharingRequest'
-  ).middleware(['auth:jwt', 'valid:ShareProfileStatus'])
-  Route.post('/visit/inviteIn', 'MatchController.inviteTenantInToVisit').middleware([
-    'auth:jwtLandlord',
-    'valid:InviteInToVisit'
-  ])
-  Route.delete('/visit', 'MatchController.cancelVisit').middleware(['auth:jwt'])
-  Route.delete('/landlordVisit', 'MatchController.cancelVisitByLandlord').middleware([
-    'auth:jwtLandlord',
-    'valid:LandlordVisitCancel'
-  ])
-  // Share tenant profile to landlord
-  Route.post('/share', 'MatchController.shareTenantData').middleware([
-    'auth:jwtLandlord',
-    'valid:ShareProspectProfile'
-  ])
-  Route.delete('/share', 'MatchController.cancelShare').middleware(['auth:jwt'])
-  // Move/remove top tenant
-  Route.post('/top', 'MatchController.moveUserToTop').middleware(['auth:jwtLandlord'])
-  Route.delete('/top', 'MatchController.discardUserToTop').middleware(['auth:jwtLandlord'])
-  Route.delete('/top/tenant', 'MatchController.cancelTopByTenant').middleware(['auth:jwt'])
-  // Request confirmation
-  Route.post('/request', 'MatchController.requestUserCommit').middleware(['auth:jwtLandlord'])
-  Route.delete('/commit', 'MatchController.tenantCancelCommit').middleware(['auth:jwt'])
-  // Final confirm
-  Route.post('/confirm', 'MatchController.commitEstateRent').middleware([
-    'auth:jwt',
-    'valid:ConfirmRequest'
-  ])
-  Route.put('/order', 'MatchController.changeOrder').middleware([
-    'auth:jwt,jwtLandlord',
-    'valid:ChangeOrder'
-  ])
-}).prefix('api/v1/match')
-
-Route.group(() => {
-  Route.delete('/cancel/:action', 'MatchController.cancelAction').middleware(['valid:MatchAction'])
-  // this should be cancel-category
-  Route.delete('/cancel-building/:action', 'MatchController.cancelBuildingAction').middleware([
-    'valid:MatchBuildingAction'
-  ])
-})
-  .middleware(['auth:jwtAdministrator'])
-  .prefix('api/v1/match')
 /**
  * Landlord company manage
  */
@@ -312,31 +137,6 @@ Route.post('/api/v1/debug/notifications', 'NoticeController.sendTestNotification
 Route.get('/api/v1/feature', 'FeatureController.getFeatures')
   .middleware(['valid:CreateFeature'])
   .middleware(['auth:jwtLandlord,jwt'])
-
-// MATCH FLOW
-Route.group(() => {
-  Route.post('/', 'EstateCurrentTenantController.create').middleware([
-    'valid:CreateEstateCurrentTenant'
-  ])
-  Route.put('/:id', 'EstateCurrentTenantController.update').middleware([
-    'valid:CreateEstateCurrentTenant,Id'
-  ])
-  Route.delete('/', 'EstateCurrentTenantController.delete').middleware(['valid:Ids'])
-  Route.put('/expire/:id', 'EstateCurrentTenantController.expire').middleware(['valid:Id'])
-  Route.get('/', 'EstateCurrentTenantController.getAll').middleware([
-    'valid:EstateCurrentTenantFilter'
-  ])
-  Route.get('/:id', 'EstateCurrentTenantController.get').middleware(['valid:Id'])
-  Route.put('/:id/lease_contract', 'EstateCurrentTenantController.addLeaseContract').middleware([
-    'valid:Id'
-  ])
-  Route.delete(
-    '/:id/lease_contract',
-    'EstateCurrentTenantController.removeLeaseContract'
-  ).middleware(['valid:Id,RemoveImage'])
-})
-  .middleware(['auth:jwtLandlord'])
-  .prefix('api/v1/current_tenant')
 
 Route.group(() => {
   Route.get('/:id', 'PlanController.getPlan').middleware(['valid:Id'])
