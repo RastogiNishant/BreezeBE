@@ -55,6 +55,7 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   DATE_FORMAT,
+  DAY_FORMAT,
   ROLE_USER,
   PETS_NO,
   PETS_SMALL,
@@ -4769,16 +4770,16 @@ class MatchService {
       .where('estate_id', estateId)
       .first()
     if (!match) {
-      throw new HttpException('Prospect and estate are not matched.')
+      throw new AppException('Prospect and estate are not matched.')
     }
     if (match.share) {
-      throw new HttpException('Prospect already shares his profile.')
+      throw new AppException('Prospect already shares his profile.')
     }
-    const visitDate = moment.utc(date, DATE_FORMAT).format(DATE_FORMAT)
+    const visitDate = moment.utc(date).format(DAY_FORMAT)
     const getVisit = await Visit.query()
       .where({ user_id: prospectId })
       .where({ estate_id: estateId })
-      .where({ date: visitDate })
+      .where(Database.raw(`to_char("date", '${DAY_FORMAT}') = '${visitDate}'`))
       .fetch()
 
     const visit = getVisit.toJSON()
