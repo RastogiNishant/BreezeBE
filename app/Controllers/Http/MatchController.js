@@ -1478,9 +1478,14 @@ class MatchController {
     const userId = auth.user.id
     const { prospectId, date, estateId } = request.all()
     try {
-      await MatchService.requestTenantToShareProfile(prospectId, userId, date, estateId)
+      const result = await MatchService.requestTenantToShareProfile(
+        prospectId,
+        userId,
+        date,
+        estateId
+      )
       logEvent(request, LOG_TYPE_REQUEST_PROFILE, userId, { prospectId, role: ROLE_USER }, false)
-      return response.res(true)
+      return response.res(result)
     } catch (e) {
       Logger.error(e)
       if (e.name === 'AppException') {
