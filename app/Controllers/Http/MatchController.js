@@ -970,7 +970,8 @@ class MatchController {
       'email',
       'phone',
       'last_address',
-      'is_activated'
+      'is_activated',
+      'profile_status'
     ]
 
     const matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
