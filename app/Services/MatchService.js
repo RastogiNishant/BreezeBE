@@ -4764,6 +4764,16 @@ class MatchService {
   }
 
   static async requestTenantToShareProfile(prospectId, landlordId, date, estateId) {
+    const match = await Match.query()
+      .where('user_id', prospectId)
+      .where('estate_id', estateId)
+      .first()
+    if (!match) {
+      throw new HttpException('Prospect and estate are not matched.')
+    }
+    if (match.share) {
+      throw new HttpException('Prospect already shares his profile.')
+    }
     const visitDate = moment.utc(date, DATE_FORMAT).format(DATE_FORMAT)
     const getVisit = await Visit.query()
       .where({ user_id: prospectId })
