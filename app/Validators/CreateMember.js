@@ -2,7 +2,7 @@
 
 const yup = require('yup')
 const Base = require('./Base')
-const { phoneSchema } = require('../Libs/schemas.js')
+const { phone } = require('../Libs/schemas.js')
 
 const {
   GENDER_ANY,
@@ -44,7 +44,7 @@ class CreateMember extends Base {
       secondname: yup.string().max(254),
       child: yup.boolean().default(false),
       sex: yup.number().positive().oneOf([GENDER_ANY, GENDER_FEMALE, GENDER_NEUTRAL, GENDER_MALE]),
-      phone: phoneSchema.nullable(),
+      phone: phone.nullable(),
       bio: yup.string().max(100).nullable(),
       birthday: yup.date(),
       email: yup.string().email().lowercase().max('255'),
