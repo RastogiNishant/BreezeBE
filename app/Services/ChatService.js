@@ -382,14 +382,20 @@ class ChatService {
     await Promise.map(
       taskEstates,
       async (task, index) => {
-        const unreadMessages = await Chat.query()
+        const unreadMessagesQuery = Chat.query()
           .select(
             'chats.id',
             'chats.text as message',
             Database.raw(`to_char(chats.created_at, '${ISO_DATE_FORMAT}') as created_at`),
             Database.raw(`_u.sender`)
           )
-          .innerJoin(
+          .where('chats.sender_id', '<>', userId)
+          .where('chats.task_id', task.task_id)
+          .where('chats.type', '<>', 'last-read-marker')
+          .orderBy('chats.created_at', 'desc')
+          .limit(task.unread_count)
+        if (role === ROLE_USER) {
+          unreadMessagesQuery.innerJoin(
             Database.raw(`
               (select 
                 users.id,
@@ -402,11 +408,48 @@ class ChatService {
             '_u.id',
             'chats.sender_id'
           )
-          .where('chats.sender_id', '<>', userId)
-          .where('chats.task_id', task.task_id)
-          .where('chats.type', '<>', 'last-read-marker')
-          .orderBy('chats.created_at', 'desc')
-          .fetch()
+        } else if (role === ROLE_LANDLORD) {
+          unreadMessagesQuery.innerJoin(
+            Database.raw(
+              `
+            (select users.id, case when users.firstname is not null then 
+              json_build_object(
+                'id', users.id,
+                'firstname', users.firstname,
+                'secondname', users.secondname,
+                'avatar', users.avatar
+              )
+              when _m.firstname is not null then
+              json_build_object(
+                'id', users.id,
+                'firstname', _m.firstname,
+                'secondname', _m.secondname,
+                'avatar', users.avatar
+              )
+              else
+              json_build_object(
+                'id', users.id,
+                'firstname', concat('user-', users.id),
+                'secondname', _m.secondname,
+                'avatar', users.avatar
+              )
+              end
+              as sender
+              from users left join
+              (select 
+                distinct on (user_id) user_id,
+                firstname,
+                secondname
+              from members order by user_id asc) as _m
+              on _m.user_id=users.id
+              )
+            as _u`
+            ),
+            '_u.id',
+            'chats.sender_id'
+          )
+        }
+        const unreadMessages = await unreadMessagesQuery.fetch()
         taskEstates[index].unread_messages = (unreadMessages.toJSON() || []).reverse()
       },
       { concurrency: 1 }
