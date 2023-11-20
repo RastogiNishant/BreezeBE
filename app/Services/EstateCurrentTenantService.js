@@ -186,10 +186,10 @@ class EstateCurrentTenantService extends BaseService {
         user.sex === GENDER_MALE
           ? SALUTATION_MR_LABEL
           : user.sex === GENDER_FEMALE
-            ? SALUTATION_MS_LABEL
-            : user.sex === GENDER_NEUTRAL
-              ? SALUTATION_NEUTRAL_LABEL
-              : SALUTATION_SIR_OR_MADAM_LABEL,
+          ? SALUTATION_MS_LABEL
+          : user.sex === GENDER_NEUTRAL
+          ? SALUTATION_NEUTRAL_LABEL
+          : SALUTATION_SIR_OR_MADAM_LABEL,
       salutation_int: user.sex || GENDER_ANY
     })
 
@@ -246,7 +246,7 @@ class EstateCurrentTenantService extends BaseService {
     if (id) {
       await this.hasPermission(id, user_id, estate_id)
     }
-    currentTenant = await this.getCurrentTenantByEstateId({ estate_id })
+    currentTenant = await this.getCurrentTenantByEstateId({ estate_id, current_tenant_id: id })
 
     if (!currentTenant) {
       // Current Tenant is EMPTY OR NOT the same, so we make current tenants expired and add active tenant
@@ -302,7 +302,8 @@ class EstateCurrentTenantService extends BaseService {
     email,
     phone_number,
     notDisconnected = false,
-    connected = false
+    connected = false,
+    current_tenant_id
   }) {
     const query = EstateCurrentTenant.query()
       .where('estate_id', estate_id)
@@ -329,6 +330,10 @@ class EstateCurrentTenantService extends BaseService {
 
     if (connected) {
       query.whereNotNull('user_id')
+    }
+
+    if (current_tenant_id) {
+      query.where('id', current_tenant_id)
     }
 
     return await query.first()
@@ -1042,8 +1047,8 @@ class EstateCurrentTenantService extends BaseService {
       user.sex === 1
         ? SALUTATION_MR_LABEL
         : user.sex === 2
-          ? SALUTATION_MS_LABEL
-          : SALUTATION_SIR_OR_MADAM_LABEL
+        ? SALUTATION_MS_LABEL
+        : SALUTATION_SIR_OR_MADAM_LABEL
 
     await currentTenant.save(trx)
 
@@ -1205,8 +1210,8 @@ class EstateCurrentTenantService extends BaseService {
           data.sex === 1
             ? SALUTATION_MR_LABEL
             : data.sex === 2
-              ? SALUTATION_MS_LABEL
-              : SALUTATION_SIR_OR_MADAM_LABEL
+            ? SALUTATION_MS_LABEL
+            : SALUTATION_SIR_OR_MADAM_LABEL
         ect.salutation_int = data.sex
       }
       if (data.secondname) ect.surname = data.secondname
