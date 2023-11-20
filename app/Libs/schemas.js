@@ -11,7 +11,7 @@ const { validationRegExp } = require('../helper')
 const SCHEMAS = {
   id: yup.number().positive().typeError(getExceptionMessage('id', POSITIVE_NUMBER)),
 
-  phone: yup
+  phoneSchema: yup
     .string()
     .matches(validationRegExp.PHONE_REG_EXP, getExceptionMessage(undefined, MATCH)),
 
