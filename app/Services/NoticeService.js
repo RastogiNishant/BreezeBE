@@ -12,7 +12,9 @@ const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
 const NotificationsService = use('App/Services/NotificationsService')
 const MailService = use('App/Services/MailService')
+const BuildingService = use('App/Services/BuildingService')
 const AppException = use('App/Exceptions/AppException')
+
 const Logger = use('Logger')
 
 const {
@@ -667,17 +669,34 @@ class NoticeService {
 
     const notices = []
     const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
-
     let groupIdx = 0
+    const buildingNoticeAdded = {} // Keep track of whether a notice for a building has been added
+
     // isNoticeCreated = false
     while (groupIdx < Object.keys(groupMatches).length) {
       const estate_id = Object.keys(groupMatches)[groupIdx]
       const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
+
       if (!Object.keys(freeTimeSlots).length) {
         const estate = await require('./EstateService').getActiveById(estate_id)
 
-        if (estate) {
-          // isNoticeCreated = true
+        if (estate && estate.build_id != null) {
+          if (!buildingNoticeAdded[estate.build_id]) {
+            const building = await require('./BuildingService').getByBuildingId(estate.build_id)
+
+            if (building != null) {
+              notices.push({
+                user_id: estate.user_id,
+                type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
+                data: { estate_id, estate_address: building.address },
+                image: File.getPublicUrl(building.cover)
+              })
+
+              buildingNoticeAdded[estate.build_id] = true
+            }
+          }
+        } else {
+          // This is for estates without a build_id
           notices.push({
             user_id: estate.user_id,
             type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
