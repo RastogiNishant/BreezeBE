@@ -38,16 +38,17 @@ const { createDynamicLink } = require('../Libs/utils')
 const _helper = {
   async sendSGMail(msg) {
     const emailTarget = msg.to
+    const subject = msg.dynamic_template_data?.subject
     return await sgMail
       .send(msg)
       .then(() => {
-        Logger.info('Email Confirmation successfully delivered to SendGrid')
+        Logger.info(`Email "${subject}" successfully send to "${emailTarget}"`)
       })
       .catch((error) => {
-        const errorText = `Email Confirmation failed ${emailTarget} = ${error.toString()}`
+        const errorText = `Email "${subject}" failed for email "${emailTarget}" = ${error.toString()}`
 
         Logger.error(errorText)
-        throw new HttpException(`Email Confirmation failed ${emailTarget}= ${errorText}`)
+        throw new HttpException(errorText)
       })
   }
 }
@@ -1122,6 +1123,7 @@ class MailService {
         )
       }
     }
+
     return sgMail.send(msg).then(
       () => {
         console.log('Email delivery successfully')
@@ -1300,6 +1302,129 @@ class MailService {
         }
       }
     )
+  }
+
+  static async sendToProspectForAccountInactivityFirstReminder({ email, lang = DEFAULT_LANG }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    const msg = {
+      to: trim(email),
+      from: {
+        email: FromEmail,
+        name: FromName
+      },
+      templateId,
+      dynamic_template_data: {
+        subject: l.get(
+          'prospect.email_account_inactivity_two_weeks_reminder.subject.message',
+          lang
+        ),
+        salutation: l.get('email_signature.salutation.message', lang),
+        CTA: l.get('prospect.email_account_inactivity_two_weeks_reminder.CTA.message', lang),
+        intro: l.get('prospect.email_account_inactivity_two_weeks_reminder.intro.message', lang),
+        final: l.get('prospect.email_account_inactivity_two_weeks_reminder.final.message', lang),
+        greeting: l.get('email_signature.greeting.message', lang),
+        link: INVITE_APP_LINK,
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        )
+      }
+    }
+
+    return await _helper.sendSGMail(msg)
+  }
+
+  static async sendToProspectForAccountInactivitySecondReminder({ email, lang = DEFAULT_LANG }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    const msg = {
+      to: trim(email),
+      from: {
+        email: FromEmail,
+        name: FromName
+      },
+      templateId,
+      dynamic_template_data: {
+        subject: l.get('prospect.email_account_inactivity_one_week_reminder.subject.message', lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        CTA: l.get('prospect.email_account_inactivity_one_week_reminder.CTA.message', lang),
+        intro: l.get('prospect.email_account_inactivity_one_week_reminder.intro.message', lang),
+        final: l.get('prospect.email_account_inactivity_one_week_reminder.final.message', lang),
+        greeting: l.get('email_signature.greeting.message', lang),
+        link: INVITE_APP_LINK,
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        )
+      }
+    }
+
+    return await _helper.sendSGMail(msg)
+  }
+
+  static async sendToProspectForAccountDeletion({ email, lang = DEFAULT_LANG }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+
+    const msg = {
+      to: trim(email),
+      from: {
+        email: FromEmail,
+        name: FromName
+      },
+      templateId,
+      dynamic_template_data: {
+        subject: l.get('prospect.email_account_inactivity_deletion.subject.message', lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        CTA: l.get('prospect.email_account_inactivity_deletion.CTA.message', lang),
+        intro: l.get('prospect.email_account_inactivity_deletion.intro.message', lang),
+        final: l.get('prospect.email_account_inactivity_deletion.final.message', lang),
+        greeting: l.get('email_signature.greeting.message', lang),
+        link: INVITE_APP_LINK,
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        )
+      }
+    }
+
+    return await _helper.sendSGMail(msg)
   }
 }
 

@@ -35,7 +35,7 @@
       "@Database/*": ["./database/*"]
     },
     "baseUrl": "./",
-    "outDir": "dist",
+    "outDir": "dist"
   },
   "exclude": ["_services/**/*"]
 }

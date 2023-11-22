@@ -267,7 +267,8 @@ class QueueService {
       wrapException(QueueJobService.updateAllMisseEstateCoord),
       wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
       wrapException(require('./MarketPlaceService').sendReminderEmail),
-      wrapException(require('./TenantService').reminderProfileFillUp)
+      wrapException(require('./TenantService').reminderProfileFillUp),
+      wrapException(require('./UserDeletionService').processDeletionSchedule)
     ])
   }
 
