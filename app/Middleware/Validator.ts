@@ -2,7 +2,7 @@ import { promises as fsPromises } from 'node:fs'
 import * as path from 'node:path'
 
 // use default config from Base
-import * as Base from '../Validators/Base'
+import { Base } from '../Validators/Base'
 import { wrapValidationError } from '../Libs/utils'
 
 const { ValidationException } = use('Validator')

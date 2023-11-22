@@ -207,6 +207,14 @@ const exceptionKeys = {
   NO_IMAGE_EXIST: 'NO_IMAGE_EXIST',
   NO_FILE_EXIST: 'NO_FILE_EXIST'
 }
+
+/**
+ *
+ * @param {string} name
+ * @param {string} command
+ * @param {string} value
+ * @returns
+ */
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
     throw new HttpException(`message for ${command} is not defined`)

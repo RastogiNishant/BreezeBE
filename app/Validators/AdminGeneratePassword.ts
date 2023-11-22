@@ -9,7 +9,3 @@ export const AdminGeneratePassword = {
       password: yup.string()
     })
 }
-
-module.exports = {
-  AdminGeneratePassword
-}
