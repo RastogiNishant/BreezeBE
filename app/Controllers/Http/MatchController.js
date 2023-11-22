@@ -276,7 +276,6 @@ class MatchController {
             `${process.env.DEEP_LINK}?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}`
           )
           MailService.sendInvitationToTenant(currentTenant.email, shortLink)
-        } else {
         }
         response.res(true)
       }

@@ -57,13 +57,13 @@ class EstatePermissionService {
    */
   static async requestPermissionToLandlordByEmail(userId, landlordEmails) {
     if (!landlordEmails || !isObject(landlordEmails) || !landlordEmails.length) {
-      new HttpException('There is no landlord emails provided', 400)
+      throw new HttpException('There is no landlord emails provided', 400)
     }
     try {
       const landlordIds = await UserService.getByEmail(landlordEmails, ROLE_LANDLORD)
       return await EstatePermissionService.requestPermissionToLandlordById(userId, landlordIds)
     } catch (e) {
-      new HttpException(e.message, 400)
+      throw new HttpException(e.message, 400)
     }
   }
 
@@ -77,7 +77,7 @@ class EstatePermissionService {
   static async permissionToPropertyManager(userId, pmIds, permission) {
     try {
       if (!pmIds || !pmIds.length) {
-        new HttpException('There is no landlord Ids provided', 400)
+        throw new HttpException('There is no landlord Ids provided', 400)
       }
 
       try {
@@ -107,7 +107,7 @@ class EstatePermissionService {
         throw new HttpException(e.message, 400)
       }
     } catch (e) {
-      new HttpException(e.message, 400)
+      throw new HttpException(e.message, 400)
     }
   }
 

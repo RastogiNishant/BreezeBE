@@ -114,9 +114,9 @@ class File {
 
       const outputFileName = `${PDF_TEMP_PATH}/output_${uuid.v4()}.jpg`
 
-      //gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
+      // gifsicle -i /srv/temp/sample_1920×1280.gif  --optimize=3 --lossy=80  --colors 256 --output /srv/temp/sample.gif
 
-      let command = `convert ${filePath} ${outputFileName}`
+      const command = `convert ${filePath} ${outputFileName}`
       await exec({
         cmd: `${command}`
       })
@@ -215,15 +215,15 @@ class File {
         thumbnailFilePathName = await File.saveThumbnailToDisk({
           image: isCompressed ? img_data : file.tmpPath,
           fileName: filename,
-          dir: dir,
-          options: options,
-          disk: disk
+          dir,
+          options,
+          disk
         })
       }
 
       return {
-        filePathName: filePathName,
-        thumbnailFilePathName: thumbnailFilePathName
+        filePathName,
+        thumbnailFilePathName
       }
     } catch (e) {
       throw new AppException(e, 400)
@@ -290,6 +290,7 @@ class File {
 
     return 1
   }
+
   /**
    *
    */
@@ -300,7 +301,7 @@ class File {
     const saveFile = async ({ field, mime = null, isPublic = true }) => {
       const file = request.file(field, {
         size: process.env.MAX_IMAGE_SIZE || '20M',
-        extnames: mime ? mime : File.SUPPORTED_IMAGE_FORMAT
+        extnames: mime || File.SUPPORTED_IMAGE_FORMAT
       })
       if (!file) {
         return null
@@ -338,7 +339,7 @@ class File {
                   v.thumbnailFilePathName.length > 1
                     ? v.thumbnailFilePathName
                     : v.thumbnailFilePathName[0],
-                ['format']: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0]
+                format: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0]
               }
             : n,
         {}

@@ -2595,8 +2595,6 @@ class MatchService {
       .first()
     const tenant = await Database.table('users').where('id', tenantId).first()
     if (buddy) {
-      if (buddy.status !== BUDDY_STATUS_ACCEPTED) {
-      }
       await Database.table('buddies')
         .update({ status: BUDDY_STATUS_ACCEPTED })
         .where({ user_id: landlordId, tenant_id: tenantId })

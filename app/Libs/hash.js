@@ -43,9 +43,9 @@ const crc32tab = [
  */
 const crc32 = function (str, hex) {
   str = String(str)
-  let crc = ~0,
-    i,
-    l
+  let crc = ~0
+  let i
+  let l
   for (i = 0, l = str.length; i < l; i++) {
     crc = (crc >>> 8) ^ crc32tab[(crc ^ str.charCodeAt(i)) & 0xff]
   }

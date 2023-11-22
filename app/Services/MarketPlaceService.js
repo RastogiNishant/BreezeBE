@@ -936,7 +936,9 @@ class MarketPlaceService {
       return MarketPlaceService.parseImmoweltOtherInfo(immoweltOtherInfo)
     }
 
+    // @TODO implmenent ebay / kleinanzeigen publishing
     if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_EBAY) {
+      return {}
     }
 
     return {}
