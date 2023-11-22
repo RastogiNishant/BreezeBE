@@ -73,7 +73,11 @@ class File {
       fsPromise.unlink(outputFileName)
       return data
     } catch (e) {
-      throw new AppException(e.message, e.status || 500)
+      if (e?.message) {
+        throw new AppException(e.message, e.status || 500)
+      } else {
+        throw new AppException('Unable to compress PDF, ghostscript installed?', e?.status || 500)
+      }
     }
   }
 
@@ -450,8 +454,8 @@ class File {
       const s3 = new AWS.S3()
       const params = {
         Bucket: GEWOBAG_FTP_BUCKET,
-        Delimiter: '/',
-        Prefix: 'live/'
+        Delimiter: '/'
+        // Prefix: 'live/',
       }
       const objects = await s3.listObjects(params).promise()
       if (!objects?.Contents) {

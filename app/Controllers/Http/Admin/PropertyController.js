@@ -469,6 +469,10 @@ class PropertyController {
       })
       MailService.estatePublishRequestApproved(requestPublishEstate)
       NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
+      await MailService.sendEmailToOhneMakler(
+        `QUEUEING Estate Sync Publish Estate...`,
+        'barudo@gmail.com'
+      )
       QueueService.estateSyncPublishEstate({ estate_id: id })
       await trx.commit()
       return true
