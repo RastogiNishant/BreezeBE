@@ -125,7 +125,7 @@ const {
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
   MATCH_STATUS_INVITE,
-  NOTICE_TYPE_TENANT_PROFILE_SHARING_REQUEST_ID,
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID,
   NOTICE_TYPE_PROSPECT_SHARE_PROFILE
 } = require('../constants')
 
@@ -1494,13 +1494,21 @@ class NoticeService {
     await NotificationsService.prospectFillUpProfileReminder(notices)
   }
 
-  static async notifyTenantByLandlordToShareProfile(prospectId, landlord, address, date) {
+  static async notifyTenantByLandlordToShareProfile(prospectId, landlord, estate, date, avatar) {
     const notice = {
       user_id: prospectId,
-      type: NOTICE_TYPE_TENANT_PROFILE_SHARING_REQUEST_ID,
-      data: { landlord, estate_address: address, date }
+      type: NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID,
+      data: {
+        landlord,
+        street: estate?.street,
+        house_number: estate?.house_number,
+        pinCode: estate?.postcode,
+        city: estate?.city,
+        country: estate?.country,
+        date,
+        landlord_logo: File.getPublicUrl(avatar)
+      }
     }
-
     await NoticeService.insertNotices([notice])
     await NotificationsService.prospectSendCode([notice])
   }

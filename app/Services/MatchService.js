@@ -4799,28 +4799,35 @@ class MatchService {
 
     const estate = (await EstateService.getMatchEstate(estateId, landlordId)).toJSON()
 
-    const address = generateAddress({
-      street: estate?.street,
-      house_number: estate?.house_number,
-      zip: estate?.postcode,
-      city: estate?.city,
-      country: estate?.country
-    })
-
     const prospectUser = await User.query().where('id', prospectId).first()
     const landlordUser = await User.query().where('id', landlordId).first()
-    const landlord = `${landlordUser?.firstname} ${landlordUser?.secondname}`
+    const landlord = `${landlordUser?.firstname ?? ''} ${landlordUser?.secondname ?? ''}`
 
     await NoticeService.notifyTenantByLandlordToShareProfile(
       prospectId,
       landlord,
-      address,
-      visitDate
+      estate,
+      visitDate,
+      landlordUser?.avatar
     )
 
-    const shareLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}/profile/request?landlord=${landlord}&address=${address}&date=${visitDate}&estate_id=${estate.id}`
-    )
+    const deepLink = new URL(`${process.env.DEEP_LINK}/profile/request`)
+
+    // Object destructuring for cleaner code
+    const { street, house_number, postcode, city, country } = estate
+
+    // Append query parameters
+    deepLink.searchParams.append('landlord', landlord)
+    deepLink.searchParams.append('street', street)
+    deepLink.searchParams.append('house_number', house_number)
+    deepLink.searchParams.append('postcode', postcode)
+    deepLink.searchParams.append('city', city)
+    deepLink.searchParams.append('country', country)
+    deepLink.searchParams.append('date', visitDate)
+    deepLink.searchParams.append('estate_id', estate.id)
+    deepLink.searchParams.append('landlord_logo', landlordUser?.avatar)
+
+    const shareLink = deepLink.toString()
 
     MailService.sendRequestToTenantForShareProfile({
       prospectEmail: prospectUser?.email,
