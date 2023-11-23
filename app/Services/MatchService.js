@@ -133,6 +133,7 @@ const {
     ERROR_COMMIT_MATCH_INVITE,
     ERROR_ALREADY_MATCH_INVITE,
     ERROR_MATCH_COMMIT_DOUBLE,
+    ERROR_LANDLORD_MATCH_SHOW_WRONG,
     USER_NOT_EXIST
   },
   exceptionCodes: {
@@ -140,6 +141,7 @@ const {
     NO_TIME_SLOT_ERROR_CODE,
     ERROR_COMMIT_MATCH_INVITE_CODE,
     ERROR_ALREADY_MATCH_INVITE_CODE,
+    ERROR_LANDLORD_MATCH_SHOW_WRONG_CODE,
     ERROR_MATCH_COMMIT_DOUBLE_CODE
   }
 } = require('../exceptions')
@@ -4777,33 +4779,16 @@ class MatchService {
       .where('user_id', prospectId)
       .where('estate_id', estateId)
       .first()
-    if (!match) {
-      throw new AppException('Prospect and estate are not matched.')
+
+    if (!match || match.share) {
+      throw new AppException(
+        ERROR_LANDLORD_MATCH_SHOW_WRONG,
+        400,
+        ERROR_LANDLORD_MATCH_SHOW_WRONG_CODE
+      )
     }
-    if (match.share) {
-      throw new AppException('Prospect already shares his profile.')
-    }
+
     const visitDate = moment.utc(date).format(DAY_FORMAT)
-    const getVisit = await Visit.query()
-      .where({ user_id: prospectId })
-      .where({ estate_id: estateId })
-      .where(Database.raw(`to_char("date", '${DAY_FORMAT}') = '${visitDate}'`))
-      .fetch()
-
-    const visit = getVisit.toJSON()
-
-    if (visit.length === 0) {
-      // Move match status to next
-      await Match.query()
-        .update({
-          profile_status: NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE
-        })
-        .where({
-          user_id: prospectId,
-          estate_id: estateId
-        })
-      throw new AppException(ERROR_DATE_NOT_MATCH_WITH_PROSPECT_VISIT_DATE, 404)
-    }
 
     const estate = (await EstateService.getMatchEstate(estateId, landlordId)).toJSON()
 
@@ -4811,6 +4796,7 @@ class MatchService {
     const landlordUser = await User.query().where('id', landlordId).first()
     const landlord = `${landlordUser?.firstname ?? ''} ${landlordUser?.secondname ?? ''}`
 
+    // Notify the tenant by landlord to share their profile
     await NoticeService.notifyTenantByLandlordToShareProfile(
       prospectId,
       landlord,
@@ -4819,13 +4805,15 @@ class MatchService {
       landlordUser?.avatar
     )
 
+    // Create a dynamic link for profile sharing
     const deepLink = new URL(`${process.env.DEEP_LINK}/profile/request`)
 
     // Object destructuring for cleaner code
-    const { street, house_number, postcode, city, country } = estate
+    const { id, street, house_number, postcode, city, country } = estate
 
     // Append query parameters
     deepLink.searchParams.append('landlord', landlord)
+    deepLink.searchParams.append('estate_id', id)
     deepLink.searchParams.append('street', street)
     deepLink.searchParams.append('house_number', house_number)
     deepLink.searchParams.append('postcode', postcode)
@@ -4837,6 +4825,7 @@ class MatchService {
 
     const shareLink = deepLink.toString()
 
+    // Send an email to the tenant requesting profile sharing
     MailService.sendRequestToTenantForShareProfile({
       prospectEmail: prospectUser?.email,
       estate,
