@@ -15,19 +15,13 @@ const LANDLORD_EMAIL_TEMPLATE = process.env.LANDLORD_EMAIL_TEMPLATE
 const PROSPECT_EMAIL_TEMPLATE = process.env.PROSPECT_EMAIL_TEMPLATE
 const SITE_URL = process.env.SITE_URL
 const INVITE_APP_LINK = process.env.INVITE_APP_LINK || 'https://linktr.ee/breeze.app'
+const ENVS_NOT_TO_SEND_MULTIPLE_EMAILS = ['localhost', 'development', 'staging', 'preprod']
+
 const {
   ROLE_LANDLORD,
-  ROLE_USER,
   DEFAULT_LANG,
-  DAY_FORMAT,
-  DATE_FORMAT,
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
   GERMAN_DATE_TIME_FORMAT,
-  ESTATE_FLOOR_DIRECTION_RIGHT,
-  ESTATE_FLOOR_DIRECTION_LEFT,
-  ESTATE_FLOOR_DIRECTION_STRAIGHT,
-  ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT,
-  ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT,
   ESTATE_NO_IMAGE_COVER_URL,
   MARKETPLACE_LIST
 } = require('../constants')
@@ -36,9 +30,18 @@ const Logger = use('Logger')
 const { createDynamicLink } = require('../Libs/utils')
 
 const _helper = {
-  async sendSGMail(msg) {
+  async sendSGMail(msg, sendInTesting = true) {
     const emailTarget = msg.to
     const subject = msg.dynamic_template_data?.subject
+
+    // block email if system is not prod (prevent email spam from non prod)
+    if (!sendInTesting && ENVS_NOT_TO_SEND_MULTIPLE_EMAILS.includes(process.env.NODE_ENV)) {
+      Logger.info(
+        `Email "${msg.dynamic_template_data.subject}" not sent to "${msg.to}". System is not PRODUCTION.`
+      )
+      return true
+    }
+
     return await sgMail
       .send(msg)
       .then(() => {
@@ -99,17 +102,7 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Welcome Email delivery successfully')
-      },
-      (error) => {
-        console.log('Welcome Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendcodeForgotPasswordMail(email, code, role, lang = DEFAULT_LANG) {
@@ -149,17 +142,7 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Reset Email delivery successfully')
-      },
-      (error) => {
-        console.log('Reset Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendcodeForMemberInvitation(email, shortLink, lang = DEFAULT_LANG) {
@@ -207,17 +190,7 @@ class MailService {
         username_val: email
       }
     }
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
 
     // await Mail.send('mail/send-code', { code }, (message) => {
     //   message.to(email).from(Config.get('mail.mailAccount')).subject('Code for invitation code')
@@ -237,17 +210,7 @@ class MailService {
       text: `Here is the link is ${shortLink}`,
       html: `<h3> Code for invitation is <b>${shortLink}</b></h3>`
     }
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendChangeEmailConfirmation(email, code, role) {
@@ -269,17 +232,7 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   /**
@@ -380,20 +333,7 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   async sendInviteToViewEstate(values) {
@@ -408,17 +348,7 @@ class MailService {
       html: `<h3> code: <b>${values.code}</b></h3>`
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendUnverifiedLandlordActivationEmailToAdmin(txt) {
@@ -430,17 +360,7 @@ class MailService {
       text: txt
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async inviteEmailToProspect({ email, address, lang = DEFAULT_LANG }) {
@@ -487,20 +407,7 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async notifyVisitEmailToProspect({ email, address, lang = DEFAULT_LANG }) {
@@ -549,25 +456,12 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendInvitationToOusideTenant(links) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
-    const messages = links.map((link) => {
+    const msg = links.map((link) => {
       const lang = link?.lang || DEFAULT_LANG
       return {
         to: trim(link.email),
@@ -604,17 +498,7 @@ class MailService {
       }
     })
 
-    return sgMail.send(messages).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async inviteLandlordFromTenant({ prospect_email, task, link, lang = DEFAULT_LANG }) {
@@ -674,20 +558,7 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async estatePublishRequestApproved(estate) {
@@ -747,20 +618,7 @@ class MailService {
         )
       }
     }
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendEmailToSupport({ subject, textMessage, htmlMessage = '' }) {
@@ -778,17 +636,7 @@ class MailService {
       msg.html = htmlMessage
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendEmailToOhneMakler(textMessage, recipient, sendToBCC = false) {
@@ -807,17 +655,7 @@ class MailService {
       msg.bcc = [sendToBCC]
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendEmailWithAttachment({
@@ -828,7 +666,7 @@ class MailService {
     attachment,
     from
   }) {
-    const message = {
+    const msg = {
       to: recipient,
       from,
       subject,
@@ -844,19 +682,9 @@ class MailService {
       ]
     }
     if (bcc) {
-      message.bcc = bcc
+      msg.bcc = bcc
     }
-    return sgMail.send(message).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static getEmailAddressFormatter(estate, lang) {
@@ -919,7 +747,7 @@ class MailService {
         <tr>${intro}</tr>
        </table>`
 
-      const messages = {
+      const msg = {
         to: trim(email),
         from: {
           email: FromEmail,
@@ -956,17 +784,7 @@ class MailService {
         }
       }
 
-      return sgMail.send(messages).then(
-        () => {
-          console.log('Email delivery successfully')
-        },
-        (error) => {
-          console.log('Email delivery failed', error)
-          if (error.response) {
-            console.error(error.response.body)
-          }
-        }
-      )
+      return await _helper.sendSGMail(msg)
     } catch (e) {
       Logger.error(`reminderKnockSignUpEmail ${email} ${e?.message}`)
     }
@@ -1010,7 +828,7 @@ class MailService {
         <tr>${intro}</tr>
        </table>`
 
-      const messages = {
+      const msg = {
         to: trim(email),
         from: {
           email: FromEmail,
@@ -1045,24 +863,14 @@ class MailService {
         }
       }
 
-      return sgMail.send(messages).then(
-        () => {
-          console.log('Email delivery successfully')
-        },
-        (error) => {
-          console.log('Email delivery failed', error)
-          if (error.response) {
-            console.error(error.response.body)
-          }
-        }
-      )
+      return await _helper.sendSGMail(msg)
     } catch (e) {
       Logger.error(`reminderKnockSignUpEmail ${contact?.email} ${e?.message}`)
     }
   }
 
   static async sendTextEmail(recipient, subject, text) {
-    const message = {
+    const msg = {
       to: recipient,
       from: {
         email: FromEmail,
@@ -1072,20 +880,10 @@ class MailService {
       text
     }
 
-    return sgMail.send(message).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
-  static async sendToSupportLandlordPublishedOneEstate({ landlord }) {}
+  static async sendToSupportLandlordPublishedOneEstate() {}
 
   static async sendToSupportLandlordConnectedOneEstate() {}
 
@@ -1124,25 +922,12 @@ class MailService {
       }
     }
 
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return _helper.sendSGMail(msg)
   }
 
   static async sendLandlordInviteStageProspectMessageNotification(recipient) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
-    const message = {
+    const msg = {
       to: recipient,
       from: {
         email: FromEmail,
@@ -1155,7 +940,7 @@ class MailService {
       )} \n ${l.get('prospect.email_message_from_landlord.final.message')}`
     }
 
-    return await _helper.sendSGMail(message)
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendRequestToTenantForShareProfile({
@@ -1207,20 +992,7 @@ class MailService {
         )
       }
     }
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendToProspectThatLandlordSentMessage(
@@ -1288,20 +1060,7 @@ class MailService {
         )
       }
     }
-    return sgMail.send(msg).then(
-      () => {
-        console.log('Email delivery successfully')
-      },
-      (error) => {
-        console.log('Email delivery failed', error)
-        if (error.response) {
-          console.error(error.response.body)
-          throw new HttpException(error.response.body)
-        } else {
-          throw new HttpException(error)
-        }
-      }
-    )
+    return await _helper.sendSGMail(msg)
   }
 
   static async sendToProspectForAccountInactivityFirstReminder({ email, lang = DEFAULT_LANG }) {
@@ -1343,8 +1102,7 @@ class MailService {
         )
       }
     }
-
-    return await _helper.sendSGMail(msg)
+    return await _helper.sendSGMail(msg, false)
   }
 
   static async sendToProspectForAccountInactivitySecondReminder({ email, lang = DEFAULT_LANG }) {
@@ -1383,8 +1141,7 @@ class MailService {
         )
       }
     }
-
-    return await _helper.sendSGMail(msg)
+    return await _helper.sendSGMail(msg, false)
   }
 
   static async sendToProspectForAccountDeletion({ email, lang = DEFAULT_LANG }) {
@@ -1423,8 +1180,7 @@ class MailService {
         )
       }
     }
-
-    return await _helper.sendSGMail(msg)
+    return await _helper.sendSGMail(msg, false)
   }
 }
 
