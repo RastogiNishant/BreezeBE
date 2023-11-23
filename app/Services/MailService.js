@@ -1,6 +1,6 @@
 'use strict'
 
-const { trim, capitalize, startCase, isArray } = require('lodash')
+const { trim, capitalize, startCase, isArray, uniq } = require('lodash')
 const l = use('Localize')
 const moment = require('moment')
 const { generateAddress, parseFloorDirection } = use('App/Libs/utils')
@@ -1088,7 +1088,7 @@ class MailService {
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const msg = {
-      to: isArray(email) ? email : trim(email),
+      to: isArray(email) ? uniq(email) : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -1172,7 +1172,7 @@ class MailService {
     )
     const estateAddress = this.getEmailAddressFormatter(estate, lang)
     const msg = {
-      to: trim(email),
+      to: isArray(email) ? uniq(email) : trim(email),
       from: {
         email: FromEmail,
         name: FromName
