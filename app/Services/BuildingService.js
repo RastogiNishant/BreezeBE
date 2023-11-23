@@ -1,7 +1,6 @@
 'use strict'
-const { toLower, isNull, get } = require('lodash')
+const { toLower, isNull, get, isArray } = require('lodash')
 const Building = use('App/Models/Building')
-const Match = use('App/Models/Match')
 const Promise = require('bluebird')
 const HttpException = require('../Exceptions/HttpException')
 const EstateFilters = require('../Classes/EstateFilters')
@@ -16,7 +15,10 @@ const {
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_INVITE,
   MATCH_STATUS_VISIT,
-  MATCH_STATUS_SHARE
+  MATCH_STATUS_SHARE,
+  MATCH_TYPE_MARKET_PLACE,
+  STATUS_EMAIL_VERIFY,
+  STATUS_DRAFT
 } = require('../constants')
 class BuildingService {
   static async upsert({ user_id, data }) {
@@ -179,7 +181,6 @@ class BuildingService {
       user_ids: [user_id],
       params: { ...params, build_id, isStatusSort: true }
     })
-
     // exact count unique prospects
     // matches
     let matchesOnBuildingsQuery =
@@ -307,6 +308,57 @@ class BuildingService {
       .where('id', build_id)
       .update({ can_publish, published: PUBLISH_STATUS_INIT })
       .transacting(trx)
+  }
+
+  static async getContactRequestsByBuilding(buildingId) {
+    const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
+    const contactRequests = await EstateSyncContactRequest.query()
+      .select(
+        Database.raw(
+          `array_agg(
+            json_build_object(
+              'firstname', estate_sync_contact_requests.contact_info->'firstName',
+              'secondname', estate_sync_contact_requests.contact_info->'lastName',
+              'from_market_place', 1,
+              'match_type', coalesce(estate_sync_contact_requests.publisher, '${MATCH_TYPE_MARKET_PLACE}'),
+              'profession', estate_sync_contact_requests.contact_info->'employment',
+              'members', estate_sync_contact_requests.contact_info->'family_size',
+              'income', estate_sync_contact_requests.contact_info->'income',
+              'birthday', estate_sync_contact_requests.contact_info->'birthday',
+              'created_at', estate_sync_contact_requests.created_at,
+              'updated_at', estate_sync_contact_requests.updated_at
+          )) 
+          as contact_requests`
+        ),
+        'estates.unit_category_id'
+      )
+      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .whereNotNull('estates.unit_category_id')
+      .where('estates.build_id', buildingId)
+      .whereIn('estate_sync_contact_requests.status', [STATUS_EMAIL_VERIFY, STATUS_DRAFT])
+      .groupBy('estates.unit_category_id')
+      .fetch()
+    return contactRequests.toJSON() || []
+  }
+
+  static async getContactRequestsCountByBuilding(buildingId) {
+    const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
+    const query = EstateSyncContactRequest.query()
+      .select(
+        Database.raw(`count(*) as contact_requests_count`),
+        'estates.unit_category_id as unit_category_id'
+      )
+      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .whereNotNull('estates.unit_category_id')
+      .whereIn('estate_sync_contact_requests.status', [STATUS_EMAIL_VERIFY, STATUS_DRAFT])
+      .groupBy('estates.unit_category_id')
+    if (isArray(buildingId)) {
+      query.whereIn('estates.build_id', buildingId)
+    } else {
+      query.where('estates.build_id', buildingId)
+    }
+    const contactRequests = await query.fetch()
+    return contactRequests.toJSON() || []
   }
 }
 

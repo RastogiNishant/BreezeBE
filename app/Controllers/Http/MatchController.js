@@ -1009,22 +1009,43 @@ class MatchController {
     )
     data.data = data.data.sort(matchSortFunction)
 
-    const contact_request_count = (
-      await require('../../Services/MarketPlaceService')
+    let contact_request_count
+    let contactRequestQuery
+    if (estate.build_id && estate.unit_category_id) {
+      contactRequestQuery =
+        await require('../../Services/BuildingService').getContactRequestsCountByBuilding(
+          estate.build_id
+        )
+      contact_request_count =
+        contactRequestQuery.find((cr) => +cr.unit_category_id === +estate.unit_category_id)
+          ?.contact_requests_count || 0
+    } else {
+      contact_request_count = await require('../../Services/MarketPlaceService')
         .getPendingKnockRequestCountQuery({
           estate_id
         })
-        .count()
-    )?.[0]?.count
+        .count()?.[0]?.count
+    }
 
     const contactRequestSortFunction = (a, b) => b.income - a.income
-    const contact_requests_data = (
-      await require('../../Services/MarketPlaceService')
-        .getPendingKnockRequestQuery({
-          estate_id
-        })
-        .paginate(page, limit || 10)
-    ).toJSON()
+    let contact_requests_data = {}
+    if (estate.build_id && estate.unit_category_id) {
+      const contactRequestDataQuery =
+        await require('../../Services/BuildingService').getContactRequestsByBuilding(
+          estate.build_id
+        )
+      contact_requests_data.data =
+        contactRequestDataQuery.find((cr) => +cr.unit_category_id === +estate.unit_category_id)
+          ?.contact_requests || []
+    } else {
+      contact_requests_data = (
+        await require('../../Services/MarketPlaceService')
+          .getPendingKnockRequestQuery({
+            estate_id
+          })
+          .paginate(page, limit || 10)
+      ).toJSON()
+    }
     contact_requests_data.data = contact_requests_data.data.sort(contactRequestSortFunction)
 
     const contact_requests = {
