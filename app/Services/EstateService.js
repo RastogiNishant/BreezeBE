@@ -2463,6 +2463,12 @@ class EstateService {
     }
     result.data = this.checkCanChangeLettingStatus(result, { isOwner: true })
 
+    let contactRequests
+    if (params.build_id) {
+      contactRequests = await require('./BuildingService').getContactRequestsCountByBuilding(
+        params.build_id
+      )
+    }
     result.data = (result.data || []).map((estate) => {
       const outside_view_has_media =
         (estate.files || []).filter((f) => f.type == FILE_TYPE_EXTERNAL).length || 0
@@ -2477,6 +2483,11 @@ class EstateService {
         (estate.files || []).filter((f) => f.type == FILE_TYPE_UNASSIGNED).length || 0
 
       const deposit_multiplier = Math.round(Number(estate?.deposit) / Number(estate?.net_rent))
+      if (estate.build_id && estate.unit_category_id) {
+        estate.__meta__.contact_requests_count =
+          contactRequests.find((cr) => cr.unit_category_id === estate.unit_category_id)
+            ?.contact_requests_count || 0
+      }
 
       return {
         ...estate,
