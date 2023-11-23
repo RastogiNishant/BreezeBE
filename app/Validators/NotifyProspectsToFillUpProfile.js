@@ -1,7 +1,7 @@
 'use strict'
 
 const yup = require('yup')
-const Base = require('./Base.js')
+const Base = require('./Base')
 
 class NotifyProspectsToFillUpProfile extends Base {
   static schema = () =>

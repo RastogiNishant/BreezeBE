@@ -19,6 +19,7 @@
     "require": ["tsconfig-paths/register"]
   },
   "compilerOptions": {
+    "module": "commonjs",
     "moduleResolution": "node",
     // typescript options here
     "strict": false,

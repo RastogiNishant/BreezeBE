@@ -40,13 +40,13 @@ const authRoutes: Routes = {
   '/forgotPassword': {
     [HTTP_METHODS.POST]: {
       controller: 'AccountController.sendCodeForgotPassword',
-      middleware: ['guest', 'valid:ResetEmailRequest', 'UserWithEmailExists']
+      middleware: ['guest', 'valid:ResetPasswordRequest', 'UserWithEmailExists']
     }
   },
   '/forgotPassword/setPassword': {
     [HTTP_METHODS.POST]: {
       controller: 'AccountController.setPasswordForgotPassword',
-      middleware: ['guest', 'valid:SetPassword']
+      middleware: ['guest', 'valid:ResetPasswordConfirm']
     }
   },
   '/login': {
