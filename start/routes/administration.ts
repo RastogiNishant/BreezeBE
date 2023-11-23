@@ -292,5 +292,11 @@ export const administrationRoutes = {
       controller: 'Admin/UtilityController.uploadContactRequest',
       middleware: ['auth:jwtAdministrator']
     }
+  },
+  '/utilities/estate-sync/property': {
+    [HTTP_METHODS.PUT]: {
+      controller: 'Admin/UtilityController.updateEstateSyncProperty',
+      middleware: ['auth:jwtAdministrator', 'valid:UpdateEstateSyncProperty']
+    }
   }
 }

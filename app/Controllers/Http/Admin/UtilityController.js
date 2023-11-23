@@ -94,6 +94,17 @@ class UtilityController {
       }
     })
   }
+
+  async updateEstateSyncProperty({ request, response }) {
+    const { estateId, title, description } = request.all()
+    const EstateSync = use('App/Classes/EstateSync')
+    const estateSync = new EstateSync()
+
+    let estate = await EstateService.getByIdWithDetail(estateId)
+    estate = estate.toJSON()
+    estate = estateSync.composeEstate(estate)
+    return response.res({ estateId, estate })
+  }
 }
 
 module.exports = UtilityController

@@ -898,6 +898,17 @@
     "handler": "Admin/UtilityController.uploadContactRequest"
   },
   {
+    "route": "/api/v1/administration/utilities/estate-sync/property",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:UpdateEstateSyncProperty"
+    ],
+    "handler": "Admin/UtilityController.updateEstateSyncProperty"
+  },
+  {
     "route": "/api/v1/administration/utilities/estates/:id/percent",
     "method": [
       "HEAD",
