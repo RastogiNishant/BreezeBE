@@ -275,7 +275,6 @@ class EstateSync {
   }
 
   composeAttachments({ cover, rooms = [], files = [] }) {
-    console.log({ cover, rooms, files })
     let attachments = []
     if (cover) {
       attachments = EstateSync.addAttachment(cover, attachments)
