@@ -589,7 +589,7 @@ const constants = {
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP: 'notification_prospect_fill_up_profile',
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED: 'notification_final_match_request_expired',
   NOTICE_TYPE_PROSPECT_REACTIVATED: 'notification_prospect_reactivated',
-  NOTICE_TYPE_PROSPECT_SHARE_PROFILE: 'notification_prospect_share_profile',
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE: 'notification_prospect_request_profile',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE_ID: 2,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY_ID: 3,

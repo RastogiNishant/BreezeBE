@@ -4823,10 +4823,11 @@ class MatchService {
     const deepLink = new URL(`${process.env.DEEP_LINK}/profile/request`)
 
     // Object destructuring for cleaner code
-    const { street, house_number, postcode, city, country } = estate
+    const { id, street, house_number, postcode, city, country } = estate
 
     // Append query parameters
     deepLink.searchParams.append('landlord', landlord)
+    deepLink.searchParams.append('estate_id', id)
     deepLink.searchParams.append('street', street)
     deepLink.searchParams.append('house_number', house_number)
     deepLink.searchParams.append('postcode', postcode)
