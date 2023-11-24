@@ -1,7 +1,7 @@
 const { props } = require('bluebird')
 const { range, findIndex, get, omit } = require('lodash')
 const moment = require('moment')
-const { DATE_FORMAT, DAY_FORMAT, ESTATE_NOT_EXISTS } = require('../constants')
+const { DATE_FORMAT, DAY_FORMAT } = require('../constants')
 const AppException = use('App/Exceptions/AppException')
 const HttpException = use('App/Exceptions/HttpException')
 const Database = use('Database')
@@ -17,7 +17,8 @@ const {
     TIME_SLOT_CROSSING_EXISTING,
     TIME_SLOT_NOT_FOUND,
     SHOW_ALREADY_STARTED,
-    FAILED_CREATE_TIME_SLOT
+    FAILED_CREATE_TIME_SLOT,
+    ESTATE_NOT_EXISTS
   },
   exceptionCodes: { SHOW_ALREADY_STARTED_ERROR_CODE }
 } = require('../exceptions')

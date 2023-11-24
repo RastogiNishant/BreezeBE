@@ -13,6 +13,7 @@ const { isEmpty, trim } = require('lodash')
 const Point = use('App/Models/Point')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const { createDynamicLink } = require('../Libs/utils')
+const randomstring = require('randomstring')
 
 const {
   STATUS_ACTIVE,
@@ -58,11 +59,12 @@ const {
   PUBLISH_STATUS_DECLINED_BY_ADMIN
 } = require('../constants')
 const Promise = require('bluebird')
-const UserDeactivationSchedule = require('../Models/UserDeactivationSchedule')
+const UserDeactivationSchedule = use('App/Models/UserDeactivationSchedule')
 const MailService = use('App/Services/MailService')
 const ImageService = use('App/Services/ImageService')
 const MemberService = use('App/Services/MemberService')
 const User = use('App/Models/User')
+const Dislike = use('App/Models/Dislike')
 
 class QueueJobService {
   static async updateEstatePoint(estateId) {

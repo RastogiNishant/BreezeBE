@@ -31,13 +31,7 @@
       "dot-notation": "warn",
       "no-case-declarations": "warn",
       "no-unneeded-ternary": "warn",
-      "one-var": "warn",
-      "no-empty": "warn",
-      "no-new": "warn",
-      "no-useless-computed-key": "warn",
-      "no-lone-blocks": "warn",
       "n/no-deprecated-api": "warn",
-      "no-useless-return": "warn",
       "no-template-curly-in-string": "warn"
     },
     "plugins": [

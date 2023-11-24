@@ -3030,7 +3030,7 @@
     ],
     "middle": [
       "guest",
-      "valid:ResetEmailRequest",
+      "valid:ResetPasswordRequest",
       "UserWithEmailExists",
       "agreement",
       "plan"
@@ -3044,7 +3044,7 @@
     ],
     "middle": [
       "guest",
-      "valid:SetPassword",
+      "valid:ResetPasswordConfirm",
       "agreement",
       "plan"
     ],
@@ -4522,7 +4522,6 @@
       "POST"
     ],
     "middle": [
-      "auth:jwt",
       "auth:jwt",
       "valid:ThirdPartyOffersAction",
       "agreement",

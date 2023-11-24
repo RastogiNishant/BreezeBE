@@ -55,6 +55,7 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   DATE_FORMAT,
+  DAY_FORMAT,
   ROLE_USER,
   PETS_NO,
   PETS_SMALL,
@@ -2594,8 +2595,6 @@ class MatchService {
       .first()
     const tenant = await Database.table('users').where('id', tenantId).first()
     if (buddy) {
-      if (buddy.status !== BUDDY_STATUS_ACCEPTED) {
-      }
       await Database.table('buddies')
         .update({ status: BUDDY_STATUS_ACCEPTED })
         .where({ user_id: landlordId, tenant_id: tenantId })
@@ -3401,6 +3400,9 @@ class MatchService {
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate?.id || params?.estate_id])
       })
+      .leftJoin({ _n: 'notes' }, function () {
+        this.on('_n.about_id', 'tenants.user_id').on('_n.writer_id', estate.user_id)
+      })
       .orderBy('tenants.id', 'ASC')
       .orderBy('_m.updated_at', 'DESC')
 
@@ -3660,7 +3662,14 @@ class MatchService {
         q.whereNot('status', STATUS_DELETE)
       })
       .select(Database.raw(`DISTINCT ON ( "tenants"."id") "tenants"."id"`))
-
+      .select(
+        Database.raw(`
+        case when _n.note is null then null else json_build_object(
+          'note', _n.note,
+          'created_at', _n.created_at,
+          'updated_at', _n.updated_at
+      ) end as note`)
+      )
       .select([
         'tenants.*',
         Database.raw(
@@ -4764,11 +4773,21 @@ class MatchService {
   }
 
   static async requestTenantToShareProfile(prospectId, landlordId, date, estateId) {
-    const visitDate = moment.utc(date, DATE_FORMAT).format(DATE_FORMAT)
+    const match = await Match.query()
+      .where('user_id', prospectId)
+      .where('estate_id', estateId)
+      .first()
+    if (!match) {
+      throw new AppException('Prospect and estate are not matched.')
+    }
+    if (match.share) {
+      throw new AppException('Prospect already shares his profile.')
+    }
+    const visitDate = moment.utc(date).format(DAY_FORMAT)
     const getVisit = await Visit.query()
       .where({ user_id: prospectId })
       .where({ estate_id: estateId })
-      .where({ date: visitDate })
+      .where(Database.raw(`to_char("date", '${DAY_FORMAT}') = '${visitDate}'`))
       .fetch()
 
     const visit = getVisit.toJSON()
@@ -4788,28 +4807,35 @@ class MatchService {
 
     const estate = (await EstateService.getMatchEstate(estateId, landlordId)).toJSON()
 
-    const address = generateAddress({
-      street: estate?.street,
-      house_number: estate?.house_number,
-      zip: estate?.postcode,
-      city: estate?.city,
-      country: estate?.country
-    })
-
     const prospectUser = await User.query().where('id', prospectId).first()
     const landlordUser = await User.query().where('id', landlordId).first()
-    const landlord = `${landlordUser?.firstname} ${landlordUser?.secondname}`
+    const landlord = `${landlordUser?.firstname ?? ''} ${landlordUser?.secondname ?? ''}`
 
     await NoticeService.notifyTenantByLandlordToShareProfile(
       prospectId,
       landlord,
-      address,
-      visitDate
+      estate,
+      visitDate,
+      landlordUser?.avatar
     )
 
-    const shareLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}/profile/request?landlord=${landlord}&address=${address}&date=${visitDate}&estate_id=${estate.id}`
-    )
+    const deepLink = new URL(`${process.env.DEEP_LINK}/profile/request`)
+
+    // Object destructuring for cleaner code
+    const { street, house_number, postcode, city, country } = estate
+
+    // Append query parameters
+    deepLink.searchParams.append('landlord', landlord)
+    deepLink.searchParams.append('street', street)
+    deepLink.searchParams.append('house_number', house_number)
+    deepLink.searchParams.append('postcode', postcode)
+    deepLink.searchParams.append('city', city)
+    deepLink.searchParams.append('country', country)
+    deepLink.searchParams.append('date', visitDate)
+    deepLink.searchParams.append('estate_id', estate.id)
+    deepLink.searchParams.append('landlord_logo', landlordUser?.avatar)
+
+    const shareLink = deepLink.toString()
 
     MailService.sendRequestToTenantForShareProfile({
       prospectEmail: prospectUser?.email,
@@ -4826,6 +4852,11 @@ class MatchService {
         user_id: prospectId,
         estate_id: estateId
       })
+    return {
+      estate_id: estateId,
+      user_id: prospectId,
+      profile_status: LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
+    }
   }
 
   static async prospectRespondToProfileSharingRequest(userId, estateId, profileStatus) {
