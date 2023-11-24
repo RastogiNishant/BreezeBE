@@ -115,12 +115,10 @@ class UtilityController {
 
     let estate = await EstateService.getByIdWithDetail(estateId)
     estate = estate.toJSON()
-    estate = estateSync.composeEstate(estate)
-    estate.title = title ?? estate.title
-    estate.description = description ?? estate.description
-
     const ret = await estateSync.updateEstate({
       estate,
+      titleOverride: title ?? estate.title,
+      descriptionOverride: description ?? estate.description,
       contactId: credentials.estate_sync_contact_id,
       propertyId: listing.estate_sync_property_id
     })
