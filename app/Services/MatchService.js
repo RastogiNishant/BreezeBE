@@ -3400,7 +3400,7 @@ class MatchService {
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate?.id || params?.estate_id])
       })
-      .innerJoin({ _n: 'notes' }, function () {
+      .leftJoin({ _n: 'notes' }, function () {
         this.on('_n.about_id', 'tenants.user_id').on('_n.writer_id', estate.user_id)
       })
       .orderBy('tenants.id', 'ASC')
@@ -3663,11 +3663,12 @@ class MatchService {
       })
       .select(Database.raw(`DISTINCT ON ( "tenants"."id") "tenants"."id"`))
       .select(
-        Database.raw(`json_build_object(
-        'note', _n.note,
-        'created_at', _n.created_at,
-        'updated_at', _n.updated_at
-      ) as note`)
+        Database.raw(`
+        case when _n.note is null then null else json_build_object(
+          'note', _n.note,
+          'created_at', _n.created_at,
+          'updated_at', _n.updated_at
+      ) end as note`)
       )
       .select([
         'tenants.*',
