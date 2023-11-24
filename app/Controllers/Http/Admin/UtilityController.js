@@ -18,6 +18,10 @@ const Database = use('Database')
 const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const MarketPlaceService = use('App/Services/MarketPlaceService')
 const EstateService = use('App/Services/EstateService')
+const EstateSyncListing = use('App/Models/EstateSyncListing')
+const EstateSyncCredential = use('App/Models/EstateSyncCredential')
+const { ESTATE_SYNC_LISTING_STATUS_POSTED, ESTATE_SYNC_LISTING_STATUS_PUBLISHED } =
+  use('App/constants')
 
 class UtilityController {
   async uploadContactRequest({ request, response }) {
@@ -97,13 +101,33 @@ class UtilityController {
 
   async updateEstateSyncProperty({ request, response }) {
     const { estateId, title, description } = request.all()
+    // check if this estate is currently published to estateSync
+    const listing = await EstateSyncListing.query()
+      .where('estate_id', estateId)
+      .whereIn('status', [ESTATE_SYNC_LISTING_STATUS_POSTED, ESTATE_SYNC_LISTING_STATUS_PUBLISHED])
+      .first()
+    if (!listing) {
+      throw new HttpException('This property is NOT posted to EstateSync')
+    }
+    const credentials = await EstateSyncCredential.query().where('type', 'breeze').first()
     const EstateSync = use('App/Classes/EstateSync')
-    const estateSync = new EstateSync()
+    const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
 
     let estate = await EstateService.getByIdWithDetail(estateId)
     estate = estate.toJSON()
     estate = estateSync.composeEstate(estate)
-    return response.res({ estateId, estate })
+    estate.title = title ?? estate.title
+    estate.description = description ?? estate.description
+
+    const ret = await estateSync.updateEstate({
+      estate,
+      contactId: credentials.estate_sync_contact_id,
+      propertyId: listing.estate_sync_property_id
+    })
+    if (ret.success) {
+      return response.res({ data: ret.data })
+    }
+    return response.res({ success: false, data: ret?.data || null })
   }
 }
 
