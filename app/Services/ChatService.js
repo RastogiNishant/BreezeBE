@@ -358,6 +358,7 @@ class ChatService {
       .select(
         'tasks.id as task_id',
         'tasks.unread_role',
+        'tasks.unread_count',
         'estates.id as estate_id',
         'estates.property_id',
         'tasks.urgency'
@@ -365,6 +366,7 @@ class ChatService {
       .innerJoin('estates', function () {
         this.on('estates.id', 'tasks.estate_id').onNotIn('estates.status', [STATUS_DELETE])
       })
+      .where('tasks.unread_count', '>', 0)
       .whereIn('tasks.status', [TASK_STATUS_NEW, TASK_STATUS_INPROGRESS])
 
     if (role === ROLE_LANDLORD) {
@@ -376,17 +378,24 @@ class ChatService {
 
     taskEstates = await query.fetch()
     taskEstates = taskEstates.toJSON() || []
+
     await Promise.map(
       taskEstates,
       async (task, index) => {
-        const unreadMessages = await Chat.query()
+        const unreadMessagesQuery = Chat.query()
           .select(
             'chats.id',
             'chats.text as message',
             Database.raw(`to_char(chats.created_at, '${ISO_DATE_FORMAT}') as created_at`),
             Database.raw(`_u.sender`)
           )
-          .innerJoin(
+          .where('chats.sender_id', '<>', userId)
+          .where('chats.task_id', task.task_id)
+          .where('chats.type', '<>', 'last-read-marker')
+          .orderBy('chats.created_at', 'desc')
+          .limit(task.unread_count)
+        if (role === ROLE_USER) {
+          unreadMessagesQuery.innerJoin(
             Database.raw(`
               (select 
                 users.id,
@@ -399,20 +408,49 @@ class ChatService {
             '_u.id',
             'chats.sender_id'
           )
-          .where('chats.sender_id', '<>', userId)
-          .where('chats.task_id', task.task_id)
-          .where(
-            'chats.id',
-            '>',
+        } else if (role === ROLE_LANDLORD) {
+          unreadMessagesQuery.innerJoin(
             Database.raw(
-              `(select id from chats where type='last-read-marker' and task_id='${task.task_id}' and sender_id='${userId}')`
-            )
+              `
+            (select users.id, case when users.firstname is not null then 
+              json_build_object(
+                'id', users.id,
+                'firstname', users.firstname,
+                'secondname', users.secondname,
+                'avatar', users.avatar
+              )
+              when _m.firstname is not null then
+              json_build_object(
+                'id', users.id,
+                'firstname', _m.firstname,
+                'secondname', _m.secondname,
+                'avatar', users.avatar
+              )
+              else
+              json_build_object(
+                'id', users.id,
+                'firstname', concat('user-', users.id),
+                'secondname', _m.secondname,
+                'avatar', users.avatar
+              )
+              end
+              as sender
+              from users left join
+              (select 
+                distinct on (user_id) user_id,
+                firstname,
+                secondname
+              from members order by user_id asc) as _m
+              on _m.user_id=users.id
+              )
+            as _u`
+            ),
+            '_u.id',
+            'chats.sender_id'
           )
-          .where('chats.type', '<>', 'last-read-marker')
-          .orderBy('chats.created_at', 'asc')
-          .fetch()
-        taskEstates[index].unread_messages = unreadMessages.toJSON() || []
-        taskEstates[index].unread_count = (unreadMessages.toJSON() || []).length
+        }
+        const unreadMessages = await unreadMessagesQuery.fetch()
+        taskEstates[index].unread_messages = (unreadMessages.toJSON() || []).reverse()
       },
       { concurrency: 1 }
     )
