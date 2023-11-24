@@ -149,39 +149,37 @@ class ImageService {
     const images = await ImageService.getAll()
     await Promise.all(
       images.map(async (image) => {
-        {
-          try {
-            const url = File.getPublicUrl(image.url)
-            if (image.url) {
-              const url_strs = image.url.split('/')
-              if (url_strs.length === 2) {
-                const fileName = url_strs[1]
-                const isValidFormat = File.SUPPORTED_IMAGE_FORMAT.some((format) => {
-                  return fileName.includes(format)
-                })
+        try {
+          const url = File.getPublicUrl(image.url)
+          if (image.url) {
+            const url_strs = image.url.split('/')
+            if (url_strs.length === 2) {
+              const fileName = url_strs[1]
+              const isValidFormat = File.SUPPORTED_IMAGE_FORMAT.some((format) => {
+                return fileName.includes(format)
+              })
 
-                if (isValidFormat) {
-                  const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
-                  const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
-                  if (image.disk === 's3public') {
-                    options.ACL = 'public-read'
-                  }
-
-                  await File.saveThumbnailToDisk({
-                    image: url,
-                    fileName,
-                    dir: `${url_strs[0]}`,
-                    options,
-                    disk: image.disk || 's3public',
-                    isUri: true
-                  })
+              if (isValidFormat) {
+                const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
+                const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
+                if (image.disk === 's3public') {
+                  options.ACL = 'public-read'
                 }
+
+                await File.saveThumbnailToDisk({
+                  image: url,
+                  fileName,
+                  dir: `${url_strs[0]}`,
+                  options,
+                  disk: image.disk || 's3public',
+                  isUri: true
+                })
               }
             }
-          } catch (e) {
-            console.log('Creating thumbnail Error', e)
-            throw new HttpException('Creating thumbnail HttpException Error', e)
           }
+        } catch (e) {
+          console.log('Creating thumbnail Error', e)
+          throw new HttpException('Creating thumbnail HttpException Error', e)
         }
       })
     )

@@ -1329,8 +1329,8 @@ class UserService {
     user.role === ROLE_USER
       ? delete data.landlord_visibility
       : user.role === ROLE_LANDLORD
-      ? delete data.prospect_visibility
-      : data
+        ? delete data.prospect_visibility
+        : data
 
     const trx = await Database.beginTransaction()
     delete data.password

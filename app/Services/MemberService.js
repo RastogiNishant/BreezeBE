@@ -292,8 +292,8 @@ class MemberService {
             minors_count > 0
               ? FAMILY_STATUS_WITH_CHILD
               : members_count < 2
-              ? FAMILY_STATUS_SINGLE
-              : FAMILY_STATUS_NO_CHILD
+                ? FAMILY_STATUS_SINGLE
+                : FAMILY_STATUS_NO_CHILD
 
           const updatingFields = {
             members_count,
@@ -830,36 +830,34 @@ class MemberService {
 
     await Promise.all(
       incomeProofs.map(async (incomeProof) => {
-        {
-          try {
-            const url = await File.getProtectedUrl(incomeProof.file)
-            if (incomeProof.file) {
-              const url_strs = incomeProof.file.split('/')
-              if (url_strs.length === 2) {
-                const fileName = url_strs[1]
-                const isValidFormat = File.SUPPORTED_IMAGE_FORMAT.some((format) => {
-                  return fileName.includes(format)
-                })
+        try {
+          const url = await File.getProtectedUrl(incomeProof.file)
+          if (incomeProof.file) {
+            const url_strs = incomeProof.file.split('/')
+            if (url_strs.length === 2) {
+              const fileName = url_strs[1]
+              const isValidFormat = File.SUPPORTED_IMAGE_FORMAT.some((format) => {
+                return fileName.includes(format)
+              })
 
-                if (isValidFormat) {
-                  const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
-                  const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
-                  await File.saveThumbnailToDisk({
-                    image: url,
-                    fileName,
-                    dir: `${url_strs[0]}`,
-                    options,
-                    disk: 's3',
-                    isUri: true
-                  })
-                  console.log('Income Proof saved', url)
-                }
+              if (isValidFormat) {
+                const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
+                const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
+                await File.saveThumbnailToDisk({
+                  image: url,
+                  fileName,
+                  dir: `${url_strs[0]}`,
+                  options,
+                  disk: 's3',
+                  isUri: true
+                })
+                console.log('Income Proof saved', url)
               }
             }
-          } catch (e) {
-            console.log('Creating thumbnail Error', e)
-            throw new HttpException('Creating thumbnail HttpException Error', e)
           }
+        } catch (e) {
+          console.log('Creating thumbnail Error', e)
+          throw new HttpException('Creating thumbnail HttpException Error', e)
         }
       })
     )
