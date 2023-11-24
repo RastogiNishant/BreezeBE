@@ -442,16 +442,19 @@ class EstateSync {
     }
   }
 
-  async updateEstate(
-    { type = 'apartmentRent', estate, contactId = '', propertyId },
-    composeEstate = false
-  ) {
+  async updateEstate({
+    type = 'apartmentRent',
+    estate,
+    contactId = '',
+    propertyId,
+    titleOverride,
+    descriptionOverride
+  }) {
     try {
-      let fields = estate
-      if (composeEstate) {
-        fields = this.composeEstate(estate)
-      }
+      const fields = this.composeEstate(estate)
       const attachments = this.composeAttachments(estate)
+      fields.title = titleOverride ?? fields.title
+      fields.description = descriptionOverride ?? fields.description
       const body = {
         type,
         fields,
