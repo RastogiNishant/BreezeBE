@@ -262,7 +262,11 @@ class EstateSync {
     if (!deposit || !net_rent) {
       return ''
     }
-    const num = deposit / net_rent
+    let num = deposit / net_rent
+    if (num - Math.floor(num) !== 0) {
+      // this number has decimal place
+      num = Math.round(num * 10) / 10
+    }
     return `${num}` + l.get(`landlord.property.lease_price.deposit_in_monthly_rents`, LANG_DE)
   }
 
@@ -270,7 +274,7 @@ class EstateSync {
     return last_modernization ? +moment(last_modernization).format('Y') || 0 : 0
   }
 
-  composeAttachments({ cover, rooms, files }) {
+  composeAttachments({ cover, rooms = [], files = [] }) {
     let attachments = []
     if (cover) {
       attachments = EstateSync.addAttachment(cover, attachments)
@@ -426,6 +430,45 @@ class EstateSync {
         `EstateSync.postEstate: ERROR ` + JSON.stringify(err),
         'barudo@gmail.com'
       )
+      if (err?.response?.data) {
+        return {
+          success: false,
+          data: err.response.data
+        }
+      }
+      return {
+        success: false
+      }
+    }
+  }
+
+  async updateEstate(
+    { type = 'apartmentRent', estate, contactId = '', propertyId },
+    composeEstate = false
+  ) {
+    try {
+      let fields = estate
+      if (composeEstate) {
+        fields = this.composeEstate(estate)
+      }
+      const attachments = this.composeAttachments(estate)
+      const body = {
+        type,
+        fields,
+        attachments
+      }
+      if (contactId) {
+        body.contactId = contactId
+      }
+      const ret = await axios.put(`${this.baseUrl}/properties/${propertyId}`, body, {
+        timeout: 5000
+      })
+      return {
+        success: true,
+        data: ret.data
+      }
+    } catch (err) {
+      console.log(err)
       if (err?.response?.data) {
         return {
           success: false,
