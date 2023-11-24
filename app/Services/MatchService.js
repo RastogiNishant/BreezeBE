@@ -1048,9 +1048,9 @@ class MatchService {
   }
 
   static async upsertBulkMatches(matches, trx = null) {
-    let queries = `INSERT INTO matches 
-                  ( user_id, estate_id, percent, status, landlord_score, prospect_score, status_at )    
-                  VALUES 
+    let queries = `INSERT INTO matches
+                  ( user_id, estate_id, percent, status, landlord_score, prospect_score, status_at )
+                  VALUES
                 `
     queries = (matches || []).reduce(
       (q, current, index) =>
@@ -1060,7 +1060,7 @@ class MatchService {
       queries
     )
 
-    queries += ` ON CONFLICT ( user_id, estate_id ) 
+    queries += ` ON CONFLICT ( user_id, estate_id )
                   DO UPDATE SET percent = EXCLUDED.percent, landlord_score = EXCLUDED.landlord_score,
                   prospect_score = EXCLUDED.prospect_score, status = EXCLUDED.status, status_at = EXCLUDED.status_at
                 `
@@ -3510,7 +3510,7 @@ class MatchService {
                   income_proofs
                 on
                   income_proofs.income_id = incomes.id and income_proofs.status = ${STATUS_ACTIVE}
-                where incomes.status = ${STATUS_ACTIVE}  
+                where incomes.status = ${STATUS_ACTIVE}
                 group by incomes.id) as _mip
               on
                 _mip.id=incomes.id and incomes.status = ${STATUS_ACTIVE}
@@ -3751,7 +3751,8 @@ class MatchService {
       '_m.status as status',
       '_m.user_id',
       '_mf.id_verified',
-      '_m.final_match_date'
+      '_m.final_match_date',
+      'total_income as income'
     )
 
     return query
@@ -3892,8 +3893,8 @@ class MatchService {
       const startOf = Math.min(+start, +end)
       const endOf = Math.max(+start, +end)
       return Database.raw(
-        `UPDATE matches SET ${field} = ${field} - ? 
-          WHERE ${isTenant ? 'user_id' : 'estate_id'} = ? 
+        `UPDATE matches SET ${field} = ${field} - ?
+          WHERE ${isTenant ? 'user_id' : 'estate_id'} = ?
             AND ( ${field} BETWEEN ? AND ? )
             AND status = ?
             `,
@@ -4190,7 +4191,7 @@ class MatchService {
         Database.raw(`
         (select estates.id as estate_id,
           case when estates.cert_category is null then
-            null else 
+            null else
             json_build_object(
               'income_level', estates.cert_category
             )
@@ -4238,7 +4239,7 @@ class MatchService {
         'transfer_budget_min',
         'transfer_budget_max',
         Database.raw(
-          `case 
+          `case
             when _me.total_income is not null and _me.total_income > 0
             then (100*budget_max/_me.total_income)
             else 0
@@ -4387,7 +4388,7 @@ class MatchService {
     if (!isEmpty(matchScores)) {
       const insertQuery = Database.query().into('matches').insert(matchScores).toString()
       await Database.raw(
-        `${insertQuery} ON CONFLICT (user_id, estate_id) 
+        `${insertQuery} ON CONFLICT (user_id, estate_id)
           DO UPDATE SET "percent" = EXCLUDED.percent, "landlord_score" = EXCLUDED.landlord_score, "prospect_score" = EXCLUDED.prospect_score`
       ).transacting(trx)
     }
