@@ -2970,9 +2970,7 @@
     "middle": [
       "guest",
       "valid:ResetPasswordRequest",
-      "UserWithEmailExists",
-      "agreement",
-      "plan"
+      "UserWithEmailExists"
     ],
     "handler": "AccountController.sendCodeForgotPassword"
   },
@@ -2983,9 +2981,7 @@
     ],
     "middle": [
       "guest",
-      "valid:ResetPasswordConfirm",
-      "agreement",
-      "plan"
+      "valid:ResetPasswordConfirm"
     ],
     "handler": "AccountController.setPasswordForgotPassword"
   },
