@@ -1,29 +1,30 @@
-'use strict'
+import { get } from 'lodash'
+import { APP_ROLES } from '../constants'
+import * as constants from '../constants'
+
+// @ts-expect-error
+const { ERROR_AGREEMENT_CONFIRM, ERROR_TERMS_CONFIRM } = constants
 
 const Static = use('Static')
 const HttpException = use('App/Exceptions/HttpException')
-const { get } = require('lodash')
-const Admin = use('App/Models/Admin')
-
-const { ERROR_AGREEMENT_CONFIRM, ERROR_TERMS_CONFIRM, ROLE_ADMIN } = require('../constants')
 
 class Agreement {
-  async handle({ auth }, next) {
+  async handle ({ auth }, next: Function): Promise<any> {
     // Skip anonymous routes and admin routes check
-    if (!auth || !auth.user || auth.user.role === ROLE_ADMIN || auth.user instanceof Admin) {
+    if (auth?.user === undefined || auth.user.role === APP_ROLES.ADMIN) {
       return next()
     }
 
-    const { terms_id, agreements_id } = auth.user
+    const { terms_id: termsId, agreements_id: agreementsId } = auth.user
     const data = Static.getData()
     const appAgreementId = get(data, 'agreement.id')
     const appTermsId = get(data, 'terms.id')
 
-    if ((appAgreementId || 0) > (agreements_id || 0)) {
+    if ((appAgreementId ?? 0) > (agreementsId ?? 0)) {
       throw new HttpException('User agreement confirmation need', 412, ERROR_AGREEMENT_CONFIRM)
     }
 
-    if ((appTermsId || 0) > (terms_id || 0)) {
+    if ((appTermsId ?? 0) > (termsId ?? 0)) {
       throw new HttpException('User agreement confirmation need', 412, ERROR_TERMS_CONFIRM)
     }
 
