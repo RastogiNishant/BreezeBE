@@ -126,7 +126,7 @@ const {
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
   MATCH_STATUS_INVITE,
   NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID,
-  NOTICE_TYPE_PROSPECT_SHARE_PROFILE
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE
 } = require('../constants')
 
 class NoticeService {
@@ -1067,7 +1067,7 @@ class NoticeService {
         return NotificationsService.prospectFillUpProfileReminder([notice])
       case NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED:
         return NotificationsService.finalConfirmRequestExpired([notice])
-      case NOTICE_TYPE_PROSPECT_SHARE_PROFILE:
+      case NOTICE_TYPE_PROSPECT_REQUEST_PROFILE:
         return NotificationsService.prospectSendCode([notice])
     }
   }
@@ -1500,6 +1500,7 @@ class NoticeService {
       type: NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID,
       data: {
         landlord,
+        estate_id: estate?.id,
         street: estate?.street,
         house_number: estate?.house_number,
         pinCode: estate?.postcode,
