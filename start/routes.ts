@@ -429,19 +429,6 @@ Route.post('/api/v1/image/createthumbnail', 'ImageController.tryCreateThumbnail'
 ])
 
 Route.get('/populate_mautic_db/:secure_key', 'MauticController.populateMauticDB')
-// Force add named middleware to all requests
-const excludeRoutes = ['/api/v1/terms', '/api/v1/me', '/api/v1/logout', '/:key']
-Route.list().forEach((r: { middlewareList: any[], _route: string }) => {
-  if (
-    Array.isArray(r.middlewareList) &&
-    !excludeRoutes.includes(r._route) &&
-    !r._route.includes('/administration')
-  ) {
-    if (r.middlewareList.length > 0) {
-      r.middlewareList = [...r.middlewareList, 'agreement', 'plan']
-    }
-  }
-})
 
 Route.post('/webhooks/estate-sync', 'WebhookController.estateSync')
 
@@ -493,6 +480,38 @@ Route.group(() => {
 Route.get('/api/v1/cities', 'CommonController.searchCities').middleware(['valid:SearchCity'])
 Route.get('/api/v1/countries', 'CommonController.getAvailableCountries')
 Route.get('/api/v1/offers', 'CommonController.getOffers').middleware(['valid:GetOffers'])
+
+// force agreement and plan middleware to each request needed
+const ignoreRoutes = [
+  '/api/v1/terms',
+  '/api/v1/me',
+  '/api/v1/logout',
+  /\/api\/v1\/stripe\/.*/,
+  /\/api\/v1\/marketplace\/.*/,
+  '/:key'
+]
+const matchIgnoreRoutes = (route: string): boolean => {
+  return ignoreRoutes.findIndex((ignoreRoute) => route.match(ignoreRoute)) >= 0
+}
+// figure out if we need a agreement and plan middleware
+// we do need if a user like jwt, jwtLandlord or jwtHousekeeper is required
+const needsTermsMiddleware = (middle: string[]): boolean => {
+  return (
+    middle.findIndex(
+      (middle) => middle.startsWith('auth:jwt') && middle !== 'auth:jwtAdministrator'
+    ) > -1
+  )
+}
+
+Route.list().forEach((r: { middlewareList: any[], _route: string }) => {
+  if (
+    Array.isArray(r.middlewareList) &&
+    needsTermsMiddleware(r.middlewareList) &&
+    !matchIgnoreRoutes(r._route)
+  ) {
+    r.middlewareList = [...r.middlewareList, 'agreement', 'plan']
+  }
+})
 
 const routeConfig = [...Route.list()]
   .sort((a, b) => (a._route > b._route ? 1 : b._route > a._route ? -1 : a.verbs > b.verbs ? 1 : -1))
