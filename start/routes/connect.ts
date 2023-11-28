@@ -1,6 +1,6 @@
-import { HTTP_METHODS } from './_helper'
+import { HTTP_METHODS, Routes } from './_helper'
 
-const connectLandlordRoutes = {
+const connectLandlordRoutes: Routes = {
   '/task/estate/:id/counts': {
     [HTTP_METHODS.GET]: {
       controller: 'TaskController.getTaskCountsByEstate',
