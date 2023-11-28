@@ -1,3 +1,4 @@
+/* eslint-disable no-case-declarations */
 'use strict'
 
 const Logger = use('Logger')
@@ -6,14 +7,18 @@ const File = use('App/Classes/File')
 const MatchService = use('App/Services/MatchService')
 const Estate = use('App/Models/Estate')
 const Admin = use('App/Models/Admin')
+const User = use('App/Models/User')
+const Match = use('App/Models/Match')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const EstateService = use('App/Services/EstateService')
 const HttpException = use('App/Exceptions/HttpException')
 const { ValidationException } = use('Validator')
 const MailService = use('App/Services/MailService')
-const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith } = require('lodash')
+const { reduce, isEmpty, isNull, uniqBy, uniq, orderBy, uniqWith, intersection } = require('lodash')
 const moment = require('moment')
 const Event = use('Event')
 const NoticeService = use('App/Services/NoticeService')
+const WebSocket = use('App/Classes/Websocket')
 
 const {
   ROLE_LANDLORD,
@@ -49,7 +54,9 @@ const {
   LETTING_STATUS_VACANCY,
   LETTING_STATUS_NEW_RENOVATED,
   STATUS_OFFLINE_ACTIVE,
-  LOG_TYPE_REQUEST_PROFILE
+  LOG_TYPE_REQUEST_PROFILE,
+  STATUS_DELETE,
+  DEFAULT_LANG
 } = require('../../constants')
 const { createDynamicLink } = require('../../Libs/utils')
 const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
@@ -57,7 +64,12 @@ const ThirdPartyOfferService = require('../../Services/ThirdPartyOfferService')
 const { logEvent } = require('../../Services/TrackingService')
 const VisitService = require('../../Services/VisitService')
 const {
-  exceptions: { UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE },
+  exceptions: {
+    UNSECURE_PROFILE_SHARE,
+    NO_TASK_FOUND,
+    ERROR_MATCH_COMMIT_DOUBLE,
+    ESTATE_NOT_EXISTS
+  },
   exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE, ERROR_MATCH_COMMIT_DOUBLE_CODE }
 } = require('../../exceptions')
 const TaskService = use('App/Services/TaskService')
@@ -264,7 +276,6 @@ class MatchController {
             `${process.env.DEEP_LINK}?type=tenantinvitation&user_id=${tenant_id}&estate_id=${estate_id}`
           )
           MailService.sendInvitationToTenant(currentTenant.email, shortLink)
-        } else {
         }
         response.res(true)
       }
@@ -958,7 +969,9 @@ class MatchController {
       'email',
       'phone',
       'last_address',
-      'is_activated'
+      'is_activated',
+      'profile_status',
+      'note'
     ]
 
     const matchCount = await MatchService.getCountLandlordMatchesWithFilterQuery(
@@ -1010,22 +1023,45 @@ class MatchController {
     )
     data.data = data.data.sort(matchSortFunction)
 
-    const contact_request_count = (
-      await require('../../Services/MarketPlaceService')
-        .getPendingKnockRequestCountQuery({
-          estate_id
-        })
-        .count()
-    )?.[0]?.count
+    let contact_request_count
+    let contactRequestQuery
+    if (estate.build_id && estate.unit_category_id) {
+      contactRequestQuery =
+        await require('../../Services/BuildingService').getContactRequestsCountByBuilding(
+          estate.build_id
+        )
+      contact_request_count =
+        contactRequestQuery.find((cr) => +cr.unit_category_id === +estate.unit_category_id)
+          ?.contact_requests_count || 0
+    } else {
+      contact_request_count = (
+        await require('../../Services/MarketPlaceService')
+          .getPendingKnockRequestCountQuery({
+            estate_id
+          })
+          .count()
+      )?.[0]?.count
+    }
 
     const contactRequestSortFunction = (a, b) => b.income - a.income
-    const contact_requests_data = (
-      await require('../../Services/MarketPlaceService')
-        .getPendingKnockRequestQuery({
-          estate_id
-        })
-        .paginate(page, limit || 10)
-    ).toJSON()
+    let contact_requests_data = {}
+    if (estate.build_id && estate.unit_category_id) {
+      const contactRequestDataQuery =
+        await require('../../Services/BuildingService').getContactRequestsByBuilding(
+          estate.build_id
+        )
+      contact_requests_data.data =
+        contactRequestDataQuery.find((cr) => +cr.unit_category_id === +estate.unit_category_id)
+          ?.contact_requests || []
+    } else {
+      contact_requests_data = (
+        await require('../../Services/MarketPlaceService')
+          .getPendingKnockRequestQuery({
+            estate_id
+          })
+          .paginate(page, limit || 10)
+      ).toJSON()
+    }
     contact_requests_data.data = contact_requests_data.data.sort(contactRequestSortFunction)
 
     const contact_requests = {
@@ -1224,15 +1260,61 @@ class MatchController {
     })
   }
 
-  async notifyOutsideProspectToFillUpProfile({ request, auth, response }) {
-    const { id } = request.all()
+  async notifyProspectsToFillUpProfile({ request, auth, response }) {
+    const { emails, estate_id } = request.all()
     try {
-      await require('../../Services/MarketPlaceService').sendManualReminder({
-        contactRequestIds: id,
-        landlordId: auth.user.id,
-        lang: auth.user.lang
-      })
-      response.res(true)
+      const estate = await Estate.query()
+        .whereNot('status', STATUS_DELETE)
+        .where('id', estate_id)
+        .where('user_id', auth.user.id)
+        .first()
+      if (!estate) {
+        throw new HttpException('Estate not found.')
+      }
+      const matches = await Match.query()
+        .select('email')
+        .innerJoin('users', 'users.id', 'matches.user_id')
+        .innerJoin('tenants', 'tenants.user_id', 'users.id')
+        .where('matches.status', '>', MATCH_STATUS_NEW)
+        // we are allowed only to send to tenants that are NOT Activated
+        .whereNot('tenants.status', STATUS_ACTIVE)
+        .where('matches.estate_id', estate_id)
+        .fetch()
+      let validEmails = (matches.toJSON() || []).map((match) => match.email)
+      let contactRequests
+      if (estate.unit_category_id) {
+        // estate belongs to a category, we should fetch emails of contact requests belonging
+        // to the category representative
+        contactRequests = await EstateSyncContactRequest.query()
+          .select('email')
+          .innerJoin('estates', 'estate_sync_contact_requests.estate_id', 'estates.id')
+          .whereIn(
+            'estates.id',
+            Database.raw(
+              `(select id from estates where unit_category_id in (
+                select unit_category_id from estates where id='${estate_id}')
+              )`
+            )
+          )
+          .fetch()
+      } else {
+        contactRequests = await EstateSyncContactRequest.query()
+          .select('email')
+          .where('estate_id', estate_id)
+          .fetch()
+      }
+      validEmails = [
+        ...validEmails,
+        ...(contactRequests.toJSON() || []).map((contactRequest) => contactRequest.email)
+      ]
+      const recipientEmails = intersection(emails, validEmails)
+      // we send only to valid emails
+      if (recipientEmails.length) {
+        await MailService.sendToProspectForFillUpProfile({
+          email: recipientEmails
+        })
+      }
+      response.res({ emails_sent: recipientEmails.length })
     } catch (e) {
       throw new HttpException(e.message, 400)
     }
@@ -1419,9 +1501,14 @@ class MatchController {
     const userId = auth.user.id
     const { prospectId, date, estateId } = request.all()
     try {
-      await MatchService.requestTenantToShareProfile(prospectId, userId, date, estateId)
+      const result = await MatchService.requestTenantToShareProfile(
+        prospectId,
+        userId,
+        date,
+        estateId
+      )
       logEvent(request, LOG_TYPE_REQUEST_PROFILE, userId, { prospectId, role: ROLE_USER }, false)
-      return response.res(true)
+      return response.res(result)
     } catch (e) {
       Logger.error(e)
       if (e.name === 'AppException') {
@@ -1442,6 +1529,136 @@ class MatchController {
         throw new HttpException(e.message, 400)
       }
       throw e
+    }
+  }
+
+  async contactMultiple({ request, auth, response }) {
+    const { mode, estate_id, recipients, message } = request.all()
+    const estate = await Estate.query()
+      .whereNot('status', STATUS_DELETE)
+      .where('id', estate_id)
+      .where('user_id', auth.user.id)
+      .first()
+    if (!estate) {
+      throw new HttpException(ESTATE_NOT_EXISTS, 404)
+    }
+    switch (mode) {
+      case 'chat':
+        const trx = await Database.beginTransaction()
+        try {
+          await Promise.map(
+            recipients,
+            async (recipientId) => {
+              const task = await TaskService.getTaskById({
+                estate_id,
+                prospect_id: recipientId,
+                user: auth.user
+              })
+              if (!task) {
+                throw new HttpException(NO_TASK_FOUND, 400)
+              }
+              const recipient = await User.query().where('id', recipientId).first()
+              const chat = await ChatService.save(
+                { message, user_id: auth.user.id, task_id: task.id },
+                trx
+              )
+              await TaskService.updateUnreadMessageCount(
+                { task_id: task.id, role: auth.user.role, chat_id: chat.id },
+                trx
+              )
+
+              const messageReceivedData = {
+                topic: `task:${estate_id}brz${task.id}`,
+                message,
+                urgency: task?.urgency,
+                estate_id,
+                user_id: recipient.id,
+                property_id: estate?.property_id,
+                sender: {
+                  id: auth.user.id,
+                  firstname: auth.user.firstname,
+                  secondname: auth.user.secondname,
+                  avatar: auth.user.avatar
+                }
+              }
+              // send to tenant:user_id
+              WebSocket.publishToTenant({
+                event: 'taskMessageReceived',
+                userId: recipient.id,
+                data: messageReceivedData
+              })
+              const data = {
+                message: {
+                  id: chat.id,
+                  message: chat.text,
+                  attachments: null,
+                  topic: `task:${estate_id}brz${task.id}`,
+                  dateTime: moment.utc(new Date()).format(),
+                  sender: {
+                    id: auth.user.id,
+                    firstname: auth.user.firstname,
+                    secondname: auth.user.secondname,
+                    avatar: auth.user.avatar
+                  }
+                },
+                sender: {
+                  userId: auth.user.id,
+                  firstname: auth.user.firstname,
+                  secondname: auth.user.secondname,
+                  avatar: auth.user.avatar
+                },
+                topic: `task:${estate_id}brz${task.id}`
+              }
+              // send to task:{estate_id}brz{task_id}
+              WebSocket.publishToTask({
+                event: 'message',
+                taskId: task.id,
+                estateId: estate_id,
+                data: {
+                  ...data,
+                  broadcast_all: true
+                }
+              })
+              // send to push notification and basic notification
+              NoticeService.notifyTaskMessageSent(recipient.id, chat.text, task.id, auth.user.role)
+              // send to email
+              await MailService.sendToProspectThatLandlordSentMessage({
+                email: recipient.email,
+                message: chat.text,
+                recipient,
+                lang: recipient.lang || DEFAULT_LANG,
+                estate_id,
+                estate,
+                task_id: task.id,
+                type: task.type,
+                topic: `task:${estate_id}brz${task.id}`
+              })
+            },
+            { concurrency: 1 }
+          )
+          await trx.commit()
+          return response.res(true)
+        } catch (err) {
+          console.log(err.message)
+          await trx.rollback()
+          throw new HttpException('Error sending chat.')
+        }
+      case 'email':
+        const users = await User.query().whereIn('id', recipients).fetch()
+        const email = (users.toJSON({ isOwner: true }) || []).map((user) => user.email)
+        if (email.length) {
+          await MailService.sendToProspectThatLandlordSentMessage(
+            {
+              email,
+              message,
+              estate_id,
+              estate,
+              lang: DEFAULT_LANG
+            },
+            'LANDLORD_SEND_MULTIPLE_MATCH_MESSAGE'
+          )
+        }
+        return response.res(true)
     }
   }
 }

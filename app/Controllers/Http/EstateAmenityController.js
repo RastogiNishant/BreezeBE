@@ -23,7 +23,7 @@ class EstateAmenityController {
   }
 
   async addBulk({ request, auth, response }) {
-    let { amenities, estate_id } = request.all()
+    const { amenities, estate_id } = request.all()
 
     try {
       await EstateService.hasPermission({ id: estate_id, user_id: auth.user.id })
@@ -35,7 +35,7 @@ class EstateAmenityController {
   }
 
   async add({ auth, request, response }) {
-    let { amenity, estate_id, type, option_id, location } = request.all()
+    const { amenity, estate_id, type, option_id, location } = request.all()
     let currentEstateAmenities = await Amenity.query()
       .where('status', STATUS_ACTIVE)
       .where('estate_id', estate_id)
@@ -44,12 +44,12 @@ class EstateAmenityController {
       .fetch()
     let sequence_order = 1
     currentEstateAmenities = currentEstateAmenities.toJSON()
-    let newEstateAmenity = new Amenity()
+    const newEstateAmenity = new Amenity()
     let newEstateAmenityId
     const trx = await Database.beginTransaction()
     try {
       if (type === 'custom_amenity') {
-        //we check if addition of custom amenities could be possible...
+        // we check if addition of custom amenities could be possible...
         let currentEstateCustomAmenities = await Amenity.query(trx)
           .where('status', STATUS_ACTIVE)
           .where('type', 'custom_amenity')
@@ -66,7 +66,7 @@ class EstateAmenityController {
         }
 
         if (currentEstateAmenities.length) {
-          //we place this custom_amenity at the top
+          // we place this custom_amenity at the top
           sequence_order = parseInt(currentEstateAmenities[0].sequence_order) + 1
         }
         newEstateAmenity.amenity = amenity
@@ -90,7 +90,7 @@ class EstateAmenityController {
         )
         newEstateAmenity.fill({
           added_by: auth.user.id,
-          sequence_order: 1, //we place an amenity type at the bottom of the list.
+          sequence_order: 1, // we place an amenity type at the bottom of the list.
           type: 'amenity',
           estate_id,
           option_id,
@@ -106,13 +106,13 @@ class EstateAmenityController {
       )
       await trx.commit()
 
-      //we return all amenities like getAll...
+      // we return all amenities like getAll...
       const amenities = await EstateAmenityService.getByEstate({ estate_id })
 
       return response.res({
         newEstateAmenityId,
         total: amenities.length,
-        amenities: amenities
+        amenities
       })
     } catch (err) {
       await trx.rollback()
@@ -138,7 +138,7 @@ class EstateAmenityController {
     try {
       switch (action) {
         case 'update':
-          //we can only update a custom_amenity. If you want to update an amenity. Just delete.
+          // we can only update a custom_amenity. If you want to update an amenity. Just delete.
           affectedRows = await Amenity.query()
             .where('id', id)
             .where('type', 'custom_amenity')

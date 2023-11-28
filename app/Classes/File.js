@@ -343,7 +343,7 @@ class File {
                   v.thumbnailFilePathName.length > 1
                     ? v.thumbnailFilePathName
                     : v.thumbnailFilePathName[0],
-                'format': v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0]
+                format: v.fileFormat.length > 1 ? v.fileFormat : v.fileFormat[0]
               }
             : n,
         {}

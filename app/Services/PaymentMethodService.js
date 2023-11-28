@@ -1,5 +1,6 @@
 // 'use strict'
 const PaymentMethod = use('App/Models/PaymentMethod')
+const AppException = use('App/Exceptions/AppException')
 
 class PaymentMethodService {
   /**
@@ -9,6 +10,7 @@ class PaymentMethodService {
     const payment = await PaymentMethod.createItem(paymentData)
     return { payment }
   }
+
   /**
    *s
    */
@@ -25,6 +27,7 @@ class PaymentMethodService {
 
     return paymentMethod
   }
+
   /**
    *
    */

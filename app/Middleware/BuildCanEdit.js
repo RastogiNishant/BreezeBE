@@ -27,7 +27,7 @@ class BuildCanEdit {
 
     const { id } = request.all()
 
-    if (!id && !estate_id) {
+    if (!id) {
       throw new HttpException(WRONG_PARAMS, 400)
     }
 

@@ -195,8 +195,30 @@ class MemberController {
     } catch (err) {
       throw new HttpException(err.message, 422)
     }
+
     const trx = await Database.beginTransaction()
     try {
+      const memberQuery = await Member.query()
+        .select(Database.raw(`distinct on (user_id) user_id, id`))
+        .where('id', id)
+        .orderBy('user_id', 'asc')
+        .first()
+      if (+memberQuery.user_id === +auth.user.id) {
+        // this is an edit of his own self
+        if (data.firstname || data.secondname) {
+          const userHasEmptyName = await User.query()
+            .where(Database.raw('firstname is null'))
+            .where('id', auth.user.id)
+            .first()
+          if (userHasEmptyName) {
+            await userHasEmptyName.updateItemWithTrx(
+              { firstname: data.firstname, secondname: data?.secondname || null },
+              trx
+            )
+          }
+        }
+      }
+
       if (files.passport) {
         const memberFile = new MemberFile()
         memberFile.merge({
@@ -524,7 +546,7 @@ class MemberController {
     }
   }
 
-  async removeInviteConnection({ request, auth, response }) { }
+  async removeInviteConnection({ request, auth, response }) {}
 
   async prepareHouseholdInvitationDetails({ auth, response }) {
     const userEmail = auth.user.email

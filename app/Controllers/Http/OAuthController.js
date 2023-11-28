@@ -114,7 +114,8 @@ class OAuthController {
   }
 
   async handleSignUp(request, payload, method) {
-    let { device_token, role, code, invite_type, data1, data2, ip, ip_based_info } = request.all()
+    const { device_token, role, code, invite_type, data1, data2, ip, ip_based_info } = request.all()
+    const { email } = payload
 
     let owner_id
     let member_id
@@ -184,7 +185,7 @@ class OAuthController {
   }
 
   async handleLogin(request, auth, user, method, isSignUp = false) {
-    let { device_token, invite_type, data1, data2, ip, ip_based_info } = request.all()
+    const { device_token, invite_type, data1, data2, ip, ip_based_info } = request.all()
 
     const authenticator = getAuthByRole(auth, user.role)
     if (user.status === STATUS_EMAIL_VERIFY) {
