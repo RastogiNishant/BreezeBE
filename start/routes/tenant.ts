@@ -5,7 +5,7 @@ const tenantOwnRoutes = {
   '/members/email': {
     [HTTP_METHODS.POST]: {
       controller: 'MemberController.addMember',
-      middleware: ['auth:jwt', 'valid:CreateMember,Email,ProfileVisibilityToOther']
+      middleware: ['auth:jwt', 'valid:CreateMember,ProfileVisibilityToOther']
     }
   },
   '/members/pdfdownload': {
