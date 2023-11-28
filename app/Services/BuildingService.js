@@ -1,5 +1,5 @@
 'use strict'
-const { toLower, isNull } = require('lodash')
+const { toLower, isNull, get, isArray } = require('lodash')
 const Building = use('App/Models/Building')
 const Promise = require('bluebird')
 const HttpException = require('../Exceptions/HttpException')
@@ -9,7 +9,17 @@ const Database = use('Database')
 const {
   exceptions: { NO_BUILDING_ID_EXIST }
 } = require('../exceptions')
-const { PUBLISH_STATUS_INIT, STATUS_DELETE } = require('../constants')
+const {
+  PUBLISH_STATUS_INIT,
+  STATUS_DELETE,
+  MATCH_STATUS_KNOCK,
+  MATCH_STATUS_INVITE,
+  MATCH_STATUS_VISIT,
+  MATCH_STATUS_SHARE,
+  MATCH_TYPE_MARKET_PLACE,
+  STATUS_EMAIL_VERIFY,
+  STATUS_DRAFT
+} = require('../constants')
 class BuildingService {
   static async upsert({ user_id, data }) {
     if (!data.building_id) {
@@ -171,10 +181,114 @@ class BuildingService {
       user_ids: [user_id],
       params: { ...params, build_id, isStatusSort: true }
     })
+    // exact count unique prospects
+    // matches
+    let matchesOnBuildingsQuery =
+      (
+        await Database.raw(`
+        select count(*) as prospect_count, build_id from
+        (
+          select distinct on (matches.user_id) matches.user_id, buildings.id as build_id
+          from matches
+          inner join estates on estates.id=matches.estate_id
+          inner join buildings on buildings.id=estates.build_id where matches.status=${MATCH_STATUS_KNOCK}
+        ) as distinct_query
+        group by build_id
+      `)
+      ).rows || []
+    const inviteMatchesOnBuildings = matchesOnBuildingsQuery.reduce(
+      (inviteMatchesOnBuildings, matchBuilding) => ({
+        ...inviteMatchesOnBuildings,
+        [matchBuilding.build_id]: matchBuilding.prospect_count
+      }),
+      {}
+    )
+    matchesOnBuildingsQuery =
+      (
+        await Database.raw(`
+      select count(*) as prospect_count, build_id from
+      (
+        select distinct on (matches.user_id) matches.user_id, buildings.id as build_id
+        from matches
+        inner join estates on estates.id=matches.estate_id
+        inner join buildings on buildings.id=estates.build_id where matches.status in (
+          ${MATCH_STATUS_INVITE},
+          ${MATCH_STATUS_VISIT},
+          ${MATCH_STATUS_SHARE}
+        )
+      ) as distinct_query
+      group by build_id
+    `)
+      ).rows || []
+    const showMatchesOnBuildings = matchesOnBuildingsQuery.reduce(
+      (inviteMatchesOnBuildings, matchBuilding) => ({
+        ...inviteMatchesOnBuildings,
+        [matchBuilding.build_id]: matchBuilding.prospect_count
+      }),
+      {}
+    )
+    matchesOnBuildingsQuery =
+      (
+        await Database.raw(`
+      select count(*) as prospect_count, build_id from
+      (
+        select distinct on (matches.user_id) matches.user_id, buildings.id as build_id
+        from matches
+        inner join estates on estates.id=matches.estate_id
+        inner join buildings on buildings.id=estates.build_id where matches.status >
+          ${MATCH_STATUS_SHARE}
+      ) as distinct_query
+      group by build_id
+    `)
+      ).rows || []
+    const decideMatchesOnBuildings = matchesOnBuildingsQuery.reduce(
+      (inviteMatchesOnBuildings, matchBuilding) => ({
+        ...inviteMatchesOnBuildings,
+        [matchBuilding.build_id]: matchBuilding.prospect_count
+      }),
+      {}
+    )
+    // Contact requests...
+    const contactRequestsOnBuildingsQuery =
+      (
+        await Database.raw(`
+      select count(*) prospect_count, build_id from
+      (
+        select 
+          distinct on (estate_sync_contact_requests.email) estate_sync_contact_requests.email,
+          buildings.id as build_id
+        from estate_sync_contact_requests
+        inner join estates on estates.id=estate_sync_contact_requests.estate_id
+        inner join buildings on buildings.id=estates.build_id
+        where estate_sync_contact_requests.user_id is null
+      ) as disctinct_query
+      group by build_id
+    `)
+      ).rows || []
 
+    const contactRequestsOnBuildings = contactRequestsOnBuildingsQuery.reduce(
+      (contactRequestBuildings, cr) => ({
+        ...contactRequestBuildings,
+        [cr.build_id]: cr.prospect_count
+      }),
+      {}
+    )
     buildings = buildings.map((building) => ({
       ...building,
-      estates: (estates?.data || []).filter((estate) => estate.build_id === building.id)
+      estates: (estates?.data || []).filter((estate) => estate.build_id === building.id),
+      invite_count:
+        (get(contactRequestsOnBuildings, building.id)
+          ? Number(contactRequestsOnBuildings[building.id])
+          : 0) +
+        (get(inviteMatchesOnBuildings, building.id)
+          ? Number(inviteMatchesOnBuildings[building.id])
+          : 0),
+      show_count: get(showMatchesOnBuildings, building.id)
+        ? Number(showMatchesOnBuildings[building.id])
+        : 0,
+      decide_count: get(decideMatchesOnBuildings, building.id)
+        ? Number(decideMatchesOnBuildings[building.id])
+        : 0
     }))
     return buildings
   }
@@ -194,6 +308,57 @@ class BuildingService {
       .where('id', build_id)
       .update({ can_publish, published: PUBLISH_STATUS_INIT })
       .transacting(trx)
+  }
+
+  static async getContactRequestsByBuilding(buildingId) {
+    const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
+    const contactRequests = await EstateSyncContactRequest.query()
+      .select(
+        Database.raw(
+          `array_agg(
+            json_build_object(
+              'firstname', estate_sync_contact_requests.contact_info->'firstName',
+              'secondname', estate_sync_contact_requests.contact_info->'lastName',
+              'from_market_place', 1,
+              'match_type', coalesce(estate_sync_contact_requests.publisher, '${MATCH_TYPE_MARKET_PLACE}'),
+              'profession', estate_sync_contact_requests.contact_info->'employment',
+              'members', estate_sync_contact_requests.contact_info->'family_size',
+              'income', estate_sync_contact_requests.contact_info->'income',
+              'birthday', estate_sync_contact_requests.contact_info->'birthday',
+              'created_at', estate_sync_contact_requests.created_at,
+              'updated_at', estate_sync_contact_requests.updated_at
+          )) 
+          as contact_requests`
+        ),
+        'estates.unit_category_id'
+      )
+      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .whereNotNull('estates.unit_category_id')
+      .where('estates.build_id', buildingId)
+      .whereIn('estate_sync_contact_requests.status', [STATUS_EMAIL_VERIFY, STATUS_DRAFT])
+      .groupBy('estates.unit_category_id')
+      .fetch()
+    return contactRequests.toJSON() || []
+  }
+
+  static async getContactRequestsCountByBuilding(buildingId) {
+    const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
+    const query = EstateSyncContactRequest.query()
+      .select(
+        Database.raw(`count(*) as contact_requests_count`),
+        'estates.unit_category_id as unit_category_id'
+      )
+      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .whereNotNull('estates.unit_category_id')
+      .whereIn('estate_sync_contact_requests.status', [STATUS_EMAIL_VERIFY, STATUS_DRAFT])
+      .groupBy('estates.unit_category_id')
+    if (isArray(buildingId)) {
+      query.whereIn('estates.build_id', buildingId)
+    } else {
+      query.where('estates.build_id', buildingId)
+    }
+    const contactRequests = await query.fetch()
+    return contactRequests.toJSON() || []
   }
 }
 

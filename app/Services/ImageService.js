@@ -13,6 +13,7 @@ const Image = use('App/Models/Image')
 const fsPromise = require('fs/promises')
 const axios = require('axios')
 const Database = use('Database')
+const HttpException = use('App/Exceptions/HttpException')
 
 class ImageService {
   /**
@@ -44,7 +45,7 @@ class ImageService {
     try {
       if (!images || !Array.isArray(images)) return
 
-      for (let image of images) {
+      for (const image of images) {
         if (image.tmpPath && fs.existsSync(image.tmpPath)) {
           const fileExists = await FileModel.query()
             .where('estate_id', estateId)
@@ -71,17 +72,18 @@ class ImageService {
       await trx.rollback()
       console.log(err.message)
     } finally {
-      if (!images || !Array.isArray(images)) return
-      for (let image of images) {
-        if (image.tmpPath && fs.existsSync(image.tmpPath)) {
-          await fsPromise.unlink(image.tmpPath)
+      if (Array.isArray(images)) {
+        for (const image of images) {
+          if (image.tmpPath && fs.existsSync(image.tmpPath)) {
+            await fsPromise.unlink(image.tmpPath)
+          }
         }
       }
     }
   }
 
   static async savePropertyBulkImages(images) {
-    for (let image of images) {
+    for (const image of images) {
       if (image && image.photos && image.photos.length) {
         image.photos.map((p) => {
           ImageService.savePropertyImage(p, image.room_id)
@@ -138,7 +140,7 @@ class ImageService {
 
   static async getAll() {
     return (await Image.query().fetch()).rows
-    //return (await Image.query().paginate(1, 469)).rows
+    // return (await Image.query().paginate(1, 469)).rows
     // const image = await Image.query().where('id', 558).first()
     // return [image]
   }
@@ -147,39 +149,37 @@ class ImageService {
     const images = await ImageService.getAll()
     await Promise.all(
       images.map(async (image) => {
-        {
-          try {
-            const url = File.getPublicUrl(image.url)
-            if (image.url) {
-              const url_strs = image.url.split('/')
-              if (url_strs.length === 2) {
-                const fileName = url_strs[1]
-                const isValidFormat = File.SUPPORTED_IMAGE_FORMAT.some((format) => {
-                  return fileName.includes(format)
-                })
+        try {
+          const url = File.getPublicUrl(image.url)
+          if (image.url) {
+            const url_strs = image.url.split('/')
+            if (url_strs.length === 2) {
+              const fileName = url_strs[1]
+              const isValidFormat = File.SUPPORTED_IMAGE_FORMAT.some((format) => {
+                return fileName.includes(format)
+              })
 
-                if (isValidFormat) {
-                  const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
-                  const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
-                  if (image.disk === 's3public') {
-                    options.ACL = 'public-read'
-                  }
-
-                  await File.saveThumbnailToDisk({
-                    image: url,
-                    fileName: fileName,
-                    dir: `${url_strs[0]}`,
-                    options,
-                    disk: image.disk || 's3public',
-                    isUri: true
-                  })
+              if (isValidFormat) {
+                const mime = File.SUPPORTED_IMAGE_FORMAT.find((mt) => fileName.includes(mt))
+                const options = { ContentType: File.IMAGE_MIME_TYPE[mime] }
+                if (image.disk === 's3public') {
+                  options.ACL = 'public-read'
                 }
+
+                await File.saveThumbnailToDisk({
+                  image: url,
+                  fileName,
+                  dir: `${url_strs[0]}`,
+                  options,
+                  disk: image.disk || 's3public',
+                  isUri: true
+                })
               }
             }
-          } catch (e) {
-            console.log('Creating thumbnail Error', e)
-            throw new HttpException('Creating thumbnail HttpException Error', e)
           }
+        } catch (e) {
+          console.log('Creating thumbnail Error', e)
+          throw new HttpException('Creating thumbnail HttpException Error', e)
         }
       })
     )
@@ -218,8 +218,8 @@ class ImageService {
       await writeFunctionalTestImage(outputFileName)
       return outputFileName
     } catch (e) {
-      return null
       console.log('saveFunctionalTestImage Error', e.message)
+      return null
     }
   }
 }

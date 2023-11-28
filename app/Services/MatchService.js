@@ -39,6 +39,10 @@ const TenantService = use('App/Services/TenantService')
 const MatchFilters = require('../Classes/MatchFilters')
 const EstateFilters = require('../Classes/EstateFilters')
 const WebSocket = use('App/Classes/Websocket')
+
+const {
+  exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE }
+} = require('../exceptions')
 const {
   MATCH_STATUS_NEW,
   MATCH_STATUS_KNOCK,
@@ -51,6 +55,7 @@ const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
   DATE_FORMAT,
+  DAY_FORMAT,
   ROLE_USER,
   PETS_NO,
   PETS_SMALL,
@@ -109,7 +114,8 @@ const {
   INCOME_TYPE_OTHER_BENEFIT,
   CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
   NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE,
-  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
+  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED,
+  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED
 } = require('../constants')
 
 const {
@@ -127,6 +133,7 @@ const {
     ERROR_COMMIT_MATCH_INVITE,
     ERROR_ALREADY_MATCH_INVITE,
     ERROR_MATCH_COMMIT_DOUBLE,
+    ERROR_LANDLORD_MATCH_SHOW_WRONG,
     USER_NOT_EXIST
   },
   exceptionCodes: {
@@ -134,6 +141,7 @@ const {
     NO_TIME_SLOT_ERROR_CODE,
     ERROR_COMMIT_MATCH_INVITE_CODE,
     ERROR_ALREADY_MATCH_INVITE_CODE,
+    ERROR_LANDLORD_MATCH_SHOW_WRONG_CODE,
     ERROR_MATCH_COMMIT_DOUBLE_CODE
   }
 } = require('../exceptions')
@@ -1042,9 +1050,9 @@ class MatchService {
   }
 
   static async upsertBulkMatches(matches, trx = null) {
-    let queries = `INSERT INTO matches 
-                  ( user_id, estate_id, percent, status, landlord_score, prospect_score, status_at )    
-                  VALUES 
+    let queries = `INSERT INTO matches
+                  ( user_id, estate_id, percent, status, landlord_score, prospect_score, status_at )
+                  VALUES
                 `
     queries = (matches || []).reduce(
       (q, current, index) =>
@@ -1054,7 +1062,7 @@ class MatchService {
       queries
     )
 
-    queries += ` ON CONFLICT ( user_id, estate_id ) 
+    queries += ` ON CONFLICT ( user_id, estate_id )
                   DO UPDATE SET percent = EXCLUDED.percent, landlord_score = EXCLUDED.landlord_score,
                   prospect_score = EXCLUDED.prospect_score, status = EXCLUDED.status, status_at = EXCLUDED.status_at
                 `
@@ -2188,7 +2196,7 @@ class MatchService {
     return await Database.table('matches')
       .whereIn('status', MATCH_STATUS_NEW)
       .where('buddy', true)
-      .whereIn('estate_id', estatesId)
+      .whereIn('estate_id', estateId)
       .count('*')
   }
 
@@ -2589,8 +2597,6 @@ class MatchService {
       .first()
     const tenant = await Database.table('users').where('id', tenantId).first()
     if (buddy) {
-      if (buddy.status !== BUDDY_STATUS_ACCEPTED) {
-      }
       await Database.table('buddies')
         .update({ status: BUDDY_STATUS_ACCEPTED })
         .where({ user_id: landlordId, tenant_id: tenantId })
@@ -3396,6 +3402,9 @@ class MatchService {
       .innerJoin({ _m: 'matches' }, function () {
         this.on('_m.user_id', '_u.id').onIn('_m.estate_id', [estate?.id || params?.estate_id])
       })
+      .leftJoin({ _n: 'notes' }, function () {
+        this.on('_n.about_id', 'tenants.user_id').on('_n.writer_id', estate.user_id)
+      })
       .orderBy('tenants.id', 'ASC')
       .orderBy('_m.updated_at', 'DESC')
 
@@ -3503,7 +3512,7 @@ class MatchService {
                   income_proofs
                 on
                   income_proofs.income_id = incomes.id and income_proofs.status = ${STATUS_ACTIVE}
-                where incomes.status = ${STATUS_ACTIVE}  
+                where incomes.status = ${STATUS_ACTIVE}
                 group by incomes.id) as _mip
               on
                 _mip.id=incomes.id and incomes.status = ${STATUS_ACTIVE}
@@ -3655,7 +3664,14 @@ class MatchService {
         q.whereNot('status', STATUS_DELETE)
       })
       .select(Database.raw(`DISTINCT ON ( "tenants"."id") "tenants"."id"`))
-
+      .select(
+        Database.raw(`
+        case when _n.note is null then null else json_build_object(
+          'note', _n.note,
+          'created_at', _n.created_at,
+          'updated_at', _n.updated_at
+      ) end as note`)
+      )
       .select([
         'tenants.*',
         Database.raw(
@@ -3737,7 +3753,8 @@ class MatchService {
       '_m.status as status',
       '_m.user_id',
       '_mf.id_verified',
-      '_m.final_match_date'
+      '_m.final_match_date',
+      'total_income as income'
     )
 
     return query
@@ -3878,8 +3895,8 @@ class MatchService {
       const startOf = Math.min(+start, +end)
       const endOf = Math.max(+start, +end)
       return Database.raw(
-        `UPDATE matches SET ${field} = ${field} - ? 
-          WHERE ${isTenant ? 'user_id' : 'estate_id'} = ? 
+        `UPDATE matches SET ${field} = ${field} - ?
+          WHERE ${isTenant ? 'user_id' : 'estate_id'} = ?
             AND ( ${field} BETWEEN ? AND ? )
             AND status = ?
             `,
@@ -4176,7 +4193,7 @@ class MatchService {
         Database.raw(`
         (select estates.id as estate_id,
           case when estates.cert_category is null then
-            null else 
+            null else
             json_build_object(
               'income_level', estates.cert_category
             )
@@ -4224,7 +4241,7 @@ class MatchService {
         'transfer_budget_min',
         'transfer_budget_max',
         Database.raw(
-          `case 
+          `case
             when _me.total_income is not null and _me.total_income > 0
             then (100*budget_max/_me.total_income)
             else 0
@@ -4373,7 +4390,7 @@ class MatchService {
     if (!isEmpty(matchScores)) {
       const insertQuery = Database.query().into('matches').insert(matchScores).toString()
       await Database.raw(
-        `${insertQuery} ON CONFLICT (user_id, estate_id) 
+        `${insertQuery} ON CONFLICT (user_id, estate_id)
           DO UPDATE SET "percent" = EXCLUDED.percent, "landlord_score" = EXCLUDED.landlord_score, "prospect_score" = EXCLUDED.prospect_score`
       ).transacting(trx)
     }
@@ -4759,53 +4776,57 @@ class MatchService {
   }
 
   static async requestTenantToShareProfile(prospectId, landlordId, date, estateId) {
-    const visitDate = moment.utc(date, DATE_FORMAT).format(DATE_FORMAT)
-    const getVisit = await Visit.query()
-      .where({ user_id: prospectId })
-      .where({ estate_id: estateId })
-      .where({ date: visitDate })
-      .fetch()
+    const match = await Match.query()
+      .where('user_id', prospectId)
+      .where('estate_id', estateId)
+      .first()
 
-    const visit = getVisit.toJSON()
-
-    if (visit.length === 0) {
-      // Move match status to next
-      await Match.query()
-        .update({
-          profile_status: NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE
-        })
-        .where({
-          user_id: prospectId,
-          estate_id: estateId
-        })
-      throw new AppException(ERROR_DATE_NOT_MATCH_WITH_PROSPECT_VISIT_DATE, 404)
+    if (!match || match.share) {
+      throw new AppException(
+        ERROR_LANDLORD_MATCH_SHOW_WRONG,
+        400,
+        ERROR_LANDLORD_MATCH_SHOW_WRONG_CODE
+      )
     }
+
+    const visitDate = moment.utc(date).format(DAY_FORMAT)
 
     const estate = (await EstateService.getMatchEstate(estateId, landlordId)).toJSON()
 
-    const address = generateAddress({
-      street: estate?.street,
-      house_number: estate?.house_number,
-      zip: estate?.postcode,
-      city: estate?.city,
-      country: estate?.country
-    })
-
     const prospectUser = await User.query().where('id', prospectId).first()
     const landlordUser = await User.query().where('id', landlordId).first()
-    const landlord = `${landlordUser?.firstname} ${landlordUser?.secondname}`
+    const landlord = `${landlordUser?.firstname ?? ''} ${landlordUser?.secondname ?? ''}`
 
+    // Notify the tenant by landlord to share their profile
     await NoticeService.notifyTenantByLandlordToShareProfile(
       prospectId,
       landlord,
-      address,
-      visitDate
+      estate,
+      visitDate,
+      landlordUser?.avatar
     )
 
-    const shareLink = await createDynamicLink(
-      `${process.env.DEEP_LINK}/profile/request?landlord=${landlord}&address=${address}&date=${visitDate}`
-    )
+    // Create a dynamic link for profile sharing
+    const deepLink = new URL(`${process.env.DEEP_LINK}/profile/request`)
 
+    // Object destructuring for cleaner code
+    const { id, street, house_number, postcode, city, country } = estate
+
+    // Append query parameters
+    deepLink.searchParams.append('landlord', landlord)
+    deepLink.searchParams.append('estate_id', id)
+    deepLink.searchParams.append('street', street)
+    deepLink.searchParams.append('house_number', house_number)
+    deepLink.searchParams.append('postcode', postcode)
+    deepLink.searchParams.append('city', city)
+    deepLink.searchParams.append('country', country)
+    deepLink.searchParams.append('date', visitDate)
+    deepLink.searchParams.append('estate_id', estate.id)
+    deepLink.searchParams.append('landlord_logo', landlordUser?.avatar)
+
+    const shareLink = deepLink.toString()
+
+    // Send an email to the tenant requesting profile sharing
     MailService.sendRequestToTenantForShareProfile({
       prospectEmail: prospectUser?.email,
       estate,
@@ -4821,12 +4842,18 @@ class MatchService {
         user_id: prospectId,
         estate_id: estateId
       })
+    return {
+      estate_id: estateId,
+      user_id: prospectId,
+      profile_status: LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED
+    }
   }
 
   static async prospectRespondToProfileSharingRequest(userId, estateId, profileStatus) {
     return await Match.query()
       .update({
-        profile_status: profileStatus
+        profile_status: profileStatus,
+        share: profileStatus === LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED
       })
       .where({
         user_id: userId,

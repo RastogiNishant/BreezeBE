@@ -3,7 +3,7 @@ const yup = require('yup')
 const { get } = require('lodash')
 const { ValidationException } = use('Validator')
 
-const { PAGE_SIZE } = require('../../app/constants.js')
+const { PAGE_SIZE } = require('../../app/constants')
 const { wrapValidationError } = require('../Libs/utils.js')
 
 const schema = yup.object().shape({
