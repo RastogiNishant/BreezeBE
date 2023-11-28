@@ -1034,11 +1034,13 @@ class MatchController {
         contactRequestQuery.find((cr) => +cr.unit_category_id === +estate.unit_category_id)
           ?.contact_requests_count || 0
     } else {
-      contact_request_count = await require('../../Services/MarketPlaceService')
-        .getPendingKnockRequestCountQuery({
-          estate_id
-        })
-        .count()?.[0]?.count
+      contact_request_count = (
+        await require('../../Services/MarketPlaceService')
+          .getPendingKnockRequestCountQuery({
+            estate_id
+          })
+          .count()
+      )?.[0]?.count
     }
 
     const contactRequestSortFunction = (a, b) => b.income - a.income
