@@ -113,14 +113,10 @@ const {
   INCOME_TYPE_CHILD_BENEFIT,
   INCOME_TYPE_OTHER_BENEFIT,
   CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
-  NO_LANDLORD_REQUEST_TENANT_SHARE_PROFILE,
   LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED,
   LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED
 } = require('../constants')
 
-const {
-  exceptions: { ERROR_DATE_NOT_MATCH_WITH_PROSPECT_VISIT_DATE }
-} = require('../../app/exceptions')
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
 const {
   exceptions: {
@@ -132,8 +128,8 @@ const {
     UNSECURE_PROFILE_SHARE,
     ERROR_COMMIT_MATCH_INVITE,
     ERROR_ALREADY_MATCH_INVITE,
-    ERROR_MATCH_COMMIT_DOUBLE,
     ERROR_LANDLORD_MATCH_SHOW_WRONG,
+    ERROR_MATCH_COMMIT_DOUBLE,
     USER_NOT_EXIST
   },
   exceptionCodes: {
@@ -146,7 +142,6 @@ const {
   }
 } = require('../exceptions')
 const QueueService = require('./QueueService')
-const { generateAddress, createDynamicLink } = require('../Libs/utils')
 
 /**
  * Check is item in data range
@@ -4805,33 +4800,14 @@ class MatchService {
       visitDate,
       landlordUser?.avatar
     )
-    
-    // Create a dynamic link for profile sharing
-    const deepLink = new URL(`${process.env.DEEP_LINK}/profile/request`)
-
-    // Object destructuring for cleaner code
-    const { id, street, house_number, postcode, city, country } = estate
-
-    // Append query parameters
-    deepLink.searchParams.append('landlord', landlord)
-    deepLink.searchParams.append('estate_id', id)
-    deepLink.searchParams.append('street', street)
-    deepLink.searchParams.append('house_number', house_number)
-    deepLink.searchParams.append('postcode', postcode)
-    deepLink.searchParams.append('city', city)
-    deepLink.searchParams.append('country', country)
-    deepLink.searchParams.append('date', visitDate)
-    deepLink.searchParams.append('estate_id', estate.id)
-    deepLink.searchParams.append('landlord_logo', landlordUser?.avatar)
-
-    const shareLink = deepLink.toString()
 
     // Send an email to the tenant requesting profile sharing
     MailService.sendRequestToTenantForShareProfile({
       prospectEmail: prospectUser?.email,
       estate,
       landlord,
-      shareLink
+      visitDate,
+      avatar: landlordUser?.avatar
     })
 
     await Match.query()
