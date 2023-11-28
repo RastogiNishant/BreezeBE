@@ -96,6 +96,7 @@ class TenantController {
    */
   async updateTenant({ request, auth, response }) {
     const data = request.all()
+    Logger.info(`updateTenant start ${auth.user.id} ${new Date().toISOString()}`)
     const trx = await Database.beginTransaction()
     try {
       const tenant = await UserService.getOrCreateTenant(auth.user, trx)

@@ -17,7 +17,8 @@ const {
     TIME_SLOT_CROSSING_EXISTING,
     TIME_SLOT_NOT_FOUND,
     SHOW_ALREADY_STARTED,
-    FAILED_CREATE_TIME_SLOT
+    FAILED_CREATE_TIME_SLOT,
+    ESTATE_NOT_EXISTS
   },
   exceptionCodes: { SHOW_ALREADY_STARTED_ERROR_CODE }
 } = require('../exceptions')
@@ -27,7 +28,7 @@ class TimeSlotService {
     end_at = moment.utc(end_at).format(DATE_FORMAT)
     TimeSlotService.validateTimeRange({ end_at, start_at, slot_length })
 
-    //Checks is time slot crossing existing
+    // Checks is time slot crossing existing
     const existing = await this.getCrossTimeslotQuery(
       { end_at, start_at, estate_id },
       user_id
@@ -444,7 +445,7 @@ class TimeSlotService {
       }
 
       const estate_ids = await EstateService.getEstateIdsInBuilding(slot.estate_id)
-      let slots = await this.getSameTimeSlotInBuilding({
+      const slots = await this.getSameTimeSlotInBuilding({
         estateId: estate_ids,
         start_at: moment(slot.start_at).format(DATE_FORMAT),
         end_at: moment(slot.end_at).format(DATE_FORMAT)

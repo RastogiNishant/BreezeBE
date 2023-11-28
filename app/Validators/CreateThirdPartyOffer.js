@@ -2,12 +2,8 @@
 
 const yup = require('yup')
 const Base = require('./Base')
-const {
-  THIRD_PARTY_OFFER_SOURCES,
-  STATUS_ACTIVE,
-  STATUS_EXPIRE,
-  VALID_URL_REG_EXP
-} = require('../constants')
+const { THIRD_PARTY_OFFER_SOURCES, STATUS_ACTIVE, STATUS_EXPIRE } = require('../constants')
+const { validationRegExp } = require('../helper')
 const moment = require('moment')
 const currentYear = moment().format('Y')
 
@@ -18,7 +14,7 @@ class CreateThirdPartyOffer extends Base {
       source_id: yup.number().positive().required(),
       coord: yup.string().matches(/[0-9\.]+,[0-9\.]+/),
       description: yup.string(),
-      url: yup.string().matches(VALID_URL_REG_EXP),
+      url: yup.string().matches(validationRegExp.VALID_URL_REG_EXP),
       house_number: yup.string().max(10),
       street: yup.string().max(100),
       city: yup.string().max(100),

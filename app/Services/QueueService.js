@@ -267,7 +267,8 @@ class QueueService {
       wrapException(QueueJobService.updateAllMisseEstateCoord),
       wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
       wrapException(require('./MarketPlaceService').sendReminderEmail),
-      wrapException(require('./TenantService').reminderProfileFillUp)
+      wrapException(require('./TenantService').reminderProfileFillUp),
+      wrapException(require('./UserDeletionService').processDeletionSchedule)
     ])
   }
 
@@ -375,6 +376,11 @@ class QueueService {
         case GET_IP_BASED_INFO:
           return QueueJobService.getIpBasedInfo(job.data.userId, job.data.ip)
         case GET_TENANT_MATCH_PROPERTIES:
+          Logger.info(
+            `QueueService GET_TENANT_MATCH_PROPERTIES ${
+              job.data.userId
+            } ${new Date().toISOString()}`
+          )
           return require('./MatchService').matchByUser({
             userId: job.data.userId,
             has_notification_sent: job.data.has_notification_sent,

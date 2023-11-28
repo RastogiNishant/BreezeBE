@@ -12,6 +12,9 @@ const Estate = use('App/Models/Estate')
 const Task = use('App/Models/Task')
 const NotificationsService = use('App/Services/NotificationsService')
 const MailService = use('App/Services/MailService')
+const BuildingService = use('App/Services/BuildingService')
+const AppException = use('App/Exceptions/AppException')
+
 const Logger = use('Logger')
 
 const {
@@ -25,7 +28,7 @@ const {
   NOTICE_TYPE_LANDLORD_MATCH_ID,
   NOTICE_TYPE_LANDLORD_DECISION_ID,
   NOTICE_TYPE_PROSPECT_NEW_MATCH_ID,
-  NOTICE_TYPE_PROSPECT_MATCH_LEFT_ID,
+  NOTICE_TYPE_PROSPECT_LANDLORD_MATCH_ID,
   NOTICE_TYPE_PROSPECT_INVITE_ID,
   NOTICE_TYPE_PROSPECT_VISIT3H_ID,
   NOTICE_TYPE_PROSPECT_VISIT90M_ID,
@@ -124,7 +127,9 @@ const {
   MATCH_STATUS_INVITE,
   NOTICE_TYPE_PROSPECT_WARNED_TO_BE_DEACTIVATED_ID,
   NOTICE_TYPE_TENANT_PROFILE_SHARING_REQUEST_ID,
-  NOTICE_TYPE_PROSPECT_SHARE_PROFILE
+  NOTICE_TYPE_PROSPECT_SHARE_PROFILE,
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID,
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE
 } = require('../constants')
 
 class NoticeService {
@@ -449,6 +454,7 @@ class NoticeService {
       return false
     }
 
+    // @TODO check this code is actually working
     const notices = result.map(({ user_id, match_count }) => ({
       user_id,
       type: NOTICE_TYPE_PROSPECT_LANDLORD_MATCH_ID,
@@ -456,6 +462,7 @@ class NoticeService {
     }))
 
     await NoticeService.insertNotices(notices)
+    // @TODO fix: this will only send the first 50 notifications
     const CHUNK_SIZE = 50
     await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.getProspectLandlordInvite, {
       concurrency: 1
@@ -665,17 +672,34 @@ class NoticeService {
 
     const notices = []
     const groupMatches = groupBy(knockMatches, (match) => match.estate_id)
-
     let groupIdx = 0
+    const buildingNoticeAdded = {} // Keep track of whether a notice for a building has been added
+
     // isNoticeCreated = false
     while (groupIdx < Object.keys(groupMatches).length) {
       const estate_id = Object.keys(groupMatches)[groupIdx]
       const freeTimeSlots = await require('./TimeSlotService').getFreeTimeslots(estate_id)
+
       if (!Object.keys(freeTimeSlots).length) {
         const estate = await require('./EstateService').getActiveById(estate_id)
 
-        if (estate) {
-          // isNoticeCreated = true
+        if (estate && estate.build_id != null) {
+          if (!buildingNoticeAdded[estate.build_id]) {
+            const building = await require('./BuildingService').getByBuildingId(estate.build_id)
+
+            if (building != null) {
+              notices.push({
+                user_id: estate.user_id,
+                type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
+                data: { estate_id, estate_address: building.address },
+                image: File.getPublicUrl(building.cover)
+              })
+
+              buildingNoticeAdded[estate.build_id] = true
+            }
+          }
+        } else {
+          // This is for estates without a build_id
           notices.push({
             user_id: estate.user_id,
             type: NOTICE_TYPE_EXPIRED_SHOW_TIME_ID,
@@ -986,8 +1010,6 @@ class NoticeService {
         return NotificationsService.sendLandlordNewProperty([notice])
       case NOTICE_TYPE_LANDLORD_TIME_FINISHED:
         return NotificationsService.sendEstateExpired([notice])
-      case NOTICE_TYPE_LANDLORD_CONFIRM_VISIT:
-        return NotificationsService.sendLandlordSlotsSelected([notice])
       case NOTICE_TYPE_LANDLORD_VISIT30M:
         return NotificationsService.sendLandlordVisitIn30m([notice])
       case NOTICE_TYPE_LANDLORD_MATCH:
@@ -1036,7 +1058,6 @@ class NoticeService {
         return NotificationsService.sendMinKnockReached([notice])
       case NOTICE_TYPE_LANDLORD_GREEN_MIN_PROSPECTS_REACHED:
         return NotificationsService.sendGreenMinKnockReached([notice])
-
       case NOTICE_TYPE_PROSPECT_LIKE_EXPIRING:
         return NotificationsService.notifyLikedButNotKnockedToProspect([notice])
       case NOTICE_TYPE_PROSPECT_LIKED_BUT_NOT_KNOCK:
@@ -1049,7 +1070,7 @@ class NoticeService {
         return NotificationsService.prospectFillUpProfileReminder([notice])
       case NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED:
         return NotificationsService.finalConfirmRequestExpired([notice])
-      case NOTICE_TYPE_PROSPECT_SHARE_PROFILE:
+      case NOTICE_TYPE_PROSPECT_REQUEST_PROFILE:
         return NotificationsService.prospectSendCode([notice])
     }
   }
@@ -1485,13 +1506,22 @@ class NoticeService {
     await NotificationsService.prospectScheduledForDeactivation(notices)
   }
 
-  static async notifyTenantByLandlordToShareProfile(prospectId, landlord, address, date) {
+  static async notifyTenantByLandlordToShareProfile(prospectId, landlord, estate, date, avatar) {
     const notice = {
       user_id: prospectId,
-      type: NOTICE_TYPE_TENANT_PROFILE_SHARING_REQUEST_ID,
-      data: { landlord, estate_address: address, date }
+      type: NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID,
+      data: {
+        landlord,
+        estate_id: estate?.id,
+        street: estate?.street,
+        house_number: estate?.house_number,
+        pinCode: estate?.postcode,
+        city: estate?.city,
+        country: estate?.country,
+        date,
+        landlord_logo: File.getPublicUrl(avatar)
+      }
     }
-
     await NoticeService.insertNotices([notice])
     await NotificationsService.prospectSendCode([notice])
   }

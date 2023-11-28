@@ -341,8 +341,8 @@ class OpenImmoReader {
       // last_modernization according to openimmo is a string ie. Bad 1997, K�che 2010
       if (property.last_modernization) {
         property.last_modernization = property.last_modernization.match(/(19|20)[0-9]{2}/)
-          ? property.last_modernization
-          : null
+        ? `${property.construction_year}-01-01`
+        : null
       }
 
       if (property.pets_allowed === 'true') {

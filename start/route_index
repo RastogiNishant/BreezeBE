@@ -25,9 +25,7 @@
       "POST"
     ],
     "middle": [
-      "valid:OutsideTenantInvite",
-      "agreement",
-      "plan"
+      "valid:OutsideTenantInvite"
     ],
     "handler": "EstateCurrentTenantController.acceptOutsideTenant"
   },
@@ -64,9 +62,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdministrator",
-      "agreement",
-      "plan"
+      "auth:jwtAdministrator"
     ],
     "handler": "Admin/AgreementController.getAgreements"
   },
@@ -77,9 +73,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:CreateAgreement",
-      "agreement",
-      "plan"
+      "valid:CreateAgreement"
     ],
     "handler": "Admin/AgreementController.createAgreement"
   },
@@ -90,9 +84,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Id",
-      "agreement",
-      "plan"
+      "valid:Id"
     ],
     "handler": "Admin/AgreementController.deleteAgreement"
   },
@@ -103,9 +95,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:CreateAgreement,Id",
-      "agreement",
-      "plan"
+      "valid:CreateAgreement,Id"
     ],
     "handler": "Admin/AgreementController.updateAgreement"
   },
@@ -115,9 +105,7 @@
       "POST"
     ],
     "middle": [
-      "valid:AdminLogin",
-      "agreement",
-      "plan"
+      "valid:AdminLogin"
     ],
     "handler": "Admin/AuthController.login"
   },
@@ -128,9 +116,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Ids",
-      "agreement",
-      "plan"
+      "valid:Ids"
     ],
     "handler": "FeatureController.removeFeature"
   },
@@ -141,9 +127,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:CreateFeature",
-      "agreement",
-      "plan"
+      "valid:CreateFeature"
     ],
     "handler": "FeatureController.createFeature"
   },
@@ -154,9 +138,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:CreateFeature,Id",
-      "agreement",
-      "plan"
+      "valid:CreateFeature,Id"
     ],
     "handler": "FeatureController.updateFeature"
   },
@@ -167,9 +149,7 @@
     ],
     "middle": [
       "guest",
-      "valid:SignIn",
-      "agreement",
-      "plan"
+      "valid:SignIn"
     ],
     "handler": "Admin/UserController.login"
   },
@@ -180,9 +160,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Ids",
-      "agreement",
-      "plan"
+      "valid:Ids"
     ],
     "handler": "PlanController.deletePlan"
   },
@@ -193,9 +171,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdministrator",
-      "agreement",
-      "plan"
+      "auth:jwtAdministrator"
     ],
     "handler": "PlanController.getPlanAll"
   },
@@ -206,9 +182,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:CreatePlan",
-      "agreement",
-      "plan"
+      "valid:CreatePlan"
     ],
     "handler": "PlanController.createPlan"
   },
@@ -220,9 +194,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Id",
-      "agreement",
-      "plan"
+      "valid:Id"
     ],
     "handler": "PlanController.getPlan"
   },
@@ -233,9 +205,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:CreatePlan,Id",
-      "agreement",
-      "plan"
+      "valid:CreatePlan,Id"
     ],
     "handler": "PlanController.updatePlan"
   },
@@ -247,9 +217,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:PlanId",
-      "agreement",
-      "plan"
+      "valid:PlanId"
     ],
     "handler": "TenantPaymentPlanController.getTenantPaymentPlan"
   },
@@ -260,9 +228,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:TenantPaymentPlan",
-      "agreement",
-      "plan"
+      "valid:TenantPaymentPlan"
     ],
     "handler": "TenantPaymentPlanController.createTenantPaymentPlan"
   },
@@ -273,9 +239,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Id",
-      "agreement",
-      "plan"
+      "valid:Id"
     ],
     "handler": "TenantPaymentPlanController.deleteTenantPaymentPlan"
   },
@@ -287,9 +251,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Id",
-      "agreement",
-      "plan"
+      "valid:Id"
     ],
     "handler": "TenantPaymentPlanController.getTenantPaymentPlanById"
   },
@@ -300,9 +262,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:TenantPaymentPlan,Id",
-      "agreement",
-      "plan"
+      "valid:TenantPaymentPlan,Id"
     ],
     "handler": "TenantPaymentPlanController.updateTenantPaymentPlan"
   },
@@ -313,9 +273,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdministrator",
-      "agreement",
-      "plan"
+      "auth:jwtAdministrator"
     ],
     "handler": "Admin/AgreementController.getTerms"
   },
@@ -326,9 +284,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:CreateAgreement",
-      "agreement",
-      "plan"
+      "valid:CreateAgreement"
     ],
     "handler": "Admin/AgreementController.createTerm"
   },
@@ -339,9 +295,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Id",
-      "agreement",
-      "plan"
+      "valid:Id"
     ],
     "handler": "Admin/AgreementController.deleteTerm"
   },
@@ -352,9 +306,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:CreateAgreement,Id",
-      "agreement",
-      "plan"
+      "valid:CreateAgreement,Id"
     ],
     "handler": "Admin/AgreementController.updateTerm"
   },
@@ -366,9 +318,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "pagination",
-      "agreement",
-      "plan"
+      "pagination"
     ],
     "handler": "Admin/UserController.getUsers"
   },
@@ -379,9 +329,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdministrator",
-      "agreement",
-      "plan"
+      "auth:jwtAdministrator"
     ],
     "handler": "Admin/UserController.getUser"
   },
@@ -391,9 +339,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtAdministrator",
-      "agreement",
-      "plan"
+      "auth:jwtAdministrator"
     ],
     "handler": "Admin/UserController.updateUser"
   },
@@ -404,9 +350,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Ids,UserVerify",
-      "agreement",
-      "plan"
+      "valid:Ids,UserVerify"
     ],
     "handler": "Admin/UserController.verifyUsers"
   },
@@ -604,7 +548,7 @@
       "POST"
     ],
     "middle": [
-      "auth:jwt"
+      "auth:jwtAdministrator"
     ],
     "handler": "ImageController.testCompressPDF"
   },
@@ -888,6 +832,27 @@
     "handler": "Admin/UserController.updateUser"
   },
   {
+    "route": "/api/v1/administration/utilities/contact-requests",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator"
+    ],
+    "handler": "Admin/UtilityController.uploadContactRequest"
+  },
+  {
+    "route": "/api/v1/administration/utilities/estate-sync/property",
+    "method": [
+      "PUT"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:UpdateEstateSyncProperty"
+    ],
+    "handler": "Admin/UtilityController.updateEstateSyncProperty"
+  },
+  {
     "route": "/api/v1/administration/utilities/estates/:id/percent",
     "method": [
       "HEAD",
@@ -1039,9 +1004,7 @@
       "GET"
     ],
     "middle": [
-      "valid:CalcRentPrice",
-      "agreement",
-      "plan"
+      "valid:CalcRentPrice"
     ],
     "handler": "CommonController.calcRentPrice"
   },
@@ -1128,9 +1091,7 @@
       "GET"
     ],
     "middle": [
-      "valid:ConfirmEmail,Code",
-      "agreement",
-      "plan"
+      "valid:ConfirmEmail,Code"
     ],
     "handler": "AccountController.confirmEmail"
   },
@@ -1141,9 +1102,7 @@
     ],
     "middle": [
       "guest",
-      "valid:ConfirmSMS",
-      "agreement",
-      "plan"
+      "valid:ConfirmSMS"
     ],
     "handler": "AccountController.checkSignUpConfirmBySMS"
   },
@@ -1667,9 +1626,7 @@
       "GET"
     ],
     "middle": [
-      "EstateFoundByHash",
-      "agreement",
-      "plan"
+      "EstateFoundByHash"
     ],
     "handler": "EstateViewInvitationController.getEstateByHash"
   },
@@ -1766,9 +1723,7 @@
       "GET"
     ],
     "middle": [
-      "ViewEstateInvitationCodeExist",
-      "agreement",
-      "plan"
+      "ViewEstateInvitationCodeExist"
     ],
     "handler": "EstateViewInvitationController.getByCode"
   },
@@ -2749,6 +2704,19 @@
     "handler": "MatchController.getMatchList"
   },
   {
+    "route": "/api/v1/estates/match/contact-multiple",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord,jwtAdministrator",
+      "valid:MatchContactMultiple",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.contactMultiple"
+  },
+  {
     "route": "/api/v1/estates/match/invite",
     "method": [
       "POST"
@@ -2795,9 +2763,7 @@
       "GET"
     ],
     "middle": [
-      "valid:UpdateTenant",
-      "agreement",
-      "plan"
+      "valid:UpdateTenant"
     ],
     "handler": "EstateController.searchPreOnboard"
   },
@@ -2874,9 +2840,7 @@
     ],
     "middle": [
       "valid:InvitationLinkRetrieveCode",
-      "UserCanGetInvitationLink",
-      "agreement",
-      "plan"
+      "UserCanGetInvitationLink"
     ],
     "handler": "EstateCurrentTenantController.retrieveLinkByCode"
   },
@@ -2981,9 +2945,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtAdministrator",
-      "agreement",
-      "plan"
+      "auth:jwtAdministrator"
     ],
     "handler": "FeedbackController.getAll"
   },
@@ -3007,10 +2969,8 @@
     ],
     "middle": [
       "guest",
-      "valid:ResetEmailRequest",
-      "UserWithEmailExists",
-      "agreement",
-      "plan"
+      "valid:ResetPasswordRequest",
+      "UserWithEmailExists"
     ],
     "handler": "AccountController.sendCodeForgotPassword"
   },
@@ -3021,9 +2981,7 @@
     ],
     "middle": [
       "guest",
-      "valid:SetPassword",
-      "agreement",
-      "plan"
+      "valid:ResetPasswordConfirm"
     ],
     "handler": "AccountController.setPasswordForgotPassword"
   },
@@ -3088,9 +3046,7 @@
     "middle": [
       "EstateFoundByHash",
       "valid:SignupAfterViewEstateInvitation",
-      "ProspectHasNotRegisterYet",
-      "agreement",
-      "plan"
+      "ProspectHasNotRegisterYet"
     ],
     "handler": "AccountController.signupProspectWithHash"
   },
@@ -3101,9 +3057,7 @@
     ],
     "middle": [
       "guest",
-      "valid:HosekeeperSignUp",
-      "agreement",
-      "plan"
+      "valid:HosekeeperSignUp"
     ],
     "handler": "AccountController.housekeeperSignup"
   },
@@ -3127,9 +3081,7 @@
     "middle": [
       "ViewEstateInvitationCodeExist",
       "valid:SignupAfterViewEstateInvitation",
-      "ProspectHasNotRegisterYet",
-      "agreement",
-      "plan"
+      "ProspectHasNotRegisterYet"
     ],
     "handler": "AccountController.signupProspectWithViewEstateInvitation"
   },
@@ -3500,9 +3452,7 @@
     ],
     "middle": [
       "guest",
-      "valid:SignIn",
-      "agreement",
-      "plan"
+      "valid:SignIn"
     ],
     "handler": "AccountController.login"
   },
@@ -3556,9 +3506,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:MatchBuildingAction",
-      "agreement",
-      "plan"
+      "valid:MatchBuildingAction"
     ],
     "handler": "MatchController.cancelBuildingAction"
   },
@@ -3569,9 +3517,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:MatchAction",
-      "agreement",
-      "plan"
+      "valid:MatchAction"
     ],
     "handler": "MatchController.cancelAction"
   },
@@ -3713,10 +3659,11 @@
     ],
     "middle": [
       "auth:jwtLandlord",
+      "valid:NotifyProspectsToFillUpProfile",
       "agreement",
       "plan"
     ],
-    "handler": "MatchController.notifyOutsideProspectToFillUpProfile"
+    "handler": "MatchController.notifyProspectsToFillUpProfile"
   },
   {
     "route": "/api/v1/match/landlord/inviteTenantTo",
@@ -4176,9 +4123,7 @@
       "GET"
     ],
     "middle": [
-      "valid:Id",
-      "agreement",
-      "plan"
+      "valid:Id"
     ],
     "handler": "EstateController.getTenantEstate"
   },
@@ -4189,9 +4134,7 @@
       "GET"
     ],
     "middle": [
-      "valid:Id",
-      "agreement",
-      "plan"
+      "valid:Id"
     ],
     "handler": "EstateController.getThirdPartyOfferEstate"
   },
@@ -4317,9 +4260,7 @@
       "GET"
     ],
     "middle": [
-      "valid:ProfessionQuery",
-      "agreement",
-      "plan"
+      "valid:ProfessionQuery"
     ],
     "handler": "CommonController.searchProfession"
   },
@@ -4330,9 +4271,7 @@
       "GET"
     ],
     "middle": [
-      "valid:SearchStreet",
-      "agreement",
-      "plan"
+      "valid:SearchStreet"
     ],
     "handler": "CommonController.searchStreet"
   },
@@ -4343,9 +4282,7 @@
     ],
     "middle": [
       "guest",
-      "valid:SignUp",
-      "agreement",
-      "plan"
+      "valid:SignUp"
     ],
     "handler": "AccountController.signup"
   },
@@ -4498,7 +4435,6 @@
       "POST"
     ],
     "middle": [
-      "auth:jwt",
       "auth:jwt",
       "valid:ThirdPartyOffersAction",
       "agreement",
@@ -4709,7 +4645,7 @@
     ],
     "middle": [
       "auth:jwt",
-      "valid:CreateMember,Email,ProfileVisibilityToOther",
+      "valid:CreateMember,ProfileVisibilityToOther",
       "agreement",
       "plan"
     ],
@@ -4894,9 +4830,7 @@
     ],
     "middle": [
       "auth:jwtAdministrator",
-      "valid:Id",
-      "agreement",
-      "plan"
+      "valid:Id"
     ],
     "handler": "TenantReportAbuseController.deleteAbuse"
   },
@@ -4926,7 +4860,9 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtLandlord"
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
     ],
     "handler": "StripeController.testPublishPayment"
   },
@@ -4936,7 +4872,9 @@
       "POST"
     ],
     "middle": [
-      "auth:jwtLandlord"
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
     ],
     "handler": "StripeController.webhookTest"
   },
@@ -5012,9 +4950,7 @@
       "POST"
     ],
     "middle": [
-      "valid:ConfirmEmail",
-      "agreement",
-      "plan"
+      "valid:ConfirmEmail"
     ],
     "handler": "AccountController.resendUserConfirm"
   },
@@ -5229,9 +5165,7 @@
       "POST"
     ],
     "middle": [
-      "valid:AlreadyRegisteredOutsideTenantInvite",
-      "agreement",
-      "plan"
+      "valid:AlreadyRegisteredOutsideTenantInvite"
     ],
     "handler": "EstateCurrentTenantController.validateInvitationQRCode"
   },
@@ -5337,9 +5271,7 @@
       "GET"
     ],
     "middle": [
-      "valid:OAuthSignIn",
-      "agreement",
-      "plan"
+      "valid:OAuthSignIn"
     ],
     "handler": "OAuthController.tokenAuthApple"
   },
@@ -5359,9 +5291,7 @@
       "GET"
     ],
     "middle": [
-      "valid:OAuthSignIn",
-      "agreement",
-      "plan"
+      "valid:OAuthSignIn"
     ],
     "handler": "OAuthController.tokenAuth"
   },

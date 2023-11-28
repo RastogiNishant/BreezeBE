@@ -11,7 +11,7 @@ const {
   extendsResponse,
   extendsView
 } = require('../app/Libs/Extends.js')
-const { GLOBAL_CACHE_KEY, GLOBAL_CACHE_OPTION } = require('../app/constants.js')
+const { GLOBAL_CACHE_KEY, GLOBAL_CACHE_OPTION } = require('../app/constants')
 
 ioc.bind('App/Serializers/UserSerializer', () => {
   return require('../app/Serializers/UserSerializer')

@@ -281,7 +281,7 @@ class MarketPlaceService {
 
   static async handlePendingKnock(contact, trx) {
     if (!contact.estate_id || !contact.email) {
-      throw new HttpException('Params are wrong', e.status || 500)
+      throw new HttpException('Params are wrong', 500)
     }
 
     const estate = await EstateService.getEstateWithUser(contact.estate_id)
@@ -444,7 +444,7 @@ class MarketPlaceService {
       .whereIn('status', [STATUS_DRAFT, STATUS_EMAIL_VERIFY])
   }
 
-  static async  createDynamicLink({ contact, estate, email, other_info, contact_info }) {
+  static async createDynamicLink({ contact, estate, email, other_info, contact_info }) {
     const iv = crypto.randomBytes(16)
     const password = process.env.CRYPTO_KEY
     if (!password) {
@@ -714,13 +714,19 @@ class MarketPlaceService {
       const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
       const contacts = (
         await EstateSyncContactRequest.query()
+          .select(
+            'email',
+            'estate_id',
+            Database.raw(
+              `CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient`
+            )
+          )
           .where('created_at', '<=', yesterday)
           .whereNotNull('link')
           .where('status', STATUS_DRAFT)
           .where('email_sent', false)
           .fetch()
       ).rows
-
       if (!contacts?.length) {
         return
       }
@@ -731,7 +737,6 @@ class MarketPlaceService {
       const estates = await require('./EstateService').getAllPublishedEstatesByIds({
         ids: estate_ids
       })
-
       await Promise.map(
         contacts,
         async (contact) => {
@@ -741,6 +746,7 @@ class MarketPlaceService {
             await MailService.reminderKnockSignUpEmail({
               link: contact.link,
               email: contact.email,
+              recipient: contact.recipient,
               estate,
               lang: estate.user?.lang || DEFAULT_LANG
             })
@@ -757,23 +763,27 @@ class MarketPlaceService {
     }
   }
 
-  static async sendManualReminder({ contactRequestId, landlordId, lang = DEFAULT_LANG }) {
+  static async sendManualReminder({ contactRequestIds, landlordId, lang = DEFAULT_LANG }) {
     try {
-      let contactRequest = await EstateSyncContactRequest.query()
+      let contactRequests = await EstateSyncContactRequest.query()
         .with('estate')
-        .where('id', contactRequestId)
-        .first()
+        .whereIn('id', contactRequestIds)
+        .fetch()
 
-      if (contactRequest) contactRequest = contactRequest.toJSON()
+      if (contactRequests) contactRequests = contactRequests.toJSON()
       else throw new HttpException(ERROR_CONTACT_REQUEST_NO_EXIST, 400)
-
-      if (!contactRequest?.estate || contactRequest?.estate?.user_id !== landlordId) {
-        throw new HttpException(ERROR_CONTACT_REQUEST_NO_EXIST, 400)
-      }
+      console.log({ contactRequests })
+      const recipientEmails = []
+      await Promise.map(contactRequests, async (contactRequest) => {
+        if (!contactRequest?.estate || contactRequest?.estate?.user_id !== landlordId) {
+          throw new HttpException(ERROR_CONTACT_REQUEST_NO_EXIST, 400)
+        }
+        recipientEmails.push(contactRequest?.email)
+      })
 
       /* Notify to user for complete profile via email */
       await MailService.sendToProspectForFillUpProfile({
-        email: contactRequest?.email,
+        email: recipientEmails,
         lang
       })
     } catch (e) {
@@ -926,7 +936,9 @@ class MarketPlaceService {
       return MarketPlaceService.parseImmoweltOtherInfo(immoweltOtherInfo)
     }
 
+    // @TODO implmenent ebay / kleinanzeigen publishing
     if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_EBAY) {
+      return {}
     }
 
     return {}

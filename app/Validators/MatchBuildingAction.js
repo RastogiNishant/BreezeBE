@@ -2,7 +2,7 @@
 
 const yup = require('yup')
 const { id } = require('../Libs/schemas.js')
-const Base = require('./Base.js')
+const Base = require('./Base')
 
 class MatchBuildingAction extends Base {
   static schema = () =>

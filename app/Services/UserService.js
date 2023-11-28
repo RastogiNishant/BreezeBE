@@ -1043,7 +1043,7 @@ class UserService {
     if (isArray(plan_ids)) {
       return (await User.query().whereIn('plan_id', plan_ids).fetch()).rows
     } else {
-      return await User.query().where('plan_id', plan_id).first()
+      return await User.query().where('plan_id', plan_ids).first()
     }
   }
 
@@ -1329,8 +1329,8 @@ class UserService {
     user.role === ROLE_USER
       ? delete data.landlord_visibility
       : user.role === ROLE_LANDLORD
-      ? delete data.prospect_visibility
-      : data
+        ? delete data.prospect_visibility
+        : data
 
     const trx = await Database.beginTransaction()
     delete data.password

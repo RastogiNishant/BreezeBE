@@ -448,7 +448,7 @@ class ImportEstate extends Base {
         ])
         .nullable(),
       construction_year: yup.date().nullable(),
-      last_modernization: yup.date().nullable(),
+      last_modernization: yup.number().min(1000).max(new Date().getFullYear()),
       building_status: yup
         .number()
         .oneOf([

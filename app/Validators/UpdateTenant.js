@@ -35,7 +35,7 @@ const {
   HOUSE_TYPE_BUNGALOW,
   HOUSE_TYPE_VILLA,
   HOUSE_TYPE_GARDENHOUSE,
-  //Minor
+  // Minor
   MAX_MINOR_COUNT,
   MAX_ROOM_COUNT,
   CERT_CATEGORY_A,
@@ -155,7 +155,7 @@ class UpdateTenant extends Base {
                 .number()
                 .integer()
                 .min(
-                  available_start_at,
+                  residency_duration_min,
                   getExceptionMessage(
                     'residency_duration_max',
                     SHOULD_BE_AFTER,

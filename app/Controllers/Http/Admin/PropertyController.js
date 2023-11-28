@@ -54,6 +54,7 @@ const {
   exceptions: { IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE }
 } = require('../../../exceptions')
 const NoticeService = require('../../../Services/NoticeService')
+const Logger = use('Logger')
 
 class PropertyController {
   getEstatesQuery({ estate_status, activation_status, user_status }) {
@@ -312,10 +313,11 @@ class PropertyController {
         })
       }
     } else {
-      const query = this.getEstatesQuery({ estate_status, activation_status, user_status }).whereNot(
-        'status',
-        STATUS_DELETE
-      )
+      const query = this.getEstatesQuery({
+        estate_status,
+        activation_status,
+        user_status
+      }).whereNot('status', STATUS_DELETE)
       estates = await query.fetch()
       estates = estates.rows.map((estate) => {
         estate = estate.toJSON()
@@ -369,7 +371,7 @@ class PropertyController {
     return response.res(estate)
   }
 
-  async publishEstate(id, publishers) {
+  async publishEstate(id, publishers, retainOldMatches = true) {
     const estate = await EstateService.getById(id)
     if (
       [STATUS_DRAFT, STATUS_EXPIRE].includes(estate.status) &&
@@ -393,7 +395,8 @@ class PropertyController {
         const result = await EstateService.publishEstate({
           estate,
           publishers,
-          performed_by: null
+          performed_by: null,
+          retainOldMatches
         })
         return await EstateService.getByIdWithDetail(id)
       } catch (e) {
@@ -466,6 +469,10 @@ class PropertyController {
       })
       MailService.estatePublishRequestApproved(requestPublishEstate)
       NoticeService.notifyLandlordAdminApprovesPublish(requestPublishEstate)
+      await MailService.sendEmailToOhneMakler(
+        `QUEUEING Estate Sync Publish Estate...`,
+        'barudo@gmail.com'
+      )
       QueueService.estateSyncPublishEstate({ estate_id: id })
       await trx.commit()
       return true
@@ -530,7 +537,7 @@ class PropertyController {
   }
 
   async updatePublishStatus({ request, response }) {
-    const { ids, action, publishers, id } = request.all()
+    const { ids, action, publishers, id, retainOldMatches = true } = request.all()
     if (id) {
       const estate = await EstateService.getById(id)
       if (!estate) {
@@ -546,7 +553,7 @@ class PropertyController {
         ret = await this.declinePublish(id)
         return response.res(ret)
       case PUBLISH_PROPERTY:
-        ret = await this.publishEstate(id, publishers)
+        ret = await this.publishEstate(id, publishers, retainOldMatches)
         return response.res(ret)
       case DEACTIVATE_PROPERTY:
         await EstateService.deactivateBulkEstates(ids)

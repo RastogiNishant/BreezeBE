@@ -142,7 +142,7 @@ export const administrationRoutes = {
   '/image/compress_pdf': {
     [HTTP_METHODS.POST]: {
       controller: 'ImageController.testCompressPDF',
-      middleware: ['auth:jwt']
+      middleware: ['auth:jwtAdministrator']
     }
   },
   // admin plan
@@ -285,6 +285,18 @@ export const administrationRoutes = {
     [HTTP_METHODS.PUT]: {
       controller: 'Admin/UserController.recalculateMatchByDate',
       middleware: ['auth:jwtAdministrator', 'valid:RecalculateMatchByDate']
+    }
+  },
+  '/utilities/contact-requests': {
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/UtilityController.uploadContactRequest',
+      middleware: ['auth:jwtAdministrator']
+    }
+  },
+  '/utilities/estate-sync/property': {
+    [HTTP_METHODS.PUT]: {
+      controller: 'Admin/UtilityController.updateEstateSyncProperty',
+      middleware: ['auth:jwtAdministrator', 'valid:UpdateEstateSyncProperty']
     }
   }
 }

@@ -440,6 +440,7 @@ class UserController {
         'users.email',
         'users.firstname',
         'users.secondname',
+        'users.phone',
         Database.raw(`to_char(users.last_login, '${ISO_DATE_FORMAT}') as last_login`),
         Database.raw(`to_char(users.updated_at, '${ISO_DATE_FORMAT}') as updated_at`),
         Database.raw(
@@ -506,6 +507,7 @@ class UserController {
                 'secondname', members.secondname,
                 'rent_arrears', members.rent_arrears_doc,
                 'debt_proof', members.debt_proof,
+                'phone', members.phone,
                 'files', mf.files,
                 'incomes', mi.member_incomes,
                 'unpaid_rental', members.unpaid_rental,
@@ -706,8 +708,9 @@ class UserController {
       .fetch()
     const trx = await Database.beginTransaction()
     try {
-      await Promise.all(
-        matches.toJSON().map(async (match) => {
+      await Promise.map(
+        matches.toJSON(),
+        async (match) => {
           const prospect = await MatchService.getProspectForScoringQuery()
             .where(`tenants.user_id`, match.user_id)
             .first()
@@ -726,7 +729,8 @@ class UserController {
               },
               trx
             )
-        })
+        },
+        { concurrency: 20 }
       )
       await trx.commit()
       response.res(true)
