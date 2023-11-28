@@ -120,7 +120,8 @@ const exceptions = {
   ERROR_COMMIT_MATCH_INVITE: 'No match for that property',
   ERROR_ALREADY_MATCH_INVITE: 'The prospect is already in that stage for that property',
   ERROR_NO_ACTIVE_MATCH_FOUND: 'No active match with the landlord found',
-  ERROR_TENANT_NOT_MATCH_WITH_ESTATE: 'Does not match tenant with estate'
+  ERROR_TENANT_NOT_MATCH_WITH_ESTATE: 'Does not match tenant with estate',
+  ERROR_LANDLORD_MATCH_SHOW_WRONG: 'landlord.web.match.show.txt_wrong_code'
 }
 
 const exceptionCodes = {
@@ -146,7 +147,8 @@ const exceptionCodes = {
   ERROR_SEPARATE_PUBLISH_UNIT_BUILDING_CODE: 9002000,
   ERROR_WRONG_MATCH_STATUS_CODE: 10001000,
   ERROR_COMMIT_MATCH_INVITE_CODE: 10001001,
-  ERROR_ALREADY_MATCH_INVITE_CODE: 10001002
+  ERROR_ALREADY_MATCH_INVITE_CODE: 10001002,
+  ERROR_LANDLORD_MATCH_SHOW_WRONG_CODE: 10001003
 }
 
 const exceptionKeys = {
@@ -206,6 +208,14 @@ const exceptionKeys = {
   NO_IMAGE_EXIST: 'NO_IMAGE_EXIST',
   NO_FILE_EXIST: 'NO_FILE_EXIST'
 }
+
+/**
+ *
+ * @param {string} name
+ * @param {string} command
+ * @param {string} value
+ * @returns
+ */
 const getExceptionMessage = (name, command, value = null) => {
   if (!exceptions[command]) {
     throw new HttpException(`message for ${command} is not defined`)

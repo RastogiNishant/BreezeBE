@@ -546,7 +546,7 @@ class MemberController {
     }
   }
 
-  async removeInviteConnection({ request, auth, response }) { }
+  async removeInviteConnection({ request, auth, response }) {}
 
   async prepareHouseholdInvitationDetails({ auth, response }) {
     const userEmail = auth.user.email

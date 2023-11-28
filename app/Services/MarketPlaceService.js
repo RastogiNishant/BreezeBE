@@ -281,7 +281,7 @@ class MarketPlaceService {
 
   static async handlePendingKnock(contact, trx) {
     if (!contact.estate_id || !contact.email) {
-      throw new HttpException('Params are wrong', e.status || 500)
+      throw new HttpException('Params are wrong', 500)
     }
 
     const estate = await EstateService.getEstateWithUser(contact.estate_id)
@@ -936,7 +936,9 @@ class MarketPlaceService {
       return MarketPlaceService.parseImmoweltOtherInfo(immoweltOtherInfo)
     }
 
+    // @TODO implmenent ebay / kleinanzeigen publishing
     if (publisher === ESTATE_SYNC_PUBLISH_PROVIDER_EBAY) {
+      return {}
     }
 
     return {}

@@ -15,9 +15,26 @@
       "ecmaVersion": "latest"
     },
     "rules": {
+      "no-unused-vars": "warn",
+      "camelcase": "warn",
+      "spaced-comment": "warn",
+      "eqeqeq": "warn",
+      "no-useless-constructor": "warn",
+      "new-cap": "warn",
+      "no-useless-escape": "warn",
+      "no-useless-catch": "warn",
+      "no-empty-pattern": "warn",
+      "prefer-const": "warn",
+      "lines-between-class-members": "warn",
+      "array-callback-return": "warn",
+      "no-unused-expressions": "warn",
+      "dot-notation": "warn",
+      "no-case-declarations": "warn",
+      "no-unneeded-ternary": "warn",
+      "n/no-deprecated-api": "warn",
+      "no-template-curly-in-string": "warn"
     },
     "plugins": [
-      "prettier",
-      "eslint-plugin-only-warn"
+      "prettier"
     ]
 }

@@ -22,7 +22,7 @@ class CreateEstateAmenity extends Base {
           .typeError('Custom amenity must have at least 1 character.')
           .required('Custom amenity name is required.')
       }),
-      option_id: yup.number().when('type', {
+      option_id: yup.number().nullable().when('type', {
         is: 'amenity',
         then: yup.number().integer().positive().required('Estate amenity is required.')
       }),

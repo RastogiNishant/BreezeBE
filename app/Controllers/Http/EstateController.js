@@ -101,6 +101,8 @@ const {
     FAILED_EXTEND_ESTATE,
     UPLOAD_EXCEL_PROGRESS,
     LAT_LON_NOT_PROVIDED,
+    NO_ESTATE_EXIST,
+    ERROR_PROPERTY_PUBLISHED_CAN_BE_EDITABLE,
     IS_CURRENTLY_PUBLISHED_IN_MARKET_PLACE
   },
   exceptionCodes: { UPLOAD_EXCEL_PROGRESS_ERROR_CODE }
@@ -766,7 +768,7 @@ class EstateController {
       { field: 'file', mime: imageMimes, isPublic: true }
     ])
 
-    if (files && files.file) {
+    if (files?.file) {
       const paths = Array.isArray(files.file) ? files.file : [files.file]
       const original_file_names = Array.isArray(files.original_file)
         ? files.original_file
@@ -801,7 +803,7 @@ class EstateController {
         throw new HttpException(FAILED_TO_ADD_FILE, e.status || 500)
       }
     }
-    throw new HttpException(FAILED_TO_ADD_FILE, e.status || 500)
+    throw new HttpException(FAILED_TO_ADD_FILE, 500)
   }
 
   /**
@@ -1096,7 +1098,7 @@ class EstateController {
   async getInviteToViewCode({ request, auth, response }) {}
 
   async createInviteToViewCode({ request, auth, response }) {
-    req.res(request.all())
+    request.res(request.all())
   }
 
   async inviteToViewViaEmail({ request, auth, response }) {

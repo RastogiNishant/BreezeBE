@@ -17,7 +17,7 @@ class EstateAmenityService {
             "options"."title"
           else
             "amenities"."amenity"
-              end as amenity
+              end as title
          from amenities
          left join options
          on options.id=amenities.option_id
@@ -101,7 +101,7 @@ class EstateAmenityService {
   }
 
   static async removeAmenitiesByLocation({ location, estate_id }, trx) {
-    let query = Amenity.query().delete()
+    const query = Amenity.query().delete()
     if (location) {
       location = Array.isArray(location) ? location : [location]
       query.whereIn('location', location)

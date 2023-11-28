@@ -171,7 +171,7 @@ class QueueEngine {
       const allJobsAfterSetup = await this.commonQueue.getJobs()
       Logger.info(
         '[Queue] --- setup complete following job list --- \n' +
-          allJobsAfterSetup.map((job) => `${job.name} - ${job.id}`).join(' \n')
+          allJobsAfterSetup.map((job) => `${job?.name} - ${job?.id}`).join(' \n')
       )
     } catch (e) {
       Logger.error(`QueueEngine init error ${e.message || e}`)

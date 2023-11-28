@@ -136,7 +136,10 @@ const {
   NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID,
 
   NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED,
-  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID
+  NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID,
+
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE,
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID
 } = require('../constants')
 
 const mapping = [
@@ -205,7 +208,8 @@ const mapping = [
   [NOTICE_TYPE_ADMIN_APPROVES_PUBLISH_ID, NOTICE_TYPE_ADMIN_APPROVES_PUBLISH],
   [NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID, NOTICE_TYPE_PROSPECT_GREEN_MATCH],
   [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID, NOTICE_TYPE_TENANT_PROFILE_FILL_UP],
-  [NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID, NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED]
+  [NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED_ID, NOTICE_TYPE_FINAL_MATCH_REQUEST_EXPIRED],
+  [NOTICE_TYPE_PROSPECT_REQUEST_PROFILE_ID, NOTICE_TYPE_PROSPECT_REQUEST_PROFILE]
 ]
 
 class NotificationsService {
@@ -1040,6 +1044,16 @@ class NotificationsService {
     const title = 'prospect.notification.event.profile.reactivated'
     const body = 'prospect.notification.next.profile.reactivated'
     return NotificationsService.sendNotes(notices, title, body)
+  }
+
+  static async prospectSendCode(notices) {
+    const title = 'prospect.notification.event.sharing_profile_request'
+    const body = 'prospect.notification.next.sharing_profile_request'
+    return NotificationsService.sendNotes(
+      notices,
+      (data, lang) => `${rc(l.get(title, lang), [{ landlord: data?.landlord }])}`,
+      body
+    )
   }
 }
 

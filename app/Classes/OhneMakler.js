@@ -250,14 +250,10 @@ class OhneMakler {
     postcode: 'zip',
     country: 'country',
     floor_number: 'floor',
-    floor_count: 'floor_count',
     bathrooms: 'bathrooms',
-    rooms: 'rooms',
     floor_area: 'area',
     year: 'construction_year',
     pictures: 'images',
-    expiration_date: 'expiration_date',
-    price: 'price',
     contact: 'contact',
     address_public: 'full_address',
     nebenkosten_ohne_heizkosten: 'additional_costs',
@@ -272,8 +268,8 @@ class OhneMakler {
     duration_rent_min: 'duration_rent_min',
     duration_rent_max: 'duration_rent_max',
     energietraeger: 'firing'
-    //visit_from
-    //visit_to
+    // visit_from
+    // visit_to
   }
 
   constructor(data) {
@@ -305,45 +301,45 @@ class OhneMakler {
   }
 
   parseHouseAndApartmentTypes(estate, newEstate) {
-    //house_type
+    // house_type
     if (
       this.houseType[estate.property_type] &&
       this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_HOUSE_TYPE
     ) {
-      newEstate['house_type'] = this.houseType[estate.property_type].value
+      newEstate.house_type = this.houseType[estate.property_type].value
     } else if (
       this.houseType[estate.property_type] &&
       this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_APARTMENT_TYPE
     ) {
-      newEstate['apt_type'] = this.houseType[estate.property_type].value
+      newEstate.apt_type = this.houseType[estate.property_type].value
     } else if (
       this.houseType[estate.property_type] &&
       this.houseType[estate.property_type].type === THIRD_PARTY_OFFER_PROPERTY_TYPE
     ) {
       if (!newEstate.property_type) {
-        newEstate['property_type'] = this.houseType[estate.property_type].value
+        newEstate.property_type = this.houseType[estate.property_type].value
       }
     }
 
-    //apt_type
+    // apt_type
     if (
       this.apartmentType[estate.objekttyp] &&
       this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_APARTMENT_TYPE
     ) {
-      newEstate['apt_type'] = this.apartmentType[estate.objekttyp].value
+      newEstate.apt_type = this.apartmentType[estate.objekttyp].value
     } else if (
       this.apartmentType[estate.objekttyp] &&
       this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_HOUSE_TYPE
     ) {
       if (!newEstate.house_type) {
-        newEstate['house_type'] = this.apartmentType[estate.objekttyp].value
+        newEstate.house_type = this.apartmentType[estate.objekttyp].value
       }
     } else if (
       this.apartmentType[estate.objekttyp] &&
       this.apartmentType[estate.objekttyp].type === THIRD_PARTY_OFFER_PROPERTY_TYPE
     ) {
       if (!newEstate.property_type) {
-        newEstate['property_type'] = this.apartmentType[estate.objekttyp].value
+        newEstate.property_type = this.apartmentType[estate.objekttyp].value
       }
     }
     return newEstate
@@ -407,11 +403,11 @@ class OhneMakler {
       newEstate.rent_end_at = estate?.vacant_till
         ? moment(estate.vacant_till, 'YYYY/MM/DD', true).utcOffset(2).format(DATE_FORMAT)
         : null
-      //as confirmed by andrey, K is Kellergeschoss (basement or underground)
+      // as confirmed by andrey, K is Kellergeschoss (basement or underground)
       if (newEstate.floor === 'K') {
         newEstate.floor = -1
       }
-      //11 here means greater than 5
+      // 11 here means greater than 5
       if (newEstate.floor === '>') {
         newEstate.floor = 11
       }
@@ -426,7 +422,7 @@ class OhneMakler {
       newEstate = this.parseHouseAndApartmentTypes(estate, newEstate)
 
       if (!newEstate.extra_costs && newEstate.additional_costs && newEstate.heating_costs) {
-        //extra costs is the sum of additional_costs and heating_costs
+        // extra costs is the sum of additional_costs and heating_costs
         newEstate.extra_costs = +newEstate.additional_costs + +newEstate.heating_costs
       }
 
@@ -445,7 +441,7 @@ class OhneMakler {
       } else {
         newEstate.status = STATUS_EXPIRE
       }
-      newEstate.source_information = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['ohnemakler']
+      newEstate.source_information = THIRD_PARTY_OFFER_PROVIDER_INFORMATION.ohnemakler
     } catch (e) {
       console.log('e.estate', estate)
     }
