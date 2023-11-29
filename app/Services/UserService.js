@@ -151,6 +151,8 @@ class UserService {
       userData.birthday === '1970-01-01' && otherInfo?.birthday
         ? otherInfo.birthday
         : userData.birthday
+    userData.firstname = userData?.firstname ? userData.firstname : otherInfo?.firstname || ''
+    userData.secondname = userData?.secondname ? userData.secondname : otherInfo?.secondname || ''
     const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
     // return userData
     if (user.role === ROLE_USER) {
@@ -1329,8 +1331,8 @@ class UserService {
     user.role === ROLE_USER
       ? delete data.landlord_visibility
       : user.role === ROLE_LANDLORD
-        ? delete data.prospect_visibility
-        : data
+      ? delete data.prospect_visibility
+      : data
 
     const trx = await Database.beginTransaction()
     delete data.password
