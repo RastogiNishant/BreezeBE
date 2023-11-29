@@ -467,7 +467,7 @@ class EstateService {
                   "options"."title"
                 else
                   "amenities"."amenity"
-              end as amenity`
+              end as title`
               )
             )
               .from('amenities')
@@ -513,7 +513,7 @@ class EstateService {
                 "options"."title"
               else
                 "amenities"."amenity"
-                  end as amenity
+                  end as title
           from amenities
           left join options
           on options.id=amenities.option_id

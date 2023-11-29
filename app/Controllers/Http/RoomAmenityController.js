@@ -16,7 +16,7 @@ const RoomAmenity = use('App/Models/Amenity')
 
 class RoomAmenityController {
   async add({ request, auth, response }) {
-    let { amenity, room_id, type, option_id } = request.all()
+    const { amenity, room_id, type, option_id } = request.all()
 
     let currentRoomAmenities = await RoomAmenity.query()
       .where('status', STATUS_ACTIVE)
@@ -26,11 +26,11 @@ class RoomAmenityController {
       .fetch()
     let sequence_order = 1
     currentRoomAmenities = currentRoomAmenities.toJSON()
-    let newRoomAmenity = new RoomAmenity()
+    const newRoomAmenity = new RoomAmenity()
     let newRoomAmenityId
 
     if (type === 'custom_amenity') {
-      //we check if addition of custom amenities could be possible...
+      // we check if addition of custom amenities could be possible...
       let currentRoomCustomAmenities = await RoomAmenity.query()
         .whereNotIn('status', [STATUS_DELETE])
         .where('type', 'custom_amenity')
@@ -48,7 +48,7 @@ class RoomAmenityController {
       }
 
       if (currentRoomAmenities.length) {
-        //we place this custom_amenity at the top
+        // we place this custom_amenity at the top
         sequence_order = parseInt(currentRoomAmenities[0].sequence_order) + 1
       }
       newRoomAmenity.amenity = amenity
@@ -70,9 +70,9 @@ class RoomAmenityController {
       )
       newRoomAmenity.fill({
         added_by: auth.user.id,
-        sequence_order: 1, //we place an amenity type at the bottom of the list.
+        sequence_order: 1, // we place an amenity type at the bottom of the list.
         type: 'amenity',
-        room_id: room_id,
+        room_id,
         option_id,
         status: STATUS_ACTIVE,
         location: 'room'
@@ -80,7 +80,7 @@ class RoomAmenityController {
       await newRoomAmenity.save()
       newRoomAmenityId = newRoomAmenity.id
     }
-    //we return all amenities like getAll...
+    // we return all amenities like getAll...
     const amenities = await RoomAmenity.query()
       .select(
         Database.raw(
@@ -92,7 +92,7 @@ class RoomAmenityController {
               "options"."title"
             else
               "amenities"."amenity"
-          end as amenity`
+          end as title`
         )
       )
       .leftJoin('options', function () {
@@ -107,7 +107,7 @@ class RoomAmenityController {
     response.res({
       newRoomAmenityId,
       total: amenities.rows.length,
-      amenities: amenities
+      amenities
     })
   }
 
@@ -116,8 +116,8 @@ class RoomAmenityController {
     const affectedRows = await RoomAmenity.query()
       .where('id', id)
       .where('room_id', room_id)
-      .where('location', 'room') //this is in preparation if ever
-      //we have outside room amenity and we have location: outside_room
+      .where('location', 'room') // this is in preparation if ever
+      // we have outside room amenity and we have location: outside_room
       .update({ status: STATUS_DELETE })
     response.res({ deleted: affectedRows })
   }
@@ -127,7 +127,7 @@ class RoomAmenityController {
     let affectedRows = 0
     switch (action) {
       case 'update':
-        //we can only update a custom_amenity. If you want to update an amenity. Just delete.
+        // we can only update a custom_amenity. If you want to update an amenity. Just delete.
         affectedRows = await RoomAmenity.query()
           .where('id', id)
           .where('type', 'custom_amenity')
@@ -174,7 +174,7 @@ class RoomAmenityController {
               "options"."title"
             else
               "amenities"."amenity"
-          end as amenity`
+          end as title`
         )
       )
       .leftJoin('options', function () {
@@ -187,7 +187,7 @@ class RoomAmenityController {
       .fetch()
     response.res({
       total: amenities.rows.length,
-      amenities: amenities
+      amenities
     })
   }
 }
