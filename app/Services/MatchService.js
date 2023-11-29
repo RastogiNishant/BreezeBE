@@ -4799,7 +4799,6 @@ class MatchService {
       estate,
       visitDate,
       landlordUser?.avatar
-    )
 
     // Send an email to the tenant requesting profile sharing
     MailService.sendRequestToTenantForShareProfile({
