@@ -23,7 +23,8 @@ const {
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
   GERMAN_DATE_TIME_FORMAT,
   ESTATE_NO_IMAGE_COVER_URL,
-  MARKETPLACE_LIST
+  MARKETPLACE_LIST,
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
@@ -945,7 +946,7 @@ class MailService {
 
   static async sendRequestToTenantForShareProfile(
     { prospectEmail, estate, landlord, visitDate, avatar, lang = DEFAULT_LANG },
-    eventType = 'PROSPECT_RECEIVES_MESSAGE'
+    eventType = NOTICE_TYPE_PROSPECT_REQUEST_PROFILE
   ) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const subject = l
