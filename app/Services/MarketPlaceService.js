@@ -952,6 +952,8 @@ class MarketPlaceService {
     }
 
     return await EstateSyncContactRequest.query()
+      .select(Database.raw(`other_info->'firstName' as firstname`))
+      .select(Database.raw(`other_info->'lastName' as secondname`))
       .select(Database.raw(`other_info->'employment' as profession`))
       .select(Database.raw(`other_info->'family_size' as members`))
       .select(Database.raw(`other_info->'income' as income`))

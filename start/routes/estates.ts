@@ -211,7 +211,7 @@ const indexRoutes: Routes = {
   }
 }
 
-const estateIdIndexRoutes = {
+const estateIdIndexRoutes: Routes = {
   '/invite-to-view': {
     [HTTP_METHODS.POST]: {
       controller: 'EstateController.inviteToView',
@@ -227,7 +227,7 @@ const estateIdIndexRoutes = {
 }
 
 // tenant callable routes
-const estateIndexRoute = {
+const estateIndexRoute: Routes = {
   '/search/onboard': {
     [HTTP_METHODS.GET]: {
       controller: 'EstateController.searchPreOnboard',

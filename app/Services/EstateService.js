@@ -467,7 +467,7 @@ class EstateService {
                   "options"."title"
                 else
                   "amenities"."amenity"
-              end as amenity`
+              end as title`
               )
             )
               .from('amenities')
@@ -513,7 +513,7 @@ class EstateService {
                 "options"."title"
               else
                 "amenities"."amenity"
-                  end as amenity
+                  end as title
           from amenities
           left join options
           on options.id=amenities.option_id
@@ -2485,7 +2485,7 @@ class EstateService {
       const deposit_multiplier = Math.round(Number(estate?.deposit) / Number(estate?.net_rent))
       if (estate.build_id && estate.unit_category_id) {
         estate.__meta__.contact_requests_count =
-          contactRequests.find((cr) => cr.unit_category_id === estate.unit_category_id)
+          contactRequests?.find((cr) => cr.unit_category_id === estate.unit_category_id)
             ?.contact_requests_count || 0
       }
 

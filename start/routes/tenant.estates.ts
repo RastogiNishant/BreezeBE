@@ -1,6 +1,6 @@
-import { HTTP_METHODS } from './_helper'
+import { HTTP_METHODS, Routes } from './_helper'
 
-export const tenantEstateRoutes = {
+export const tenantEstateRoutes: Routes = {
   '/': {
     [HTTP_METHODS.GET]: {
       controller: 'EstateController.getTenantEstates',

@@ -116,7 +116,7 @@ const usersTenantRoutes: Routes = {
   }
 }
 
-export const userRoutes = {
+export const userRoutes: Routes = {
   ...indexUsersRoutes,
   ...usersTenantRoutes
 }

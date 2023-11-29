@@ -120,6 +120,35 @@ const servicesRoutes: Routes = {
       middleware: ['valid:CalcRentPrice']
     }
   },
+  '/cities': {
+    [HTTP_METHODS.GET]: {
+      controller: 'CommonController.searchCities',
+      middleware: ['valid:SearchCity']
+    }
+  },
+  '/countries': {
+    [HTTP_METHODS.GET]: {
+      controller: 'CommonController.getAvailableCountries'
+    }
+  },
+  '/dashboard/count': {
+    [HTTP_METHODS.GET]: {
+      controller: 'DashboardController.getDashboardCount',
+      middleware: ['auth:jwtLandlord']
+    }
+  },
+  '/estateReportAbuse': {
+    [HTTP_METHODS.POST]: {
+      controller: 'EstateAbuseController.reportEstateAbuse',
+      middleware: ['auth:jwt', 'valid:CreateEstateAbuse']
+    }
+  },
+  '/image/createthumbnail': {
+    [HTTP_METHODS.POST]: {
+      controller: 'ImageController.tryCreateThumbnail',
+      middleware: ['auth:jwtLandlord']
+    }
+  },
   '/estate-sync-is24': {
     [HTTP_METHODS.GET]: {
       controller: 'EstateSyncController.redirectToWebApp'
@@ -143,10 +172,21 @@ const servicesRoutes: Routes = {
       middleware: ['auth:jwt,jwtLandlord']
     }
   },
+  '/offers': {
+    [HTTP_METHODS.GET]: {
+      controller: 'CommonController.getOffers',
+      middleware: ['valid:GetOffers']
+    }
+  },
   '/profile/tenant/:id': {
     [HTTP_METHODS.GET]: {
       controller: 'AccountController.getTenantProfile',
       middleware: ['auth:jwtLandlord', 'valid:Id']
+    }
+  },
+  '/references': {
+    [HTTP_METHODS.GET]: {
+      controller: 'CommonController.getReferences'
     }
   },
   '/search/street': {
@@ -161,9 +201,22 @@ const servicesRoutes: Routes = {
       middleware: ['valid:ProfessionQuery']
     }
   },
-  '/references': {
+  '/tenantReportAbuse/': {
+    [HTTP_METHODS.POST]: {
+      controller: 'TenantReportAbuseController.reportTenantAbuse',
+      middleware: ['auth:jwtLandlord', 'valid:CreateEstateAbuse,TenantId']
+    }
+  },
+  '/tenantReportAbuse/:id': {
+    [HTTP_METHODS.DELETE]: {
+      controller: 'TenantReportAbuseController.deleteAbuse',
+      middleware: ['auth:jwtAdministrator', 'valid:Id']
+    }
+  },
+  '/url': {
     [HTTP_METHODS.GET]: {
-      controller: 'CommonController.getReferences'
+      controller: 'CommonController.getProtectedUrl',
+      middleware: ['auth:jwtLandlord,jwt', 'valid:Uri']
     }
   },
   '/validate/outside_tenant/invitation': {
@@ -185,6 +238,11 @@ export const apiIndexRoutes: Routes = {
 }
 
 export const indexRoutes: Routes = {
+  '/api/webhooks/stripe': {
+    [HTTP_METHODS.POST]: {
+      controller: 'StripeController.webhook'
+    }
+  },
   '/auth/google': {
     [HTTP_METHODS.GET]: {
       controller: 'OAuthController.googleAuth'
@@ -202,12 +260,26 @@ export const indexRoutes: Routes = {
       middleware: ['valid:OAuthSignIn']
     }
   },
+  '/map': {
+    [HTTP_METHODS.GET]: {
+      controller: 'MapController.getMap'
+    }
+  },
   '/ping': {
     [HTTP_METHODS.GET]: {
       controller: 'CommonController.ping'
     }
   },
-
+  '/populate_mautic_db/:secure_key': {
+    [HTTP_METHODS.GET]: {
+      controller: 'MauticController.populateMauticDB'
+    }
+  },
+  '/webhooks/estate-sync': {
+    [HTTP_METHODS.POST]: {
+      controller: 'WebhookController.estateSync'
+    }
+  },
   '/:key': {
     [HTTP_METHODS.GET]: {
       controller: 'CommonController.getOriginalUrl',
