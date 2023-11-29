@@ -92,7 +92,8 @@ class CreateMember extends Base {
           MARITAL_REGISTERED_COHABITATION
         ])
         .nullable(),
-      citizen: yup.string().nullable()
+      citizen: yup.string().nullable(),
+      is_verified: yup.boolean().nullable()
     })
   }
 }

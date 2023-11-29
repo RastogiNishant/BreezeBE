@@ -1284,9 +1284,9 @@ class EstateService {
   }
 
   static async upsertBulkLikes(likes, trx) {
-    let queries = `INSERT INTO likes 
+    let queries = `INSERT INTO likes
                   ( user_id, estate_id )
-                  VALUES 
+                  VALUES
                 `
 
     queries = (likes || []).reduce(
@@ -1296,7 +1296,7 @@ class EstateService {
       queries
     )
 
-    queries += ` ON CONFLICT ( user_id, estate_id ) 
+    queries += ` ON CONFLICT ( user_id, estate_id )
                   DO NOTHING
                 `
 
@@ -1379,9 +1379,9 @@ class EstateService {
   }
 
   static async upsertBulkDislikes(likes, trx) {
-    let queries = `INSERT INTO dislikes 
+    let queries = `INSERT INTO dislikes
                   ( user_id, estate_id )
-                  VALUES 
+                  VALUES
                 `
 
     queries = (likes || []).reduce(
@@ -1391,7 +1391,7 @@ class EstateService {
       queries
     )
 
-    queries += ` ON CONFLICT ( user_id, estate_id ) 
+    queries += ` ON CONFLICT ( user_id, estate_id )
                   DO NOTHING
                 `
 
@@ -3941,7 +3941,7 @@ class EstateService {
     estate = estate.toJSON({
       isShort: true,
       role: role ?? null,
-      extraFields: ['landlord_type', 'hash', 'property_type']
+      extraFields: ['landlord_type', 'hash', 'property_type', 'active_visuals']
     })
 
     let match
@@ -4268,7 +4268,7 @@ class EstateService {
       .withCount('contact_requests')
       .select(
         Database.raw(
-          `case when status='${STATUS_ACTIVE}' 
+          `case when status='${STATUS_ACTIVE}'
   then true else false end
   as "unpublishable"`
         ),
@@ -4320,9 +4320,9 @@ class EstateService {
     'is_not_duration_later_but_available_end_at_is_null',
       ((is_duration_later is false or is_duration_later is null)
       and (available_end_at is null) is true) is true,
-    'is_duration_later_but_no_min_invite_count', 
+    'is_duration_later_but_no_min_invite_count',
       (is_duration_later is true and min_invite_count < 1) is true,
-    'available_end_at_is_past', 
+    'available_end_at_is_past',
       ((available_end_at is not null) is true and available_end_at < NOW()) is true,
     'available_start_at_is_later_than_available_end_at',
       ((available_end_at is not null) is true and
