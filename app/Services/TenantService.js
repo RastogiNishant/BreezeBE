@@ -636,7 +636,7 @@ class TenantService extends BaseService {
         this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
       })
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
-      .innserJoin({ _t: 'tenants' }, '_m.user_id', '_t.user_id')
+      .innerJoin({ _t: 'tenants' }, '_m.user_id', '_t.user_id')
       .select('_m.user_id')
       .select(Database.raw(`_m.id as member_id`))
       .select(
@@ -655,7 +655,7 @@ class TenantService extends BaseService {
             .where('income_proofs.expire_date', '>', startOf)
             .fetch()
           if ((validIncomeProofs.toJSON() || []).length < REQUIRED_INCOME_PROOFS_COUNT) {
-            // we warn prospect
+            // await MailService.sendToProspectScheduledForDeactivation()
           }
         }
       },
