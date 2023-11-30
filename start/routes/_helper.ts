@@ -1,3 +1,5 @@
+import { isDefined } from '@App/core/helper'
+
 const Route = use('Route')
 
 export const prefixAll = (prefix: string, routes: Routes): Routes => {
@@ -46,10 +48,6 @@ export const generateAdonisRoutes = (routes: Routes, prefix = ''): void => {
   }
 }
 
-function isDefined<T> (arg: T | undefined | null): arg is T {
-  return arg !== undefined && arg !== null
-}
-
 /**
  * add middleware to all the routes
  * @returns modified routes object
@@ -66,7 +64,7 @@ export const addMiddlewareToRoutes = (routes: Routes, middleware: string | strin
       } else {
         routes[path][method] = {
           ...config,
-          middleware
+          middleware: Array.isArray(middleware) ? middleware : [middleware]
         }
       }
     }

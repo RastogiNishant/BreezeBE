@@ -2931,8 +2931,8 @@
       "GET"
     ],
     "middle": [
-      "valid:CreateFeature",
       "auth:jwtLandlord,jwt",
+      "valid:CreateFeature",
       "agreement",
       "plan"
     ],
@@ -4210,7 +4210,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtLandlord,jwt",
+      "auth:jwt,jwtLandlord",
       "agreement",
       "plan"
     ],
@@ -4223,7 +4223,7 @@
       "GET"
     ],
     "middle": [
-      "auth:jwtLandlord,jwt",
+      "auth:jwt,jwtLandlord",
       "valid:Id",
       "agreement",
       "plan"

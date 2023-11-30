@@ -31,6 +31,7 @@ const Estate = use('App/Models/Estate')
 const Match = use('App/Models/Match')
 const Visit = use('App/Models/Visit')
 const Task = use('App/Models/Task')
+const Room = use('App/Models/Room')
 const EstateCurrentTenant = use('App/Models/EstateCurrentTenant')
 const File = use('App/Models/File')
 const Building = use('App/Models/Building')
@@ -125,7 +126,9 @@ const {
   FURNISHED_GERMAN_NAME,
   PUBLISH_TYPE_ONLINE_MARKET,
   MAXIMUM_EXPIRE_PERIOD,
-  MATCH_STATUS_KNOCK
+  MATCH_STATUS_KNOCK,
+  ACTIVE_VISUALS_BY_AREA,
+  ACTIVE_VISUALS_BY_BULK_UPLOAD
 } = require('../constants')
 
 const {
@@ -467,7 +470,7 @@ class EstateService {
                   "options"."title"
                 else
                   "amenities"."amenity"
-              end as amenity`
+              end as title`
               )
             )
               .from('amenities')
@@ -513,7 +516,7 @@ class EstateService {
                 "options"."title"
               else
                 "amenities"."amenity"
-                  end as amenity
+                  end as title
           from amenities
           left join options
           on options.id=amenities.option_id
@@ -1284,9 +1287,9 @@ class EstateService {
   }
 
   static async upsertBulkLikes(likes, trx) {
-    let queries = `INSERT INTO likes 
+    let queries = `INSERT INTO likes
                   ( user_id, estate_id )
-                  VALUES 
+                  VALUES
                 `
 
     queries = (likes || []).reduce(
@@ -1296,7 +1299,7 @@ class EstateService {
       queries
     )
 
-    queries += ` ON CONFLICT ( user_id, estate_id ) 
+    queries += ` ON CONFLICT ( user_id, estate_id )
                   DO NOTHING
                 `
 
@@ -1379,9 +1382,9 @@ class EstateService {
   }
 
   static async upsertBulkDislikes(likes, trx) {
-    let queries = `INSERT INTO dislikes 
+    let queries = `INSERT INTO dislikes
                   ( user_id, estate_id )
-                  VALUES 
+                  VALUES
                 `
 
     queries = (likes || []).reduce(
@@ -1391,7 +1394,7 @@ class EstateService {
       queries
     )
 
-    queries += ` ON CONFLICT ( user_id, estate_id ) 
+    queries += ` ON CONFLICT ( user_id, estate_id )
                   DO NOTHING
                 `
 
@@ -3941,7 +3944,7 @@ class EstateService {
     estate = estate.toJSON({
       isShort: true,
       role: role ?? null,
-      extraFields: ['landlord_type', 'hash', 'property_type']
+      extraFields: ['landlord_type', 'hash', 'property_type', 'active_visuals']
     })
 
     let match
@@ -4268,7 +4271,7 @@ class EstateService {
       .withCount('contact_requests')
       .select(
         Database.raw(
-          `case when status='${STATUS_ACTIVE}' 
+          `case when status='${STATUS_ACTIVE}'
   then true else false end
   as "unpublishable"`
         ),
@@ -4320,9 +4323,9 @@ class EstateService {
     'is_not_duration_later_but_available_end_at_is_null',
       ((is_duration_later is false or is_duration_later is null)
       and (available_end_at is null) is true) is true,
-    'is_duration_later_but_no_min_invite_count', 
+    'is_duration_later_but_no_min_invite_count',
       (is_duration_later is true and min_invite_count < 1) is true,
-    'available_end_at_is_past', 
+    'available_end_at_is_past',
       ((available_end_at is not null) is true and available_end_at < NOW()) is true,
     'available_start_at_is_later_than_available_end_at',
       ((available_end_at is not null) is true and
@@ -4473,6 +4476,55 @@ class EstateService {
       await building.save(trx)
     }
     return building
+  }
+
+  static async updateCoverByVisuals(visualsType, estateId) {
+    // update image cover image while bulk upload screen
+    if (visualsType === ACTIVE_VISUALS_BY_BULK_UPLOAD) {
+      const fileData = await this.getFileByEstateId(estateId, FILE_TYPE_UNASSIGNED)
+
+      if (fileData.length !== 0) {
+        await Estate.query().where('id', estateId).update({ cover: fileData[0].url })
+      }
+    } else if (visualsType === ACTIVE_VISUALS_BY_AREA) {
+      const roomData = (
+        await Room.query()
+          .where('estate_id', estateId)
+          .with('images', function (i) {
+            i.orderBy('order', 'asc')
+          })
+          .fetch()
+      ).toJSON()
+      let coverUrl = null
+
+      if (roomData.length !== 0 && roomData[0]?.images?.length !== 0) {
+        coverUrl = roomData[0]?.images[0].url
+      } else {
+        const externalFileData = await this.getFileByEstateId(estateId, FILE_TYPE_EXTERNAL)
+        if (externalFileData.length !== 0) {
+          coverUrl = externalFileData[0].url
+        } else {
+          const documentFileData = await this.getFileByEstateId(estateId, FILE_TYPE_PLAN)
+
+          if (documentFileData.length !== 0) {
+            coverUrl = documentFileData[0].url
+          }
+        }
+      }
+      if (coverUrl) {
+        await Estate.query().where('id', estateId).update({ cover: coverUrl })
+      }
+    }
+  }
+
+  static async getFileByEstateId(estateId, type) {
+    return (
+      await File.query()
+        .where('estate_id', estateId)
+        .where('type', type)
+        .orderBy('order', 'asc')
+        .fetch()
+    ).toJSON()
   }
 }
 module.exports = EstateService
