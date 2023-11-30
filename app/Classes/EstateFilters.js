@@ -35,6 +35,7 @@ class EstateFilters extends Filter {
     void: LETTING_TYPE_VOID,
     na: LETTING_TYPE_NA
   }
+
   static lettingStatusString = {
     new_renovated: LETTING_STATUS_NEW_RENOVATED,
     standard: LETTING_STATUS_STANDARD,
@@ -64,6 +65,7 @@ class EstateFilters extends Filter {
     site: PROPERTY_TYPE_SITE,
     office: PROPERTY_TYPE_OFFICE
   }
+
   static possibleStringParams = [
     'address',
     'customArea',
@@ -77,6 +79,7 @@ class EstateFilters extends Filter {
     'customVacantDate',
     'unitCategory'
   ]
+
   globalSearchFields = ['property_id', 'address', 'six_char_code']
 
   constructor(params, query) {
@@ -147,13 +150,13 @@ class EstateFilters extends Filter {
     }
     /* status */
     if (params.customStatus && params.customStatus.value) {
-      let statuses = EstateFilters.customStatusesToValue(params.customStatus.value)
+      const statuses = EstateFilters.customStatusesToValue(params.customStatus.value)
       this.query.whereIn('estates.status', statuses)
     }
 
     /* floor direction */
     if (params.customFloorDirection && params.customFloorDirection.value) {
-      let customFloorDirection = EstateFilters.customFloorDirectionToValue(
+      const customFloorDirection = EstateFilters.customFloorDirectionToValue(
         params.customFloorDirection.value
       )
       this.query.whereIn('estates.floor_direction', customFloorDirection)
@@ -161,7 +164,7 @@ class EstateFilters extends Filter {
 
     /* property_type */
     if (params.customPropertyType && params.customPropertyType.value) {
-      let propertyTypes = EstateFilters.customPropertyTypesToValue(params.customPropertyType.value)
+      const propertyTypes = EstateFilters.customPropertyTypesToValue(params.customPropertyType.value)
       this.query.whereIn('estates.property_type', propertyTypes)
     }
 
@@ -296,19 +299,14 @@ class EstateFilters extends Filter {
   }
 
   static paramsAreUsed(params) {
-    let returns = EstateFilters.possibleStringParams.map((param) =>
-      params[param] && params[param].operator ? true : false
-    )
+    let returns = EstateFilters.possibleStringParams.map((param) => !!params[param]?.operator)
     if (includes(returns, true)) {
       return true
     }
     returns = ['customLettingStatus', 'verified_address', 'customStatus', 'customPropertyType'].map(
-      (param) => (params[param] && params[param].value ? true : false)
+      (param) => !!params[param]?.value
     )
-    if (includes(returns, true)) {
-      return true
-    }
-    return false
+    return includes(returns, true)
   }
 }
 
