@@ -514,6 +514,9 @@ const constants = {
     'floor',
     'number_floors'
   ],
+  PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING: 1,
+  PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING: 2,
+  PROSPECT_DEACTIVATION_STAGE_FINAL: 3,
   SCHEDULED_EVERY_3RD_HOUR_23RD_MINUTE_JOB: 'scheduledEvery3rdHour23rdMinuteJob',
   SCHEDULED_EVERY_37TH_MINUTE_HOURLY_JOB: 'scheduledEvery37thMinuteHourlyJob',
   SCHEDULED_EVERY_1M_JOB: 'scheduledEvery1Min',
@@ -524,6 +527,9 @@ const constants = {
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
   SCHEDULED_MONTHLY_JOB: 'scheduledStartOfEveryMonth',
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB: 'scheduledForEveryMinuteEndingInThree',
+  SCHEDULED_MONTHLY_AT_1ST_AND_AT_10AM: 'scheduledMonthdlyAt1stAndAt10AM',
+  SCHEDULED_MONTHLY_AT_10TH_AND_AT_10AM: 'scheduledMonthlyAt10thAndAt10AM',
+  SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM: 'scheduledMonthlyAt15thAndAt10AM',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE: 'notification_landlord_fill_profile',
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY: 'notification_landlord_new_property',
