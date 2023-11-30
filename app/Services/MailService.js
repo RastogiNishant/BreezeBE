@@ -23,7 +23,10 @@ const {
   SEND_EMAIL_TO_OHNEMAKLER_SUBJECT,
   GERMAN_DATE_TIME_FORMAT,
   ESTATE_NO_IMAGE_COVER_URL,
-  MARKETPLACE_LIST
+  MARKETPLACE_LIST,
+  PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_FINAL
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
@@ -35,12 +38,13 @@ const _helper = {
     const subject = msg.dynamic_template_data?.subject
 
     // block email if system is not prod (prevent email spam from non prod)
+    /*
     if (!sendInTesting && ENVS_NOT_TO_SEND_MULTIPLE_EMAILS.includes(process.env.NODE_ENV)) {
       Logger.info(
         `Email "${msg.dynamic_template_data.subject}" not sent to "${msg.to}". System is not PRODUCTION.`
       )
       return true
-    }
+    } */
 
     return await sgMail
       .send(msg)
@@ -1183,22 +1187,42 @@ class MailService {
     return await _helper.sendSGMail(msg, false)
   }
 
-  static async sendToProspectScheduledForDeactivation({ emails, lang = DEFAULT_LANG }) {
+  static async sendToProspectScheduledForDeactivation({ emails, lang = DEFAULT_LANG, stage }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
+    let subject = 'prospect.{replace}.subject.message'
+    let intro = 'prospect.{replace}.intro.message'
+    let CTA = 'prospect.{replace}.CTA.message'
+    let final = 'prospect.{replace}.final.message'
+    let toReplace = ''
+    switch (stage) {
+      case PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING:
+        toReplace = 'email_first_warning_for_profile_deactivation'
+        break
+      case PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING:
+        toReplace = 'email_second_warning_for_profile_deactivation'
+        break
+      case PROSPECT_DEACTIVATION_STAGE_FINAL:
+        toReplace = 'email_profile_deactivation_email'
+        break
+    }
+    subject = subject.replace(/\{replace\}/, toReplace)
+    intro = intro.replace(/\{replace\}/, toReplace)
+    CTA = CTA.replace(/\{replace\}/, toReplace)
+    final = final.replace(/\{replace\}/, toReplace)
 
     const msg = {
-      to: isArray(emails) ? uniq(emails) : trim(emails),
+      to: emails.pop(), // we need a to here so we pop()
       from: {
         email: FromEmail,
         name: FromName
       },
       templateId,
       dynamic_template_data: {
-        subject: 'Your profile will be deactivated in 5 days', // l.get('prospect.email_account_inactivity_deletion.subject.message', lang),
+        subject: l.get(subject, lang),
         salutation: l.get('email_signature.salutation.message', lang),
-        CTA: l.get('prospect.email_account_inactivity_deletion.CTA.message', lang),
-        intro: l.get('prospect.email_account_inactivity_deletion.intro.message', lang),
-        final: l.get('prospect.email_account_inactivity_deletion.final.message', lang),
+        CTA: l.get(CTA, lang),
+        intro: l.get(intro, lang),
+        final: l.get(final, lang),
         greeting: l.get('email_signature.greeting.message', lang),
         link: INVITE_APP_LINK,
         company: l.get('email_signature.company.message', lang),
@@ -1218,6 +1242,10 @@ class MailService {
           lang
         )
       }
+    }
+    if (emails.length) {
+      // we add all other emails as blind carbon copies
+      msg.bcc = emails
     }
     return await _helper.sendSGMail(msg, false)
   }

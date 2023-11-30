@@ -40,8 +40,12 @@ const {
   SCHEDULED_9H_DAY_JOB,
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
   QUEUE_JOB_URGENT,
+  SCHEDULED_MONTHLY_AT_1ST_AND_AT_10AM,
   SCHEDULED_MONTHLY_AT_10TH_AND_AT_10AM,
-  SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM
+  SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM,
+  PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_FINAL
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -417,11 +421,20 @@ class QueueService {
             lang: job.data.lang
           })
           break
+        case SCHEDULED_MONTHLY_AT_1ST_AND_AT_10AM:
+          require('./TenantService').scheduleProspectsForDeactivation(
+            PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING
+          )
+          break
         case SCHEDULED_MONTHLY_AT_10TH_AND_AT_10AM:
-          require('./TenantService').scheduleProspectsForDeactivation()
+          require('./TenantService').scheduleProspectsForDeactivation(
+            PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING
+          )
           break
         case SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM:
-          require('./TenantService').handleProspectsScheduledForDeactivation()
+          require('./TenantService').scheduleProspectsForDeactivation(
+            PROSPECT_DEACTIVATION_STAGE_FINAL
+          )
           break
         default:
           console.log(`No job processor for: ${job.name}`)

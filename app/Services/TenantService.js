@@ -14,6 +14,7 @@ const IncomeProof = use('App/Models/IncomeProof')
 const File = use('App/Classes/File')
 const AppException = use('App/Exceptions/AppException')
 const GeoService = use('App/Services/GeoService')
+const MailService = use('App/Services/MailService')
 // prevent circular dependency comment MemberService
 // const MemberService = use('App/Services/MemberService')
 const Promise = require('bluebird')
@@ -66,7 +67,9 @@ const {
   INCOME_TYPE_CHILD_BENEFIT,
   HIRING_TYPE_FULL_TIME,
   DAY_FORMAT,
-  REQUIRED_INCOME_PROOFS_COUNT
+  REQUIRED_INCOME_PROOFS_COUNT,
+  PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_FINAL
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -619,7 +622,7 @@ class TenantService extends BaseService {
     }
   }
 
-  static async scheduleProspectsForDeactivation() {
+  static async scheduleProspectsForDeactivation(stage = PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING) {
     const startOf = moment()
       .utc()
       .subtract(VALID_INCOME_PROOFS_PERIOD, 'months')
@@ -627,24 +630,33 @@ class TenantService extends BaseService {
       .format('YYYY-MM-DD')
 
     const expiringIncomeProofs = await IncomeProof.query()
-      .select('income_proofs.*')
+      .select('income_proofs.income_id')
       .where('income_proofs.expire_date', '<=', startOf)
       // expire_date = null should not be deleted
       .whereNotNull('income_proofs.expire_date')
       .where('income_proofs.status', STATUS_ACTIVE)
+      .whereIn('_i.income_type', [
+        INCOME_TYPE_EMPLOYEE,
+        INCOME_TYPE_WORKER,
+        INCOME_TYPE_CIVIL_SERVANT
+      ])
       .innerJoin({ _i: 'incomes' }, function () {
         this.on('_i.id', 'income_proofs.income_id').on('_i.status', STATUS_ACTIVE)
       })
       .innerJoin({ _m: 'members' }, '_m.id', '_i.member_id')
       .innerJoin({ _t: 'tenants' }, '_m.user_id', '_t.user_id')
+      .innerJoin({ _u: 'users' }, '_u.id', '_t.user_id')
       .select('_m.user_id')
       .select(Database.raw(`_m.id as member_id`))
+      .select(Database.raw(`_u.email`))
       .select(
         Database.raw(
-          `case when tenants.status='${STATUS_ACTIVE}' then true else false end as tenant_is_active`
+          `case when _t.status='${STATUS_ACTIVE}' then true else false end as tenant_is_active`
         )
       )
       .fetch()
+    const emailsWithExpiringIncomeProofs = []
+    const userIdsWithExpiringIncomeProofs = []
     await Promise.map(
       expiringIncomeProofs.toJSON() || [],
       async (proof) => {
@@ -655,15 +667,32 @@ class TenantService extends BaseService {
             .where('income_proofs.expire_date', '>', startOf)
             .fetch()
           if ((validIncomeProofs.toJSON() || []).length < REQUIRED_INCOME_PROOFS_COUNT) {
-            // await MailService.sendToProspectScheduledForDeactivation()
+            emailsWithExpiringIncomeProofs.push(proof.email)
+            userIdsWithExpiringIncomeProofs.push(proof.user_id)
           }
         }
       },
       { concurrency: 1 }
     )
+    if (emailsWithExpiringIncomeProofs.length) {
+      await MailService.sendToProspectScheduledForDeactivation({
+        emails: emailsWithExpiringIncomeProofs,
+        stage
+      })
+      if (stage === PROSPECT_DEACTIVATION_STAGE_FINAL) {
+        // remove all NEW matches
+        await Database.table({ _m: 'matches' })
+          .whereIn('_m.user_id', userIdsWithExpiringIncomeProofs)
+          .where('_m.status', MATCH_STATUS_NEW)
+          .whereNot('_m.buddy', true)
+          .delete()
+        // deactivate these tenants...
+        await Tenant.query()
+          .whereIn('user_id', userIdsWithExpiringIncomeProofs)
+          .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] })
+      }
+    }
   }
-
-  static async handleProspectsScheduledForDeactivation() {}
 }
 
 module.exports = TenantService
