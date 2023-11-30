@@ -38,9 +38,14 @@ const {
   SCHEDULED_13H_DAY_JOB,
   SCHEDULED_FRIDAY_JOB,
   SCHEDULED_9H_DAY_JOB,
-  SCHEDULED_MONTHLY_JOB,
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB,
-  QUEUE_JOB_URGENT
+  QUEUE_JOB_URGENT,
+  SCHEDULED_MONTHLY_AT_1ST_AND_AT_10AM,
+  SCHEDULED_MONTHLY_AT_10TH_AND_AT_10AM,
+  SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM,
+  PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_FINAL
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -253,8 +258,7 @@ class QueueService {
    *
    */
   static async sendFriday14H() {
-    const NoticeService = require('./NoticeService')
-    return Promise.all([wrapException(NoticeService.sendProspectNewMatches)])
+    return Promise.all([wrapException(require('./NoticeService').sendProspectNewMatches)])
   }
 
   /**
@@ -263,7 +267,7 @@ class QueueService {
   static async sendEveryDay9AM() {
     const NoticeService = require('./NoticeService')
     return Promise.all([
-      wrapException(NoticeService.prospectProfileExpiring),
+      wrapException(require('./NoticeService').prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
       wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
       wrapException(require('./MarketPlaceService').sendReminderEmail),
@@ -276,7 +280,7 @@ class QueueService {
    *
    */
   static async sendEveryMonth12AM() {
-    return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
+    // return Promise.all([wrapException(MemberService.handleOutdatedIncomeProofs)])
   }
 
   // no called from anywhere
@@ -367,8 +371,6 @@ class QueueService {
           return QueueService.sendFriday14H()
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
-        case SCHEDULED_MONTHLY_JOB:
-          return QueueService.sendEveryMonth12AM()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:
@@ -418,6 +420,21 @@ class QueueService {
             landlord_name: job.data.landlord_name,
             lang: job.data.lang
           })
+          break
+        case SCHEDULED_MONTHLY_AT_1ST_AND_AT_10AM:
+          require('./TenantService').scheduleProspectsForDeactivation(
+            PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING
+          )
+          break
+        case SCHEDULED_MONTHLY_AT_10TH_AND_AT_10AM:
+          require('./TenantService').scheduleProspectsForDeactivation(
+            PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING
+          )
+          break
+        case SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM:
+          require('./TenantService').scheduleProspectsForDeactivation(
+            PROSPECT_DEACTIVATION_STAGE_FINAL
+          )
           break
         default:
           console.log(`No job processor for: ${job.name}`)
