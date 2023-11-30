@@ -1046,13 +1046,6 @@ class NotificationsService {
     return NotificationsService.sendNotes(notices, title, body)
   }
 
-  static async prospectScheduledForDeactivation(notices) {
-    // FIXME: need keys for title and body
-    const title = 'Prospect scheduled for Deactivation'
-    const body = 'Prospect scheduled for Deactivation body'
-    return NotificationsService.sendNotes(notices, title, body)
-  }
-
   static async prospectSendCode(notices) {
     const title = 'prospect.notification.event.sharing_profile_request'
     const body = 'prospect.notification.next.sharing_profile_request'
