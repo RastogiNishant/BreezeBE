@@ -524,6 +524,8 @@ const constants = {
   SCHEDULED_FRIDAY_JOB: 'scheduledFriday',
   SCHEDULED_MONTHLY_JOB: 'scheduledStartOfEveryMonth',
   SCHEDULED_FOR_EVERY_MINUTE_ENDING_IN_3_JOB: 'scheduledForEveryMinuteEndingInThree',
+  SCHEDULED_MONTHLY_AT_10TH_AND_AT_10AM: 'scheduledMonthlyAt10thAndAt10AM',
+  SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM: 'scheduledMonthlyAt15thAndAt10AM',
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE: 'notification_landlord_fill_profile',
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY: 'notification_landlord_new_property',
