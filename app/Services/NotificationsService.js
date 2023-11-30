@@ -1055,13 +1055,6 @@ class NotificationsService {
       body
     )
   }
-
-  static async prospectScheduledForDeactivation(notices) {
-    // FIXME: need keys for title and body
-    const title = 'Prospect scheduled for Deactivation'
-    const body = 'Prospect scheduled for Deactivation body'
-    return NotificationsService.sendNotes(notices, title, body)
-  }
 }
 
 module.exports = NotificationsService
