@@ -38,13 +38,12 @@ const _helper = {
     const subject = msg.dynamic_template_data?.subject
 
     // block email if system is not prod (prevent email spam from non prod)
-    /*
     if (!sendInTesting && ENVS_NOT_TO_SEND_MULTIPLE_EMAILS.includes(process.env.NODE_ENV)) {
       Logger.info(
         `Email "${msg.dynamic_template_data.subject}" not sent to "${msg.to}". System is not PRODUCTION.`
       )
       return true
-    } */
+    }
 
     return await sgMail
       .send(msg)
