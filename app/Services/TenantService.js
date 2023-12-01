@@ -477,6 +477,7 @@ class TenantService extends BaseService {
         .where({ user_id: tenant.user_id })
         .transacting(trx)
       await trx.commit()
+      require('./QueueService').remindProspectToActivateInSevenDays(tenant.user_id)
     } catch (e) {
       await trx.rollback()
       console.log({ e })
