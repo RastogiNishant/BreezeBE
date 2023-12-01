@@ -1055,6 +1055,12 @@ class NotificationsService {
       body
     )
   }
+
+  static async prospectNeedToActivate(notices) {
+    const title = 'prospect.notification.event.incomplete_profile'
+    const body = 'prospect.notification.next.incomplete_profile'
+    return NotificationsService.sendNotes(notices, title, body)
+  }
 }
 
 module.exports = NotificationsService

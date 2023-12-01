@@ -694,8 +694,14 @@ class TenantService extends BaseService {
     }
   }
 
-  static async remindProspectToActivate({ userId, numberOfDays }) {
-    console.log({ userId, numberOfDays })
+  static async remindProspectToActivate({ userId }) {
+    const tenant = await Tenant.query().where('user_id', userId).select('status', 'id').first()
+    if (tenant.status !== STATUS_ACTIVE) {
+      // send notification
+      await require('./NoticeService').notifyProspectToActivate(userId)
+      tenant.scheduled_for_activation_notification = false
+      await tenant.save()
+    }
   }
 }
 

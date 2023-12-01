@@ -47,7 +47,7 @@ const {
   PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING,
   PROSPECT_DEACTIVATION_STAGE_FINAL,
   REMIND_PROSPECT_TO_ACTIVATE_IN_ONE_DAY,
-  REMIND_PROSPECT_TO_ACTIVATE_IN_SEVEN_DAYS
+  REMIND_PROSPECT_TO_REACTIVATE_WHEN_DEACTIVATED_IN_SEVEN_DAYS
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -134,7 +134,7 @@ class QueueService {
 
   static remindProspectToActivateInSevenDays(userId) {
     Queue.addJob(
-      REMIND_PROSPECT_TO_ACTIVATE_IN_SEVEN_DAYS,
+      REMIND_PROSPECT_TO_REACTIVATE_WHEN_DEACTIVATED_IN_SEVEN_DAYS,
       { userId, numberOfDays: 7 },
       { delay: 7 * 24 * 60 * 60 * 1000 }
     )
@@ -454,12 +454,7 @@ class QueueService {
           )
           break
         case REMIND_PROSPECT_TO_ACTIVATE_IN_ONE_DAY:
-          require('./TenantService').remindProspectToActivate({
-            userId: job.data.userId,
-            numberOfDays: job.data.numberOfDays
-          })
-          break
-        case REMIND_PROSPECT_TO_ACTIVATE_IN_SEVEN_DAYS:
+        case REMIND_PROSPECT_TO_REACTIVATE_WHEN_DEACTIVATED_IN_SEVEN_DAYS:
           require('./TenantService').remindProspectToActivate({
             userId: job.data.userId,
             numberOfDays: job.data.numberOfDays
