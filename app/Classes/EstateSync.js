@@ -184,7 +184,7 @@ class EstateSync {
     // isAccessible: true,
     // isSuitableAsSharedFlat: false,
     lastRefurbished: this.composeLastRefurbish,
-    usable_area: 'livingArea',
+    livingArea: this.composeLivingArea,
     // locationDescription: 'My first location description for a property.',
     // miscellaneousDescription: 'My first misc description for a property.',
     bathrooms_number: 'numberOfBathrooms',
@@ -199,12 +199,16 @@ class EstateSync {
     // residentialEnergyCertificate: this.composeEnergyClass,
     title: this.composeTitle,
     // 'totalRent',
-    area: 'usableArea'
+    usableArea: this.composeLivingArea
   }
 
   constructor(apiKey = '') {
     this.apiKey = apiKey
     axios.defaults.headers.common.Authorization = `Bearer ${apiKey}`
+  }
+
+  composeLivingArea({ area }) {
+    return +area
   }
 
   composeDescription({ amenities }) {
