@@ -693,6 +693,10 @@ class TenantService extends BaseService {
       }
     }
   }
+
+  static async remindProspectToActivate({ userId, numberOfDays }) {
+    console.log({ userId, numberOfDays })
+  }
 }
 
 module.exports = TenantService
