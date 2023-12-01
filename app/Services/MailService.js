@@ -24,6 +24,9 @@ const {
   GERMAN_DATE_TIME_FORMAT,
   ESTATE_NO_IMAGE_COVER_URL,
   MARKETPLACE_LIST,
+  PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING,
+  PROSPECT_DEACTIVATION_STAGE_FINAL,
   NOTICE_TYPE_PROSPECT_REQUEST_PROFILE
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
@@ -974,8 +977,8 @@ class MailService {
     deepLink.searchParams.append('date', visitDate)
     deepLink.searchParams.append('landlord_logo', avatar)
 
-    const shareLink =await createDynamicLink(deepLink.toString());
-   
+    const shareLink = await createDynamicLink(deepLink.toString())
+
     const msg = {
       to: trim(prospectEmail),
       from: {
@@ -1196,6 +1199,69 @@ class MailService {
           lang
         )
       }
+    }
+    return await _helper.sendSGMail(msg, false)
+  }
+
+  static async sendToProspectScheduledForDeactivation({ emails, lang = DEFAULT_LANG, stage }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+    let subject = 'prospect.{replace}.subject.message'
+    let intro = 'prospect.{replace}.intro.message'
+    let CTA = 'prospect.{replace}.CTA.message'
+    let final = 'prospect.{replace}.final.message'
+    let toReplace = ''
+    switch (stage) {
+      case PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING:
+        toReplace = 'email_first_warning_for_profile_deactivation'
+        break
+      case PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING:
+        toReplace = 'email_second_warning_for_profile_deactivation'
+        break
+      case PROSPECT_DEACTIVATION_STAGE_FINAL:
+        toReplace = 'email_profile_deactivation_email'
+        break
+    }
+    subject = subject.replace(/\{replace\}/, toReplace)
+    intro = intro.replace(/\{replace\}/, toReplace)
+    CTA = CTA.replace(/\{replace\}/, toReplace)
+    final = final.replace(/\{replace\}/, toReplace)
+
+    const msg = {
+      to: emails.pop(), // we need a to here so we pop()
+      from: {
+        email: FromEmail,
+        name: FromName
+      },
+      templateId,
+      dynamic_template_data: {
+        subject: l.get(subject, lang),
+        salutation: l.get('email_signature.salutation.message', lang),
+        CTA: l.get(CTA, lang),
+        intro: l.get(intro, lang),
+        final: l.get(final, lang),
+        greeting: l.get('email_signature.greeting.message', lang),
+        link: INVITE_APP_LINK,
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        )
+      }
+    }
+    if (emails.length) {
+      // we add all other emails as blind carbon copies
+      msg.bcc = emails
     }
     return await _helper.sendSGMail(msg, false)
   }
