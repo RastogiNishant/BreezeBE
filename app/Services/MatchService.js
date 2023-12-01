@@ -1247,7 +1247,7 @@ class MatchService {
       if (tenant.status !== STATUS_ACTIVE && !tenant.scheduled_for_activation_notification) {
         // we dont send if he's already scheduled for notification
         tenant.scheduled_for_activation_notification = true
-        tenant.save()
+        await tenant.save()
         QueueService.remindProspectToActivateInOneDay(user_id)
       }
     } catch (e) {

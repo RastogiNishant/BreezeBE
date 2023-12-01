@@ -458,6 +458,8 @@ class TenantService extends BaseService {
           .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] })
           .where({ user_id: userId })
           .transacting(trx)
+        // tenant is deactivated. We schedule notification in seven days here
+        require('./QueueService').remindProspectToActivateInSevenDays(userId)
       }
 
       await trx.commit()

@@ -128,8 +128,8 @@ class QueueService {
     Queue.addJob(
       REMIND_PROSPECT_TO_ACTIVATE_IN_ONE_DAY,
       { userId, numberOfDays: 1 },
-      { delay: 60 * 1000 }
-    ) // 24 * 60 * 60 * 1000
+      { delay: 24 * 60 * 60 * 1000 }
+    )
   }
 
   static remindProspectToActivateInSevenDays(userId) {
