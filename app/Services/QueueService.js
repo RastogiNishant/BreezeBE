@@ -275,7 +275,8 @@ class QueueService {
    *
    */
   static async sendFriday14H() {
-    return Promise.all([wrapException(require('./NoticeService').sendProspectNewMatches)])
+    Logger.info('Queue called: sendFriday14H called...')
+    // return Promise.all([wrapException(require('./NoticeService').sendProspectNewMatches)])
   }
 
   /**
