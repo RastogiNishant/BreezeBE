@@ -258,8 +258,8 @@ class QueueService {
    *
    */
   static async sendFriday14H() {
-    const NoticeService = require('./NoticeService')
-    return Promise.all([wrapException(NoticeService.sendProspectNewMatches)])
+    Logger.info('Queue called: sendFriday14H called...')
+    // return Promise.all([wrapException(require('./NoticeService').sendProspectNewMatches)])
   }
 
   /**

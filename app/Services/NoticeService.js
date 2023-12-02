@@ -833,24 +833,24 @@ class NoticeService {
   }
 
   static async prospectNewGreenMatch(matches, estate) {
-    // let notices = []
-    // matches.map((match) => {
-    //   notices = [
-    //     ...notices,
-    //     {
-    //       user_id: match.user_id,
-    //       type: NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
-    //       data: {
-    //         estate_id: estate.id,
-    //         estate_address: estate.address
-    //       }
-    //     }
-    //   ]
-    // })
-    // if (notices.length) {
-    //   await NoticeService.insertNotices(notices)
-    //   NotificationsService.sendProspectGreenMatch(notices)
-    // }
+    let notices = []
+    matches.map((match) => {
+      notices = [
+        ...notices,
+        {
+          user_id: match.user_id,
+          type: NOTICE_TYPE_PROSPECT_GREEN_MATCH_ID,
+          data: {
+            estate_id: estate.id,
+            estate_address: estate.address
+          }
+        }
+      ]
+    })
+    if (notices.length) {
+      await NoticeService.insertNotices(notices)
+      NotificationsService.sendProspectGreenMatch(notices)
+    }
   }
 
   static async finalMatchConfirmExpired(estate) {
