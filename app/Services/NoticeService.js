@@ -44,6 +44,7 @@ const {
   NOTICE_TYPE_VISIT_DELAY_LANDLORD_ID,
   NOTICE_TYPE_LANDLORD_FOLLOWUP_PROSPECT_ID,
   NOTICE_TYPE_PROSPECT_FOLLOWUP_LANDLORD_ID,
+  NOTICE_TYPE_PROSPECT_NEED_TO_ACTIVATE_ID,
 
   NOTICE_TYPE_LANDLORD_FILL_PROFILE,
   NOTICE_TYPE_LANDLORD_NEW_PROPERTY,
@@ -1485,6 +1486,16 @@ class NoticeService {
     }
     await NoticeService.insertNotices([notice])
     await NotificationsService.prospectSendCode([notice])
+  }
+
+  static async notifyProspectToActivate(prospectId) {
+    const notice = {
+      user_id: prospectId,
+      type: NOTICE_TYPE_PROSPECT_NEED_TO_ACTIVATE_ID,
+      data: {}
+    }
+    await NoticeService.insertNotices([notice])
+    await NotificationsService.prospectNeedToActivate([notice])
   }
 }
 

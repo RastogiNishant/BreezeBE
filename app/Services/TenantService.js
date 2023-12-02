@@ -458,6 +458,8 @@ class TenantService extends BaseService {
           .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] })
           .where({ user_id: userId })
           .transacting(trx)
+        // tenant is deactivated. We schedule notification in seven days here
+        require('./QueueService').remindProspectToActivateInSevenDays(userId)
       }
 
       await trx.commit()
@@ -475,6 +477,7 @@ class TenantService extends BaseService {
         .where({ user_id: tenant.user_id })
         .transacting(trx)
       await trx.commit()
+      require('./QueueService').remindProspectToActivateInSevenDays(tenant.user_id)
     } catch (e) {
       await trx.rollback()
       console.log({ e })
@@ -691,6 +694,16 @@ class TenantService extends BaseService {
           .whereIn('user_id', userIdsWithExpiringIncomeProofs)
           .update({ status: STATUS_DRAFT, notify_sent: [NOTICE_TYPE_TENANT_PROFILE_FILL_UP_ID] })
       }
+    }
+  }
+
+  static async remindProspectToActivate({ userId }) {
+    const tenant = await Tenant.query().where('user_id', userId).select('status', 'id').first()
+    if (tenant.status !== STATUS_ACTIVE) {
+      // send notification
+      await require('./NoticeService').notifyProspectToActivate(userId)
+      tenant.scheduled_for_activation_notification = false
+      await tenant.save()
     }
   }
 }
