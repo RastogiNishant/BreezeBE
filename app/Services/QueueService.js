@@ -257,14 +257,14 @@ class QueueService {
    *
    */
   static async sendFriday14H() {
-    return Promise.all([wrapException(require('./NoticeService').sendProspectNewMatches)])
+    Logger.info('Queue called: sendFriday14H called...')
+    // return Promise.all([wrapException(require('./NoticeService').sendProspectNewMatches)])
   }
 
   /**
    *
    */
   static async sendEveryDay9AM() {
-    const NoticeService = require('./NoticeService')
     return Promise.all([
       wrapException(require('./NoticeService').prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
