@@ -151,6 +151,8 @@ class UserService {
       userData.birthday === '1970-01-01' && otherInfo?.birthday
         ? otherInfo.birthday
         : userData.birthday
+    userData.firstname = userData?.firstname ? userData.firstname : otherInfo?.firstname || ''
+    userData.secondname = userData?.secondname ? userData.secondname : otherInfo?.secondname || ''
     const user = await User.createItem(omit(userData, ['data1', 'data2', 'invite_type']), trx)
     // return userData
     if (user.role === ROLE_USER) {
@@ -282,14 +284,10 @@ class UserService {
    *
    */
   static async changeEmail({ user, email, from_web }, trx) {
-    try {
-      user.email = email
-      user.status = STATUS_EMAIL_VERIFY
-      await user.save(trx)
-      await UserService.sendConfirmEmail(user, from_web)
-    } catch (e) {
-      throw e
-    }
+    user.email = email
+    user.status = STATUS_EMAIL_VERIFY
+    await user.save(trx)
+    await UserService.sendConfirmEmail(user, from_web)
   }
 
   /**
@@ -1326,11 +1324,11 @@ class UserService {
   static async updateProfile(request, user) {
     const data = request.all()
 
-    user.role === ROLE_USER
-      ? delete data.landlord_visibility
-      : user.role === ROLE_LANDLORD
-        ? delete data.prospect_visibility
-        : data
+    if (user.role === ROLE_USER) {
+      delete data.landlord_visibility
+    } else if (user.role === ROLE_LANDLORD) {
+      delete data.prospect_visibility
+    }
 
     const trx = await Database.beginTransaction()
     delete data.password

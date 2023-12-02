@@ -160,7 +160,7 @@ class EstateController {
    *
    */
   async updateEstate({ request, auth, response }) {
-    const { id } = request.all()
+    const { id, active_visuals } = request.all()
     try {
       const estate = await Estate.findOrFail(id)
       if (estate.user_id !== auth.user.id) {
@@ -173,6 +173,10 @@ class EstateController {
         from: 0,
         params: { id }
       })
+
+      if (active_visuals) {
+        await EstateService.updateCoverByVisuals(active_visuals, estate.id)
+      }
 
       QueueService.getEstateCoords(estate.id)
       response.res(estates.data?.[0])

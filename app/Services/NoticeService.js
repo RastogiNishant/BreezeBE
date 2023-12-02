@@ -28,7 +28,6 @@ const {
   NOTICE_TYPE_LANDLORD_MATCH_ID,
   NOTICE_TYPE_LANDLORD_DECISION_ID,
   NOTICE_TYPE_PROSPECT_NEW_MATCH_ID,
-  NOTICE_TYPE_PROSPECT_LANDLORD_MATCH_ID,
   NOTICE_TYPE_PROSPECT_INVITE_ID,
   NOTICE_TYPE_PROSPECT_VISIT3H_ID,
   NOTICE_TYPE_PROSPECT_VISIT90M_ID,
@@ -436,32 +435,6 @@ class NoticeService {
     await NoticeService.insertNotices(notices)
     const CHUNK_SIZE = 50
     await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.sendProspectNewMatch, {
-      concurrency: 1
-    })
-  }
-
-  static async getProspectLandlordInvite() {
-    const result = await Database.table({ _m: 'matches' })
-      .select('_m.user_id', Database.raw('COUNT(_m.user_id) AS match_count'))
-      .where('_m.status', MATCH_STATUS_INVITE)
-      .where('_m.updated_at', '>', moment.utc().add(-7, 'days').format(DATE_FORMAT))
-      .groupBy('_m.user_id')
-
-    if (isEmpty(result)) {
-      return false
-    }
-
-    // @TODO check this code is actually working
-    const notices = result.map(({ user_id, match_count }) => ({
-      user_id,
-      type: NOTICE_TYPE_PROSPECT_LANDLORD_MATCH_ID,
-      data: { match_count }
-    }))
-
-    await NoticeService.insertNotices(notices)
-    // @TODO fix: this will only send the first 50 notifications
-    const CHUNK_SIZE = 50
-    await P.map(chunk(notices, CHUNK_SIZE), NotificationsService.getProspectLandlordInvite, {
       concurrency: 1
     })
   }

@@ -11,7 +11,8 @@ class UpdateEstate extends Base {
       .object()
       .shape({
         id: id.required(),
-        delete_energy_proof: yup.boolean().default(false)
+        delete_energy_proof: yup.boolean().default(false),
+        active_visuals: yup.number().min(1).max(2)
       })
       .concat(CreateEstate.schema())
 }

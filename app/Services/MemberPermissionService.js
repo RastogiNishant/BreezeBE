@@ -1,60 +1,51 @@
 const MemberPermission = use('App/Models/MemberPermission')
 class MemberPermissionService {
-  static async createMemberPermission(member_id, user_id, trx = null) {
-    const isExist = await this.isExistPermission(member_id, user_id)
+  static async createMemberPermission(memberId, userId, trx = null) {
+    const isExist = await this.isExistPermission(memberId, userId)
     if (!isExist) {
       await MemberPermission.createItem(
         {
-          member_id: member_id,
-          user_id: user_id
+          member_id: memberId,
+          user_id: userId
         },
         trx
       )
     }
   }
-  static async getMemberPermission(member_id) {
+
+  static async getMemberPermission(memberId) {
     return await MemberPermission.query()
       .select(['member_id', 'user_id'])
-      .where('member_id', member_id)
+      .where('member_id', memberId)
       .fetch()
   }
 
-  static async isExistPermission(member_id, user_id) {
+  static async isExistPermission(memberId, userId) {
     const memberPermission = await MemberPermission.query()
-      .where('member_id', member_id)
-      .where('user_id', user_id)
+      .where('member_id', memberId)
+      .where('user_id', userId)
       .first()
-    if (memberPermission) {
-      return true
-    }
-    return false
+
+    return !!memberPermission
   }
 
-  static async deletePermission(member_id, trx = null) {
-    try {
-      if (trx) {
-        await MemberPermission.query().where('member_id', member_id).delete().transacting(trx)
-      } else {
-        await MemberPermission.query().where('member_id', member_id).delete()
-      }
-      return true
-    } catch (e) {
-      throw e
+  static async deletePermission(memberId, trx = null) {
+    if (trx) {
+      await MemberPermission.query().where('member_id', memberId).delete().transacting(trx)
+    } else {
+      await MemberPermission.query().where('member_id', memberId).delete()
     }
+    return true
   }
 
-  static async deletePermissionByUser(user_id, trx = null) {
-    try {
-      if (trx) {
-        await MemberPermission.query().where('user_id', user_id).delete().transacting(trx)
-      } else {
-        await MemberPermission.query().where('user_id', user_id).delete()
-      }
-
-      return true
-    } catch (e) {
-      throw e
+  static async deletePermissionByUser(userId, trx = null) {
+    if (trx) {
+      await MemberPermission.query().where('user_id', userId).delete().transacting(trx)
+    } else {
+      await MemberPermission.query().where('user_id', userId).delete()
     }
+
+    return true
   }
 }
 

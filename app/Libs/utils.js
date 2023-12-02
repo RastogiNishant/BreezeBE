@@ -1,4 +1,4 @@
-const url = require('url')
+const { URL } = require('url')
 const { FirebaseDynamicLinks } = use('firebase-dynamic-links')
 
 const { isString, get, isEmpty, capitalize, includes, trim } = require('lodash')
@@ -17,8 +17,12 @@ const {
 } = require('../constants')
 
 const getUrl = (pathname, query = {}) => {
-  const base = url.parse(use('Env').get('APP_URL'))
-  return url.format({ ...base, pathname, query })
+  const base = new URL(use('Env').get('APP_URL'))
+  base.pathname = pathname
+  Object.keys(query).forEach((key) => {
+    base.searchParams.append(key, query[key])
+  })
+  return base.href
 }
 
 const valueToJSON = (value) => {

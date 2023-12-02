@@ -11,41 +11,30 @@ class PaymentMethodController {
    *
    */
   async post({ request, auth, response }) {
-    try {
-      const { ...data } = request.all()
-      const resp = await PaymentMethodService.create({
-        ...data,
-        user_id: auth.current.user.id
-      })
+    const { ...data } = request.all()
+    const resp = await PaymentMethodService.create({
+      ...data,
+      user_id: auth.current.user.id
+    })
 
-      return response.res(resp)
-    } catch (e) {
-      throw e
-    }
+    return response.res(resp)
   }
+
   /**
    *
    */
   async update({ request, auth, response }) {
-    try {
-      const { id, ...data } = request.all()
-      const { resp } = await PaymentMethodService.update(id, auth.current.user.id)
-      return response.res(resp)
-    } catch (e) {
-      console.log('exception:', e)
-      throw e
-    }
+    const { id } = request.all()
+    const { resp } = await PaymentMethodService.update(id, auth.current.user.id)
+    return response.res(resp)
   }
+
   /**
    *
    */
-  async get({ request, auth, response }) {
-    try {
-      const resp = await PaymentMethodService.get(auth.current.user.id)
-      return response.res(resp)
-    } catch (e) {
-      throw e
-    }
+  async get({ auth, response }) {
+    const resp = await PaymentMethodService.get(auth.current.user.id)
+    return response.res(resp)
   }
 }
 
