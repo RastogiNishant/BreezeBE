@@ -263,19 +263,30 @@ class MemberController {
   async removeMember({ request, auth, response }) {
     // TODO: add condition to prevent user delete main adult
     const { id } = request.all()
-    const trx = await Database.beginTransaction()
 
+    // lets test if this is the main member, if so throw exception
+    let member = await Member.query()
+      .innerJoin(
+        Database.raw(
+          `(select MIN(id) as main_member_id, user_id from members where user_id='${auth.user.id}' group by user_id ) as main_member`
+        ),
+        'main_member.user_id',
+        'members.user_id'
+      )
+      .where('id', id)
+      .first()
+    if (!member) {
+      throw new HttpException('Member does not exist.')
+    }
+
+    if (member.main_member_id === member.id) {
+      throw new HttpException('You cannot remove the main member.')
+    }
+    const trx = await Database.beginTransaction()
     try {
-      let member = await Member.query().where('id', id).first()
-      if (!member) {
-        throw new HttpException('Member not exists', 400)
-      } else if (auth.user.owner_id && auth.user.owner_id === member.user_id) {
-        // TODO: add one more condition to check if this member is belong to authenticated user by "owner_user_id"
-        // if user trying to disconnect from the tenant that invited
-        // we will process it as, tenant is trying to remove household
+      if (auth.user.owner_id && auth.user.owner_id === member.user_id) {
+        // This member is the owner and he wants to disconnect himself from household
         member = await Member.query().where('owner_user_id', auth.user.id).first()
-      } else if (member.user_id !== auth.user.id && member.owner_user_id !== auth.user.id) {
-        throw new HttpException('Permission denied', 400)
       }
 
       const owner_id = member.owner_user_id
