@@ -184,8 +184,6 @@ class MemberController {
    *
    */
   async updateMember({ request, auth, response }) {
-    // FIXME: id must be checked whether this id is a member of the current user
-    // this will cause sql query if NOT.
     const { id, ...data } = request.all()
     let files
     try {
@@ -206,6 +204,9 @@ class MemberController {
         .where('id', id)
         .orderBy('user_id', 'asc')
         .first()
+      if (!memberQuery) {
+        throw new HttpException('Member does not exist.')
+      }
       if (+memberQuery.user_id === +auth.user.id) {
         // this is an edit of his own self
         if (data.firstname || data.secondname) {
@@ -261,34 +262,39 @@ class MemberController {
    *
    */
   async removeMember({ request, auth, response }) {
-    // TODO: add condition to prevent user delete main adult
     const { id } = request.all()
-
-    // lets test if this is the main member, if so throw exception
-    let member = await Member.query()
-      .innerJoin(
-        Database.raw(
-          `(select MIN(id) as main_member_id, user_id from members where user_id='${auth.user.id}' group by user_id ) as main_member`
-        ),
-        'main_member.user_id',
-        'members.user_id'
-      )
-      .where('id', id)
-      .first()
+    // test if member to delete exists
+    let member = await Member.query().where('id', id).first()
     if (!member) {
       throw new HttpException('Member does not exist.')
     }
 
-    if (member.main_member_id === member.id) {
-      throw new HttpException('You cannot remove the main member.')
+    if (auth.user.owner_id && auth.user.owner_id === member.user_id) {
+      // This member is the owner and he wants to disconnect himself from the household
+      member = await Member.query().where('owner_user_id', auth.user.id).first()
+    } else {
+      // test if member is under the user's household
+      if (member.user_id !== auth.user.id) {
+        throw new HttpException(`You cannot remove a member that does not belong to your household`)
+      }
+      // test if user is deleting main member
+      const mainMember = await Member.query()
+        .innerJoin(
+          Database.raw(
+            `(select MIN(id) as main_member_id, user_id from members where user_id='${auth.user.id}' group by user_id ) as main_member`
+          ),
+          'main_member.user_id',
+          'members.user_id'
+        )
+        .where('id', id)
+        .first()
+      if (mainMember.main_member_id === member.id) {
+        throw new HttpException('You cannot remove the main member.')
+      }
     }
+
     const trx = await Database.beginTransaction()
     try {
-      if (auth.user.owner_id && auth.user.owner_id === member.user_id) {
-        // This member is the owner and he wants to disconnect himself from household
-        member = await Member.query().where('owner_user_id', auth.user.id).first()
-      }
-
       const owner_id = member.owner_user_id
       const user_id = member.user_id
 
