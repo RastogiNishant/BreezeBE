@@ -1,11 +1,11 @@
-import { HTTP_METHODS, mergeRoutes, prefixAll } from './_helper'
+import { HTTP_METHODS, Routes, mergeRoutes, prefixAll } from './_helper'
 import { tenantEstateRoutes } from './tenant.estates'
 
-const tenantOwnRoutes = {
+const tenantOwnRoutes: Routes = {
   '/members/email': {
     [HTTP_METHODS.POST]: {
       controller: 'MemberController.addMember',
-      middleware: ['auth:jwt', 'valid:CreateMember,Email,ProfileVisibilityToOther']
+      middleware: ['auth:jwt', 'valid:CreateMember,ProfileVisibilityToOther']
     }
   },
   '/members/pdfdownload': {
@@ -62,7 +62,7 @@ const tenantOwnRoutes = {
   }
 }
 
-const tenantHousekeeperRoutes = {
+const tenantHousekeeperRoutes: Routes = {
   '/members': {
     [HTTP_METHODS.GET]: {
       controller: 'MemberController.getMembers',
@@ -150,7 +150,7 @@ const tenantHousekeeperRoutes = {
   }
 }
 
-export const tenantRoutes = {
+export const tenantRoutes: Routes = {
   '/file': {
     [HTTP_METHODS.GET]: {
       controller: 'TenantController.getProtectedFile',

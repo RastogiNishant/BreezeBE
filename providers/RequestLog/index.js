@@ -14,9 +14,9 @@ const onFinished = require('on-finished')
 const moment = require('moment')
 const { get } = require('lodash')
 
-var graylog2 = require('graylog2')
+const { graylog: Graylog } = require('graylog2')
 const { TEST_ENVIRONMENT, DEV_ENVIRONMENT } = require('../../app/constants')
-var grayLog = new graylog2.graylog({
+const graylogLogger = new Graylog({
   servers: [{ host: 'logs.app.breeze4me.de', port: 12201 }],
   hostname: 'logs.app.breeze4me.de', // the name of this host
   // (optional, default: os.hostname())
@@ -26,7 +26,7 @@ var grayLog = new graylog2.graylog({
   // MTU of your system (optional, default: 1400)
 })
 
-grayLog.on('error', function (error) {
+graylogLogger.on('error', function (error) {
   console.error('Error while trying to write to graylog2:', error)
 })
 
@@ -49,7 +49,7 @@ class Logger {
    * @return {Boolean}
    */
   get isJson() {
-    return this.Logger.driver.config && this.Logger.driver.config.json
+    return this.Logger.driver.config?.json
   }
 
   /**
@@ -151,7 +151,7 @@ class Logger {
       }
 
       try {
-        grayLog.log(url, {
+        graylogLogger.log(url, {
           start,
           url,
           method,

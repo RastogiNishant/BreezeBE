@@ -1,6 +1,6 @@
-import { HTTP_METHODS } from './_helper'
+import { HTTP_METHODS, Routes } from './_helper'
 
-export const administrationRoutes = {
+export const administrationRoutes: Routes = {
   '/activation': {
     [HTTP_METHODS.PUT]: {
       controller: 'Admin/UserController.updateActivationStatus',

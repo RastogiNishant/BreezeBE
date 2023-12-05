@@ -26,7 +26,8 @@ const {
   MARKETPLACE_LIST,
   PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING,
   PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING,
-  PROSPECT_DEACTIVATION_STAGE_FINAL
+  PROSPECT_DEACTIVATION_STAGE_FINAL,
+  NOTICE_TYPE_PROSPECT_REQUEST_PROFILE
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 const Logger = use('Logger')
@@ -946,13 +947,10 @@ class MailService {
     return await _helper.sendSGMail(msg)
   }
 
-  static async sendRequestToTenantForShareProfile({
-    prospectEmail,
-    estate,
-    landlord,
-    shareLink,
-    lang = DEFAULT_LANG
-  }) {
+  static async sendRequestToTenantForShareProfile(
+    { prospectEmail, estate, landlord, visitDate, avatar, lang = DEFAULT_LANG },
+    eventType = NOTICE_TYPE_PROSPECT_REQUEST_PROFILE
+  ) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const subject = l
       .get('prospect.email_request_sharing_profile_after_visit.subject.message', lang)
@@ -962,6 +960,25 @@ class MailService {
       .get('prospect.email_request_sharing_profile_after_visit.intro.message', lang)
       .replace('{landlord}', landlord)
       .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
+
+    const { id, street, house_number, zip, city, country } = estate
+
+    const deepLink = new URL(`${process.env.DEEP_LINK}`)
+
+    // Append query parameters
+    deepLink.searchParams.append('type', eventType)
+    deepLink.searchParams.append('landlord', landlord)
+    deepLink.searchParams.append('estate_id', id)
+    deepLink.searchParams.append('street', street)
+    deepLink.searchParams.append('house_number', house_number)
+    deepLink.searchParams.append('postcode', zip)
+    deepLink.searchParams.append('city', city)
+    deepLink.searchParams.append('country', country)
+    deepLink.searchParams.append('date', visitDate)
+    deepLink.searchParams.append('landlord_logo', avatar)
+
+    const shareLink = await createDynamicLink(deepLink.toString())
+
     const msg = {
       to: trim(prospectEmail),
       from: {
