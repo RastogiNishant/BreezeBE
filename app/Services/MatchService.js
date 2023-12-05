@@ -1243,6 +1243,13 @@ class MatchService {
           share_profile
         })
       }
+      // schedule send reminder to activate
+      if (tenant.status !== STATUS_ACTIVE && !tenant.scheduled_for_activation_notification) {
+        // we dont send if he's already scheduled for notification
+        tenant.scheduled_for_activation_notification = true
+        await tenant.save()
+        QueueService.remindProspectToActivateInOneDay(user_id)
+      }
     } catch (e) {
       if (!isOutsideTrxExist) {
         await trx.rollback()
