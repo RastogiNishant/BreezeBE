@@ -103,6 +103,7 @@ class MemberController {
       const user_id = auth.user.id
 
       if (!data.email) {
+        data.is_verified =true
         // throw new HttpException('You should specify email to add member', 400)
       }
       let existingUser = false
@@ -118,7 +119,7 @@ class MemberController {
         existingUser = await User.query().where({ email: data.email, role: ROLE_USER }).first()
 
         if (existingUser && existingUser.owner_id) {
-          throw new HttpException('This user is a housekeeper already.', 400)
+          throw new HttpException('This user is a housekeeper already.', 400) 
         }
 
         if (existingUser) {
