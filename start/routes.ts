@@ -136,6 +136,10 @@ Route.group(() => {
   .prefix('api/v1/view-estate-invitations')
   .middleware(['auth:jwt', 'agreement', 'plan'])
 
+Route.get('/api/v1/testing', async ({ request, auth, response }) => {
+  return response.res(true)
+})
+
 // generate route_index file, should be moved into a seperate command
 const routeConfig = [...Route.list()]
   .sort((a, b) => (a._route > b._route ? 1 : b._route > a._route ? -1 : a.verbs > b.verbs ? 1 : -1))

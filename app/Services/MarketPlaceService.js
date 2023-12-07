@@ -711,7 +711,7 @@ class MarketPlaceService {
 
   static async sendReminderEmail() {
     try {
-      const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
+      /* const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
       const contacts = (
         await EstateSyncContactRequest.query()
           .select(
@@ -729,7 +729,11 @@ class MarketPlaceService {
       ).rows
       if (!contacts?.length) {
         return
-      }
+      } */
+
+      const contacts = [
+        { email: 'barudo@gmail.com', estate_id: 970, recipient: 'Justin Villocido' }
+      ]
 
       let estate_ids = contacts.map((contact) => contact.estate_id)
       estate_ids = uniq(estate_ids)
