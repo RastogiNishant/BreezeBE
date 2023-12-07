@@ -964,6 +964,27 @@ class MarketPlaceService {
       .where('email', email)
       .first()
   }
+
+  static async sendMessageToMarketplaceProspect({ contactRequestId, message, userId }) {
+    // validate if user owns this estate
+    const contactRequest = await EstateSyncContactRequest.query()
+      .where('estate_sync_contact_requests.id', contactRequestId)
+      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .where('estates.user_id', userId)
+      .first()
+    if (!contactRequest) {
+      throw new HttpException('Contact request not found.')
+    }
+    const ContactRequestMessage = use('App/Models/ContactRequestMessage')
+    await ContactRequestMessage.create({
+      contact_request_id: contactRequestId,
+      message
+    })
+    return {
+      contact_request_id: contactRequestId,
+      message
+    }
+  }
 }
 
 module.exports = MarketPlaceService
