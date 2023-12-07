@@ -4879,6 +4879,15 @@
     "handler": "StripeController.webhookTest"
   },
   {
+    "route": "/api/v1/testing",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": ""
+  },
+  {
     "route": "/api/v1/updateDeviceToken",
     "method": [
       "PUT"
