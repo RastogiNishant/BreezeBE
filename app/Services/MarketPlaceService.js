@@ -711,33 +711,30 @@ class MarketPlaceService {
 
   static async sendReminderEmail() {
     try {
-      const notRemindedQuery = (numOfDaysAfter) => {
-        return EstateSyncContactRequest.query()
-          .select(
-            'id',
-            'email',
-            'estate_id',
-            'link',
-            Database.raw(
-              `CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient`
-            ),
-            Database.raw(`${numOfDaysAfter} as "num_days_after_reminder"`)
-          )
-          .where(
-            numOfDaysAfter === 1 ? 'created_at' : 'last_reminder_at',
-            '<=',
-            moment.utc(new Date()).add(-numOfDaysAfter, 'days').format(DATE_FORMAT)
-          )
-          .where('reminders_to_convert', numOfDaysAfter === 1 ? 0 : 1)
-          .whereNotNull('link')
-          .where('status', STATUS_DRAFT)
-      }
-      // reminder for those who did contact request yesterday
-      const notReminded = (await notRemindedQuery(1).fetch()).rows
-      // followup for last week's reminder
-      const remindedSevenDaysAgo = (await notRemindedQuery(7).fetch()).rows
-
-      const contacts = [...notReminded, ...remindedSevenDaysAgo]
+      const yesterday = moment().add(-1, 'days').format(DATE_FORMAT)
+      const lastWeek = moment().add(-7, 'days').format(DATE_FORMAT)
+      let contacts = await Database.raw(`select
+      "id", "email", "estate_id",
+      CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient,
+      1 as "num_days_after_reminder"
+    from
+      "estate_sync_contact_requests"
+    where
+      "created_at" <= '${yesterday}' 
+    and "reminders_to_convert" = 0
+    and "link" is not null and "status" = ${STATUS_DRAFT}
+    union
+    select
+      "id", "email", "estate_id",
+      CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient,
+      7 as "num_days_after_reminder"
+    from
+      "estate_sync_contact_requests"
+    where
+      "last_reminder_at" <= '${lastWeek}' 
+    and "reminders_to_convert" = 1
+    and "link" is not null and "status" = ${STATUS_DRAFT}`)
+      contacts = contacts.rows
       if (!contacts?.length) {
         return
       }
