@@ -711,10 +711,12 @@ class MarketPlaceService {
 
   static async sendReminderEmail() {
     try {
-      /* const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
-      const contacts = (
+      // yesterday
+      const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
+      const notReminded = (
         await EstateSyncContactRequest.query()
           .select(
+            'id',
             'email',
             'estate_id',
             Database.raw(
@@ -722,24 +724,39 @@ class MarketPlaceService {
             )
           )
           .where('created_at', '<=', yesterday)
+          .where('reminders_to_convert', 0)
           .whereNotNull('link')
           .where('status', STATUS_DRAFT)
-          .where('email_sent', false)
           .fetch()
       ).rows
+      // last week
+      const sevenDaysAgo = moment.utc(new Date()).add(-7, 'days').format(DATE_FORMAT)
+      const remindedSevenDaysAgo = (
+        await EstateSyncContactRequest.query()
+          .select(
+            'id',
+            'email',
+            'estate_id',
+            Database.raw(
+              `CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient`
+            )
+          )
+          .where('last_reminder_at', '<=', sevenDaysAgo)
+          .where('reminders_to_convert', 1)
+          .whereNotNull('link')
+          .where('status', STATUS_DRAFT)
+          .fetch()
+      ).rows
+      const contacts = [...notReminded, ...remindedSevenDaysAgo]
       if (!contacts?.length) {
         return
-      } */
+      }
 
-      const contacts = [
-        { email: 'barudo@gmail.com', estate_id: 970, recipient: 'Justin Villocido' }
-      ]
-
-      let estate_ids = contacts.map((contact) => contact.estate_id)
-      estate_ids = uniq(estate_ids)
+      let estateIds = contacts.map((contact) => contact.estate_id)
+      estateIds = uniq(estateIds)
 
       const estates = await require('./EstateService').getAllPublishedEstatesByIds({
-        ids: estate_ids
+        ids: estateIds
       })
       await Promise.map(
         contacts,
@@ -758,9 +775,12 @@ class MarketPlaceService {
         },
         { concurrency: 1 }
       )
-
       const contactIds = contacts.map((contact) => contact.id)
-      await EstateSyncContactRequest.query().update({ email_sent: true }).whereIn('id', contactIds)
+      await Database.raw(`update estate_sync_contact_requests
+        set reminders_to_convert=(reminders_to_convert + 1),
+        last_reminder_at=NOW()
+        where id in (${contactIds.join(',')})
+      `)
       console.log('sendReminderEmail completed')
     } catch (e) {
       Logger.error(`Contact Request sendReminderEmail error ${e.message || e}`)
