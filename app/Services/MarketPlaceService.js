@@ -719,9 +719,11 @@ class MarketPlaceService {
             'id',
             'email',
             'estate_id',
+            'link',
             Database.raw(
               `CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient`
-            )
+            ),
+            Database.raw(`1 as "num_days_after_reminder"`)
           )
           .where('created_at', '<=', yesterday)
           .where('reminders_to_convert', 0)
@@ -737,9 +739,11 @@ class MarketPlaceService {
             'id',
             'email',
             'estate_id',
+            'link',
             Database.raw(
               `CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient`
-            )
+            ),
+            Database.raw(`7 as "num_days_after_reminder"`)
           )
           .where('last_reminder_at', '<=', sevenDaysAgo)
           .where('reminders_to_convert', 1)
@@ -768,6 +772,7 @@ class MarketPlaceService {
               link: contact.link,
               email: contact.email,
               recipient: contact.recipient,
+              numberOfDaysAfterReminder: contact.num_days_after_reminder,
               estate,
               lang: estate.user?.lang || DEFAULT_LANG
             })
