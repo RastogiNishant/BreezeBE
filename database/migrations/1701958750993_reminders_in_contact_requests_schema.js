@@ -11,7 +11,7 @@ class RemindersInContactRequestsSchema extends Schema {
         .smallint('reminders_to_convert')
         .defaultTo(0)
         .comment(`The number of reminders sent to prospect`)
-      table.datetime('last_reminder').comment(`date time when last reminder was sent`)
+      table.datetime('last_reminder_at').comment(`date time when last reminder was sent`)
     })
   }
 
@@ -19,7 +19,7 @@ class RemindersInContactRequestsSchema extends Schema {
     this.table('estate_sync_contact_requests', (table) => {
       // reverse alternations
       table.dropColumn('reminders_to_convert')
-      table.dropColumn('last_reminder')
+      table.dropColumn('last_reminder_at')
     })
   }
 }
