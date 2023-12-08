@@ -711,10 +711,8 @@ class MarketPlaceService {
 
   static async sendReminderEmail() {
     try {
-      // yesterday
-      const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
-      const notReminded = (
-        await EstateSyncContactRequest.query()
+      const notRemindedQuery = (numOfDaysAfter) => {
+        return EstateSyncContactRequest.query()
           .select(
             'id',
             'email',
@@ -723,34 +721,22 @@ class MarketPlaceService {
             Database.raw(
               `CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient`
             ),
-            Database.raw(`1 as "num_days_after_reminder"`)
+            Database.raw(`${numOfDaysAfter} as "num_days_after_reminder"`)
           )
-          .where('created_at', '<=', yesterday)
-          .where('reminders_to_convert', 0)
+          .where(
+            'created_at',
+            '<=',
+            moment.utc(new Date()).add(-numOfDaysAfter, 'days').format(DATE_FORMAT)
+          )
+          .where('reminders_to_convert', numOfDaysAfter === 1 ? 0 : 1)
           .whereNotNull('link')
           .where('status', STATUS_DRAFT)
-          .fetch()
-      ).rows
-      // last week
-      const sevenDaysAgo = moment.utc(new Date()).add(-7, 'days').format(DATE_FORMAT)
-      const remindedSevenDaysAgo = (
-        await EstateSyncContactRequest.query()
-          .select(
-            'id',
-            'email',
-            'estate_id',
-            'link',
-            Database.raw(
-              `CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient`
-            ),
-            Database.raw(`7 as "num_days_after_reminder"`)
-          )
-          .where('last_reminder_at', '<=', sevenDaysAgo)
-          .where('reminders_to_convert', 1)
-          .whereNotNull('link')
-          .where('status', STATUS_DRAFT)
-          .fetch()
-      ).rows
+      }
+      // reminder for those who did contact request yesterday
+      const notReminded = (await notRemindedQuery(1).fetch()).rows
+      // followup for last week's reminder
+      const remindedSevenDaysAgo = (await notRemindedQuery(7).fetch()).rows
+
       const contacts = [...notReminded, ...remindedSevenDaysAgo]
       if (!contacts?.length) {
         return
