@@ -711,8 +711,8 @@ class MarketPlaceService {
 
   static async sendReminderEmail() {
     try {
-      const yesterday = moment().add(-1, 'days').format(DATE_FORMAT)
-      const lastWeek = moment().add(-7, 'days').format(DATE_FORMAT)
+      const yesterday = moment.utc(new Date()).add(-1, 'days').format(DATE_FORMAT)
+      const lastWeek = moment.utc(new Date()).add(-7, 'days').format(DATE_FORMAT)
       let contacts = await Database.raw(`select
       "id", "email", "estate_id", "link",
       CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient,
