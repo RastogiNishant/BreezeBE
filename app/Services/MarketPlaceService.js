@@ -714,7 +714,7 @@ class MarketPlaceService {
       const yesterday = moment().add(-1, 'days').format(DATE_FORMAT)
       const lastWeek = moment().add(-7, 'days').format(DATE_FORMAT)
       let contacts = await Database.raw(`select
-      "id", "email", "estate_id",
+      "id", "email", "estate_id", "link",
       CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient,
       1 as "num_days_after_reminder"
     from
@@ -725,7 +725,7 @@ class MarketPlaceService {
     and "link" is not null and "status" = ${STATUS_DRAFT}
     union
     select
-      "id", "email", "estate_id",
+      "id", "email", "estate_id", "link",
       CONCAT(contact_info->>'firstName', ' ', contact_info->>'lastName') as recipient,
       7 as "num_days_after_reminder"
     from
