@@ -724,7 +724,7 @@ class MarketPlaceService {
             Database.raw(`${numOfDaysAfter} as "num_days_after_reminder"`)
           )
           .where(
-            'created_at',
+            numOfDaysAfter === 1 ? 'created_at' : 'last_reminder_at',
             '<=',
             moment.utc(new Date()).add(-numOfDaysAfter, 'days').format(DATE_FORMAT)
           )
