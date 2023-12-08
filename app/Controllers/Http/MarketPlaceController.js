@@ -51,7 +51,7 @@ class MarketPlaceController {
         await MarketPlaceService.sendMessageToMarketplaceProspect({
           contactRequestId: contact_request_id,
           message,
-          userId: id
+          landlordId: id
         })
       )
     } catch (e) {

@@ -120,7 +120,6 @@ const Route = use('Route')
 /**
  * @TODO @FIXME need to cleanup this last route from here into a seperate controller
  */
-
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 
 Route.group(() => {
@@ -135,6 +134,41 @@ Route.group(() => {
 })
   .prefix('api/v1/view-estate-invitations')
   .middleware(['auth:jwt', 'agreement', 'plan'])
+
+Route.get('/api/v1/testing', async ({ response }) => {
+  const ContactRequestMessage = use('App/Models/ContactRequestMessage')
+  const Database = use('Database')
+  const message = await ContactRequestMessage.query()
+    .select('contact_request_messages.*')
+    .select('estate_sync_contact_requests.estate_id')
+    .select(
+      Database.raw(
+        `json_build_object(
+          'area', estates.area,
+          'net_rent', estates.net_rent,
+          'street', estates.street,
+          'floor', estates.floor,
+          'rooms_number', estates.rooms_number,
+          'country', estates.country,
+          'zip', estates.zip,
+          'cover', estates.cover, 'address', estates.address) as estate`
+      )
+    )
+    .innerJoin(
+      'estate_sync_contact_requests',
+      'contact_request_messages.contact_request_id',
+      'estate_sync_contact_requests.id'
+    )
+    .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+    .where('contact_request_messages.id', 3)
+    .first()
+  await use('App/Services/MailService').sendMessageToMarketplaceProspect({
+    email: 'barudo@gmail.com',
+    message: message.message,
+    estate: message.estate
+  })
+  return response.res(true)
+})
 
 // generate route_index file, should be moved into a seperate command
 const routeConfig = [...Route.list()]

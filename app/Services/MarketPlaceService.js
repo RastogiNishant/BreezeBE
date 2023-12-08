@@ -967,12 +967,12 @@ class MarketPlaceService {
       .first()
   }
 
-  static async sendMessageToMarketplaceProspect({ contactRequestId, message, userId }) {
+  static async sendMessageToMarketplaceProspect({ contactRequestId, message, landlordId }) {
     // validate if user owns this estate
     const contactRequest = await EstateSyncContactRequest.query()
       .where('estate_sync_contact_requests.id', contactRequestId)
       .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
-      .where('estates.user_id', userId)
+      .where('estates.user_id', landlordId)
       .first()
     if (!contactRequest) {
       throw new HttpException('Contact request not found.')

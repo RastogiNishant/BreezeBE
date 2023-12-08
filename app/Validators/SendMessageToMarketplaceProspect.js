@@ -11,7 +11,7 @@ class SendMessageToMarketplaceProspect extends Base {
         .integer()
         .positive()
         .required('contact_request_id is required'),
-      message: yup.string().required('message is required')
+      message: yup.string().min(1).max(1000).required('message is required')
     })
 }
 
