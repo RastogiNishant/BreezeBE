@@ -768,11 +768,12 @@ class MarketPlaceService {
         { concurrency: 1 }
       )
       const contactIds = contacts.map((contact) => contact.id)
-      await Database.raw(`update estate_sync_contact_requests
-        set reminders_to_convert=(reminders_to_convert + 1),
-        last_reminder_at=NOW()
-        where id in (${contactIds.join(',')})
-      `)
+      await EstateSyncContactRequest.query()
+        .update({
+          reminders_to_convert: Database.raw(`?? + 1`, ['reminders_to_convert']),
+          last_reminder_at: Database.fn.now()
+        })
+        .whereIn('id', contactIds)
       console.log('sendReminderEmail completed')
     } catch (e) {
       Logger.error(`Contact Request sendReminderEmail error ${e.message || e}`)
