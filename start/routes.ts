@@ -120,7 +120,6 @@ const Route = use('Route')
 /**
  * @TODO @FIXME need to cleanup this last route from here into a seperate controller
  */
-
 const EstateViewInvitedUser = use('App/Models/EstateViewInvitedUser')
 
 Route.group(() => {

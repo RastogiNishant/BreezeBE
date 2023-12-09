@@ -18,5 +18,17 @@ export const marketPlaceRoutes: Routes = {
       controller: 'MarketPlaceController.createKnock',
       middleware: ['auth:jwt', 'valid:AlreadyRegisteredOutsideTenantInvite']
     }
+  },
+  '/messages': {
+    [HTTP_METHODS.POST]: {
+      controller: 'MarketPlaceController.sendMessageToMarketplaceProspect',
+      middleware: ['auth:jwtLandlord', 'valid:SendMessageToMarketplaceProspect']
+    }
+  },
+  '/messages/:id': {
+    [HTTP_METHODS.GET]: {
+      controller: 'MarketPlaceController.getMessagesToMarketplaceProspect',
+      middleware: ['auth:jwtLandlord', 'valid:Id']
+    }
   }
 }

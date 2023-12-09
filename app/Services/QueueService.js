@@ -47,7 +47,8 @@ const {
   PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING,
   PROSPECT_DEACTIVATION_STAGE_FINAL,
   REMIND_PROSPECT_TO_ACTIVATE_IN_ONE_DAY,
-  REMIND_PROSPECT_TO_REACTIVATE_WHEN_DEACTIVATED_IN_SEVEN_DAYS
+  REMIND_PROSPECT_TO_REACTIVATE_WHEN_DEACTIVATED_IN_SEVEN_DAYS,
+  SCHEDULED_16H_DAY_JOB
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -288,10 +289,14 @@ class QueueService {
       wrapException(require('./NoticeService').prospectProfileExpiring),
       wrapException(QueueJobService.updateAllMisseEstateCoord),
       wrapException(QueueJobService.sendLikedNotificationBeforeExpired),
-      wrapException(require('./MarketPlaceService').sendReminderEmail),
+      // wrapException(require('./MarketPlaceService').sendReminderEmail),
       wrapException(require('./TenantService').reminderProfileFillUp),
       wrapException(require('./UserDeletionService').processDeletionSchedule)
     ])
+  }
+
+  static async processEveryDay16H() {
+    wrapException(require('./MarketPlaceService').sendReminderEmail)
   }
 
   /**
@@ -389,6 +394,8 @@ class QueueService {
           return QueueService.sendFriday14H()
         case SCHEDULED_9H_DAY_JOB:
           return QueueService.sendEveryDay9AM()
+        case SCHEDULED_16H_DAY_JOB:
+          return QueueService.processEveryDay16H()
         case SAVE_PROPERTY_IMAGES:
           return ImageService.savePropertyBulkImages(job.data.properyImages)
         case CREATE_THUMBNAIL_IMAGES:
