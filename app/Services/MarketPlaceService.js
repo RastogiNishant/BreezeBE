@@ -969,7 +969,22 @@ class MarketPlaceService {
 
   static async sendMessageToMarketplaceProspect({ contactRequestId, message, landlordId }) {
     // validate if user owns this estate
-    const contactRequest = await EstateSyncContactRequest.query()
+    let contactRequest = await EstateSyncContactRequest.query()
+      .select('estate_sync_contact_requests.email')
+      .select(
+        Database.raw(
+          `json_build_object(
+            'area', estates.area,
+            'net_rent', estates.net_rent,
+            'street', estates.street,
+            'floor', estates.floor,
+            'rooms_number', estates.rooms_number,
+            'country', estates.country,
+            'zip', estates.zip,
+            'cover', estates.cover,
+            'address', estates.address) as estate`
+        )
+      )
       .where('estate_sync_contact_requests.id', contactRequestId)
       .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
       .where('estates.user_id', landlordId)
@@ -977,8 +992,13 @@ class MarketPlaceService {
     if (!contactRequest) {
       throw new HttpException('Contact request not found.')
     }
+    contactRequest = contactRequest.toJSON()
     // mail service send to contact request
-    await MailService.sendMessageToMarketplaceProspect({ email: contactRequest.email, message })
+    await MailService.sendMessageToMarketplaceProspect({
+      email: contactRequest.email,
+      estate: contactRequest.estate,
+      message
+    })
     await ContactRequestMessage.create({
       contact_request_id: contactRequestId,
       message

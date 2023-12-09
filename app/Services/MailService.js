@@ -1266,9 +1266,10 @@ class MailService {
     return await _helper.sendSGMail(msg, false)
   }
 
-  static async sendMessageToMarketplaceProspect({ email, message, lang = DEFAULT_LANG }) {
+  static async sendMessageToMarketplaceProspect({ email, message, estate, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const final = `${l.get('landlord.no_reply_email_marketplaces_user.final.message', lang)}`
+    const propertyInfo = MailService.getEmailAddressFormatter(estate, lang)
     const msg = {
       to: trim(email),
       from: {
@@ -1277,12 +1278,15 @@ class MailService {
       },
       templateId,
       dynamic_template_data: {
-        subject: l.get('landlord.no_reply_email_marketplaces_user.subject.message', lang),
+        subject: l
+          .get('landlord.no_reply_email_marketplaces_user.subject.message', lang)
+          .replace('{{property_address}}', estate.address.replace(/\w+/g, capitalize)),
         salutation: l.get('email_signature.salutation.message', lang),
         CTA: l.get('landlord.no_reply_email_marketplaces_user.CTA.message', lang),
         intro: l
           .get('landlord.no_reply_email_marketplaces_user.intro.message', lang)
-          .replace('{{message}}', message.replace(/(?:\r\n|\r|\n)/g, '<br>')),
+          .replace('{{message}}', `<br>` + message.replace(/(?:\r\n|\r|\n)/g, '<br>') + `<br><br>`)
+          .replace('{Full_property_address}}', propertyInfo),
         final,
         greeting: l.get('email_signature.greeting.message', lang),
         link: INVITE_APP_LINK,
