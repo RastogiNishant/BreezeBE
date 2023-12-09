@@ -735,16 +735,30 @@ class MailService {
     return addressLayout
   }
 
-  static async reminderKnockSignUpEmail({ link, email, recipient, estate, lang = DEFAULT_LANG }) {
+  static async reminderKnockSignUpEmail({
+    link,
+    email,
+    recipient,
+    estate,
+    numberOfDaysAfterReminder = 1,
+    lang = DEFAULT_LANG
+  }) {
+    // FIXME:
+    // Content with characters ', " or & may need to be escaped with three brackets
+    // {{{ content }}}
+    // See https://sendgrid.com/docs/for-developers/sending-email/using-handlebars/ for more information.
     try {
       const templateId = PROSPECT_EMAIL_TEMPLATE
       const final = l
         .get('prospect.no_reply_email_to_complete_profile.final.message', lang)
         // .replace('{Landlord_name}', `${landlord_name}`)
         .replace(/\n/g, '<br />')
-
+      const introKey =
+        numberOfDaysAfterReminder === 1
+          ? 'prospect.no_reply_email_to_complete_profile.intro.message'
+          : 'prospect.no_reply_email_to_complete_profile_week_ago.intro.message'
       const intro = l
-        .get('prospect.no_reply_email_to_complete_profile.intro.message', lang)
+        .get(introKey, lang)
         .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
 
       const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>

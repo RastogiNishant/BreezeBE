@@ -17,7 +17,9 @@ class EstateSyncContactRequest extends Model {
       'hash',
       'is_invited_by_landlord',
       'other_info',
-      'publisher'
+      'publisher',
+      'reminders_to_convert',
+      'last_reminder'
     ]
   }
 
