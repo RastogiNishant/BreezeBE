@@ -173,7 +173,7 @@ class UserService {
           tenantData.pets = PETS_NO
         }
 
-        tenantData.members_count = otherInfo?.members || null
+        tenantData.members_count = otherInfo?.members || 1
         tenantData.income = otherInfo?.income || null
 
         const tenant = await Tenant.create(tenantData, trx)
