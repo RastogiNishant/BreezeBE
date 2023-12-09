@@ -45,7 +45,9 @@ const {
   SCHEDULED_MONTHLY_AT_15TH_AND_AT_10AM,
   PROSPECT_DEACTIVATION_STAGE_FIRST_WARNING,
   PROSPECT_DEACTIVATION_STAGE_SECOND_WARNING,
-  PROSPECT_DEACTIVATION_STAGE_FINAL
+  PROSPECT_DEACTIVATION_STAGE_FINAL,
+  REMIND_PROSPECT_TO_ACTIVATE_IN_ONE_DAY,
+  REMIND_PROSPECT_TO_REACTIVATE_WHEN_DEACTIVATED_IN_SEVEN_DAYS
 } = require('../constants')
 const HttpException = require('../Exceptions/HttpException')
 
@@ -120,6 +122,22 @@ class QueueService {
 
   static estateSyncUnpublishEstates(estate_ids, markListingsForDelete = true) {
     Queue.addJob(ESTATE_SYNC_UNPUBLISH_ESTATES, { estate_ids, markListingsForDelete })
+  }
+
+  static remindProspectToActivateInOneDay(userId) {
+    Queue.addJob(
+      REMIND_PROSPECT_TO_ACTIVATE_IN_ONE_DAY,
+      { userId, numberOfDays: 1 },
+      { delay: 24 * 60 * 60 * 1000 }
+    )
+  }
+
+  static remindProspectToActivateInSevenDays(userId) {
+    Queue.addJob(
+      REMIND_PROSPECT_TO_REACTIVATE_WHEN_DEACTIVATED_IN_SEVEN_DAYS,
+      { userId, numberOfDays: 7 },
+      { delay: 7 * 24 * 60 * 60 * 1000 }
+    )
   }
 
   /**
@@ -434,6 +452,13 @@ class QueueService {
           require('./TenantService').scheduleProspectsForDeactivation(
             PROSPECT_DEACTIVATION_STAGE_FINAL
           )
+          break
+        case REMIND_PROSPECT_TO_ACTIVATE_IN_ONE_DAY:
+        case REMIND_PROSPECT_TO_REACTIVATE_WHEN_DEACTIVATED_IN_SEVEN_DAYS:
+          require('./TenantService').remindProspectToActivate({
+            userId: job.data.userId,
+            numberOfDays: job.data.numberOfDays
+          })
           break
         default:
           console.log(`No job processor for: ${job.name}`)

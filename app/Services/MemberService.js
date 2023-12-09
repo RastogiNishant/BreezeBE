@@ -132,7 +132,21 @@ class MemberService {
   static async getMembers(householdId, includes_absolute_url = false) {
     const query = Member.query()
       .select('members.*')
+      .select(
+        Database.raw(
+          `case when "members"."id"="main_member"."main_member_id" then true else false end as is_main`
+        )
+      )
       .select(Database.raw(`date_part('year', age(birthday)) as age`))
+      .innerJoin(
+        Database.raw(
+          `(select MIN(id) as main_member_id, user_id 
+          from members where members.user_id='${householdId}'
+          group by user_id) as main_member`
+        ),
+        'main_member.user_id',
+        'members.user_id'
+      )
       .where('members.user_id', householdId)
       .with('incomes', function (b) {
         b.with('proofs')
@@ -292,8 +306,8 @@ class MemberService {
             minors_count > 0
               ? FAMILY_STATUS_WITH_CHILD
               : members_count < 2
-                ? FAMILY_STATUS_SINGLE
-                : FAMILY_STATUS_NO_CHILD
+              ? FAMILY_STATUS_SINGLE
+              : FAMILY_STATUS_NO_CHILD
 
           const updatingFields = {
             members_count,
