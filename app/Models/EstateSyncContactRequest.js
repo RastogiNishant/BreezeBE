@@ -19,7 +19,7 @@ class EstateSyncContactRequest extends Model {
       'other_info',
       'publisher',
       'reminders_to_convert',
-      'last_reminder'
+      'last_reminder_at'
     ]
   }
 
