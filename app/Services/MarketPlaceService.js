@@ -131,7 +131,7 @@ const {
   }
 } = require('../exceptions')
 const TenantService = require('./TenantService')
-const { uniq, omit } = require('lodash')
+const { uniq, isNull } = require('lodash')
 class MarketPlaceService {
   static async createContact(payload) {
     if (!payload?.propertyId) {
@@ -1024,6 +1024,28 @@ class MarketPlaceService {
       contact_request_id: contactRequestId,
       message
     }
+  }
+
+  static async getMessagesToMarketplaceProspect({ contactRequestId, landlordId }) {
+    const contactRequest = await EstateSyncContactRequest.query()
+      .select(Database.raw(`array_agg(_crm.message) as messages`))
+      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .leftJoin(
+        Database.raw(`
+        (select contact_request_id, 
+          json_build_object('id', id, 'message', message, 'created_at', created_at) as message
+          from "contact_request_messages" order by id asc
+        ) as _crm`),
+        'estate_sync_contact_requests.id',
+        '_crm.contact_request_id'
+      )
+      .where('estates.user_id', landlordId)
+      .where('estate_sync_contact_requests.id', contactRequestId)
+      .first()
+    if (!contactRequest?.messages) {
+      throw new HttpException('Contact request not found.')
+    }
+    return contactRequest
   }
 }
 
