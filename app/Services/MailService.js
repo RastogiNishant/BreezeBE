@@ -908,7 +908,7 @@ class MailService {
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const msg = {
-      to: isArray(email) ? uniq(email) : trim(email),
+      to: isArray(email) ? trim(email.pop()) : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -939,7 +939,9 @@ class MailService {
         )
       }
     }
-
+    if (isArray(email) && email.length) {
+      msg.bcc = email
+    }
     return _helper.sendSGMail(msg)
   }
 
@@ -1058,7 +1060,7 @@ class MailService {
     }
     const estateAddress = this.getEmailAddressFormatter(estate, lang)
     const msg = {
-      to: isArray(email) ? uniq(email) : trim(email),
+      to: isArray(email) ? trim(email.pop()) : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -1093,6 +1095,9 @@ class MailService {
           lang
         )
       }
+    }
+    if (isArray(email) && email.length) {
+      msg.bcc = email
     }
     return await _helper.sendSGMail(msg)
   }
