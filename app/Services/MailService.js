@@ -908,7 +908,7 @@ class MailService {
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const msg = {
-      to: isArray(email) ? trim(email.pop()) : trim(email),
+      to: isArray(email) && email.length ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -940,7 +940,7 @@ class MailService {
       }
     }
     if (isArray(email) && email.length) {
-      msg.bcc = email
+      msg.isMultiple = true
     }
     return _helper.sendSGMail(msg)
   }
@@ -1060,7 +1060,7 @@ class MailService {
     }
     const estateAddress = this.getEmailAddressFormatter(estate, lang)
     const msg = {
-      to: isArray(email) ? trim(email.pop()) : trim(email),
+      to: isArray(email) ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -1097,7 +1097,7 @@ class MailService {
       }
     }
     if (isArray(email) && email.length) {
-      msg.bcc = email
+      msg.isMultiple = true
     }
     return await _helper.sendSGMail(msg)
   }
@@ -1246,7 +1246,7 @@ class MailService {
     final = final.replace(/\{replace\}/, toReplace)
 
     const msg = {
-      to: emails.pop(), // we need a to here so we pop()
+      to: emails, // we need a to here so we pop()
       from: {
         email: FromEmail,
         name: FromName
@@ -1280,7 +1280,7 @@ class MailService {
     }
     if (emails.length) {
       // we add all other emails as blind carbon copies
-      msg.bcc = emails
+      msg.isMultiple = true
     }
     return await _helper.sendSGMail(msg, false)
   }
