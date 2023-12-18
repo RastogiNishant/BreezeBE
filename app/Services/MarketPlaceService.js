@@ -1016,11 +1016,12 @@ class MarketPlaceService {
       estate: contactRequest.estate,
       message
     })
-    await ContactRequestMessage.create({
+    const newContactRequest = await ContactRequestMessage.create({
       contact_request_id: contactRequestId,
       message
     })
     return {
+      id: newContactRequest.id,
       contact_request_id: contactRequestId,
       message
     }
