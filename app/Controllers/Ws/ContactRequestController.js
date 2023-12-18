@@ -55,13 +55,13 @@ class ContactRequestController extends BaseController {
 
   async onMessage(message) {
     try {
-      await MarketPlaceService.sendMessageToMarketplaceProspect({
+      const newMessage = await MarketPlaceService.sendMessageToMarketplaceProspect({
         contactRequestId: this.request.contactRequestId,
         message: message.message,
         landlordId: this.user.id
       })
       const messageSent = {
-        id: null,
+        id: newMessage.id,
         message: message.message,
         attachments: null,
         topic: this.socket.topic,
@@ -78,6 +78,14 @@ class ContactRequestController extends BaseController {
       Logger.error(`onMessage error ${e?.message}`)
       this.emitError(e?.message)
     }
+  }
+
+  async onRemoveMessage() {
+    this.emitError('Messages sent to contact requests cannot be removed.')
+  }
+
+  async onEditMessage() {
+    this.emitError('Messages sent to contact requests cannot be edited.')
   }
 }
 
