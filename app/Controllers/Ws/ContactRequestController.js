@@ -1,7 +1,10 @@
 const BaseController = require('./BaseController')
 const Logger = use('Logger')
 const ContactRequestMessage = use('App/Models/ContactRequestMessage')
+const MarketPlaceService = use('App/Services/MarketPlaceService')
 const Database = use('Database')
+const WebSocket = use('App/Classes/WebSocket')
+const moment = require('moment')
 
 class ContactRequestController extends BaseController {
   constructor({ socket, request, auth }) {
@@ -32,10 +35,7 @@ class ContactRequestController extends BaseController {
           'estates.user_id'
         )
         .where('contact_request_id', this.request.contactRequestId)
-        .orderBy('contact_request_messages.id', 'asc')
-      if (data.lastId) {
-        query.where('chats.id', '<', data.lastId)
-      }
+        .orderBy('contact_request_messages.id', 'desc')
       const previousMessages = await query.fetch()
       if (this.topic) {
         this.topic.emitTo(
@@ -49,6 +49,33 @@ class ContactRequestController extends BaseController {
       }
     } catch (e) {
       Logger.error(`onGetPreviousMessages error ${e?.message}`)
+      this.emitError(e?.message)
+    }
+  }
+
+  async onMessage(message) {
+    try {
+      await MarketPlaceService.sendMessageToMarketplaceProspect({
+        contactRequestId: this.request.contactRequestId,
+        message: message.message,
+        landlordId: this.user.id
+      })
+      const messageSent = {
+        id: null,
+        message: message.message,
+        attachments: null,
+        topic: this.socket.topic,
+        dateTime: moment.utc(new Date()).format(),
+        sender: {
+          id: this.user.id,
+          firstname: this.user.firstname,
+          secondname: this.user.secondname,
+          avatar: this.user.avatar
+        }
+      }
+      this.topic.broadcast('message', { message: messageSent })
+    } catch (e) {
+      Logger.error(`onMessage error ${e?.message}`)
       this.emitError(e?.message)
     }
   }
