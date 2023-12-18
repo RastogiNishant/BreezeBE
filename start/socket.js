@@ -6,5 +6,5 @@ Ws.channel('tenant:*', 'TenantController').middleware(['auth:jwt', 'userIsATenan
 Ws.channel('landlord:*', 'LandlordController').middleware(['auth:jwtLandlord', 'userIsALandlord'])
 Ws.channel('contactrequest:*', 'ContactRequestController').middleware([
   'auth:jwtLandlord',
-  'landlordOwnsContactRequest'
+  'landlordOwnsThisContactRequest'
 ])

@@ -12,23 +12,26 @@ class LandlordOwnsThisContactRequest {
    * @param {Request} ctx.request
    * @param {Function} next
    */
-  async handle({ request, auth }, next) {
+  async wsHandle({ socket, request, auth }, next) {
     // call next to advance the request
-    const { id } = request.all()
     const landlordId = auth.user.id
-    const result = await EstateSyncContactRequest.query()
-      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
-      .where('estates.user_id', landlordId)
-      .where('estate_sync_contact_requests.id', id)
-      .first()
-    if (!result) {
-      throw new HttpException(
-        'Landlord does not own this contact request.',
-        412,
-        ERROR_LANDLORD_DOES_NOT_OWN_THIS_ESTATE
-      )
+    let matches = null
+    if ((matches = socket.topic.match(/^contactrequest:([0-9]+)$/))) {
+      const result = await EstateSyncContactRequest.query()
+        .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+        .where('estates.user_id', landlordId)
+        .where('estate_sync_contact_requests.id', matches[1])
+        .first()
+      if (!result) {
+        throw new HttpException(
+          'Landlord does not own this contact request.',
+          412,
+          ERROR_LANDLORD_DOES_NOT_OWN_THIS_ESTATE
+        )
+      }
+      request.contactRequestId = matches[1]
+      return await next()
     }
-    return await next()
   }
 }
 
