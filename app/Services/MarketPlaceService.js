@@ -43,7 +43,8 @@ const {
   MARKETPLACE_LIST,
   SHORTENURL_LENGTH,
   DOMAIN,
-  MATCH_STATUS_TOP
+  MATCH_STATUS_TOP,
+  ISO_DATE_FORMAT
 } = require('../constants')
 
 const familySize = {
@@ -1029,24 +1030,32 @@ class MarketPlaceService {
 
   static async getMessagesToMarketplaceProspect({ contactRequestId, landlordId }) {
     const contactRequest = await EstateSyncContactRequest.query()
-      .select(Database.raw(`array_agg(_crm.message) as messages`))
       .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
-      .leftJoin(
-        Database.raw(`
-        (select contact_request_id, 
-          json_build_object('id', id, 'message', message, 'created_at', created_at) as message
-          from "contact_request_messages" order by id asc
-        ) as _crm`),
-        'estate_sync_contact_requests.id',
-        '_crm.contact_request_id'
+      .where('estate_sync_contact_requests.id', contactRequestId)
+      .where('estates.user_id', landlordId)
+      .first()
+    if (!contactRequest) {
+      throw new HttpException('Contact Request not found.')
+    }
+    const messages = await ContactRequestMessage.query()
+      .select('contact_request_messages.id')
+      .select('contact_request_messages.message')
+      .select(
+        Database.raw(
+          `to_char(contact_request_messages.created_at, '${ISO_DATE_FORMAT}') as created_at`
+        )
       )
+      .leftJoin(
+        'estate_sync_contact_requests',
+        'estate_sync_contact_requests.id',
+        'contact_request_messages.contact_request_id'
+      )
+      .leftJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
       .where('estates.user_id', landlordId)
       .where('estate_sync_contact_requests.id', contactRequestId)
-      .first()
-    if (!contactRequest?.messages) {
-      throw new HttpException('Contact request not found.')
-    }
-    return contactRequest
+      .orderBy('contact_request_messages.created_at', 'asc')
+      .fetch()
+    return messages.toJSON() || []
   }
 }
 
