@@ -96,6 +96,12 @@ export const administrationRoutes: Routes = {
       middleware: ['auth:jwtAdministrator', 'valid:AdminAddUser']
     }
   },
+  '/users/change-password': {
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/UserController.changePassword',
+      middleware: ['auth:jwtAdministrator', 'valid:AdminChangeUserPassword']
+    }
+  },
   '/users/:user_id': {
     [HTTP_METHODS.GET]: {
       controller: 'Admin/UserController.getUser', // this is missing on Admin/UserController

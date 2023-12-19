@@ -830,6 +830,20 @@ class UserController {
     }
     return response.res({ matchability: true, trace })
   }
+
+  async changePassword({ request, response }) {
+    const { email, password } = request.all()
+    const users = (
+      await User.query()
+        .where('email', email)
+        .whereIn('role', [ROLE_USER, ROLE_LANDLORD])
+        .limit(2)
+        .fetch()
+    ).rows
+    const updatePass = async (user) => user.updateItem({ password }, true)
+    await Promise.map(users, updatePass)
+    return response.res(true)
+  }
 }
 
 module.exports = UserController
