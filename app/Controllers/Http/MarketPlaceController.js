@@ -44,14 +44,13 @@ class MarketPlaceController {
   }
 
   async sendMessageToMarketplaceProspect({ request, auth, response }) {
-    const { contact_request_id, message } = request.all()
-    const { id } = auth.user
+    const { id, message } = request.all()
     try {
       response.res(
         await MarketPlaceService.sendMessageToMarketplaceProspect({
-          contactRequestId: contact_request_id,
+          contactRequestId: id,
           message,
-          landlordId: id
+          landlordId: auth.user.id
         })
       )
     } catch (e) {
