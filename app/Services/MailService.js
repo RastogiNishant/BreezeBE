@@ -1073,9 +1073,11 @@ class MailService {
         intro:
           estateAddress +
           `<br /><br />` +
+          `<tr><td>` +
           l
             .get('prospect.email_message_from_landlord.intro.message', lang)
-            .replace('{{message_content}}', message),
+            .replace('{{message_content}}', message) +
+          `</td></tr>`,
         link: shortLink,
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
