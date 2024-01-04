@@ -317,6 +317,7 @@ class BuildingService {
         Database.raw(
           `array_agg(
             json_build_object(
+              'id', estate_sync_contact_requests.id,
               'firstname', estate_sync_contact_requests.contact_info->'firstName',
               'secondname', estate_sync_contact_requests.contact_info->'lastName',
               'from_market_place', 1,

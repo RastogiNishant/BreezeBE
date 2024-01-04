@@ -832,6 +832,17 @@
     "handler": "Admin/UserController.updateUser"
   },
   {
+    "route": "/api/v1/administration/users/change-password",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:AdminChangeUserPassword"
+    ],
+    "handler": "Admin/UserController.changePassword"
+  },
+  {
     "route": "/api/v1/administration/utilities/contact-requests",
     "method": [
       "POST"
@@ -3498,6 +3509,29 @@
       "valid:AlreadyRegisteredOutsideTenantInvite"
     ],
     "handler": "MarketPlaceController.createKnock"
+  },
+  {
+    "route": "/api/v1/marketplace/messages",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:SendMessageToMarketplaceProspect"
+    ],
+    "handler": "MarketPlaceController.sendMessageToMarketplaceProspect"
+  },
+  {
+    "route": "/api/v1/marketplace/messages/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id"
+    ],
+    "handler": "MarketPlaceController.getMessagesToMarketplaceProspect"
   },
   {
     "route": "/api/v1/match/cancel-building/:action",

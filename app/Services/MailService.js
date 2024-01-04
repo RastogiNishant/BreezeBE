@@ -735,16 +735,30 @@ class MailService {
     return addressLayout
   }
 
-  static async reminderKnockSignUpEmail({ link, email, recipient, estate, lang = DEFAULT_LANG }) {
+  static async reminderKnockSignUpEmail({
+    link,
+    email,
+    recipient,
+    estate,
+    numberOfDaysAfterReminder = 1,
+    lang = DEFAULT_LANG
+  }) {
+    // FIXME:
+    // Content with characters ', " or & may need to be escaped with three brackets
+    // {{{ content }}}
+    // See https://sendgrid.com/docs/for-developers/sending-email/using-handlebars/ for more information.
     try {
       const templateId = PROSPECT_EMAIL_TEMPLATE
       const final = l
         .get('prospect.no_reply_email_to_complete_profile.final.message', lang)
         // .replace('{Landlord_name}', `${landlord_name}`)
         .replace(/\n/g, '<br />')
-
+      const introKey =
+        numberOfDaysAfterReminder === 1
+          ? 'prospect.no_reply_email_to_complete_profile.intro.message'
+          : 'prospect.no_reply_email_to_complete_profile_week_ago.intro.message'
       const intro = l
-        .get('prospect.no_reply_email_to_complete_profile.intro.message', lang)
+        .get(introKey, lang)
         .replace('{Full_property_address}', this.getEmailAddressFormatter(estate, lang))
 
       const introLayout = `<table align="left" border="0" cellpadding="0" cellspacing="0" width = '100%'>
@@ -894,7 +908,7 @@ class MailService {
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const msg = {
-      to: isArray(email) ? uniq(email) : trim(email),
+      to: isArray(email) && email.length ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -925,7 +939,9 @@ class MailService {
         )
       }
     }
-
+    if (isArray(email) && email.length) {
+      msg.isMultiple = true
+    }
     return _helper.sendSGMail(msg)
   }
 
@@ -1044,7 +1060,7 @@ class MailService {
     }
     const estateAddress = this.getEmailAddressFormatter(estate, lang)
     const msg = {
-      to: isArray(email) ? uniq(email) : trim(email),
+      to: isArray(email) ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -1057,9 +1073,11 @@ class MailService {
         intro:
           estateAddress +
           `<br /><br />` +
+          `<tr><td>` +
           l
             .get('prospect.email_message_from_landlord.intro.message', lang)
-            .replace('{{message_content}}', message),
+            .replace('{{message_content}}', message) +
+          `</td></tr>`,
         link: shortLink,
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
@@ -1079,6 +1097,9 @@ class MailService {
           lang
         )
       }
+    }
+    if (isArray(email) && email.length) {
+      msg.isMultiple = true
     }
     return await _helper.sendSGMail(msg)
   }
@@ -1227,7 +1248,7 @@ class MailService {
     final = final.replace(/\{replace\}/, toReplace)
 
     const msg = {
-      to: emails.pop(), // we need a to here so we pop()
+      to: emails, // we need a to here so we pop()
       from: {
         email: FromEmail,
         name: FromName
@@ -1261,9 +1282,54 @@ class MailService {
     }
     if (emails.length) {
       // we add all other emails as blind carbon copies
-      msg.bcc = emails
+      msg.isMultiple = true
     }
     return await _helper.sendSGMail(msg, false)
+  }
+
+  static async sendMessageToMarketplaceProspect({ email, message, estate, lang = DEFAULT_LANG }) {
+    const templateId = PROSPECT_EMAIL_TEMPLATE
+    const final = `${l.get('landlord.no_reply_email_marketplaces_user.final.message', lang)}`
+    const propertyInfo = MailService.getEmailAddressFormatter(estate, lang)
+    const msg = {
+      to: trim(email),
+      from: {
+        email: FromEmail,
+        name: FromName
+      },
+      templateId,
+      dynamic_template_data: {
+        subject: l
+          .get('landlord.no_reply_email_marketplaces_user.subject.message', lang)
+          .replace('{{property_address}}', estate.address.replace(/\w+/g, capitalize)),
+        salutation: l.get('email_signature.salutation.message', lang),
+        CTA: l.get('landlord.no_reply_email_marketplaces_user.CTA.message', lang),
+        intro: l
+          .get('landlord.no_reply_email_marketplaces_user.intro.message', lang)
+          .replace('{{message}}', `<br>` + message.replace(/(?:\r\n|\r|\n)/g, '<br>') + `<br><br>`)
+          .replace('{Full_property_address}}', propertyInfo),
+        final,
+        greeting: l.get('email_signature.greeting.message', lang),
+        link: INVITE_APP_LINK,
+        company: l.get('email_signature.company.message', lang),
+        position: l.get('email_signature.position.message', lang),
+        tel: l.get('email_signature.tel.message', lang),
+        email: l.get('email_signature.email.message', lang),
+        address: l.get('email_signature.address.message', lang),
+        website: l.get('email_signature.website.message', lang),
+        tel_val: l.get('tel.customer_service.de.message', lang),
+        email_val: l.get('email.customer_service.de.message', lang),
+        address_val: l.get('address.customer_service.de.message', lang),
+        website_val: l.get('website.customer_service.de.message', lang),
+        team: l.get('email_signature.team.message', lang),
+        download_app: l.get('email_signature.download.app.message', lang),
+        enviromental_responsibility: l.get(
+          'email_signature.enviromental.responsibility.message',
+          lang
+        )
+      }
+    }
+    return await _helper.sendSGMail(msg)
   }
 }
 

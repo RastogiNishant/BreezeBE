@@ -3670,6 +3670,7 @@ class MatchService {
         Database.raw(`
         case when _n.note is null then null else json_build_object(
           'note', _n.note,
+          'id', _n.id,
           'created_at', _n.created_at,
           'updated_at', _n.updated_at
       ) end as note`)
