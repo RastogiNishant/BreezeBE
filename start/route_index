@@ -3511,6 +3511,29 @@
     "handler": "MarketPlaceController.createKnock"
   },
   {
+    "route": "/api/v1/marketplace/messages",
+    "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:SendMessageToMarketplaceProspect"
+    ],
+    "handler": "MarketPlaceController.sendMessageToMarketplaceProspect"
+  },
+  {
+    "route": "/api/v1/marketplace/messages/:id",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:Id"
+    ],
+    "handler": "MarketPlaceController.getMessagesToMarketplaceProspect"
+  },
+  {
     "route": "/api/v1/match/cancel-building/:action",
     "method": [
       "DELETE"

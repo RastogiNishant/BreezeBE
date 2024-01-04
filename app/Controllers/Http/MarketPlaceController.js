@@ -42,6 +42,36 @@ class MarketPlaceController {
       throw new HttpException(e.message, 400)
     }
   }
+
+  async sendMessageToMarketplaceProspect({ request, auth, response }) {
+    const { id, message } = request.all()
+    try {
+      response.res(
+        await MarketPlaceService.sendMessageToMarketplaceProspect({
+          contactRequestId: id,
+          message,
+          landlordId: auth.user.id
+        })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
+
+  async getMessagesToMarketplaceProspect({ request, auth, response }) {
+    const { id } = request.all()
+    const landlordId = auth.user.id
+    try {
+      response.res(
+        await MarketPlaceService.getMessagesToMarketplaceProspect({
+          landlordId,
+          contactRequestId: id
+        })
+      )
+    } catch (e) {
+      throw new HttpException(e.message, 400)
+    }
+  }
 }
 
 module.exports = MarketPlaceController

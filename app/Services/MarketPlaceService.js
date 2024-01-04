@@ -13,6 +13,7 @@ const yup = require('yup')
 const { phoneSchema } = require('../Libs/schemas')
 const ShortenLinkService = use('App/Services/ShortenLinkService')
 const MatchService = use('App/Services/MatchService')
+const ContactRequestMessage = use('App/Models/ContactRequestMessage')
 const {
   DEFAULT_LANG,
   ROLE_USER,
@@ -42,7 +43,8 @@ const {
   MARKETPLACE_LIST,
   SHORTENURL_LENGTH,
   DOMAIN,
-  MATCH_STATUS_TOP
+  MATCH_STATUS_TOP,
+  ISO_DATE_FORMAT
 } = require('../constants')
 
 const familySize = {
@@ -130,7 +132,7 @@ const {
   }
 } = require('../exceptions')
 const TenantService = require('./TenantService')
-const { uniq, omit } = require('lodash')
+const { uniq, isNull } = require('lodash')
 class MarketPlaceService {
   static async createContact(payload) {
     if (!payload?.propertyId) {
@@ -410,6 +412,7 @@ class MarketPlaceService {
         .select(
           EstateSyncContactRequest.columns.filter((column) => !['contact_info'].includes(column))
         )
+        .select('id')
         .select(Database.raw(`contact_info->'firstName' as firstname`))
         .select(Database.raw(`contact_info->'lastName' as secondname`))
         .select(Database.raw(` 1 as from_market_place`))
@@ -980,6 +983,79 @@ class MarketPlaceService {
       .where('estate_id', estate_id)
       .where('email', email)
       .first()
+  }
+
+  static async sendMessageToMarketplaceProspect({ contactRequestId, message, landlordId }) {
+    // validate if user owns this estate
+    let contactRequest = await EstateSyncContactRequest.query()
+      .select('estate_sync_contact_requests.email')
+      .select(
+        Database.raw(
+          `json_build_object(
+            'area', estates.area,
+            'net_rent', estates.net_rent,
+            'street', estates.street,
+            'floor', estates.floor,
+            'rooms_number', estates.rooms_number,
+            'country', estates.country,
+            'zip', estates.zip,
+            'cover', estates.cover,
+            'address', estates.address) as estate`
+        )
+      )
+      .where('estate_sync_contact_requests.id', contactRequestId)
+      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .where('estates.user_id', landlordId)
+      .first()
+    if (!contactRequest) {
+      throw new HttpException('Contact request not found.')
+    }
+    contactRequest = contactRequest.toJSON()
+    // mail service send to contact request
+    await MailService.sendMessageToMarketplaceProspect({
+      email: contactRequest.email,
+      estate: contactRequest.estate,
+      message
+    })
+    const newContactRequest = await ContactRequestMessage.create({
+      contact_request_id: contactRequestId,
+      message
+    })
+    return {
+      id: newContactRequest.id,
+      contact_request_id: contactRequestId,
+      message
+    }
+  }
+
+  static async getMessagesToMarketplaceProspect({ contactRequestId, landlordId }) {
+    const contactRequest = await EstateSyncContactRequest.query()
+      .innerJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .where('estate_sync_contact_requests.id', contactRequestId)
+      .where('estates.user_id', landlordId)
+      .first()
+    if (!contactRequest) {
+      throw new HttpException('Contact Request not found.')
+    }
+    const messages = await ContactRequestMessage.query()
+      .select('contact_request_messages.id')
+      .select('contact_request_messages.message')
+      .select(
+        Database.raw(
+          `to_char(contact_request_messages.created_at, '${ISO_DATE_FORMAT}') as created_at`
+        )
+      )
+      .leftJoin(
+        'estate_sync_contact_requests',
+        'estate_sync_contact_requests.id',
+        'contact_request_messages.contact_request_id'
+      )
+      .leftJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .where('estates.user_id', landlordId)
+      .where('estate_sync_contact_requests.id', contactRequestId)
+      .orderBy('contact_request_messages.created_at', 'asc')
+      .fetch()
+    return messages.toJSON() || []
   }
 }
 
