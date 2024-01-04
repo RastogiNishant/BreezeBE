@@ -3,7 +3,6 @@ const Logger = use('Logger')
 const ContactRequestMessage = use('App/Models/ContactRequestMessage')
 const MarketPlaceService = use('App/Services/MarketPlaceService')
 const Database = use('Database')
-const WebSocket = use('App/Classes/WebSocket')
 const moment = require('moment')
 
 class ContactRequestController extends BaseController {
