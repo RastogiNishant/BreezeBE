@@ -908,7 +908,7 @@ class MailService {
   static async sendToProspectForFillUpProfile({ email, lang = DEFAULT_LANG }) {
     const templateId = PROSPECT_EMAIL_TEMPLATE
     const msg = {
-      to: isArray(email) ? uniq(email) : trim(email),
+      to: isArray(email) && email.length ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -939,7 +939,9 @@ class MailService {
         )
       }
     }
-
+    if (isArray(email) && email.length) {
+      msg.isMultiple = true
+    }
     return _helper.sendSGMail(msg)
   }
 
@@ -1058,7 +1060,7 @@ class MailService {
     }
     const estateAddress = this.getEmailAddressFormatter(estate, lang)
     const msg = {
-      to: isArray(email) ? uniq(email) : trim(email),
+      to: isArray(email) ? email : trim(email),
       from: {
         email: FromEmail,
         name: FromName
@@ -1071,9 +1073,11 @@ class MailService {
         intro:
           estateAddress +
           `<br /><br />` +
+          `<tr><td>` +
           l
             .get('prospect.email_message_from_landlord.intro.message', lang)
-            .replace('{{message_content}}', message),
+            .replace('{{message_content}}', message) +
+          `</td></tr>`,
         link: shortLink,
         greeting: l.get('email_signature.greeting.message', lang),
         company: l.get('email_signature.company.message', lang),
@@ -1093,6 +1097,9 @@ class MailService {
           lang
         )
       }
+    }
+    if (isArray(email) && email.length) {
+      msg.isMultiple = true
     }
     return await _helper.sendSGMail(msg)
   }
@@ -1241,7 +1248,7 @@ class MailService {
     final = final.replace(/\{replace\}/, toReplace)
 
     const msg = {
-      to: emails.pop(), // we need a to here so we pop()
+      to: emails, // we need a to here so we pop()
       from: {
         email: FromEmail,
         name: FromName
@@ -1275,7 +1282,7 @@ class MailService {
     }
     if (emails.length) {
       // we add all other emails as blind carbon copies
-      msg.bcc = emails
+      msg.isMultiple = true
     }
     return await _helper.sendSGMail(msg, false)
   }
