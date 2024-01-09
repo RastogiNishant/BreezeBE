@@ -4861,6 +4861,7 @@ class MatchService {
           end as match_status`
         )
       )
+      .select(Database.raw(`estates.id as estate_id`))
       .leftJoin('users', 'users.id', 'matches.user_id')
       .leftJoin('estates', 'estates.id', 'matches.estate_id')
       .where('estates.user_id', landlordId)
@@ -4878,6 +4879,7 @@ class MatchService {
       .select(Database.raw(`estate_sync_contact_requests.contact_info->>'lastName' as secondname`))
       .select(Database.raw(`'marketplace' as match_status`))
       .select('estates.address')
+      .select(Database.raw(`estates.id as estate_id`))
       .where(function () {
         this.orWhere(
           Database.raw(`estate_sync_contact_requests.contact_info->>'firstName'`),
