@@ -23,6 +23,7 @@ const Logger = use('Logger')
 const Tenant = use('App/Models/Tenant')
 const UserService = use('App/Services/UserService')
 const EstateService = use('App/Services/EstateService')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const MailService = use('App/Services/MailService')
 const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
@@ -4843,6 +4844,59 @@ class MatchService {
         user_id: userId,
         estate_id: estateId
       })
+  }
+
+  static async searchProspects({ search, landlordId }) {
+    const matches = await Match.query()
+      .select('users.firstname', 'users.secondname', 'estates.address')
+      .select(
+        Database.raw(
+          `case 
+          when matches.status='${MATCH_STATUS_KNOCK}' then 'knocked'
+          when matches.status='${MATCH_STATUS_INVITE}'
+            or matches.status='${MATCH_STATUS_VISIT}'
+            or matches.status='${MATCH_STATUS_SHARE}' then 'show'
+          when matches.status='${MATCH_STATUS_TOP}' then 'top'
+          when matches.status='${MATCH_STATUS_COMMIT}' then 'commit'
+          end as match_status`
+        )
+      )
+      .leftJoin('users', 'users.id', 'matches.user_id')
+      .leftJoin('estates', 'estates.id', 'matches.estate_id')
+      .where('estates.user_id', landlordId)
+      .where('matches.status', '>', MATCH_STATUS_NEW)
+      .where('estates.status', STATUS_ACTIVE)
+      .whereNot('users.status', STATUS_DELETE)
+      .where(function () {
+        this.orWhere('users.firstname', 'ilike', `%${search}%`)
+        this.orWhere('users.secondname', 'ilike', `%${search}%`)
+      })
+      .fetch()
+
+    const fromMarketPlace = await EstateSyncContactRequest.query()
+      .select(Database.raw(`estate_sync_contact_requests.contact_info->>'firstName' as firstname`))
+      .select(Database.raw(`estate_sync_contact_requests.contact_info->>'lastName' as secondname`))
+      .select(Database.raw(`'marketplace' as match_status`))
+      .select('estates.address')
+      .where(function () {
+        this.orWhere(
+          Database.raw(`estate_sync_contact_requests.contact_info->>'firstName'`),
+          'ilike',
+          `%${search}%`
+        )
+        this.orWhere(
+          Database.raw(`estate_sync_contact_requests.contact_info->>'lastName'`),
+          'ilike',
+          `%${search}%`
+        )
+      })
+      .leftJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .where('estates.user_id', landlordId)
+      .whereNull('estate_sync_contact_requests.user_id') // user should not be converted
+      .where('estates.status', STATUS_ACTIVE)
+      .fetch()
+
+    return [...matches.toJSON(), ...fromMarketPlace.toJSON()]
   }
 }
 

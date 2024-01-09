@@ -1661,6 +1661,12 @@ class MatchController {
         return response.res(true)
     }
   }
+
+  async searchProspects({ request, response, auth }) {
+    const { q } = request.all()
+    const userId = auth.user.id
+    return response.res(await MatchService.searchProspects({ search: q, landlordId: userId }))
+  }
 }
 
 module.exports = MatchController
