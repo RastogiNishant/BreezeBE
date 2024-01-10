@@ -4849,18 +4849,7 @@ class MatchService {
   static async searchProspects({ search, landlordId }) {
     const matches = await Match.query()
       .select('users.firstname', 'users.secondname', 'estates.address')
-      .select(
-        Database.raw(
-          `case 
-          when matches.status='${MATCH_STATUS_KNOCK}' then 'knocked'
-          when matches.status='${MATCH_STATUS_INVITE}'
-            or matches.status='${MATCH_STATUS_VISIT}'
-            or matches.status='${MATCH_STATUS_SHARE}' then 'show'
-          when matches.status='${MATCH_STATUS_TOP}' then 'top'
-          when matches.status='${MATCH_STATUS_COMMIT}' then 'commit'
-          end as match_status`
-        )
-      )
+      .select('matches.status as match_status')
       .select(Database.raw(`estates.id as estate_id`))
       .leftJoin('users', 'users.id', 'matches.user_id')
       .leftJoin('estates', 'estates.id', 'matches.estate_id')
