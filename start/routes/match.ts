@@ -132,6 +132,12 @@ const matchFlow: Routes = {
       controller: 'MatchController.cancelBuildingAction',
       middleware: ['auth:jwtAdministrator', 'valid:MatchBuildingAction']
     }
+  },
+  '/search-prospects': {
+    [HTTP_METHODS.GET]: {
+      controller: 'MatchController.searchProspects',
+      middleware: ['auth:jwtLandlord', 'valid:MatchSearchProspects']
+    }
   }
 }
 
