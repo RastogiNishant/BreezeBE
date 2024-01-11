@@ -142,6 +142,8 @@ const {
     ERROR_MATCH_COMMIT_DOUBLE_CODE
   }
 } = require('../exceptions')
+
+const { floorDirectionToString } = use('App/Libs/utils')
 const QueueService = require('./QueueService')
 
 /**
@@ -4848,9 +4850,16 @@ class MatchService {
 
   static async searchProspects({ search, landlordId }) {
     const matches = await Match.query()
-      .select('users.firstname', 'users.secondname', 'estates.address')
+      .select('users.firstname', 'users.secondname')
+      .select(Database.raw('initcap(estates.address) as orig_address'))
       .select('matches.status as match_status')
       .select(Database.raw(`estates.id as estate_id`))
+      .select(
+        'estates.floor',
+        'estates.number_floors',
+        'estates.floor_direction',
+        'estates.property_id'
+      )
       .leftJoin('users', 'users.id', 'matches.user_id')
       .leftJoin('estates', 'estates.id', 'matches.estate_id')
       .where('estates.user_id', landlordId)
@@ -4866,8 +4875,14 @@ class MatchService {
     const fromMarketPlace = await EstateSyncContactRequest.query()
       .select(Database.raw(`estate_sync_contact_requests.contact_info->>'firstName' as firstname`))
       .select(Database.raw(`estate_sync_contact_requests.contact_info->>'lastName' as secondname`))
-      .select(Database.raw(`'marketplace' as match_status`))
-      .select('estates.address')
+      .select(Database.raw(`1 as match_status`))
+      .select(
+        'estates.floor',
+        'estates.number_floors',
+        'estates.floor_direction',
+        'estates.property_id'
+      )
+      .select(Database.raw('initcap(estates.address) as orig_address'))
       .select(Database.raw(`estates.id as estate_id`))
       .where(function () {
         this.orWhere(
@@ -4887,7 +4902,16 @@ class MatchService {
       .where('estates.status', STATUS_ACTIVE)
       .fetch()
 
-    return [...matches.toJSON(), ...fromMarketPlace.toJSON()]
+    let prospects = [...matches.toJSON(), ...fromMarketPlace.toJSON()]
+    prospects = prospects.map((prospect) => {
+      const floorDirection = floorDirectionToString(prospect.floor_direction)
+      const floorLocation = prospect.floor ? `${prospect.floor}. floor` : 'Ground floor'
+      prospect.address = `${
+        prospect.property_id ? prospect.property_id + ', ' : ''
+      }${floorLocation}, ${floorDirection || ''}\n${prospect.orig_address}`
+      return prospect
+    })
+    return prospects
   }
 }
 

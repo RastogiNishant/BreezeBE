@@ -136,6 +136,23 @@ const parseFloorDirection = (direction) => {
   }
 }
 
+const floorDirectionToString = (direction) => {
+  switch (direction) {
+    case ESTATE_FLOOR_DIRECTION_LEFT:
+      return 'left'
+    case ESTATE_FLOOR_DIRECTION_RIGHT:
+      return 'right'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT:
+      return 'straight'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT_LEFT:
+      return 'straight left'
+    case ESTATE_FLOOR_DIRECTION_STRAIGHT_RIGHT:
+      return 'straight right'
+    default:
+      return null
+  }
+}
+
 const encodeURL = (link) => {
   return link.replace(/\+/g, '%20')
 }
@@ -203,5 +220,6 @@ module.exports = {
   createDynamicLink,
   encodeURL,
   calculateEnergyClassFromEfficiency,
-  checkIfIsValid
+  checkIfIsValid,
+  floorDirectionToString
 }
