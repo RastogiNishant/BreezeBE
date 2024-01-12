@@ -116,7 +116,8 @@ const {
   INCOME_TYPE_OTHER_BENEFIT,
   CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
   LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED,
-  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED
+  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED,
+  SUPPORTED_LANGUAGES
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -4850,7 +4851,7 @@ class MatchService {
       })
   }
 
-  static async searchProspects({ search, landlordId, lang = 'de' }) {
+  static async searchProspects({ search, landlordId, lang = SUPPORTED_LANGUAGES.DE }) {
     const matches = await Match.query()
       .select('users.firstname', 'users.secondname')
       .select(Database.raw('initcap(estates.address) as orig_address'))
