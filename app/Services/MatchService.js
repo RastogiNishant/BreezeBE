@@ -40,6 +40,7 @@ const TenantService = use('App/Services/TenantService')
 const MatchFilters = require('../Classes/MatchFilters')
 const EstateFilters = require('../Classes/EstateFilters')
 const WebSocket = use('App/Classes/Websocket')
+const l = use('Localize')
 
 const {
   exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE }
@@ -145,6 +146,7 @@ const {
 
 const { floorDirectionToString } = use('App/Libs/utils')
 const QueueService = require('./QueueService')
+const { parseFloorDirection } = require('../Libs/utils')
 
 /**
  * Check is item in data range
@@ -4848,7 +4850,7 @@ class MatchService {
       })
   }
 
-  static async searchProspects({ search, landlordId }) {
+  static async searchProspects({ search, landlordId, lang = 'de' }) {
     const matches = await Match.query()
       .select('users.firstname', 'users.secondname')
       .select(Database.raw('initcap(estates.address) as orig_address'))
@@ -4904,8 +4906,10 @@ class MatchService {
 
     let prospects = [...matches.toJSON(), ...fromMarketPlace.toJSON()]
     prospects = prospects.map((prospect) => {
-      const floorDirection = floorDirectionToString(prospect.floor_direction)
-      const floorLocation = prospect.floor ? `${prospect.floor}. floor` : 'Ground floor'
+      const floorDirection = l.get(parseFloorDirection(prospect.floor_direction), lang)
+      const floorLocation = prospect.floor
+        ? `${prospect.floor}${l.get('landlord.portfolio.card.txt_floor.message', lang)}`
+        : l.get('property.attribute.APARTMENT_TYPE.Ground_floor.message', lang)
       prospect.address = `${
         prospect.property_id ? prospect.property_id + ', ' : ''
       }${floorLocation}, ${floorDirection || ''}\n${prospect.orig_address}`

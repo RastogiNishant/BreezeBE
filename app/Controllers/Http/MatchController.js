@@ -1663,9 +1663,9 @@ class MatchController {
   }
 
   async searchProspects({ request, response, auth }) {
-    const { q } = request.all()
+    const { q, lang } = request.all()
     const userId = auth.user.id
-    return response.res(await MatchService.searchProspects({ search: q, landlordId: userId }))
+    return response.res(await MatchService.searchProspects({ search: q, landlordId: userId, lang }))
   }
 }
 
