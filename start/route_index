@@ -3830,6 +3830,20 @@
     "handler": "MatchController.requestUserCommit"
   },
   {
+    "route": "/api/v1/match/search-prospects",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "valid:MatchSearchProspects",
+      "agreement",
+      "plan"
+    ],
+    "handler": "MatchController.searchProspects"
+  },
+  {
     "route": "/api/v1/match/share",
     "method": [
       "DELETE"
