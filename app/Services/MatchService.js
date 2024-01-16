@@ -23,6 +23,7 @@ const Logger = use('Logger')
 const Tenant = use('App/Models/Tenant')
 const UserService = use('App/Services/UserService')
 const EstateService = use('App/Services/EstateService')
+const EstateSyncContactRequest = use('App/Models/EstateSyncContactRequest')
 const MailService = use('App/Services/MailService')
 const NoticeService = use('App/Services/NoticeService')
 const GeoService = use('App/Services/GeoService')
@@ -39,6 +40,7 @@ const TenantService = use('App/Services/TenantService')
 const MatchFilters = require('../Classes/MatchFilters')
 const EstateFilters = require('../Classes/EstateFilters')
 const WebSocket = use('App/Classes/Websocket')
+const l = use('Localize')
 
 const {
   exceptionCodes: { WARNING_UNSECURE_PROFILE_SHARE }
@@ -114,7 +116,8 @@ const {
   INCOME_TYPE_OTHER_BENEFIT,
   CREDIT_HISTORY_STATUS_NO_NEGATIVE_DATA,
   LANDLORD_REQUEST_TENANT_SHARE_PROFILE_REQUESTED,
-  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED
+  LANDLORD_REQUEST_TENANT_SHARE_PROFILE_SHARED,
+  SUPPORTED_LANGUAGES
 } = require('../constants')
 
 const ThirdPartyMatchService = require('./ThirdPartyMatchService')
@@ -141,7 +144,10 @@ const {
     ERROR_MATCH_COMMIT_DOUBLE_CODE
   }
 } = require('../exceptions')
+
+const { floorDirectionToString } = use('App/Libs/utils')
 const QueueService = require('./QueueService')
+const { parseFloorDirection } = require('../Libs/utils')
 
 /**
  * Check is item in data range
@@ -4843,6 +4849,74 @@ class MatchService {
         user_id: userId,
         estate_id: estateId
       })
+  }
+
+  static async searchProspects({ search, landlordId, lang = SUPPORTED_LANGUAGES.DE }) {
+    const matches = await Match.query()
+      .select('users.firstname', 'users.secondname')
+      .select(Database.raw('initcap(estates.address) as orig_address'))
+      .select('matches.status as match_status')
+      .select(Database.raw(`estates.id as estate_id`))
+      .select(
+        'estates.floor',
+        'estates.number_floors',
+        'estates.floor_direction',
+        'estates.property_id'
+      )
+      .leftJoin('users', 'users.id', 'matches.user_id')
+      .leftJoin('estates', 'estates.id', 'matches.estate_id')
+      .where('estates.user_id', landlordId)
+      .where('matches.status', '>', MATCH_STATUS_NEW)
+      .where('estates.status', STATUS_ACTIVE)
+      .whereNot('users.status', STATUS_DELETE)
+      .where(function () {
+        this.orWhere('users.firstname', 'ilike', `%${search}%`)
+        this.orWhere('users.secondname', 'ilike', `%${search}%`)
+      })
+      .fetch()
+
+    const fromMarketPlace = await EstateSyncContactRequest.query()
+      .select(Database.raw(`estate_sync_contact_requests.contact_info->>'firstName' as firstname`))
+      .select(Database.raw(`estate_sync_contact_requests.contact_info->>'lastName' as secondname`))
+      .select(Database.raw(`1 as match_status`))
+      .select(
+        'estates.floor',
+        'estates.number_floors',
+        'estates.floor_direction',
+        'estates.property_id'
+      )
+      .select(Database.raw('initcap(estates.address) as orig_address'))
+      .select(Database.raw(`estates.id as estate_id`))
+      .where(function () {
+        this.orWhere(
+          Database.raw(`estate_sync_contact_requests.contact_info->>'firstName'`),
+          'ilike',
+          `%${search}%`
+        )
+        this.orWhere(
+          Database.raw(`estate_sync_contact_requests.contact_info->>'lastName'`),
+          'ilike',
+          `%${search}%`
+        )
+      })
+      .leftJoin('estates', 'estates.id', 'estate_sync_contact_requests.estate_id')
+      .where('estates.user_id', landlordId)
+      .whereNull('estate_sync_contact_requests.user_id') // user should not be converted
+      .where('estates.status', STATUS_ACTIVE)
+      .fetch()
+
+    let prospects = [...matches.toJSON(), ...fromMarketPlace.toJSON()]
+    prospects = prospects.map((prospect) => {
+      const floorDirection = l.get(parseFloorDirection(prospect.floor_direction), lang)
+      const floorLocation = prospect.floor
+        ? `${prospect.floor}${l.get('landlord.portfolio.card.txt_floor.message', lang)}`
+        : l.get('property.attribute.APARTMENT_TYPE.Ground_floor.message', lang)
+      prospect.address = `${
+        prospect.property_id ? prospect.property_id + ', ' : ''
+      }${floorLocation}, ${floorDirection || ''}\n${prospect.orig_address}`
+      return prospect
+    })
+    return prospects
   }
 }
 
