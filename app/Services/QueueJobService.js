@@ -260,15 +260,8 @@ class QueueJobService {
 
         estateIds = estateIdsToDraft || []
         if (estateIds?.length) {
-          const listings = await EstateSyncListing.query()
-            .select('estate_id')
-            .where('status', STATUS_ACTIVE)
-            .whereIn('estate_id', estateIds)
-            .groupBy('estate_id')
-            .fetch()
-          await Promise.map(listings.rows, async (estateId) => {
-            await require('./EstateSyncService').unpublishEstate(estateId)
-          })
+          // will cause circular dependency if we're not using require...
+          require('./QueueService').estateSyncUnpublishEstates(estateIds, true)
         }
       }
 
