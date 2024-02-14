@@ -1308,7 +1308,12 @@ class UserService {
   static async closeAccount(user) {
     user = await User.query().where('id', user.id).first()
     const email = user.email
-    const newEmail = email.concat('_breezeClose')
+    let existingUser = false
+    let newEmail
+    do {
+      newEmail = `${email.concat('_breezeClose')}_${random.int(0, 99999)}`
+      existingUser = await User.query().where('email', newEmail).first()
+    } while (existingUser)
     user.email = newEmail
     user.firstname = ' USER'
     user.secondname = ' DELETED'
@@ -1317,6 +1322,7 @@ class UserService {
     user.device_token = null
     user.google_id = null
     user.status = STATUS_DELETE
+
     await user.save()
     return user
   }
