@@ -1,4 +1,3 @@
-const axios = require('axios')
 const moment = require('moment')
 const OhneMakler = require('../Classes/OhneMakler')
 const crypto = require('crypto')
@@ -13,9 +12,12 @@ const uuid = require('uuid')
 const AWS = require('aws-sdk')
 const Env = use('Env')
 const l = use('Localize')
+const Drive = use('Drive')
+const axios = require('axios')
 const {
   STATUS_ACTIVE,
   STATUS_EXPIRE,
+  STATUS_DELETE,
   THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
   SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
@@ -25,11 +27,14 @@ const {
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
   PETS_NO,
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
-  DATE_FORMAT
+  GEWOBAG_FTP_BUCKET,
+  DATE_FORMAT,
+  GEWOBAG_ACCOUNT_USER_ID
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
+const Estate = use('App/Models/Estate')
 const {
   exceptions: { MARKET_PLACE_CONTACT_EXIST, CANNOT_KNOCK_ON_DISLIKED_ESTATE }
 } = require('../exceptions')
@@ -79,11 +84,11 @@ class ThirdPartyOfferService {
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
       if (checksum !== ohneMaklerChecksum || forced) {
         console.log('updating start !!!!')
-        //mark all as expired...
-        //1. to expire all estates that are not anymore in the new data including also those
-        //that are past expiration date
-        //2. to allow for changes on type see OhneMakler.estateCanBeProcessed()
-        //there must be some difference between the data... so we can process
+        // mark all as expired...
+        // 1. to expire all estates that are not anymore in the new data including also those
+        // that are past expiration date
+        // 2. to allow for changes on type see OhneMakler.estateCanBeProcessed()
+        // there must be some difference between the data... so we can process
         const ohneMakler = new OhneMakler(ohneMaklerData)
         const estates = ohneMakler.process()
 
@@ -92,7 +97,7 @@ class ThirdPartyOfferService {
 
         let i = 0
         while (i < estates.length) {
-          let estate = estates[i]
+          const estate = estates[i]
           try {
             const found = await ThirdPartyOffer.query()
               .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
@@ -139,7 +144,7 @@ class ThirdPartyOfferService {
   }
 
   static async getFilesAndLastModified() {
-    let gewobagFiles = await ThirdPartyOffer.query()
+    const gewobagFiles = await ThirdPartyOffer.query()
       .select(Database.raw(`CONCAT("source_id", '.xml') as key`))
       .select('ftp_last_update')
       .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
@@ -153,13 +158,200 @@ class ThirdPartyOfferService {
     )
   }
 
+  static async pruneGewobag() {
+    try {
+      AWS.config.update({
+        accessKeyId: Env.get('S3_KEY'),
+        secretAccessKey: Env.get('S3_SECRET'),
+        region: Env.get('S3_REGION')
+      })
+      const s3 = new AWS.S3()
+      const params = {
+        Bucket: GEWOBAG_FTP_BUCKET,
+        Delimiter: '/'
+        // Prefix: 'live/',
+      }
+      const objects = await s3.listObjects(params).promise()
+      if (!objects?.Contents) {
+        return []
+      }
+      const twoMonthsAgo = new Date(new Date().setMonth(new Date().getMonth() - 2))
+      const keys = objects?.Contents.map((content) => {
+        if (content.LastModified > new Date(twoMonthsAgo) && content.Key.match(/\.xml$/)) {
+          return content.Key
+        }
+      }).filter((key) => key)
+      let xmls = []
+      await Promise.map(keys, async (key) => {
+        const xml = await Drive.disk('breeze-ftp-files').get(key)
+        xmls = [...xmls, xml]
+      })
+      const reader = new OpenImmoReader()
+      const properties = await reader.processXml(xmls)
+      let statuses = []
+      await Promise.map(properties, async (estate) => {
+        if (estate.status === 1) {
+          console.log(estate)
+          process.exit()
+        }
+        if (estate.action === 'DELETE') {
+          // console.log(`Deleting: ${estate.property_id}, ${GEWOBAG_ACCOUNT_USER_ID}`)
+          await Estate.query()
+            .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
+            .where('property_id', estate.property_id)
+            .update({ status: STATUS_DELETE })
+        } else {
+          const newEstate = {
+            additional_costs: Number(estate.additional_costs) || 0,
+            address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
+            apt_type: estate.apt_type,
+            area: Number(estate.area) || 0,
+            bathrooms: Number(estate.bathrooms_number) || 0,
+            building_status: estate.building_status,
+            city: estate.city,
+            construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
+            contact: JSON.stringify({ email: estate.contact }),
+            country: estate.country,
+            energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
+            extra_costs: Number(+estate.heating_costs + +estate.additional_costs) || 0,
+            firing: estate.firing,
+            floor: Number(estate.floor) || 0,
+            // ftp_last_update: estate.source_id ? filesLastModified?.[`${estate.source_id}.xml`] : '',
+            full_address: estate.full_address,
+            heating_costs: Number(estate.heating_costs) || 0,
+            heating_type: estate.heating_type,
+            house_number: estate.house_number,
+            house_type: estate.house_type,
+            net_rent: Number(estate.net_rent) || 0,
+            number_floors: Number(estate.number_floors) || 0,
+            property_id: estate.property_id,
+            property_type: estate.property_type,
+            rooms_number: Number(estate.rooms_number) || 0,
+            // source_id: estate.source_id,
+            // source_information: JSON.stringify(sourceInformation),
+            source: THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
+            status: estate.status,
+            street: estate.street,
+            vacant_date: estate.vacant_date
+              ? moment(new Date(estate.vacant_date)).format(DATE_FORMAT)
+              : null,
+            wbs: estate.wbs,
+            zip: estate.zip
+          }
+          estate.user_id = GEWOBAG_ACCOUNT_USER_ID
+          try {
+            await Estate.createItem(estate)
+          } catch (err) {
+            console.log({ estate })
+          }
+          /*
+          // amenities
+          const amenityKeys = {
+            balconies_number: {
+              type: 'numeric',
+              value: 'Balkon'
+            },
+            barrier_free: {
+              type: 'boolean',
+              value: 'Barrierefrei'
+            },
+            basement: {
+              type: 'boolean',
+              value: 'Keller'
+            },
+            chimney: {
+              type: 'boolean',
+              value: 'Kamin'
+            },
+            garden: {
+              type: 'boolean',
+              value: 'Garten'
+            },
+            guest_toilet: {
+              type: 'boolean',
+              value: 'Gäste-WC'
+            },
+            pets_allowed: {
+              type: 'boolean',
+              value: l.get('web.letting.property.import.Pets_Allowed.message', 'de')
+            },
+            sauna: {
+              type: 'boolean',
+              value: 'Sauna'
+            },
+            swimmingpool: {
+              type: 'boolean',
+              value: 'Pool / Schwimmbad'
+            },
+            terraces_number: {
+              type: 'numeric',
+              value: 'Terrasse'
+            },
+            wintergarten: {
+              type: 'boolean',
+              value: 'Wintergarten'
+            }
+          }
+          console.log(Object.keys(newEstate))
+          process.exit()
+          let amenities = []
+          for (const [key, value] of Object.entries(amenityKeys)) {
+            if (value.type === 'numeric' && estate[key] > 0) {
+              amenities = [...amenities, value.value]
+            } else if (value.type === 'boolean' && estate[key] === true) {
+              amenities = [...amenities, value.value]
+            }
+          }
+          newEstate.amenities = amenities
+          let images = []
+          const estateImages = estate?.images || []
+          for (let i = 0; i < estateImages.length; i++) {
+            const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
+              estate.images[i],
+              s3
+            )
+            if (imageUrl) {
+              images = [
+                ...images,
+                {
+                  picture: {
+                    picture_url: imageUrl,
+                    picture_title: ''
+                  }
+                }
+              ]
+            }
+          }
+          newEstate.images = JSON.stringify(images)
+
+          const existingEstate = await Estate.query()
+            .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
+            .where('property_id', newEstate.property_id)
+            .first()
+          console.log(newEstate)
+          process.exit()
+          if (existingEstate) {
+            //existing
+          } else {
+            await EstateService.createEstate(newEstate, GEWOBAG_ACCOUNT_USER_ID)
+          } */
+          statuses = [...statuses, newEstate.status]
+        }
+      })
+      console.log(statuses)
+      process.exit()
+    } catch (err) {
+      console.log(err)
+    }
+    process.exit()
+  }
+
   static async pullGewobag() {
     console.log('pulling gewobag...')
     const filesWorked = await ThirdPartyOfferService.getFilesAndLastModified()
     const { xml, filesLastModified } = await File.getGewobagUploadedContent(filesWorked)
     const reader = new OpenImmoReader()
     const properties = await reader.processXml(xml)
-
     AWS.config.update({
       accessKeyId: Env.get('S3_KEY'),
       secretAccessKey: Env.get('S3_SECRET'),
@@ -169,10 +361,10 @@ class ThirdPartyOfferService {
     await Promise.map(
       properties.slice(0, GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL),
       async (estate) => {
-        let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
+        const sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION.gewobag
         sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
-        //FIXME: create a map for this:
-        let newEstate = {
+        // FIXME: create a map for this:
+        const newEstate = {
           additional_costs: Number(estate.additional_costs) || 0,
           address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
           apt_type: estate.apt_type,
@@ -209,8 +401,8 @@ class ThirdPartyOfferService {
           wbs: estate.wbs,
           zip: estate.zip
         }
-        //amenities:
-        //parse this to boolean... openimmo standard for pets is boolean
+        // amenities:
+        // parse this to boolean... openimmo standard for pets is boolean
         if (estate.pets_allowed !== undefined) {
           estate.pets_allowed = estate.pets_allowed !== PETS_NO
         }
@@ -344,7 +536,7 @@ class ThirdPartyOfferService {
         const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
         estate.match = prospect_score
         estate.isoline = await EstateService.getIsolines(estate)
-        estate['__meta__'] = {
+        estate.__meta__ = {
           knocked_count: estate.knocked_count,
           like_count: estate.like_count,
           dislike_count: estate.dislike_count
@@ -392,7 +584,7 @@ class ThirdPartyOfferService {
 
   static async searchTenantEstatesQuery(tenant) {
     Logger.info(`\n----start ThirdPartyOfferService--- ${tenant.user_id}`)
-    let estates = await Database.select(Database.raw(`FALSE as inside`))
+    const estates = await Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')
       .select(Database.raw(`NULL as rooms`))
       .from({ _t: 'tenants' })
@@ -458,7 +650,7 @@ class ThirdPartyOfferService {
   static async getEstate({ userId, id }) {
     console.log('getEstate here=', userId)
     /* estate coord intersects with polygon of tenant */
-    let query = ThirdPartyOffer.query()
+    const query = ThirdPartyOffer.query()
       .select('third_party_offers.*')
       .select('third_party_offers.status as estate_status')
       .select(Database.raw(`NULL as rooms`))
@@ -476,8 +668,8 @@ class ThirdPartyOfferService {
         .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
           this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
         })
-      //remove the check on intersecting with polygon because user may have changed
-      //his location and he won't be intersected here...
+      // remove the check on intersecting with polygon because user may have changed
+      // his location and he won't be intersected here...
     }
 
     return await query.where('third_party_offers.id', id).first()
@@ -569,7 +761,7 @@ class ThirdPartyOfferService {
     const MatchService = require('./MatchService')
     const { like, dislike, knock } = filter
 
-    let query = ThirdPartyOffer.query()
+    const query = ThirdPartyOffer.query()
       .select('third_party_offers.*')
       .select(
         'third_party_offers.status as estate_status',

@@ -341,13 +341,13 @@ class OpenImmoReader {
       // last_modernization according to openimmo is a string ie. Bad 1997, K�che 2010
       if (property.last_modernization) {
         property.last_modernization = property.last_modernization.match(/(19|20)[0-9]{2}/)
-        ? `${property.construction_year}-01-01`
-        : null
+          ? `${property.construction_year}-01-01`
+          : null
       }
 
       if (property.pets_allowed === 'true') {
         property.pets_allowed = PETS_SMALL
-      } else if (property.pets_allowed === 'false') {
+      } else {
         property.pets_allowed = PETS_NO
       }
 
