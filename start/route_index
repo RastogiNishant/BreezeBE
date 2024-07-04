@@ -855,6 +855,17 @@
   {
     "route": "/api/v1/administration/utilities/estate-sync/property",
     "method": [
+      "POST"
+    ],
+    "middle": [
+      "auth:jwtAdministrator",
+      "valid:PostEstateSyncProperty"
+    ],
+    "handler": "Admin/UtilityController.postEstateSyncProperty"
+  },
+  {
+    "route": "/api/v1/administration/utilities/estate-sync/property",
+    "method": [
       "PUT"
     ],
     "middle": [
