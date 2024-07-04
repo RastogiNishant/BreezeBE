@@ -57,7 +57,6 @@ class EstateSyncService {
     } else {
       credential = await EstateSyncService.getBreezeEstateSyncCredential()
     }
-    console.log({ credential })
     return credential
   }
 
