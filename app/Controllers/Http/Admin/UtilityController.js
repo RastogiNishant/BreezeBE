@@ -187,11 +187,36 @@ class UtilityController {
       const resp = await estateSync.postEstate({
         estate
       })
-      response.res(resp)
+      let data = {
+        success: true,
+        type: 'success-posting',
+        estate_id: estateId
+      }
+      if (resp?.success) {
+        // make all with estate_id and estate_sync_property_id to draft
+        await EstateSyncListing.query()
+          .where('estate_id', estate.id)
+          .whereNot('status', ESTATE_SYNC_LISTING_STATUS_DELETED)
+          .update({
+            estate_sync_property_id: resp.data.id,
+            status: ESTATE_SYNC_LISTING_STATUS_POSTED
+          })
+      } else {
+        data = {
+          ...data,
+          success: false,
+          type: 'error-posting',
+          message: resp?.data?.message // FIXME: message here could be too technical.
+        }
+        await EstateSyncListing.query().where('estate_id', estateId).update({
+          posting_error: true,
+          posting_error_message: resp?.data?.message
+        })
+      }
+      response.res(data)
     } catch (e) {
       throw new HttpException(e.message, e.status || 500)
     }
-    return response.res({ estateId, publishers })
   }
 
   async updateEstateSyncProperty({ request, response }) {
