@@ -20,8 +20,17 @@ const MarketPlaceService = use('App/Services/MarketPlaceService')
 const EstateService = use('App/Services/EstateService')
 const EstateSyncListing = use('App/Models/EstateSyncListing')
 const EstateSyncCredential = use('App/Models/EstateSyncCredential')
-const { ESTATE_SYNC_LISTING_STATUS_POSTED, ESTATE_SYNC_LISTING_STATUS_PUBLISHED } =
-  use('App/constants')
+const Promise = use('bluebird')
+const {
+  ESTATE_SYNC_LISTING_STATUS_POSTED,
+  ESTATE_SYNC_LISTING_STATUS_PUBLISHED,
+  ESTATE_SYNC_LISTING_STATUS_INITIALIZED,
+  ESTATE_SYNC_LISTING_STATUS_DELETED,
+  STATUS_ACTIVE,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN
+} = use('App/constants')
+const Estate = use('App/Models/Estate')
+const EstateSync = use('App/Classes/EstateSync')
 
 class UtilityController {
   async uploadContactRequest({ request, response }) {
@@ -97,6 +106,92 @@ class UtilityController {
         throw new HttpException(err.message)
       }
     })
+  }
+
+  async postEstateSyncProperty({ request, response }) {
+    const { estateId, publishers } = request.all()
+    const estateIsPublished = await Estate.query()
+      .where('id', estateId)
+      .where('status', STATUS_ACTIVE)
+      .where('publish_status', PUBLISH_STATUS_APPROVED_BY_ADMIN)
+      .first()
+    if (!estateIsPublished) {
+      throw new HttpException('Estate not found or not published.', 404)
+    }
+    // validate that estate is currently not published to the publisher
+    const estateIsPublishedToTarget = await EstateSyncListing.query()
+      .where('estate_id', estateId)
+      .whereIn('provider', publishers)
+      .where('status', ESTATE_SYNC_LISTING_STATUS_PUBLISHED)
+      .first()
+    let estate = await EstateService.getByIdWithDetail(estateId)
+    if (estateIsPublishedToTarget) {
+      throw new HttpException('Estate is already published to the marketplace.', 404)
+    }
+    const listingExists = (
+      await EstateSyncListing.query()
+        .where('estate_id', estateId)
+        .whereIn('provider', publishers)
+        .fetch()
+    ).toJSON()
+    try {
+      await Promise.map(
+        publishers,
+        async (publisher) => {
+          if (listingExists.find((list) => list.provider === publisher)) {
+            await EstateSyncListing.query()
+              .update({
+                status: ESTATE_SYNC_LISTING_STATUS_INITIALIZED,
+                estate_sync_listing_id: null,
+                publish_url: null,
+                posting_error: false,
+                publishing_error: false,
+                posting_error_message: '',
+                publishing_error_message: '',
+                publishing_error_type: '',
+                building_id: estate.build_id,
+                unit_category_id: estate.unit_category_id
+              })
+              .where('provider', publisher)
+              .where('estate_id', estateId)
+          } else {
+            await EstateSyncListing.createItem({
+              provider: publisher,
+              estate_id: estateId,
+              performed_by: estate.user_id,
+              status: ESTATE_SYNC_LISTING_STATUS_INITIALIZED,
+              estate_sync_property_id: null,
+              building_id: estate.build_id,
+              unit_category_id: estate.unit_category_id
+            })
+          }
+        },
+        { concurrency: 1 }
+      )
+      // soft delete all existing publishers but not anymore published
+      await EstateSyncListing.query()
+        .whereNotIn('provider', publishers)
+        .where('estate_id', estateId)
+        .update({
+          estate_sync_property_id: null,
+          status: ESTATE_SYNC_LISTING_STATUS_DELETED,
+          estate_sync_listing_id: null,
+          publish_url: null
+        })
+
+      estate = estate.toJSON()
+      const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
+      if (!Number(estate.usable_area)) {
+        estate.usable_area = estate.area
+      }
+      const resp = await estateSync.postEstate({
+        estate
+      })
+      response.res(resp)
+    } catch (e) {
+      throw new HttpException(e.message, e.status || 500)
+    }
+    return response.res({ estateId, publishers })
   }
 
   async updateEstateSyncProperty({ request, response }) {
