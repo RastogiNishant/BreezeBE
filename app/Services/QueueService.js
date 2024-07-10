@@ -230,9 +230,9 @@ class QueueService {
   static async sendEvery5Min() {
     const NoticeService = require('./NoticeService')
     return Promise.all([
-      wrapException(QueueJobService.handleToExpireEstates),
+      // wrapException(QueueJobService.handleToExpireEstates),
       // wrapException(QueueJobService.handleToActivateEstates),
-      wrapException(QueueJobService.handleShowDateEndedEstates),
+      // wrapException(QueueJobService.handleShowDateEndedEstates),
       wrapException(QueueJobService.handleShowDateWillEndInAnHourEstates),
       wrapException(NoticeService.landlordVisitIn90m),
       wrapException(NoticeService.prospectVisitIn90m),

@@ -13,7 +13,7 @@ class PullGebowag extends Command {
   }
 
   async handle(args, options) {
-    await ThirdPartyOfferService.pullGewobag()
+    await ThirdPartyOfferService.pullGewobagNew()
   }
 }
 

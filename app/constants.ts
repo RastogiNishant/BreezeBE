@@ -30,6 +30,7 @@ export enum FILE_TYPE {
   GALLERY = 'gallery',
   UNASSIGNED = 'unassigned',
   ENERGY_CERTIFICATE = 'energy_certificate',
+  INTERNAL = 'internal'
 }
 
 export enum ENVIRONMENT {
