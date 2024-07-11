@@ -396,6 +396,32 @@ class ThirdPartyOfferService {
           newEstate.percent = percent
           if (existingEstate) {
             console.log('Estate already existed...')
+            await existingEstate.updateItem(newEstate)
+            const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
+              await this.getDifferenceOnAmenities(
+                amenities,
+                GEWOBAG_ACCOUNT_USER_ID,
+                existingEstate.property_id
+              )
+            if (amenitiesInDbToBeDeleted.length) {
+              await Amenity.query()
+                .update({ status: STATUS_DELETE })
+                .where('estate_id', existingEstate.id)
+                .whereIn('amenity', amenitiesInDbToBeDeleted)
+            }
+            if (amenitiesToBeAdded.length) {
+              await Promise.map(amenitiesToBeAdded, async (amenity, index) => {
+                await Amenity.createItem({
+                  status: STATUS_ACTIVE,
+                  amenity,
+                  type: 'custom_amenity',
+                  sequence_order: index + length,
+                  added_by: GEWOBAG_ACCOUNT_USER_ID,
+                  estate_id: existingEstate.id,
+                  location: 'apt'
+                })
+              })
+            }
             // update estate
           } else {
             newEstate.percent = percent
@@ -416,11 +442,14 @@ class ThirdPartyOfferService {
       .leftJoin('estates', 'amenities.estate_id', 'estates.id')
       .where('estates.property_id', propertyId)
       .where('estates.user_id', userId)
+      .whereNot('amenities.status', STATUS_DELETE)
       .fetch()
     const amenityNames = (amenities.toJSON() || []).map((amenity) => amenity.amenity)
-    const amenitiesInNew = newAmenities.filter((x) => !amenityNames.includes(x))
-    const amenitiesInDb = amenityNames.filter((x) => !newAmenities.includes(x))
-    return { amenitiesInNew, amenitiesInDb }
+    const length = (amenities.toJSON() || []).length
+    const amenitiesToBeAdded = newAmenities.filter((x) => !amenityNames.includes(x))
+    //
+    const amenitiesInDbToBeDeleted = amenityNames.filter((x) => !newAmenities.includes(x))
+    return { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length }
   }
 
   static async isGewobagFileUploaded(propertyId, filename) {
