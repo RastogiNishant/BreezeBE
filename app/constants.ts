@@ -30,6 +30,7 @@ export enum FILE_TYPE {
   GALLERY = 'gallery',
   UNASSIGNED = 'unassigned',
   ENERGY_CERTIFICATE = 'energy_certificate',
+  INTERNAL = 'internal'
 }
 
 export enum ENVIRONMENT {
@@ -1512,7 +1513,10 @@ Estates: [ESTATES]
   IS24_PUBLISHING_STATUS_NO_STATUS: 0,
   IS24_PUBLISHING_STATUS_INIT: 1,
   IS24_PUBLISHING_STATUS_POSTED: 2,
-  IS24_PUBLISHING_STATUS_PUBLISHED: 3
+  IS24_PUBLISHING_STATUS_PUBLISHED: 3,
+
+  GEWOBAG_ACCOUNT_USER_ID: 23288,
+  GEWOBAG_MARKETPLACE_PUBLISHERS: ['immowelt', 'immobilienscout-24', 'ebay-kleinanzeigen']
 }
 
 module.exports = {

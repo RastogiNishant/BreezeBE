@@ -1,4 +1,3 @@
-const axios = require('axios')
 const moment = require('moment')
 const OhneMakler = require('../Classes/OhneMakler')
 const crypto = require('crypto')
@@ -13,23 +12,38 @@ const uuid = require('uuid')
 const AWS = require('aws-sdk')
 const Env = use('Env')
 const l = use('Localize')
+const Drive = use('Drive')
+const axios = require('axios')
+const FileModel = use('App/Models/File')
 const {
-  STATUS_ACTIVE,
-  STATUS_EXPIRE,
-  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
-  OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
-  SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+  DATE_FORMAT,
+  GEWOBAG_ACCOUNT_USER_ID,
+  GEWOBAG_MARKETPLACE_PUBLISHERS,
+  GEWOBAG_FTP_BUCKET,
+  GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
+  LETTING_STATUS_STANDARD,
+  LETTING_TYPE_LET,
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_NEW,
+  MAXIMUM_EXPIRE_PERIOD,
+  OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
+  PETS_NO,
+  PUBLISH_STATUS_APPROVED_BY_ADMIN,
+  PUBLISH_STATUS_INIT,
+  SEND_EMAIL_TO_OHNEMAKLER_CONTENT,
+  STATUS_ACTIVE,
+  STATUS_EXPIRE,
+  STATUS_DELETE,
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
-  PETS_NO,
-  GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
-  DATE_FORMAT
+  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
+  FILE_TYPE
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
 const ThirdPartyOfferInteraction = use('App/Models/ThirdPartyOfferInteraction')
+const Estate = use('App/Models/Estate')
+const Amenity = use('App/Models/Amenity')
 const {
   exceptions: { MARKET_PLACE_CONTACT_EXIST, CANNOT_KNOCK_ON_DISLIKED_ESTATE }
 } = require('../exceptions')
@@ -79,11 +93,11 @@ class ThirdPartyOfferService {
       const checksum = ThirdPartyOfferService.generateChecksum(JSON.stringify(ohneMaklerData))
       if (checksum !== ohneMaklerChecksum || forced) {
         console.log('updating start !!!!')
-        //mark all as expired...
-        //1. to expire all estates that are not anymore in the new data including also those
-        //that are past expiration date
-        //2. to allow for changes on type see OhneMakler.estateCanBeProcessed()
-        //there must be some difference between the data... so we can process
+        // mark all as expired...
+        // 1. to expire all estates that are not anymore in the new data including also those
+        // that are past expiration date
+        // 2. to allow for changes on type see OhneMakler.estateCanBeProcessed()
+        // there must be some difference between the data... so we can process
         const ohneMakler = new OhneMakler(ohneMaklerData)
         const estates = ohneMakler.process()
 
@@ -92,7 +106,7 @@ class ThirdPartyOfferService {
 
         let i = 0
         while (i < estates.length) {
-          let estate = estates[i]
+          const estate = estates[i]
           try {
             const found = await ThirdPartyOffer.query()
               .where('source', THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER)
@@ -131,7 +145,10 @@ class ThirdPartyOfferService {
     }
     try {
       await s3.copyObject(params).promise()
-      return File.getPublicUrl(filePathName)
+      return {
+        url: File.getPublicUrl(filePathName),
+        filePathName
+      }
     } catch (err) {
       console.log('err', err)
       return false
@@ -139,7 +156,7 @@ class ThirdPartyOfferService {
   }
 
   static async getFilesAndLastModified() {
-    let gewobagFiles = await ThirdPartyOffer.query()
+    const gewobagFiles = await ThirdPartyOffer.query()
       .select(Database.raw(`CONCAT("source_id", '.xml') as key`))
       .select('ftp_last_update')
       .where('source', THIRD_PARTY_OFFER_SOURCE_GEWOBAG)
@@ -153,13 +170,421 @@ class ThirdPartyOfferService {
     )
   }
 
+  static async getAllObjectsInBucket(bucketName, s3) {
+    const params = {
+      Bucket: bucketName
+    }
+    let objects = []
+    try {
+      let isTruncated = true
+      let marker
+      while (isTruncated) {
+        if (marker) params.ContinuationToken = marker
+
+        const response = await s3.listObjectsV2(params).promise()
+        response.Contents.forEach((item) => {
+          objects = [...objects, item]
+        })
+        isTruncated = response.IsTruncated
+        marker = response.NextContinuationToken
+      }
+      return objects
+    } catch (err) {
+      console.error('Error listing objects:', err)
+    }
+  }
+
+  static async pruneGewobag() {
+    try {
+      AWS.config.update({
+        accessKeyId: Env.get('S3_KEY'),
+        secretAccessKey: Env.get('S3_SECRET'),
+        region: Env.get('S3_REGION')
+      })
+      const s3 = new AWS.S3()
+      const objects = await ThirdPartyOfferService.getAllObjectsInBucket(GEWOBAG_FTP_BUCKET, s3)
+      const d = new Date(new Date().setMonth(new Date().getMonth() - 2))
+      const keys = objects
+        .map((content) => {
+          if (content.LastModified < d && content.Key.match(/\.xml$/)) {
+            return content.Key
+          }
+          return null
+        })
+        .filter((key) => key)
+
+      await Promise.map(keys, async (key) => {
+        const params = {
+          Bucket: GEWOBAG_FTP_BUCKET,
+          Key: key
+        }
+        const data = await s3.deleteObject(params).promise()
+        console.log(`deleted ${key}`, data)
+      })
+      process.exit()
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  static async pullGewobagNew() {
+    try {
+      AWS.config.update({
+        accessKeyId: Env.get('S3_KEY'),
+        secretAccessKey: Env.get('S3_SECRET'),
+        region: Env.get('S3_REGION')
+      })
+      const s3 = new AWS.S3()
+      const objects = await ThirdPartyOfferService.getAllObjectsInBucket(GEWOBAG_FTP_BUCKET, s3)
+      if (objects.length < 1) {
+        console.log('no xmls to work on...')
+        process.exit()
+      }
+      objects.sort((a, b) => a.LastModified - b.LastModified)
+      const twoMonthsAgo = new Date(new Date().setMonth(new Date().getMonth() - 2))
+      const keys = objects
+        .map((content) => {
+          if (content.LastModified > new Date(twoMonthsAgo) && content.Key.match(/\.xml$/)) {
+            return content.Key
+          }
+          return null
+        })
+        .filter((key) => key)
+      let xmls = []
+      await Promise.map(keys, async (key) => {
+        const xml = await Drive.disk('breeze-ftp-files').get(key)
+        xmls = [...xmls, xml]
+      })
+      const reader = new OpenImmoReader()
+      const properties = await reader.processXml(xmls)
+      let propertiesToDelete = []
+      let estateIdsToUnpublishOnEstateSync = []
+      await Promise.map(properties, async (estate) => {
+        if (estate.action === 'DELETE') {
+          // property_ids to delete
+          propertiesToDelete = [...propertiesToDelete, estate.property_id]
+          const estateToDelete = await Estate.query()
+            .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
+            .where('property_id', estate.property_id)
+          if (estateToDelete.status === STATUS_ACTIVE) {
+            // we need to remove this from marketplaces
+            estateIdsToUnpublishOnEstateSync = [
+              ...estateIdsToUnpublishOnEstateSync,
+              estateToDelete.id
+            ]
+          }
+        } else {
+          const newEstate = {
+            additional_costs: Number(estate.additional_costs) || 0,
+            address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
+            apt_type: estate.apt_type,
+            area: Number(estate.area) || 0,
+            bathrooms: Number(estate.bathrooms_number) || 0,
+            building_status: estate.building_status,
+            city: estate.city,
+            construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
+            // contact: JSON.stringify({ email: estate.contact }),
+            country: estate.country,
+            energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
+            extra_costs: Number(+estate.heating_costs + +estate.additional_costs) || 0,
+            firing: estate.firing,
+            floor: Number(estate.floor) || 0,
+            full_address: estate.full_address,
+            heating_costs: Number(estate.heating_costs) || 0,
+            heating_type: estate.heating_type,
+            house_number: estate.house_number,
+            house_type: estate.house_type,
+            letting_status: LETTING_STATUS_STANDARD,
+            letting_type: LETTING_TYPE_LET,
+            net_rent: Number(estate.net_rent) || 0,
+            number_floors: Number(estate.number_floors) || 0,
+            property_id: estate.property_id,
+            property_type: estate.property_type,
+            publish_status:
+              estate.status === STATUS_ACTIVE
+                ? PUBLISH_STATUS_APPROVED_BY_ADMIN
+                : PUBLISH_STATUS_INIT,
+            rooms_number: Number(estate.rooms_number) || 0,
+            source: THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
+            status: estate.status,
+            street: estate.street,
+            vacant_date: estate.vacant_date
+              ? moment(new Date(estate.vacant_date)).format(DATE_FORMAT)
+              : null,
+            wbs: estate.wbs,
+            zip: estate.zip
+          }
+          newEstate.user_id = GEWOBAG_ACCOUNT_USER_ID
+
+          // amenities
+          const amenityKeys = {
+            balconies_number: {
+              type: 'numeric',
+              value: 'Balkon'
+            },
+            barrier_free: {
+              type: 'boolean',
+              value: 'Barrierefrei'
+            },
+            basement: {
+              type: 'boolean',
+              value: 'Keller'
+            },
+            chimney: {
+              type: 'boolean',
+              value: 'Kamin'
+            },
+            garden: {
+              type: 'boolean',
+              value: 'Garten'
+            },
+            guest_toilet: {
+              type: 'boolean',
+              value: 'Gäste-WC'
+            },
+            pets_allowed: {
+              type: 'boolean',
+              value: l.get('web.letting.property.import.Pets_Allowed.message', 'de')
+            },
+            sauna: {
+              type: 'boolean',
+              value: 'Sauna'
+            },
+            swimmingpool: {
+              type: 'boolean',
+              value: 'Pool / Schwimmbad'
+            },
+            terraces_number: {
+              type: 'numeric',
+              value: 'Terrasse'
+            },
+            wintergarten: {
+              type: 'boolean',
+              value: 'Wintergarten'
+            }
+          }
+          let amenities = []
+          for (const [key, value] of Object.entries(amenityKeys)) {
+            if (value.type === 'numeric' && estate[key] > 0) {
+              amenities = [...amenities, value.value]
+            } else if (value.type === 'boolean' && estate[key] === true) {
+              amenities = [...amenities, value.value]
+            }
+          }
+          let files = []
+          const estateImages = estate?.images || []
+          for (let i = 0; i < estateImages.length; i++) {
+            if (!/^\/gewobag/.test(estateImages[i].tmpPath)) {
+              // temporary fix on links not found on our s3. This is usually an external link
+              continue
+            }
+            const fileUploaded = await ThirdPartyOfferService.isGewobagFileUploaded(
+              newEstate.property_id,
+              estateImages[i].file_name
+            )
+            if (!fileUploaded) {
+              const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
+                estateImages[i],
+                s3
+              )
+              if (estateImages[i].type === FILE_TYPE.COVER) {
+                newEstate.cover = imageUrl.url
+              } else {
+                files = [
+                  ...files,
+                  {
+                    url: imageUrl.filePathName,
+                    filename: estateImages[i].file_name,
+                    type: estateImages[i].type,
+                    order: i,
+                    file_format: estateImages[i].format
+                  }
+                ]
+              }
+            }
+          }
+
+          const existingEstate = await Estate.query()
+            .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
+            .where('property_id', newEstate.property_id)
+            .first()
+          const percent = EstateService.calculatePercent(newEstate)
+          // fix construction year. It is date in the db
+          newEstate.construction_year = `${newEstate.construction_year}-01-01`
+          newEstate.percent = percent
+          if (existingEstate) {
+            console.log('Estate already existed...')
+            const isCurrentlyPublished = existingEstate.status === STATUS_ACTIVE
+            // update estate
+            await existingEstate.updateItem(newEstate)
+            // update amenities
+            if (amenities.length) {
+              const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
+                await ThirdPartyOfferService.getDifferenceOnAmenities(
+                  amenities,
+                  GEWOBAG_ACCOUNT_USER_ID,
+                  existingEstate.property_id
+                )
+              if (amenitiesInDbToBeDeleted.length) {
+                await Amenity.query()
+                  .update({ status: STATUS_DELETE })
+                  .where('estate_id', existingEstate.id)
+                  .whereIn('amenity', amenitiesInDbToBeDeleted)
+              }
+              if (amenitiesToBeAdded.length) {
+                await Promise.map(amenitiesToBeAdded, async (amenity, index) => {
+                  await Amenity.createItem({
+                    status: STATUS_ACTIVE,
+                    amenity,
+                    type: 'custom_amenity',
+                    sequence_order: index + length,
+                    added_by: GEWOBAG_ACCOUNT_USER_ID,
+                    estate_id: existingEstate.id,
+                    location: 'apt'
+                  })
+                })
+              }
+            }
+            // process files
+            await Promise.map(files, async (file) => {
+              await FileModel.createItem({
+                url: file.url,
+                estate_id: existingEstate.id,
+                type: file.type,
+                disk: 's3public',
+                file_name: file.filename,
+                order: file.order,
+                file_format: file.file_format
+              })
+            })
+            // publish or NOT?
+            if (newEstate.status === STATUS_ACTIVE && !isCurrentlyPublished) {
+              const toUpdate = {
+                available_start_at: existingEstate.available_start_at,
+                available_end_at: existingEstate.available_end_at,
+                status: STATUS_ACTIVE
+              }
+              const now = new Date()
+              if (
+                !existingEstate.available_start_at ||
+                new Date(existingEstate.available_start_at) < now
+              ) {
+                toUpdate.available_start_at = new Date()
+              }
+              if (
+                !existingEstate.available_end_at ||
+                new Date(existingEstate.available_end_at) < now
+              ) {
+                toUpdate.available_end_at = moment(toUpdate.available_start_at)
+                  .add(MAXIMUM_EXPIRE_PERIOD, 'days')
+                  .format(DATE_FORMAT)
+              }
+              await Estate.query().where('id', existingEstate.id).update(toUpdate)
+              // publish this also to marketplaces.
+              await require('./EstateSyncService.js').saveMarketPlacesInfo(
+                {
+                  estate_id: existingEstate.id,
+                  estate_sync_property_id: null,
+                  performed_by: GEWOBAG_ACCOUNT_USER_ID,
+                  publishers: GEWOBAG_MARKETPLACE_PUBLISHERS
+                },
+                null
+              )
+              await QueueService.estateSyncPublishEstate({ estate_id: existingEstate.id })
+            }
+            if (newEstate.status !== STATUS_ACTIVE && isCurrentlyPublished) {
+              await Estate.query()
+                .where('id', existingEstate.id)
+                .update({ status: STATUS_EXPIRE, publish_status: PUBLISH_STATUS_INIT })
+              // we need to unpublish this from marketplaces
+              estateIdsToUnpublishOnEstateSync = [
+                ...estateIdsToUnpublishOnEstateSync,
+                existingEstate.id
+              ]
+            }
+          } else {
+            console.log('creating estate...')
+            const estateData = await Estate.createItem(newEstate)
+            if (amenities.length) {
+              await Promise.map(amenities, async (amenity, index) => {
+                await Amenity.createItem({
+                  status: STATUS_ACTIVE,
+                  amenity,
+                  type: 'custom_amenity',
+                  sequence_order: index,
+                  added_by: GEWOBAG_ACCOUNT_USER_ID,
+                  estate_id: estateData.id,
+                  location: 'apt'
+                })
+              })
+            }
+            // process files
+            await Promise.map(files, async (file) => {
+              await FileModel.createItem({
+                url: file.url,
+                estate_id: estateData.id,
+                type: file.type,
+                disk: 's3public',
+                file_name: file.filename,
+                order: file.order,
+                file_format: file.file_format
+              })
+            })
+            await QueueService.getEstateCoords(estateData.id)
+            // NOTE: even if the xml has status = publish, it would still be draft
+            // we're going to publish it on NEXT pullGewobag...
+          }
+        }
+      })
+      console.log('propertiesToDelete', propertiesToDelete)
+      if (propertiesToDelete.length) {
+        await Estate.query()
+          .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
+          .whereIn('property_id', propertiesToDelete)
+          .update({ status: STATUS_DELETE })
+      }
+      if (estateIdsToUnpublishOnEstateSync.length) {
+        QueueService.estateSyncUnpublishEstates(estateIdsToUnpublishOnEstateSync, true)
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  static async getDifferenceOnAmenities(newAmenities, userId, propertyId) {
+    const amenities = await Amenity.query()
+      .leftJoin('estates', 'amenities.estate_id', 'estates.id')
+      .where('estates.property_id', propertyId)
+      .where('estates.user_id', userId)
+      .whereNot('amenities.status', STATUS_DELETE)
+      .fetch()
+    const amenityNames = (amenities.toJSON() || []).map((amenity) => amenity.amenity)
+    const length = (amenities.toJSON() || []).length
+    const amenitiesToBeAdded = newAmenities.filter((x) => !amenityNames.includes(x))
+    //
+    const amenitiesInDbToBeDeleted = amenityNames.filter((x) => !newAmenities.includes(x))
+    return { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length }
+  }
+
+  static async isGewobagFileUploaded(propertyId, filename) {
+    const fileUploaded = await Estate.query()
+      .innerJoin('files', 'files.estate_id', 'estates.id')
+      .where('estates.user_id', GEWOBAG_ACCOUNT_USER_ID)
+      .where('estates.property_id', propertyId)
+      .where('files.file_name', filename)
+      .first()
+    if (fileUploaded) {
+      return fileUploaded
+    }
+    return false
+  }
+
   static async pullGewobag() {
     console.log('pulling gewobag...')
     const filesWorked = await ThirdPartyOfferService.getFilesAndLastModified()
     const { xml, filesLastModified } = await File.getGewobagUploadedContent(filesWorked)
     const reader = new OpenImmoReader()
     const properties = await reader.processXml(xml)
-
     AWS.config.update({
       accessKeyId: Env.get('S3_KEY'),
       secretAccessKey: Env.get('S3_SECRET'),
@@ -169,10 +594,10 @@ class ThirdPartyOfferService {
     await Promise.map(
       properties.slice(0, GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL),
       async (estate) => {
-        let sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION['gewobag']
+        const sourceInformation = THIRD_PARTY_OFFER_PROVIDER_INFORMATION.gewobag
         sourceInformation.logo = sourceInformation.logo.replace(/APP_URL/, process.env.APP_URL)
-        //FIXME: create a map for this:
-        let newEstate = {
+        // FIXME: create a map for this:
+        const newEstate = {
           additional_costs: Number(estate.additional_costs) || 0,
           address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
           apt_type: estate.apt_type,
@@ -209,8 +634,8 @@ class ThirdPartyOfferService {
           wbs: estate.wbs,
           zip: estate.zip
         }
-        //amenities:
-        //parse this to boolean... openimmo standard for pets is boolean
+        // amenities:
+        // parse this to boolean... openimmo standard for pets is boolean
         if (estate.pets_allowed !== undefined) {
           estate.pets_allowed = estate.pets_allowed !== PETS_NO
         }
@@ -344,7 +769,7 @@ class ThirdPartyOfferService {
         const { prospect_score } = await MatchService.calculateMatchPercent(tenant, estate)
         estate.match = prospect_score
         estate.isoline = await EstateService.getIsolines(estate)
-        estate['__meta__'] = {
+        estate.__meta__ = {
           knocked_count: estate.knocked_count,
           like_count: estate.like_count,
           dislike_count: estate.dislike_count
@@ -392,7 +817,7 @@ class ThirdPartyOfferService {
 
   static async searchTenantEstatesQuery(tenant) {
     Logger.info(`\n----start ThirdPartyOfferService--- ${tenant.user_id}`)
-    let estates = await Database.select(Database.raw(`FALSE as inside`))
+    const estates = await Database.select(Database.raw(`FALSE as inside`))
       .select('_e.*')
       .select(Database.raw(`NULL as rooms`))
       .from({ _t: 'tenants' })
@@ -458,7 +883,7 @@ class ThirdPartyOfferService {
   static async getEstate({ userId, id }) {
     console.log('getEstate here=', userId)
     /* estate coord intersects with polygon of tenant */
-    let query = ThirdPartyOffer.query()
+    const query = ThirdPartyOffer.query()
       .select('third_party_offers.*')
       .select('third_party_offers.status as estate_status')
       .select(Database.raw(`NULL as rooms`))
@@ -476,8 +901,8 @@ class ThirdPartyOfferService {
         .leftJoin(Database.raw(`third_party_offer_interactions tpoi`), function () {
           this.on('tpoi.third_party_offer_id', 'third_party_offers.id').on('tpoi.user_id', userId)
         })
-      //remove the check on intersecting with polygon because user may have changed
-      //his location and he won't be intersected here...
+      // remove the check on intersecting with polygon because user may have changed
+      // his location and he won't be intersected here...
     }
 
     return await query.where('third_party_offers.id', id).first()
@@ -569,7 +994,7 @@ class ThirdPartyOfferService {
     const MatchService = require('./MatchService')
     const { like, dislike, knock } = filter
 
-    let query = ThirdPartyOffer.query()
+    const query = ThirdPartyOffer.query()
       .select('third_party_offers.*')
       .select(
         'third_party_offers.status as estate_status',

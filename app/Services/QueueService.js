@@ -259,7 +259,7 @@ class QueueService {
 
   static async pullGewobag() {
     const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
-    return Promise.all([wrapException(ThirdPartyOfferService.pullGewobag)])
+    return Promise.all([wrapException(ThirdPartyOfferService.pullGewobagNew)])
   }
 
   static async sendEveryDayMidday() {

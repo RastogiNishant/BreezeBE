@@ -72,7 +72,8 @@ const commands = [
   'App/Commands/PullOhnemakler',
   'App/Commands/PullGewobag',
   'App/Commands/FillWbs',
-  'App/Commands/FillCitizen'
+  'App/Commands/FillCitizen',
+  'App/Commands/PruneGewobag'
 ]
 
 const http = {

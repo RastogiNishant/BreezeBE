@@ -40,6 +40,7 @@ const certificateType = {
 }
 
 class OpenImmoReader {
+  dir = ''
   json = {}
   contentType
   filePath
@@ -229,16 +230,44 @@ class OpenImmoReader {
     }
   }
 
+  mapImageType(group, location = 'EXTERNAL') {
+    const imageType = {
+      TITELBILD: 'cover',
+      INNENANSICHTEN: 'internal',
+      AUSSENANSICHTEN: 'external',
+      GRUNDRISS: 'plan',
+      KARTEN_LAGEPLAN: 'location plan',
+      ANBIETERLOGO: 'logo',
+      BILD: 'image',
+      DOKUMENTE: 'doc',
+      LINKS: 'link',
+      PANORAMA: 'panorama',
+      QRCODE: 'qr code',
+      FILM: 'film',
+      FILMLINK: 'film link',
+      'EPASS-SKALA': 'unassigned',
+      ANBOBJURL: 'unassigned'
+    }
+    if (imageType[group] && imageType[group] === 'image') {
+      return location === 'EXTERNAL' || location === 'EXTERN' ? 'external' : 'internal'
+    }
+    if (imageType[group]) {
+      return imageType[group]
+    }
+    return 'unassigned'
+  }
+
   async processImages(properties) {
     properties.map((property, index) => {
-      ;(property?.images || []).map(async (image, k) => {
+      ;(property?.images || []).map((image, k) => {
+        const type = this.mapImageType(image.$.gruppe, image.$.location)
         properties[index].images[k] = {
           tmpPath: `${this.dir}/${image.daten[0].pfad[0]}`,
           headers: {
             'content-type': image.format[0]
           },
           file_name: `${image.daten[0].pfad[0]}`,
-          type: FILE_TYPE_UNASSIGNED,
+          type,
           format: image.format[0]
         }
       })
@@ -341,13 +370,13 @@ class OpenImmoReader {
       // last_modernization according to openimmo is a string ie. Bad 1997, K�che 2010
       if (property.last_modernization) {
         property.last_modernization = property.last_modernization.match(/(19|20)[0-9]{2}/)
-        ? `${property.construction_year}-01-01`
-        : null
+          ? `${property.construction_year}-01-01`
+          : null
       }
 
       if (property.pets_allowed === 'true') {
         property.pets_allowed = PETS_SMALL
-      } else if (property.pets_allowed === 'false') {
+      } else {
         property.pets_allowed = PETS_NO
       }
 

@@ -390,5 +390,22 @@
     "GEWERBE": 2,
     "WAZ": 4,
     "WOHNEN": 1
+  },
+  "image_type": {
+    "TITELBILD": "cover",
+    "INNENANSICHTEN": "internal",
+    "AUSSENANSICHTEN": "external",
+    "GRUNDRISS": "plan",
+    "KARTEN_LAGEPLAN": "location plan",
+    "ANBIETERLOGO": "logo",
+    "BILD": "image",
+    "DOKUMENTE": "doc",
+    "LINKS": "link",
+    "PANORAMA": "panorama",
+    "QRCODE": "qr code",
+    "FILM": "film",
+    "FILMLINK": "film link",
+    "EPASS-SKALA": "unassigned",
+    "ANBOBJURL": "unassigned"
   }
 }
