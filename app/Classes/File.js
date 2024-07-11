@@ -444,25 +444,6 @@ class File {
     }
   }
 
-  static async deleteGewobagContent() {
-    try {
-      AWS.config.update({
-        accessKeyId: Env.get('S3_KEY'),
-        secretAccessKey: Env.get('S3_SECRET'),
-        region: Env.get('S3_REGION')
-      })
-      const s3 = new AWS.S3()
-      const params = {
-        Bucket: 'justin-testing', // GEWOBAG_FTP_BUCKET,
-        key: '0034b159-eeec-4c3d-9c95-47e95cedb9bb.xml'
-        // Delimiter: '/'
-        // Prefix: 'live/',
-      }
-      const reply = await s3.deleteObject({ params })
-      console.log(reply)
-    } catch (err) {}
-  }
-
   static async getGewobagUploadedContent(filesWorked) {
     try {
       AWS.config.update({

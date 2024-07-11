@@ -408,30 +408,32 @@ class ThirdPartyOfferService {
             // update estate
             await existingEstate.updateItem(newEstate)
             // update amenities
-            const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
-              await this.getDifferenceOnAmenities(
-                amenities,
-                GEWOBAG_ACCOUNT_USER_ID,
-                existingEstate.property_id
-              )
-            if (amenitiesInDbToBeDeleted.length) {
-              await Amenity.query()
-                .update({ status: STATUS_DELETE })
-                .where('estate_id', existingEstate.id)
-                .whereIn('amenity', amenitiesInDbToBeDeleted)
-            }
-            if (amenitiesToBeAdded.length) {
-              await Promise.map(amenitiesToBeAdded, async (amenity, index) => {
-                await Amenity.createItem({
-                  status: STATUS_ACTIVE,
-                  amenity,
-                  type: 'custom_amenity',
-                  sequence_order: index + length,
-                  added_by: GEWOBAG_ACCOUNT_USER_ID,
-                  estate_id: existingEstate.id,
-                  location: 'apt'
+            if (amenities.length) {
+              const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
+                await this.getDifferenceOnAmenities(
+                  amenities,
+                  GEWOBAG_ACCOUNT_USER_ID,
+                  existingEstate.property_id
+                )
+              if (amenitiesInDbToBeDeleted.length) {
+                await Amenity.query()
+                  .update({ status: STATUS_DELETE })
+                  .where('estate_id', existingEstate.id)
+                  .whereIn('amenity', amenitiesInDbToBeDeleted)
+              }
+              if (amenitiesToBeAdded.length) {
+                await Promise.map(amenitiesToBeAdded, async (amenity, index) => {
+                  await Amenity.createItem({
+                    status: STATUS_ACTIVE,
+                    amenity,
+                    type: 'custom_amenity',
+                    sequence_order: index + length,
+                    added_by: GEWOBAG_ACCOUNT_USER_ID,
+                    estate_id: existingEstate.id,
+                    location: 'apt'
+                  })
                 })
-              })
+              }
             }
             // process files
             await Promise.map(files, async (file) => {
