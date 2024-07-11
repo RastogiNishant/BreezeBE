@@ -14,6 +14,7 @@ const Env = use('Env')
 const l = use('Localize')
 const Drive = use('Drive')
 const axios = require('axios')
+const FileModel = use('App/Models/File')
 const {
   DATE_FORMAT,
   GEWOBAG_ACCOUNT_USER_ID,
@@ -23,6 +24,7 @@ const {
   LETTING_TYPE_LET,
   MATCH_STATUS_KNOCK,
   MATCH_STATUS_NEW,
+  MAXIMUM_EXPIRE_PERIOD,
   OHNE_MAKLER_DEFAULT_PREFERENCES_FOR_MATCH_SCORING,
   PETS_NO,
   PUBLISH_STATUS_APPROVED_BY_ADMIN,
@@ -234,8 +236,10 @@ class ThirdPartyOfferService {
       const s3 = new AWS.S3()
       const objects = await ThirdPartyOfferService.getAllObjectsInBucket(GEWOBAG_FTP_BUCKET, s3)
       if (objects.length < 1) {
+        console.log('no xmls to work on...')
         process.exit()
       }
+      objects.sort((a, b) => a.LastModified - b.LastModified)
       const twoMonthsAgo = new Date(new Date().setMonth(new Date().getMonth() - 2))
       const keys = objects
         .map((content) => {
@@ -252,7 +256,6 @@ class ThirdPartyOfferService {
       })
       const reader = new OpenImmoReader()
       const properties = await reader.processXml(xmls)
-
       await Promise.map(properties, async (estate) => {
         if (estate.action === 'DELETE') {
           console.log(`Deleting: ${estate.property_id}`)
@@ -361,6 +364,10 @@ class ThirdPartyOfferService {
           let files = []
           const estateImages = estate?.images || []
           for (let i = 0; i < estateImages.length; i++) {
+            if (!/^\/gewobag/.test(estateImages[i].tmpPath)) {
+              // temporary fix on links not found on our s3. This is usually an external link
+              continue
+            }
             const fileUploaded = await ThirdPartyOfferService.isGewobagFileUploaded(
               newEstate.property_id,
               estateImages[i].file_name
@@ -379,7 +386,8 @@ class ThirdPartyOfferService {
                     url: imageUrl.filePathName,
                     filename: estateImages[i].file_name,
                     type: estateImages[i].type,
-                    order: i
+                    order: i,
+                    file_format: estateImages[i].format
                   }
                 ]
               }
@@ -396,7 +404,10 @@ class ThirdPartyOfferService {
           newEstate.percent = percent
           if (existingEstate) {
             console.log('Estate already existed...')
+            const isCurrentlyPublished = existingEstate.status === STATUS_ACTIVE
+            // update estate
             await existingEstate.updateItem(newEstate)
+            // update amenities
             const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
               await this.getDifferenceOnAmenities(
                 amenities,
@@ -422,12 +433,79 @@ class ThirdPartyOfferService {
                 })
               })
             }
-            // update estate
+            // process files
+            await Promise.map(files, async (file) => {
+              await FileModel.createItem({
+                url: file.url,
+                estate_id: existingEstate.id,
+                type: file.type,
+                disk: 's3public',
+                file_name: file.filename,
+                order: file.order,
+                file_format: file.file_format
+              })
+            })
+            // publish or NOT?
+            if (newEstate.status === STATUS_ACTIVE && !isCurrentlyPublished) {
+              const toUpdate = {
+                available_start_at: existingEstate.available_start_at,
+                available_end_at: existingEstate.available_end_at,
+                status: STATUS_ACTIVE
+              }
+              const now = new Date()
+              if (
+                !existingEstate.available_start_at ||
+                new Date(existingEstate.available_start_at) < now
+              ) {
+                toUpdate.available_start_at = new Date()
+              }
+              if (
+                !existingEstate.available_end_at ||
+                new Date(existingEstate.available_end_at) < now
+              ) {
+                toUpdate.available_end_at = moment(toUpdate.available_start_at)
+                  .add(MAXIMUM_EXPIRE_PERIOD, 'days')
+                  .format(DATE_FORMAT)
+              }
+              await Estate.query().where('id', existingEstate.id).update(toUpdate)
+              // publish this also to marketplaces.
+            }
+            if (newEstate.status !== STATUS_ACTIVE && isCurrentlyPublished) {
+              await Estate.query()
+                .where('id', existingEstate.id)
+                .update({ status: STATUS_EXPIRE, publish_status: PUBLISH_STATUS_INIT })
+              // we need to unpublish this from marketplaces
+            }
           } else {
-            newEstate.percent = percent
+            console.log('creating estate...')
             const estateData = await Estate.createItem(newEstate)
-            console.log('creating estate', { estateData })
-            process.exit()
+            if (amenities.length) {
+              await Promise.map(amenities, async (amenity, index) => {
+                await Amenity.createItem({
+                  status: STATUS_ACTIVE,
+                  amenity,
+                  type: 'custom_amenity',
+                  sequence_order: index,
+                  added_by: GEWOBAG_ACCOUNT_USER_ID,
+                  estate_id: estateData.id,
+                  location: 'apt'
+                })
+              })
+            }
+            // process files
+            await Promise.map(files, async (file) => {
+              await FileModel.createItem({
+                url: file.url,
+                estate_id: estateData.id,
+                type: file.type,
+                disk: 's3public',
+                file_name: file.filename,
+                order: file.order,
+                file_format: file.file_format
+              })
+            })
+            await QueueService.getEstateCoords(estateData.id)
+            // NOTE: even if the xml has status = publish, it would still be draf
           }
         }
       })
