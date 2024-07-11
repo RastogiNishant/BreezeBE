@@ -18,6 +18,7 @@ const FileModel = use('App/Models/File')
 const {
   DATE_FORMAT,
   GEWOBAG_ACCOUNT_USER_ID,
+  GEWOBAG_MARKETPLACE_PUBLISHERS,
   GEWOBAG_FTP_BUCKET,
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
   LETTING_STATUS_STANDARD,
@@ -256,13 +257,22 @@ class ThirdPartyOfferService {
       })
       const reader = new OpenImmoReader()
       const properties = await reader.processXml(xmls)
+      let propertiesToDelete = []
+      let estateIdsToUnpublishOnEstateSync = []
       await Promise.map(properties, async (estate) => {
         if (estate.action === 'DELETE') {
-          console.log(`Deleting: ${estate.property_id}`)
-          await Estate.query()
+          // property_ids to delete
+          propertiesToDelete = [...propertiesToDelete, estate.property_id]
+          const estateToDelete = await Estate.query()
             .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
             .where('property_id', estate.property_id)
-            .update({ status: STATUS_DELETE })
+          if (estateToDelete.status === STATUS_ACTIVE) {
+            // we need to remove this from marketplaces
+            estateIdsToUnpublishOnEstateSync = [
+              ...estateIdsToUnpublishOnEstateSync,
+              estateToDelete.id
+            ]
+          }
         } else {
           const newEstate = {
             additional_costs: Number(estate.additional_costs) || 0,
@@ -410,7 +420,7 @@ class ThirdPartyOfferService {
             // update amenities
             if (amenities.length) {
               const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
-                await this.getDifferenceOnAmenities(
+                await ThirdPartyOfferService.getDifferenceOnAmenities(
                   amenities,
                   GEWOBAG_ACCOUNT_USER_ID,
                   existingEstate.property_id
@@ -471,12 +481,26 @@ class ThirdPartyOfferService {
               }
               await Estate.query().where('id', existingEstate.id).update(toUpdate)
               // publish this also to marketplaces.
+              await require('./EstateSyncService.js').saveMarketPlacesInfo(
+                {
+                  estate_id: existingEstate.id,
+                  estate_sync_property_id: null,
+                  performed_by: GEWOBAG_ACCOUNT_USER_ID,
+                  publishers: GEWOBAG_MARKETPLACE_PUBLISHERS
+                },
+                null
+              )
+              await QueueService.estateSyncPublishEstate({ estate_id: existingEstate.id })
             }
             if (newEstate.status !== STATUS_ACTIVE && isCurrentlyPublished) {
               await Estate.query()
                 .where('id', existingEstate.id)
                 .update({ status: STATUS_EXPIRE, publish_status: PUBLISH_STATUS_INIT })
               // we need to unpublish this from marketplaces
+              estateIdsToUnpublishOnEstateSync = [
+                ...estateIdsToUnpublishOnEstateSync,
+                existingEstate.id
+              ]
             }
           } else {
             console.log('creating estate...')
@@ -507,14 +531,24 @@ class ThirdPartyOfferService {
               })
             })
             await QueueService.getEstateCoords(estateData.id)
-            // NOTE: even if the xml has status = publish, it would still be draf
+            // NOTE: even if the xml has status = publish, it would still be draft
+            // we're going to publish it on NEXT pullGewobag...
           }
         }
       })
+      console.log('propertiesToDelete', propertiesToDelete)
+      if (propertiesToDelete.length) {
+        await Estate.query()
+          .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
+          .whereIn('property_id', propertiesToDelete)
+          .update({ status: STATUS_DELETE })
+      }
+      if (estateIdsToUnpublishOnEstateSync.length) {
+        QueueService.estateSyncUnpublishEstates(estateIdsToUnpublishOnEstateSync, true)
+      }
     } catch (err) {
       console.log(err)
     }
-    process.exit()
   }
 
   static async getDifferenceOnAmenities(newAmenities, userId, propertyId) {

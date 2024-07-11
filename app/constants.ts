@@ -1515,7 +1515,8 @@ Estates: [ESTATES]
   IS24_PUBLISHING_STATUS_POSTED: 2,
   IS24_PUBLISHING_STATUS_PUBLISHED: 3,
 
-  GEWOBAG_ACCOUNT_USER_ID: 4
+  GEWOBAG_ACCOUNT_USER_ID: 23288,
+  GEWOBAG_MARKETPLACE_PUBLISHERS: ['immowelt', 'immobilienscout-24', 'ebay-kleinanzeigen']
 }
 
 module.exports = {
