@@ -54,7 +54,9 @@ const {
   OPTIONS_TYPE_BUILD,
   OPTIONS_TYPE_APT,
   OPTIONS_TYPE_OUT,
-  LANG_DE
+  LANG_DE,
+  PETS_NO,
+  PROD_ENVIRONMENT
 } = require('../constants')
 const ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION = [
   OPTIONS_TYPE_BUILD,
@@ -78,6 +80,7 @@ const APARTMENT_TYPE_KEYS = {
 
 class EstateSync {
   baseUrl = `https://api.estatesync.com`
+
   static apartmentType = {
     // aparmentType must be one of apartment, attic, maisonette, penthouse, loft, terrace, lowerGroundFloor, groundFloor, upperGroundFloor, floor, other
     attic: APARTMENT_TYPE_ATTIC,
@@ -90,21 +93,21 @@ class EstateSync {
   }
 
   static condition = {
-    'first time occupied': BUILDING_STATUS_FIRST_TIME_OCCUPIED,
-    'needs renovation': BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
-    new: BUILDING_STATUS_NEW,
-    existing: BUILDING_STATUS_EXISTING,
-    'fully renovated': BUILDING_STATUS_PART_FULLY_RENOVATED,
-    'partly refurbished': BUILDING_STATUS_PARTLY_REFURISHED,
-    'in need of renovation': BUILDING_STATUS_IN_NEED_OF_RENOVATION,
-    'ready to be built': BUILDING_STATUS_READY_TO_BE_BUILT,
-    'by agreement': BUILDING_STATUS_BY_AGREEMENT,
-    modernized: BUILDING_STATUS_MODERNIZED,
-    cleaned: BUILDING_STATUS_CLEANED,
-    'rough building': BUILDING_STATUS_ROUGH_BUILDING,
-    developed: BUILDING_STATUS_DEVELOPED,
-    abrissobjekt: BUILDING_STATUS_ABRISSOBJEKT,
-    projected: BUILDING_STATUS_PROJECTED,
+    firstTimeUse: BUILDING_STATUS_FIRST_TIME_OCCUPIED,
+    // 'needs renovation': BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
+    mint: BUILDING_STATUS_NEW,
+    // existing: BUILDING_STATUS_EXISTING,
+    renovated: BUILDING_STATUS_PART_FULLY_RENOVATED,
+    // 'partly refurbished': BUILDING_STATUS_PARTLY_REFURISHED,
+    // 'in need of renovation': BUILDING_STATUS_IN_NEED_OF_RENOVATION,
+    // 'ready to be built': BUILDING_STATUS_READY_TO_BE_BUILT,
+    negotiable: BUILDING_STATUS_BY_AGREEMENT,
+    modernised: BUILDING_STATUS_MODERNIZED,
+    wellKept: BUILDING_STATUS_CLEANED,
+    requiresRefurbishment: BUILDING_STATUS_ROUGH_BUILDING,
+    // developed: BUILDING_STATUS_DEVELOPED,
+    demolitionReady: BUILDING_STATUS_ABRISSOBJEKT,
+    // projected: BUILDING_STATUS_PROJECTED,
     refurbished: BUILDING_STATUS_FULLY_REFURBISHED
   }
 
@@ -166,39 +169,40 @@ class EstateSync {
     net_rent: 'baseRent',
     // commission: '5,95% incl. 19% VAT',
     // commissionDescription: 'My first commission description for a property.',
-    construction_year: 'constructionYear',
+    condition: this.composeCondition,
+    construction_year: "constructionYear",
     deposit: this.composeDeposit,
     // description: this.composeDescription,
     // energyCertificateStatus: 'present',
     floor: 'floor',
     // furnishingDescription: 'My first furnishing description for a property.',
-    // hasBalcony: true,
+    hasBalcony: this.composeBalcony,
     // hasBuiltInKitchen: true,
-    // hasCellar: false,
+    hasCellar: this.composeCellar,
     // hasGarden: true,
-    // hasGuestToilet: false,
-    // hasLift: true,
+    hasGuestToilet: this.composeGuestToilet,
+    hasLift: this.composeLift,
     heating_costs: 'heatingCosts',
     heatingType: this.composeHeatingType,
-    // interiorQuality: 'standard',
+    interiorQuality: this.composeInteriorQuality,
     // isAccessible: true,
     // isSuitableAsSharedFlat: false,
     lastRefurbished: this.composeLastRefurbish,
     livingArea: this.composeLivingArea,
     // locationDescription: 'My first location description for a property.',
     // miscellaneousDescription: 'My first misc description for a property.',
-    bathrooms_number: 'numberOfBathrooms',
-    bedrooms_number: 'numberOfBedrooms',
+    // bathrooms_number: 'numberOfBathrooms',
+    // bedrooms_number: 'numberOfBedrooms',
     number_floors: 'numberOfFloors',
     parking_space: 'numberOfParkingSpaces',
     rooms_number: 'numberOfRooms',
     // parkingSpaceRent: 45,
     parkingSpaceType: this.composeParkingSpaceType,
-    pets_allowed: 'petsAllowed',
+    petsAllowed: this.composePetsAllowed,
     // requiresWBS: false,
     // residentialEnergyCertificate: this.composeEnergyClass,
     title: this.composeTitle,
-    // 'totalRent',
+    totalRent: this.composeTotalRent,
     usableArea: this.composeLivingArea
   }
 
@@ -209,6 +213,30 @@ class EstateSync {
 
   composeLivingArea({ area }) {
     return +area
+  }
+
+  /**
+   * @param { { net_rent: string; extra_cost: string } } estateData 
+   * @returns { number }
+   */
+  composeTotalRent({ net_rent, extra_costs }) {
+    return +net_rent + +extra_costs
+  }
+
+  /**
+   * @param { { construction_year: date } } estateData 
+   * @returns { string }
+   */
+  composeConstructionYear({ construction_year }) {
+    return new Date(construction_year).getFullYear()
+  }
+
+  /**
+   * @param { { pets_allowed: number } } estateData 
+   * @returns { boolean }
+   */
+  composePetsAllowed({ pets_allowed }) {
+    return pets_allowed !== PETS_NO
   }
 
   composeDescription({ amenities }) {
@@ -243,11 +271,51 @@ class EstateSync {
     }
   }
 
+  /**
+   * @param { { vacant_date: date } } estateData 
+   * @returns { string }
+   */
   composeAvailableFrom({ vacant_date }) {
     if (vacant_date) {
-      return vacant_date
+      return vacant_date.toLocaleDateString("de-DE")
     }
     return l.get(`prospect.property.details.txt_rent_start_from_now`, LANG_DE)
+  }
+
+  /**
+   * 
+   * @param { string } amen 
+   * @returns 
+   */
+  hasAmenity(amenities, amen) {
+    return !!amenities.find(
+      (am) => am.option.title === amen
+    )
+  }
+
+  /**
+   * 
+   * @param {*} estate 
+   * @returns boolean
+   */
+  composeGuestToilet({ amenities }) {
+    return this.hasAmenity(amenities, "apartment.amenities.WC_bathroom.guest_toilet")
+  }
+
+  composeInteriorQuality({ amenities }) {
+    return this.hasAmenity(amenities, "apt_exclusive_high_quality_luxury") ? "high" : undefined
+  }
+
+  composeBalcony({ amenities }) {
+    return this.hasAmenity(amenities, "apt_balcony")
+  }
+
+  composeCellar({ amenities }) {
+    return this.hasAmenity(amenities, "cellar")
+  }
+
+  composeLift({ amenities }) {
+    return this.hasAmenity(amenities, "elevator")
   }
 
   composeHeatingType({ heating_type }) {
@@ -259,7 +327,7 @@ class EstateSync {
 
   composeCondition({ building_status }) {
     const condition = invert(EstateSync.condition)
-    return condition[building_status] ?? ''
+    return condition[building_status]
   }
 
   composeDeposit({ deposit, net_rent }) {
@@ -372,7 +440,7 @@ class EstateSync {
     let newEstate
     for (const [key, value] of Object.entries(this.map)) {
       if (isFunction(value)) {
-        newEstate = { ...newEstate, [key]: value(estate) }
+        newEstate = { ...newEstate, [key]: value.bind(this)(estate) }
       } else if (this.makeNumeric.indexOf(value) > -1) {
         newEstate = { ...newEstate, [value]: Number(estate[key]) }
       } else if (this.makeBoolean.indexOf(value) > -1) {
@@ -406,23 +474,35 @@ class EstateSync {
     }
   }
 
+  async generateEstateData({ type = 'apartmentRent', estate, contactId = '' }, is_building = false) {
+    const fields = this.composeEstate(estate)
+    if (is_building) {
+      fields.title = this.composeTitle(estate, true)
+    }
+    const attachments = this.composeAttachments(estate)
+
+    let externalId = `${process.env.NODE_ENV}-${estate.id}`
+    if (process.env.NODE_ENV === PROD_ENVIRONMENT) {
+      externalId = `Breeze-${estate.id}`
+    }
+
+    const body = {
+      type,
+      fields,
+      attachments,
+      externalId
+    }
+    if (contactId) {
+      body.contactId = contactId
+    }
+
+    return body
+  }
+
   async postEstate({ type = 'apartmentRent', estate, contactId = '' }, is_building = false) {
     try {
-      const fields = this.composeEstate(estate)
-      if (is_building) {
-        fields.title = this.composeTitle(estate, true)
-      }
-      const attachments = this.composeAttachments(estate)
-      const externalId = `${process.env.NODE_ENV}-${estate.id}`
-      const body = {
-        type,
-        fields,
-        attachments,
-        externalId
-      }
-      if (contactId) {
-        body.contactId = contactId
-      }
+      const body = this.generateEstateData({ type, estate, contactId }, is_building)
+
       const ret = await axios.post(`${this.baseUrl}/properties`, body, { timeout: 5000 })
       return {
         success: true,
@@ -430,7 +510,7 @@ class EstateSync {
       }
     } catch (err) {
       console.log(err)
-      await require('./MailService').sendEmailToOhneMakler(
+      await require('../Service/MailService').sendEmailToOhneMakler(
         `EstateSync.postEstate: ERROR ` + JSON.stringify(err),
         'barudo@gmail.com'
       )

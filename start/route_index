@@ -1728,6 +1728,15 @@
     "handler": "EstateSyncController.updateApiKey"
   },
   {
+    "route": "/api/v1/estate-sync/test/estate",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "EstateSyncTestController.generateEstateData"
+  },
+  {
     "route": "/api/v1/estate-view-invitation/:code",
     "method": [
       "HEAD",
