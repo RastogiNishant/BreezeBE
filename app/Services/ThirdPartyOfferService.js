@@ -259,14 +259,20 @@ class ThirdPartyOfferService {
       const properties = await reader.processXml(xmls)
       let propertiesToDelete = []
       let estateIdsToUnpublishOnEstateSync = []
+
+      // Process all these properties:
       await Promise.map(properties, async (estate) => {
         if (estate.action === 'DELETE') {
           // property_ids to delete
-          propertiesToDelete = [...propertiesToDelete, estate.property_id]
           const estateToDelete = await Estate.query()
             .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
             .where('property_id', estate.property_id)
-          if (estateToDelete.status === STATUS_ACTIVE) {
+            .whereNot('status', STATUS_DELETE)
+            .first()
+          if (estateToDelete) {
+            propertiesToDelete = [...propertiesToDelete, estate.property_id]
+          }
+          if (estateToDelete && estateToDelete.status === STATUS_ACTIVE) {
             // we need to remove this from marketplaces
             estateIdsToUnpublishOnEstateSync = [
               ...estateIdsToUnpublishOnEstateSync,
@@ -317,148 +323,65 @@ class ThirdPartyOfferService {
           newEstate.user_id = GEWOBAG_ACCOUNT_USER_ID
 
           // amenities
-          const amenityKeys = {
-            balconies_number: {
-              type: 'numeric',
-              value: 'Balkon'
-            },
-            barrier_free: {
-              type: 'boolean',
-              value: 'Barrierefrei'
-            },
-            basement: {
-              type: 'boolean',
-              value: 'Keller'
-            },
-            chimney: {
-              type: 'boolean',
-              value: 'Kamin'
-            },
-            garden: {
-              type: 'boolean',
-              value: 'Garten'
-            },
-            guest_toilet: {
-              type: 'boolean',
-              value: 'Gäste-WC'
-            },
-            pets_allowed: {
-              type: 'boolean',
-              value: l.get('web.letting.property.import.Pets_Allowed.message', 'de')
-            },
-            sauna: {
-              type: 'boolean',
-              value: 'Sauna'
-            },
-            swimmingpool: {
-              type: 'boolean',
-              value: 'Pool / Schwimmbad'
-            },
-            terraces_number: {
-              type: 'numeric',
-              value: 'Terrasse'
-            },
-            wintergarten: {
-              type: 'boolean',
-              value: 'Wintergarten'
-            }
-          }
-          let amenities = []
-          for (const [key, value] of Object.entries(amenityKeys)) {
-            if (value.type === 'numeric' && estate[key] > 0) {
-              amenities = [...amenities, value.value]
-            } else if (value.type === 'boolean' && estate[key] === true) {
-              amenities = [...amenities, value.value]
-            }
-          }
-          let files = []
-          const estateImages = estate?.images || []
-          for (let i = 0; i < estateImages.length; i++) {
-            if (!/^\/gewobag/.test(estateImages[i].tmpPath)) {
-              // temporary fix on links not found on our s3. This is usually an external link
-              continue
-            }
-            const fileUploaded = await ThirdPartyOfferService.isGewobagFileUploaded(
-              newEstate.property_id,
-              estateImages[i].file_name
-            )
-            if (!fileUploaded) {
-              const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(
-                estateImages[i],
-                s3
-              )
-              if (estateImages[i].type === FILE_TYPE.COVER) {
-                newEstate.cover = imageUrl.url
-              } else {
-                files = [
-                  ...files,
-                  {
-                    url: imageUrl.filePathName,
-                    filename: estateImages[i].file_name,
-                    type: estateImages[i].type,
-                    order: i,
-                    file_format: estateImages[i].format
-                  }
-                ]
-              }
-            }
-          }
+          const amenities = ThirdPartyOfferService.processAmenities(estate)
+          // files
+          const files = await ThirdPartyOfferService.processFiles(estate, newEstate, s3)
+          // percent
+          const percent = EstateService.calculatePercent(newEstate)
+          newEstate.percent = percent
+          // fix construction year. It is date in the db
+          newEstate.construction_year = `${newEstate.construction_year}-01-01`
 
           const existingEstate = await Estate.query()
             .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
             .where('property_id', newEstate.property_id)
             .first()
-          const percent = EstateService.calculatePercent(newEstate)
-          // fix construction year. It is date in the db
-          newEstate.construction_year = `${newEstate.construction_year}-01-01`
-          newEstate.percent = percent
           if (existingEstate) {
             console.log('Estate already existed...')
             const isCurrentlyPublished = existingEstate.status === STATUS_ACTIVE
-            // update estate
-            await existingEstate.updateItem(newEstate)
-            // update amenities
-            if (amenities.length) {
-              const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
-                await ThirdPartyOfferService.getDifferenceOnAmenities(
-                  amenities,
-                  GEWOBAG_ACCOUNT_USER_ID,
-                  existingEstate.property_id
-                )
-              if (amenitiesInDbToBeDeleted.length) {
-                await Amenity.query()
-                  .update({ status: STATUS_DELETE })
-                  .where('estate_id', existingEstate.id)
-                  .whereIn('amenity', amenitiesInDbToBeDeleted)
-              }
-              if (amenitiesToBeAdded.length) {
-                await Promise.map(amenitiesToBeAdded, async (amenity, index) => {
-                  await Amenity.createItem({
-                    status: STATUS_ACTIVE,
-                    amenity,
-                    type: 'custom_amenity',
-                    sequence_order: index + length,
-                    added_by: GEWOBAG_ACCOUNT_USER_ID,
-                    estate_id: existingEstate.id,
-                    location: 'apt'
+            if (!isCurrentlyPublished && newEstate.status === STATUS_ACTIVE) {
+              // update estate
+              await existingEstate.updateItem(newEstate)
+              // update amenities
+              if (amenities.length) {
+                const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
+                  await ThirdPartyOfferService.getDifferenceOnAmenities(
+                    amenities,
+                    GEWOBAG_ACCOUNT_USER_ID,
+                    existingEstate.property_id
+                  )
+                if (amenitiesInDbToBeDeleted.length) {
+                  await Amenity.query()
+                    .update({ status: STATUS_DELETE })
+                    .where('estate_id', existingEstate.id)
+                    .whereIn('amenity', amenitiesInDbToBeDeleted)
+                }
+                if (amenitiesToBeAdded.length) {
+                  await Promise.map(amenitiesToBeAdded, async (amenity, index) => {
+                    await Amenity.createItem({
+                      status: STATUS_ACTIVE,
+                      amenity,
+                      type: 'custom_amenity',
+                      sequence_order: index + length,
+                      added_by: GEWOBAG_ACCOUNT_USER_ID,
+                      estate_id: existingEstate.id,
+                      location: 'apt'
+                    })
                   })
-                })
+                }
               }
-            }
-            // process files
-            await Promise.map(files, async (file) => {
-              await FileModel.createItem({
-                url: file.url,
-                estate_id: existingEstate.id,
-                type: file.type,
-                disk: 's3public',
-                file_name: file.filename,
-                order: file.order,
-                file_format: file.file_format
+              // process files
+              await Promise.map(files, async (file) => {
+                await FileModel.createItem({
+                  url: file.url,
+                  estate_id: existingEstate.id,
+                  type: file.type,
+                  disk: 's3public',
+                  file_name: file.filename,
+                  order: file.order,
+                  file_format: file.file_format
+                })
               })
-            })
-            // publish or NOT?
-            if (newEstate.status === STATUS_ACTIVE && !isCurrentlyPublished) {
               const toUpdate = {
                 available_start_at: existingEstate.available_start_at,
                 available_end_at: existingEstate.available_end_at,
@@ -491,8 +414,7 @@ class ThirdPartyOfferService {
                 null
               )
               await QueueService.estateSyncPublishEstate({ estate_id: existingEstate.id })
-            }
-            if (newEstate.status !== STATUS_ACTIVE && isCurrentlyPublished) {
+            } else if (newEstate.status !== STATUS_ACTIVE && isCurrentlyPublished) {
               await Estate.query()
                 .where('id', existingEstate.id)
                 .update({ status: STATUS_EXPIRE, publish_status: PUBLISH_STATUS_INIT })
@@ -501,8 +423,12 @@ class ThirdPartyOfferService {
                 ...estateIdsToUnpublishOnEstateSync,
                 existingEstate.id
               ]
+            } else if (newEstate.status === STATUS_ACTIVE && isCurrentlyPublished) {
+              // If currently published and is to be published, we do nothing because updating
+              // will unpublish the estate
             }
           } else {
+            // this estate is NOT yet on db
             console.log('creating estate...')
             const estateData = await Estate.createItem(newEstate)
             if (amenities.length) {
@@ -549,6 +475,98 @@ class ThirdPartyOfferService {
     } catch (err) {
       console.log(err)
     }
+  }
+
+  static processAmenities(estate) {
+    // amenities
+    const amenityKeys = {
+      balconies_number: {
+        type: 'numeric',
+        value: 'Balkon'
+      },
+      barrier_free: {
+        type: 'boolean',
+        value: 'Barrierefrei'
+      },
+      basement: {
+        type: 'boolean',
+        value: 'Keller'
+      },
+      chimney: {
+        type: 'boolean',
+        value: 'Kamin'
+      },
+      garden: {
+        type: 'boolean',
+        value: 'Garten'
+      },
+      guest_toilet: {
+        type: 'boolean',
+        value: 'Gäste-WC'
+      },
+      pets_allowed: {
+        type: 'boolean',
+        value: l.get('web.letting.property.import.Pets_Allowed.message', 'de')
+      },
+      sauna: {
+        type: 'boolean',
+        value: 'Sauna'
+      },
+      swimmingpool: {
+        type: 'boolean',
+        value: 'Pool / Schwimmbad'
+      },
+      terraces_number: {
+        type: 'numeric',
+        value: 'Terrasse'
+      },
+      wintergarten: {
+        type: 'boolean',
+        value: 'Wintergarten'
+      }
+    }
+    let amenities = []
+    for (const [key, value] of Object.entries(amenityKeys)) {
+      if (value.type === 'numeric' && estate[key] > 0) {
+        amenities = [...amenities, value.value]
+      } else if (value.type === 'boolean' && estate[key] === true) {
+        amenities = [...amenities, value.value]
+      }
+    }
+    return amenities
+  }
+
+  static async processFiles(estate, newEstate, s3) {
+    let files = []
+    const estateImages = estate?.images || []
+    for (let i = 0; i < estateImages.length; i++) {
+      if (!/^\/gewobag/.test(estateImages[i].tmpPath)) {
+        // temporary fix on links not found on our s3. This is usually an external link
+        continue
+      }
+      const fileUploaded = await ThirdPartyOfferService.isGewobagFileUploaded(
+        newEstate.property_id,
+        estateImages[i].file_name
+      )
+      if (!fileUploaded) {
+        const imageUrl = await ThirdPartyOfferService.moveFileFromFTPtoS3Public(estateImages[i], s3)
+        if (estateImages[i].type === FILE_TYPE.COVER) {
+          newEstate.cover = imageUrl.url
+        } else {
+          files = [
+            ...files,
+            {
+              url: imageUrl.filePathName,
+              filename: estateImages[i].file_name,
+              type: estateImages[i].type,
+              order: i,
+              file_format: estateImages[i].format
+            }
+          ]
+        }
+      }
+    }
+    return files
   }
 
   static async getDifferenceOnAmenities(newAmenities, userId, propertyId) {

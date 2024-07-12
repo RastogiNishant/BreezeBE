@@ -221,6 +221,8 @@ class EstateSync {
           return [...validAmenities, l.get(`${amenity?.option?.title}`, LANG_DE)]
         }
         return [...validAmenities, l.get(`${amenity?.option?.title}.message`, LANG_DE)]
+      } else if (amenity.amenity) {
+        return [...validAmenities, amenity.amenity]
       }
       return validAmenities
     }, [])
@@ -332,10 +334,9 @@ class EstateSync {
     if (ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]) {
       estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]
     }
-    const apartmentType = l.get(
-      `${APARTMENT_TYPE_KEYS[apt_type]}.message`,
-      estateSyncTitleTemplate.lang
-    )
+    const apartmentType = apt_type
+      ? l.get(`${APARTMENT_TYPE_KEYS[apt_type]}.message`, estateSyncTitleTemplate.lang)
+      : 'wohnung'
     const mapObj = {
       rooms_number:
         rooms_number % 1 === 0 ? parseInt(rooms_number) : formatter.format(rooms_number),
