@@ -216,12 +216,15 @@ class EstateSync {
       return ''
     }
     const validAmenities = amenities.reduce((validAmenities, amenity) => {
-      if (ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION.includes(amenity.location)) {
+      if (
+        amenity.type === 'amenity' &&
+        ESTATE_SYNC_AMENITY_LOCATIONS_FOR_DESCRIPTION.includes(amenity.location)
+      ) {
         if (l.get(`${amenity?.option?.title}`, LANG_DE) !== amenity?.option?.title) {
           return [...validAmenities, l.get(`${amenity?.option?.title}`, LANG_DE)]
         }
         return [...validAmenities, l.get(`${amenity?.option?.title}.message`, LANG_DE)]
-      } else if (amenity.amenity) {
+      } else if (amenity.type === 'custom_amenity' && amenity.amenity) {
         return [...validAmenities, amenity.amenity]
       }
       return validAmenities

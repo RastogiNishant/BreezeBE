@@ -223,7 +223,6 @@ class EstateSyncService {
       let estate = await EstateService.getByIdWithDetail(estate_id)
       estate = estate.toJSON()
       const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
-      console.log('credential', credential)
       const estateSync = new EstateSync(credential.api_key)
       if (!Number(estate.usable_area)) {
         estate.usable_area = estate.area
