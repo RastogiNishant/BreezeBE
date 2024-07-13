@@ -15,7 +15,7 @@ export class EstateSyncTestController {
   /**
    * Testing output use in estate sync requests
    */
-  async generateEstateData ({ request, response }): Promise<void> {
+  async generateEstateData({ request, response }): Promise<void> {
     const { estateId } = request.all()
 
     let estate = await EstateService.getByIdWithDetail(estateId)
