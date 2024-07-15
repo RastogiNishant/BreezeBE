@@ -349,8 +349,14 @@ class EstateSyncService {
   }
 
   static async propertyProcessingSucceeded(payload) {
+    let trace = ''
+    const MailService = use('App/Services/MailService')
     try {
       if (!payload?.id) {
+        await MailService.sendEmailToOhneMakler(
+          `PAYLOAD ID NOT FOUND: ${payload}`,
+          'barudo@gmail.com'
+        )
         return
       }
       const propertyId = payload.id
@@ -362,6 +368,10 @@ class EstateSyncService {
         .fetch()
 
       if (!listings?.rows?.length) {
+        await MailService.sendEmailToOhneMakler(
+          `LISTING NOT FOUND: ${payload.id}`,
+          'barudo@gmail.com'
+        )
         return
       }
       let estate = await EstateService.getByIdWithDetail(listings.rows[0].estate_id)
@@ -381,6 +391,7 @@ class EstateSyncService {
           if (credential.type === 'user') {
             // user has no valid credential so we fetch Breeze's credential
             const breezeCredential = await EstateSyncService.getBreezeEstateSyncCredential()
+            trace += `\nInitially no target...\n${breezeCredential}`
             target = await EstateSyncTarget.query()
               .select(Database.raw('estate_sync_targets.*'))
               .select(Database.raw(`false as from_user`))
@@ -391,6 +402,7 @@ class EstateSyncService {
         }
         if (!target) {
           // still no target
+          trace += `\nStill no target...`
           await listing.updateItem({
             status: ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
             publishing_error: true,
@@ -402,7 +414,9 @@ class EstateSyncService {
           targetId: target.estate_sync_target_id,
           propertyId
         })
+        trace += `\nPOST TO LISTING: ${target.estate_sync_target_id}, ${propertyId}`
         if (resp.success) {
+          trace += `\nSuccessfully posted...`
           await listing.updateItem({
             estate_sync_listing_id: resp.data.id,
             user_connected: target.from_user
@@ -420,6 +434,7 @@ class EstateSyncService {
           // has listing_id but we need to wait for websocket call to make this
         } else {
           if (resp?.data?.message) {
+            trace += `\nError found while posting: ${resp?.data?.message}`
             await listing.updateItem({
               status: ESTATE_SYNC_LISTING_STATUS_ERROR_FOUND,
               publishing_error: true,
@@ -451,7 +466,12 @@ class EstateSyncService {
           })
         }
       })
+      await MailService.sendEmailToOhneMakler(`${trace}`, 'barudo@gmail.com')
     } catch (e) {
+      await MailService.sendEmailToOhneMakler(
+        `PROPERTY PROCESSING SUCCEEDED ERROR: ${e.message}`,
+        'barudo@gmail.com'
+      )
       console.log('propertyProcessingSucceeded error', e.message)
     }
   }
