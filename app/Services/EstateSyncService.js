@@ -48,18 +48,20 @@ class EstateSyncService {
 
   static async getLandlordEstateSyncCredential(user_id) {
     const credential = {
-      api_key: process.env.ESTATE_SYNC_API_KEY
+      type: 'breeze',
+      api_key: process.env.ESTATE_SYNC_API_KEY,
+      id: null
     }
     const landlordCredential = await EstateSyncCredential.query()
       .where('user_id', user_id)
       .where('type', ESTATE_SYNC_CREDENTIAL_TYPE_USER)
       .first()
     if (landlordCredential && landlordCredential.api_key) {
-      credential.api_key = landlordCredential.api_key
+      return landlordCredential
     } else {
       const breezeCredential = await EstateSyncService.getBreezeEstateSyncCredential()
       if (breezeCredential && breezeCredential.api_key) {
-        credential.api_key = breezeCredential.api_key
+        return breezeCredential
       }
     }
     return credential
@@ -383,7 +385,7 @@ class EstateSyncService {
           .select(Database.raw('estate_sync_targets.*'))
           .select(Database.raw((credential.type === 'user' ? 'true' : 'false') + ` as from_user`))
           .where('publishing_provider', listing.provider)
-          .where('estate_sync_credential_id', credential.id)
+          .where('estate_sync_credential_id', credential?.id)
           .where('status', STATUS_ACTIVE)
           .first()
         if (!target) {
