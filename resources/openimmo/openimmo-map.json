@@ -20,6 +20,7 @@
   "country": "geo.0.land.0.$.iso_land",
   "currency": "preise.0.waehrung.0.$.iso_waehrung",
   "deposit": "preise.0.kaution.0",
+  "deposit_text": "preise.0.kaution_text.0",
   "elevator": "ausstattung.0.fahrstuhl",
   "energy_pass": "zustand_angaben.0.energiepass.0",
   "energy_efficiency": "zustand_angaben.0.energiepass.0.energieverbrauchkennwert.0",
