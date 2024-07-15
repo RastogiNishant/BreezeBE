@@ -1,6 +1,6 @@
 // wip what was needed so far from estatesync
 
-import { APARTMENT_TYPE, BUILDING_STATUS, FILE_TYPE, FIRING_TYPE, HEATING_TYPE, OPTIONS_TYPE, PARKING_SPACE_TYPE, PETS, PROPERTY_TYPE } from "@App/constants";
+import { APARTMENT_TYPE, BUILDING_STATUS, FILE_TYPE, FIRING_TYPE, HEATING_TYPE, OPTIONS_TYPE, PARKING_SPACE_TYPE, PETS, PROPERTY_TYPE, PUBLISH_STATUS, USER_STATUS } from "@App/constants";
 
 export type Estate = {
 	// estate
@@ -43,8 +43,8 @@ export type Amenity = {
 	room_id?: number,
 	option_id: number,
 	status: number,
-	// "amenity": null,
-	type: "amenity",
+	amenity: string,
+	type: "amenity" | "custom_amenity",
 	sequence_order: number,
 	added_by: number,
 	created_at: Date,
@@ -123,4 +123,7 @@ export type EstateWithDetails = Estate & Address & {
 	rooms: Room[];
 	cover: string;
 	files: File[];
+
+	status: USER_STATUS.ACTIVE | USER_STATUS.DRAFT | USER_STATUS.DELETE | USER_STATUS.EXPIRE;
+	publish_status: PUBLISH_STATUS;
 }

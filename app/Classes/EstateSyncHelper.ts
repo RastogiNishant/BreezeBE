@@ -58,40 +58,41 @@ export type EstateSyncProperty = {
   deposit: string
   description: string
   floor: number
+  furnishingDescription?: string
   hasBalcony: boolean
   hasCellar: boolean
-  // hasGarden: true,
-  hasGuestToilet: boolean,
-  hasLift: boolean,
-  heatingCosts: number,
-  heatingType?: EstateSyncHeatingType,
-  interiorQuality: EstateSyncInteriorQuality,
-  // isAccessible: true,
-  // isSuitableAsSharedFlat: false,
-  lastRefurbished: number,
-  livingArea: number,
-  // locationDescription: 'My first location description for a property.',
-  // miscellaneousDescription: 'My first misc description for a property.',
-  // numberOfBathrooms: bathrooms_number,
-  // numberOfBedrooms: bedrooms_number,
-  numberOfFloors: number,
-  numberOfParkingSpaces: number,
-  numberOfRooms: number,
-  // parkingSpaceRent: 45,
-  parkingSpaceType: EstateSyncParkingSpaceType,
-  petsAllowed: boolean,
-  // requiresWBS: false,
+  // hasGarden: true
+  hasGuestToilet: boolean
+  hasLift: boolean
+  heatingCosts: number
+  heatingType?: EstateSyncHeatingType
+  interiorQuality: EstateSyncInteriorQuality
+  // isAccessible: true
+  // isSuitableAsSharedFlat: false
+  lastRefurbished: number
+  livingArea: number
+  locationDescription?: string
+  miscellaneousDescription?: string
+  // numberOfBathrooms: bathrooms_number
+  // numberOfBedrooms: bedrooms_number
+  numberOfFloors: number
+  numberOfParkingSpaces: number
+  numberOfRooms: number
+  // parkingSpaceRent: 45
+  parkingSpaceType: EstateSyncParkingSpaceType
+  petsAllowed: boolean
+  // requiresWBS: false
   residentialEnergyCertificate?: {
-    type: "consumption" | "need",
-    prior2014?: boolean,
-    energySource: EstateSyncEnergyType,
-    energyNeed?: number,
-    energyConsumption?: number,
-    energyClass?: string,
-    warmWaterIncluded?: boolean,
-  },
-  title?: string,
-  totalRent: number,
+    type: "consumption" | "need"
+    prior2014?: boolean
+    energySource: EstateSyncEnergyType
+    energyNeed?: number
+    energyConsumption?: number
+    energyClass?: string
+    warmWaterIncluded?: boolean
+  }
+  title?: string
+  totalRent: number
   usableArea: number
 }
 
@@ -211,6 +212,9 @@ const extract = {
     }
     const validAmenities = amenities.reduce((validAmenities, amenity) => {
       if ([OPTIONS_TYPE.BUILD, OPTIONS_TYPE.APT, OPTIONS_TYPE.OUT].includes(amenity.location)) {
+        if (amenity.type === 'custom_amenity') {
+          return [...validAmenities, amenity.amenity]
+        }
         if (l.get(`${amenity?.option?.title}`, SUPPORTED_LANGUAGES.DE) !== amenity?.option?.title) {
           return [...validAmenities, l.get(`${amenity?.option?.title}`, SUPPORTED_LANGUAGES.DE)]
         }
@@ -376,6 +380,11 @@ const attachment = {
       }
     }
 
+    // // @todo remove again for envs
+    // for (var i = 0; i < attachments.length; ++i) {
+    //   attachments[i].url = attachments[i].url.replace("breeze-files-dev", "breeze-files")
+    // }
+
     return attachments
   }
 }
@@ -407,7 +416,7 @@ export class EstateSyncHelper {
       lastRefurbished: extract.lastRefurbished(estate),
       livingArea: extract.livingArea(estate),
       numberOfFloors: estate.number_floors,
-      numberOfParkingSpaces: estate.parking_space,
+      numberOfParkingSpaces: Number(estate.parking_space),
       numberOfRooms: parseInt(estate.rooms_number),
       parkingSpaceType: extract.parkingSpaceType(estate),
       petsAllowed: extract.petsAllowed(estate),

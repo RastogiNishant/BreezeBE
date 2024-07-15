@@ -6,9 +6,10 @@ import { EstateSyncAttachment, EstateSyncHelper, EstateSyncProperty } from "./Es
 import axios, { AxiosInstance } from "axios"
 
 
-class EstateSync {
+export class EstateSync {
   fetcher: AxiosInstance
 
+  // @refactor apiKey should rather be the credentials with targetId and apiKey
   constructor(private apiKey = '') {
     this.fetcher = axios.create({
       baseURL: `https://api.estatesync.com`,
@@ -16,26 +17,26 @@ class EstateSync {
     this.fetcher.defaults.headers.common.Authorization = `Bearer ${this.apiKey}`
   }
 
-  composeEstate(estate: EstateWithDetails, isBuilding = false): EstateSyncProperty {
-    return EstateSyncHelper.convertDataToEstateSyncFormat(estate, isBuilding)
-  }
+  generateEstateData({ type = 'apartmentRent', estate, contactId }: { type?: string, estate: EstateWithDetails, contactId: string }, isBuilding = false) {
+    // replace / with - for estate sync
+    let externalId = `Breeze-${estate.property_id.split("/").join("-")}`
 
-  composeAttachments(estate: EstateWithDetails): EstateSyncAttachment[] {
-    return EstateSyncHelper.composeAttachments(estate)
-  }
+    // external id must match ^[a-zA-Z0-9/_#+:@\s\-]+$ 
+    if (!/^[a-zA-Z0-9/_#+:@\s\-]+$/.test(externalId)) {
+      externalId = `Breeze-${estate.id}`
+    }
 
-  generateEstateData({ type = 'apartmentRent', estate, contactId }: { type: string, estate: EstateWithDetails, contactId: string }, isBuilding = false) {
     const body = {
       type,
-      fields: this.composeEstate(estate, isBuilding),
-      attachments: this.composeAttachments(estate),
-      externalId: `Breeze-${estate.property_id}`,
+      fields: EstateSyncHelper.convertDataToEstateSyncFormat(estate, isBuilding),
+      attachments: EstateSyncHelper.composeAttachments(estate),
+      externalId,
       contactId
     }
 
     // mark the external id with the env if not prod
     if (process.env.NODE_ENV !== ENVIRONMENT.PROD) {
-      body.externalId = `Breeze-${estate.property_id}-[${process.env.NODE_ENV}]`
+      body.externalId = `${externalId}-#${process.env.NODE_ENV}`
     }
 
     return body
@@ -44,14 +45,13 @@ class EstateSync {
   async postEstate({ type = 'apartmentRent', estate, contactId = '' }: { type: string, estate: EstateWithDetails, contactId: string }, isBuilding = false) {
     try {
       const body = this.generateEstateData({ type, estate, contactId }, isBuilding)
-
       const ret = await this.fetcher.post(`/properties`, body, { timeout: 5000 })
       return {
         success: true,
         data: ret.data
       }
     } catch (err) {
-      console.log(err)
+      // @todo handle errors properly with sentry / httpexception
       await require('../Service/MailService').sendEmailToOhneMakler(
         `EstateSync.postEstate: ERROR ` + JSON.stringify(err),
         'barudo@gmail.com'
@@ -74,19 +74,51 @@ class EstateSync {
     contactId,
     propertyId,
     titleOverride,
-    descriptionOverride
-  }: { type: string, estate: EstateWithDetails, contactId: string, propertyId: string, titleOverride: string, descriptionOverride: string }) {
+    descriptionOverride,
+    locationDescriptionOverride,
+    furnishingDescriptionOverride
+  }: {
+    type?: string,
+    estate: EstateWithDetails,
+    contactId: string,
+    propertyId: string,
+    titleOverride?: string,
+    descriptionOverride?: string,
+    locationDescriptionOverride?: string,
+    furnishingDescriptionOverride?: string
+  }) {
     try {
-      const fields = this.composeEstate(estate)
-      fields.title = titleOverride ?? fields.title
-      fields.description = descriptionOverride ?? fields.description
+      // ignore the externalId, it cannot be set on update
+      const { externalId: _, ...body } = this.generateEstateData({ type, estate, contactId })
+      body.fields.title = titleOverride ?? body.fields.title
+      body.fields.description = descriptionOverride ?? body.fields.description
+      body.fields.locationDescription = locationDescriptionOverride ?? body.fields.locationDescription
+      body.fields.furnishingDescription = furnishingDescriptionOverride ?? body.fields.furnishingDescription
 
-      const body = {
-        type,
-        fields,
-        attachments: this.composeAttachments(estate),
-        contactId,
-      }
+      // @todo remove this once we have taken the descriptions from gewobag data directly
+      // if (estate.id === 4058) {
+      //   body.fields.title = "Erstbezug in Spandau mit Teilgewerblicher Nutzung!"
+      //   body.fields.description = "Für die Anmietung der Wohnung ist eine teilgewerbliche Nutzung vorgegeben. Hierfür benötigen wir von Ihnen, zu den üblichen Bewerbungsunterlagen, eine gültige Gewerbeanmeldung.\nDie gut geschnittene Neubauwohnung mit teilgewerblicher Nutzung befindet sich in neuer und gepflegter Wohnanlage. Der offen  gehaltene Wohn- und Küchenbereich lässt vielfältige Gestaltungsmöglichkeiten zu. Alle Wohnungen verfügen über zentrale  Warmwasserversorgung, Fußbodenheizung, hochwertigen Bodenbelag und ein Duschbad. Das Haus am Maselakekanal verfügt über keine Mieterkeller, allerdings befindet sich in jeder Wohnung eine Abstellnische mit Platz zum Verstauen."
+      //   body.fields.locationDescription = "Im Spandauer Ortsteil Hakenfelde wurde direkt am Maselakekanal ein Wohngebäude errichtet. Sie liegt in ruhiger in ruhiger und  schöner Wasserlage, sowie an einer öffentlichen Grünfläche, die neu gestaltet wird. Die ruhige Umgebung wird durch die  unmittelbare Nähe zum Havelufer geprägt. Der Ortsteil Hakenfelde liegt nördlich der Spandauer Altstadt an der Oberhavel.  Mehrere Fahrradwege führen entlang des Havelufers bis in die Altstadt Spandau. Hakenfelde ist mit dem Bus gut an die  Spandauer Altstadt angebunden."
+      //   body.fields.furnishingDescription = "Fernheizung/Zentralheizung, Fern-/Zentralwarmwasserversorgung, Wärmetauscher, Glasfaserleitung, Barrierearme Wohnungsgestaltung"
+      // }
+
+      // if (estate.id === 4057) {
+      //   body.fields.title = "Geräumige Neubauwohnung mit Fußbodenheizung und Terrasse sucht Nachmieter ab sofort"
+      //   body.fields.description = "Willkommen in dieser wunderschönen und hellen Wohnung nahe dem Landschaftspark Gehrensee. Diese Neubauwohnung (Zweitbezug) lässt kaum Wünsche offen und präsentiert sich mit strapazierfähigen Vinylboden in Holzoptik, Fußbodenheizung, hochwertigen Fenstern und einem modern gefliesten Bad. Erfreuen Sie sich an der Terrasse, die viel Platz zum Entspannen bietet. Der offen gehaltene Wohn- und Küchenbereich lässt vielfältige Gestaltungsmöglichkeiten zu. Es wird ein Nachmieter ab sofort gesucht."
+      //   body.fields.locationDescription = "Der Stadtteil Falkenberg liegt zwischen Ahrensfelder Chaussee und dem renaturierten Gehrensee, er gehört zu dem Stadtbezirk Berlin-Lichtenberg. Falkenberg zeichnet sich durch seinen ländlichen Charakter aus. Das Gebiet ist durchzogen von mehreren kleinen Gewässern und viel Grün. Die S-Bahnstation Ahrensfelde erreichen Sie in ca. 15 Gehminuten. Für die Nahversorgung ist im näheren Umfeld gesorgt."
+      //   body.fields.furnishingDescription = "bodengleiche Dusche, Rückkanalfähiger Breitbandkabelanschluss, Fliesenboden, Warmwasser zentral Fernwärme Dritte, Kunststoff-Bodenbelag, Steinboden, Schallschutzfenster, Fußbodenheizung, Barrierearme Wohnungsgestaltung"
+      //   body.fields.miscellaneousDescription = "Hinweis zu Ihrem Schutz: Personen, die im Auftrag der Gewobag tätig sind, dürfen keine Provision von Ihnen verlangen.\nAnbieter\nEigentümer/Vermieter oder Verwalter des jeweiligen Mietobjekts ist Gewobag Wohnungsbau-Aktien- gesellschaft Berlin. Die Gewobag MB Mieterberatungsgesellschaft mbH übernimmt den Vermietungsservice für diese Gesellschaft. Weitere Informationen finden Sie unter www.gewobag.de/datenschutz."
+      // }
+
+      // if (estate.id === 4056) {
+      //   body.fields.title = "Geräumige Neubauwohnung mit Fußbodenheizung und Terrasse sucht Nachmieter ab sofort"
+      //   body.fields.description = "Willkommen in dieser wunderschönen und hellen Wohnung nahe dem Landschaftspark Gehrensee. Diese Neubauwohnung (Zweitbezug) lässt kaum Wünsche offen und präsentiert sich mit strapazierfähigen Vinylboden in Holzoptik, Fußbodenheizung, hochwertigen Fenstern und einem modern gefliesten Bad. Erfreuen Sie sich an der Terrasse, die viel Platz zum Entspannen bietet. Der offen gehaltene Wohn- und Küchenbereich lässt vielfältige Gestaltungsmöglichkeiten zu. Es wird ein Nachmieter ab sofort gesucht."
+      //   body.fields.locationDescription = "Der Stadtteil Falkenberg liegt zwischen Ahrensfelder Chaussee und dem renaturierten Gehrensee, er gehört zu dem Stadtbezirk Berlin-Lichtenberg. Falkenberg zeichnet sich durch seinen ländlichen Charakter aus. Das Gebiet ist durchzogen von mehreren kleinen Gewässern und viel Grün. Die S-Bahnstation Ahrensfelde erreichen Sie in ca. 15 Gehminuten. Für die Nahversorgung ist im näheren Umfeld gesorgt."
+      //   body.fields.furnishingDescription = "bodengleiche Dusche, Rückkanalfähiger Breitbandkabelanschluss, Fliesenboden, Warmwasser zentral Fernwärme Dritte, Kunststoff-Bodenbelag, Steinboden, Schallschutzfenster, Fußbodenheizung, Barrierearme Wohnungsgestaltung"
+      //   body.fields.miscellaneousDescription = "Hinweis zu Ihrem Schutz: Personen, die im Auftrag der Gewobag tätig sind, dürfen keine Provision von Ihnen verlangen."
+      // }
+
       const ret = await this.fetcher.put(`/properties/${propertyId}`, body, {
         timeout: 5000
       })
@@ -95,7 +127,7 @@ class EstateSync {
         data: ret.data
       }
     } catch (err) {
-      console.log(err)
+      // @todo handle errors properly with sentry / httpexception
       return {
         success: false,
         data: err?.response?.data
@@ -115,7 +147,7 @@ class EstateSync {
         data: ret.data
       }
     } catch (err) {
-      console.log(err)
+      // @todo handle errors properly with sentry / httpexception
       return {
         success: false,
         data: err?.response?.data
@@ -143,6 +175,7 @@ class EstateSync {
         data: ret.data
       }
     } catch (err) {
+      // @todo handle errors properly with sentry / httpexception
       return {
         success: false,
         data: err?.response?.data
@@ -168,6 +201,7 @@ class EstateSync {
         data: ret.data
       }
     } catch (err) {
+      // @todo handle errors properly with sentry / httpexception
       return {
         success: false,
         data: err?.response?.data
@@ -195,7 +229,7 @@ class EstateSync {
         data: ret?.data
       }
     } catch (err) {
-      console.log(err)
+      // @todo handle errors properly with sentry / httpexception
       return {
         success: false,
         data: err?.response?.data
@@ -223,7 +257,7 @@ class EstateSync {
         success: false
       }
     } catch (err) {
-      console.log(err)
+      // @todo handle errors properly with sentry / httpexception
       return {
         success: false,
         message: err?.response?.data
@@ -232,4 +266,8 @@ class EstateSync {
   }
 }
 
-module.exports = EstateSync
+// node-compatibility
+module.exports = {
+  ...EstateSync,
+  EstateSync
+}
