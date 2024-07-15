@@ -18,9 +18,11 @@ const FileModel = use('App/Models/File')
 const {
   DATE_FORMAT,
   GEWOBAG_ACCOUNT_USER_ID,
-  GEWOBAG_MARKETPLACE_PUBLISHERS,
+  GEWOBAG_DEFAULT_PREFERENCE_FOR_MATCH_SCORING,
   GEWOBAG_FTP_BUCKET,
+  GEWOBAG_MARKETPLACE_PUBLISHERS,
   GEWOBAG_PROPERTIES_TO_PROCESS_PER_PULL,
+  FILE_TYPE,
   LETTING_STATUS_STANDARD,
   LETTING_TYPE_LET,
   MATCH_STATUS_KNOCK,
@@ -36,8 +38,7 @@ const {
   STATUS_DELETE,
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION,
   THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
-  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER,
-  FILE_TYPE
+  THIRD_PARTY_OFFER_SOURCE_OHNE_MAKLER
 } = require('../constants')
 const QueueService = use('App/Services/QueueService')
 const EstateService = use('App/Services/EstateService')
@@ -280,17 +281,24 @@ class ThirdPartyOfferService {
             ]
           }
         } else {
+          const deposit = Number(
+            estate.deposit
+              ? estate.deposit
+              : estate.deposit_text
+              ? estate.deposit_text.match(/^\d+[.,]\d+/)[0].replace(',', '.')
+              : 0
+          )
           const newEstate = {
             additional_costs: Number(estate.additional_costs) || 0,
             address: `${estate.street} ${estate.house_number}, ${estate.zip} ${estate.city}, ${estate.country}`,
             apt_type: estate.apt_type,
             area: Number(estate.area) || 0,
-            bathrooms: Number(estate.bathrooms_number) || 0,
+            bathrooms_number: Number(estate.bathrooms_number) || 0,
             building_status: estate.building_status,
             city: estate.city,
-            construction_year: Number(moment(new Date(estate.construction_year)).format('YYYY')),
-            // contact: JSON.stringify({ email: estate.contact }),
+            construction_year: estate.construction_year,
             country: estate.country,
+            deposit,
             energy_efficiency_class: estate.energy_pass.energy_efficiency_category,
             extra_costs: Number(+estate.heating_costs + +estate.additional_costs) || 0,
             firing: estate.firing,
@@ -314,14 +322,17 @@ class ThirdPartyOfferService {
             source: THIRD_PARTY_OFFER_SOURCE_GEWOBAG,
             status: estate.status,
             street: estate.street,
+            use_type: estate.use_type,
             vacant_date: estate.vacant_date
               ? moment(new Date(estate.vacant_date)).format(DATE_FORMAT)
               : null,
             wbs: estate.wbs,
-            zip: estate.zip
+            zip: estate.zip,
+            ...GEWOBAG_DEFAULT_PREFERENCE_FOR_MATCH_SCORING
           }
           newEstate.user_id = GEWOBAG_ACCOUNT_USER_ID
-
+          // fix budget to actual price
+          newEstate.budget = newEstate.net_rent / (newEstate.budget / 100)
           // amenities
           const amenities = ThirdPartyOfferService.processAmenities(estate)
           // files
@@ -329,15 +340,12 @@ class ThirdPartyOfferService {
           // percent
           const percent = EstateService.calculatePercent(newEstate)
           newEstate.percent = percent
-          // fix construction year. It is date in the db
-          newEstate.construction_year = `${newEstate.construction_year}-01-01`
 
           const existingEstate = await Estate.query()
             .where('user_id', GEWOBAG_ACCOUNT_USER_ID)
             .where('property_id', newEstate.property_id)
             .first()
           if (existingEstate) {
-            console.log('Estate already existed...')
             const isCurrentlyPublished = existingEstate.status === STATUS_ACTIVE
             if (!isCurrentlyPublished && newEstate.status === STATUS_ACTIVE) {
               // update estate
@@ -426,10 +434,53 @@ class ThirdPartyOfferService {
             } else if (newEstate.status === STATUS_ACTIVE && isCurrentlyPublished) {
               // If currently published and is to be published, we do nothing because updating
               // will unpublish the estate
+            } else {
+              // not currentlyPublished and new estate is NOT publish
+              // just update the estate...
+              await existingEstate.updateItem(newEstate)
+              // update amenities
+              if (amenities.length) {
+                const { amenitiesToBeAdded, amenitiesInDbToBeDeleted, length } =
+                  await ThirdPartyOfferService.getDifferenceOnAmenities(
+                    amenities,
+                    GEWOBAG_ACCOUNT_USER_ID,
+                    existingEstate.property_id
+                  )
+                if (amenitiesInDbToBeDeleted.length) {
+                  await Amenity.query()
+                    .update({ status: STATUS_DELETE })
+                    .where('estate_id', existingEstate.id)
+                    .whereIn('amenity', amenitiesInDbToBeDeleted)
+                }
+                if (amenitiesToBeAdded.length) {
+                  await Promise.map(amenitiesToBeAdded, async (amenity, index) => {
+                    await Amenity.createItem({
+                      status: STATUS_ACTIVE,
+                      amenity,
+                      type: 'custom_amenity',
+                      sequence_order: index + length,
+                      added_by: GEWOBAG_ACCOUNT_USER_ID,
+                      estate_id: existingEstate.id,
+                      location: 'apt'
+                    })
+                  })
+                }
+              }
+              // process files
+              await Promise.map(files, async (file) => {
+                await FileModel.createItem({
+                  url: file.url,
+                  estate_id: existingEstate.id,
+                  type: file.type,
+                  disk: 's3public',
+                  file_name: file.filename,
+                  order: file.order,
+                  file_format: file.file_format
+                })
+              })
             }
           } else {
             // this estate is NOT yet on db
-            console.log('creating estate...')
             const estateData = await Estate.createItem(newEstate)
             if (amenities.length) {
               await Promise.map(amenities, async (amenity, index) => {

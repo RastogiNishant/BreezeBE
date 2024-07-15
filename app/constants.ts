@@ -1288,6 +1288,16 @@ Estates: [ESTATES]
     family_size_min: 1,
     family_size_max: 2
   },
+  GEWOBAG_DEFAULT_PREFERENCE_FOR_MATCH_SCORING: {
+    credit_history_status: 1, // NO_NEGATIVE
+    budget: 30,
+    rent_arrears: false,
+    min_age: 25,
+    max_age: 65,
+    pets_allowed: 2, // PETS_SMALL
+    family_size_min: 1,
+    family_size_max: 2
+  },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler', 'gewobag'],
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
     ohnemakler: {
