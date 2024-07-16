@@ -96,11 +96,10 @@ class ImageService {
     fs.readFile(imagePath, async function (err, data) {
       if (err) throw err // Fail if the file can't be read.
       try {
-        const ext = ContentType.getExt(imagePath)
         const image = {
           tmpPath: imagePath,
           header: {
-            'content-type': ContentType.getContentType(ext)
+            'content-type': ContentType.getContentType(imagePath)
           }
         }
         const { filePathName } = await File.saveToDisk(image, [], true)
