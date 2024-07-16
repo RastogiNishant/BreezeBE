@@ -8,7 +8,6 @@ const {
   ROLE_ADMIN,
   ROLE_PROPERTY_MANAGER,
   GERMAN_HOLIDAYS,
-  ENERGY_CLASS_USING_EFFICIENCY,
   ESTATE_FLOOR_DIRECTION_LEFT,
   ESTATE_FLOOR_DIRECTION_RIGHT,
   ESTATE_FLOOR_DIRECTION_STRAIGHT,
@@ -182,15 +181,7 @@ const createDynamicLink = async (link, desktopLink = process.env.DYNAMIC_ONLY_WE
   }
 }
 
-const calculateEnergyClassFromEfficiency = (efficiency) => {
-  let idx
-  if (efficiency >= ENERGY_CLASS_USING_EFFICIENCY.slice(-1)[0].value) {
-    idx = ENERGY_CLASS_USING_EFFICIENCY.length - 1
-  } else {
-    idx = ENERGY_CLASS_USING_EFFICIENCY.slice(0, -1).findIndex((level) => efficiency < level.value)
-  }
-  return ENERGY_CLASS_USING_EFFICIENCY[idx].level
-}
+
 
 const checkIfIsValid = (object) => {
   let flag = true
@@ -219,7 +210,6 @@ module.exports = {
   parseFloorDirection,
   createDynamicLink,
   encodeURL,
-  calculateEnergyClassFromEfficiency,
   checkIfIsValid,
   floorDirectionToString
 }
