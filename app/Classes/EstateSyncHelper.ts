@@ -1,6 +1,6 @@
-import { APARTMENT_TYPE, BUILDING_STATUS, FILE_TYPE, FIRING_TYPE, HEATING_TYPE, OPTIONS_TYPE, PARKING_SPACE_TYPE, PETS, SUPPORTED_LANGUAGES } from "@App/constants"
-import { EstateWithDetails } from "./EstateTypes"
-import { ContentType } from "./ContentType"
+import { APARTMENT_TYPE, BUILDING_STATUS, FILE_TYPE, FIRING_TYPE, HEATING_TYPE, OPTIONS_TYPE, PARKING_SPACE_TYPE, PETS, SUPPORTED_LANGUAGES } from '@App/constants'
+import { Amenity, EstateWithDetails } from './EstateTypes'
+import { ContentType } from './ContentType'
 
 const l = use('Localize')
 
@@ -33,14 +33,14 @@ const APARTMENT_TYPE_KEYS: { [key: number]: string } = {
   [APARTMENT_TYPE.PENTHOUSE]: 'landlord.property.details.building_apartment.type.penthouse'
 }
 
-type EstateSyncAppartmentType = "apartment" | "attic" | "maisonette" | "penthouse" | "loft" | "terrace" | "lowerGroundFloor" | "groundFloor" | "upperGroundFloor" | "floor" | "other"
-type EstateSyncConditionType = "firstTimeUse" | "mint" | "requiresRefurbishment" | "refurbished" | "renovated" | "modernised" | "wellKept" | "demolitionReady" | "negotiable"
-type EstateSyncEnergyType = "oil" | "gas" | "electric" | "solar" | "geothermal" | "district" | "water" | "pellet" | "coal" | "wood" | "liquidGas"
-type EstateSyncHeatingType = "stove" | "floor" | "central" | "district" | "underfloor" | "heatPump"
-type EstateSyncInteriorQuality = "standard" | "high" | "luxury"
-type EstateSyncParkingSpaceType = "garage" | "undergroundGarage" | "carport" | "outdoor" | "carPark" | "duplex"
+type EstateSyncAppartmentType = 'apartment' | 'attic' | 'maisonette' | 'penthouse' | 'loft' | 'terrace' | 'lowerGroundFloor' | 'groundFloor' | 'upperGroundFloor' | 'floor' | 'other'
+type EstateSyncConditionType = 'firstTimeUse' | 'mint' | 'requiresRefurbishment' | 'refurbished' | 'renovated' | 'modernised' | 'wellKept' | 'demolitionReady' | 'negotiable'
+type EstateSyncEnergyType = 'oil' | 'gas' | 'electric' | 'solar' | 'geothermal' | 'district' | 'water' | 'pellet' | 'coal' | 'wood' | 'liquidGas'
+type EstateSyncHeatingType = 'stove' | 'floor' | 'central' | 'district' | 'underfloor' | 'heatPump'
+type EstateSyncInteriorQuality = 'standard' | 'high' | 'luxury'
+type EstateSyncParkingSpaceType = 'garage' | 'undergroundGarage' | 'carport' | 'outdoor' | 'carPark' | 'duplex'
 
-export type EstateSyncProperty = {
+export interface EstateSyncProperty {
   additionalCosts: number
   additionalCostsIncludeHeatingCosts: boolean
   address: {
@@ -83,7 +83,7 @@ export type EstateSyncProperty = {
   petsAllowed: boolean
   // requiresWBS: false
   residentialEnergyCertificate?: {
-    type: "consumption" | "need"
+    type: 'consumption' | 'need'
     prior2014?: boolean
     energySource: EstateSyncEnergyType
     energyNeed?: number
@@ -98,119 +98,120 @@ export type EstateSyncProperty = {
 
 const apartmentTypeMap: { [key: number]: EstateSyncAppartmentType } = {
   // aparmentType must be one of apartment, attic, maisonette, penthouse, loft, terrace, lowerGroundFloor, groundFloor, upperGroundFloor, floor, other
-  [APARTMENT_TYPE.ATTIC]: "attic",
-  [APARTMENT_TYPE.MAISONETTE]: "maisonette",
-  [APARTMENT_TYPE.PENTHOUSE]: "penthouse",
-  [APARTMENT_TYPE.LOFT]: "loft",
-  [APARTMENT_TYPE.TERRACES]: "terrace",
-  [APARTMENT_TYPE.SOUTERRAIN]: "lowerGroundFloor",
-  [APARTMENT_TYPE.GROUND]: "groundFloor",
+  [APARTMENT_TYPE.ATTIC]: 'attic',
+  [APARTMENT_TYPE.MAISONETTE]: 'maisonette',
+  [APARTMENT_TYPE.PENTHOUSE]: 'penthouse',
+  [APARTMENT_TYPE.LOFT]: 'loft',
+  [APARTMENT_TYPE.TERRACES]: 'terrace',
+  [APARTMENT_TYPE.SOUTERRAIN]: 'lowerGroundFloor',
+  [APARTMENT_TYPE.GROUND]: 'groundFloor'
 }
 
 const buildingConditionMap: { [key: number]: EstateSyncConditionType } = {
-  [BUILDING_STATUS.FIRST_TIME_OCCUPIED]: "firstTimeUse",
+  [BUILDING_STATUS.FIRST_TIME_OCCUPIED]: 'firstTimeUse',
   // 'needs renovation': BUILDING_STATUS_PART_COMPLETE_RENOVATION_NEED,
-  [BUILDING_STATUS.NEW]: "mint",
+  [BUILDING_STATUS.NEW]: 'mint',
   // [BUILDING_STATUS.EXISTING]: "existing",
-  [BUILDING_STATUS.PART_FULLY_RENOVATED]: "renovated",
+  [BUILDING_STATUS.PART_FULLY_RENOVATED]: 'renovated',
   // [BUILDING_STATUS.PARTLY_REFURISHED]: 'partly refurbished',
   // [BUILDING_STATUS.IN_NEED_OF_RENOVATION]: 'in need of renovation',
   // [BUILDING_STATUS.READY_TO_BE_BUILT]: 'ready to be built',
-  [BUILDING_STATUS.BY_AGREEMENT]: "negotiable",
-  [BUILDING_STATUS.MODERNIZED]: "modernised",
-  [BUILDING_STATUS.CLEANED]: "wellKept",
-  [BUILDING_STATUS.ROUGH_BUILDING]: "requiresRefurbishment",
+  [BUILDING_STATUS.BY_AGREEMENT]: 'negotiable',
+  [BUILDING_STATUS.MODERNIZED]: 'modernised',
+  [BUILDING_STATUS.CLEANED]: 'wellKept',
+  [BUILDING_STATUS.ROUGH_BUILDING]: 'requiresRefurbishment',
   // [BUILDING_STATUS.DEVELOPED]: "developed",
-  [BUILDING_STATUS.ABRISSOBJEKT]: "demolitionReady",
+  [BUILDING_STATUS.ABRISSOBJEKT]: 'demolitionReady',
   // [BUILDING_STATUS.PROJECTED]: "projected",
-  [BUILDING_STATUS.FULLY_REFURBISHED]: "refurbished",
+  [BUILDING_STATUS.FULLY_REFURBISHED]: 'refurbished'
 }
 
 const energyTypeMap: { [key: number]: EstateSyncEnergyType } = {
   // energySource must be one of oil, gas, electric, solar, geothermal, district, water, pellet, coal, wood, liquidGas
-  [FIRING_TYPE.OEL]: "oil",
-  [FIRING_TYPE.GAS]: "gas",
-  [FIRING_TYPE.ELECTRIC]: "electric",
-  [FIRING_TYPE.SOLAR]: "solar",
-  [FIRING_TYPE.GROUND_HEAT]: "geothermal",
-  [FIRING_TYPE.REMOTE]: "district",
-  [FIRING_TYPE.WATER_ELECTRIC]: "water",
-  [FIRING_TYPE.PELLET]: "pellet",
-  [FIRING_TYPE.COAL]: "coal",
-  [FIRING_TYPE.WOOD]: "wood",
-  [FIRING_TYPE.LIQUID_GAS]: "liquidGas",
+  [FIRING_TYPE.OEL]: 'oil',
+  [FIRING_TYPE.GAS]: 'gas',
+  [FIRING_TYPE.ELECTRIC]: 'electric',
+  [FIRING_TYPE.SOLAR]: 'solar',
+  [FIRING_TYPE.GROUND_HEAT]: 'geothermal',
+  [FIRING_TYPE.REMOTE]: 'district',
+  [FIRING_TYPE.WATER_ELECTRIC]: 'water',
+  [FIRING_TYPE.PELLET]: 'pellet',
+  [FIRING_TYPE.COAL]: 'coal',
+  [FIRING_TYPE.WOOD]: 'wood',
+  [FIRING_TYPE.LIQUID_GAS]: 'liquidGas'
 }
 
 const heatingTypeMap: { [key: number]: EstateSyncHeatingType } = {
-  [HEATING_TYPE.CENTRAL]: "central",
-  [HEATING_TYPE.FLOOR]: "floor",
-  [HEATING_TYPE.OVEN]: "stove",
+  [HEATING_TYPE.CENTRAL]: 'central',
+  [HEATING_TYPE.FLOOR]: 'floor',
+  [HEATING_TYPE.OVEN]: 'stove'
 }
 
 const parkingSpaceTypeMap: { [key: number]: EstateSyncParkingSpaceType } = {
-  [PARKING_SPACE_TYPE.GARAGE]: "garage",
-  [PARKING_SPACE_TYPE.UNDERGROUND]: "undergroundGarage",
-  [PARKING_SPACE_TYPE.CARPORT]: "carport",
-  [PARKING_SPACE_TYPE.OUTDOOR]: "outdoor",
-  [PARKING_SPACE_TYPE.CAR_PARK]: "carPark",
-  [PARKING_SPACE_TYPE.DUPLEX]: "duplex",
+  [PARKING_SPACE_TYPE.GARAGE]: 'garage',
+  [PARKING_SPACE_TYPE.UNDERGROUND]: 'undergroundGarage',
+  [PARKING_SPACE_TYPE.CARPORT]: 'carport',
+  [PARKING_SPACE_TYPE.OUTDOOR]: 'outdoor',
+  [PARKING_SPACE_TYPE.CAR_PARK]: 'carPark',
+  [PARKING_SPACE_TYPE.DUPLEX]: 'duplex'
 }
 
-
-function hasAmenity(amenities: EstateWithDetails["amenities"], amen: string): boolean {
-  return !!amenities.find(
+function hasAmenity (amenities: EstateWithDetails['amenities'], amen: string): boolean {
+  return !(amenities.find(
     (am) => am.option?.title === amen
-  )
+  ) == null)
 }
 
 const extract = {
-  additionalCostsIncludeHeating({ extra_costs: extraCosts }: EstateWithDetails): boolean {
+  additionalCostsIncludeHeating ({ extra_costs: extraCosts }: EstateWithDetails): boolean {
     return Number(extraCosts) !== 0
   },
-  address({ city, zip, full_address: fullAddress, street, house_number: houseNumber }: EstateWithDetails): EstateSyncProperty["address"] {
+  address ({ city, zip, full_address: fullAddress, street, house_number: houseNumber }: EstateWithDetails): EstateSyncProperty['address'] {
     return {
-      city: city,
+      city,
       postalCode: zip,
       publish: fullAddress,
-      street: street,
+      street,
       streetNumber: houseNumber
     }
   },
-  appartment({ apt_type: aptType }: EstateWithDetails): EstateSyncAppartmentType {
-    if (aptType) {
+  appartment ({ apt_type: aptType }: EstateWithDetails): EstateSyncAppartmentType {
+    if (aptType !== null) {
       const apartmentType = apartmentTypeMap
-      if (apartmentType[aptType]) {
+      if (apartmentType[aptType] !== undefined) {
         return apartmentType[aptType]
       }
     }
 
     return 'other'
   },
-  availableFrom({ vacant_date: vacantDate }: EstateWithDetails): string {
-    if (vacantDate) {
-      return vacantDate.toLocaleDateString("de-DE")
+  availableFrom ({ vacant_date: vacantDate }: EstateWithDetails): string {
+    if (vacantDate !== null) {
+      return vacantDate.toLocaleDateString('de-DE')
     }
-    return l.get(`prospect.property.details.txt_rent_start_from_now`, SUPPORTED_LANGUAGES.DE)
+    return l.get('prospect.property.details.txt_rent_start_from_now', SUPPORTED_LANGUAGES.DE)
   },
-  condition({ building_status: buildingStatus }: EstateWithDetails): EstateSyncConditionType {
+  condition ({ building_status: buildingStatus }: EstateWithDetails): EstateSyncConditionType {
     return buildingConditionMap[buildingStatus]
   },
-  deposit({ deposit, net_rent: netRent }: EstateWithDetails): string {
-    if (!deposit || !netRent) {
+  deposit ({ deposit, net_rent: netRent }: EstateWithDetails): string {
+    if (deposit === null) {
       return ''
     }
+    if (netRent === null) {
+      return deposit.toString()
+    }
+
     let num = deposit / netRent
-    if (num - Math.floor(num) !== 0) {
-      // this number has decimal place
-      num = Math.round(num * 10) / 10
-    }
-    return `${num} ${l.get('landlord.property.lease_price.deposit_in_monthly_rents', SUPPORTED_LANGUAGES.DE)}`
+    // round to one decimal
+    num = Math.round(num * 10) / 10
+    return `${num} ${l.get('landlord.property.lease_price.deposit_in_monthly_rents', SUPPORTED_LANGUAGES.DE) as string}`
   },
-  description({ amenities }: EstateWithDetails): string {
-    if (!amenities?.length) {
+  description ({ amenities }: EstateWithDetails): string {
+    if (!(amenities?.length > 0)) {
       return ''
     }
-    const validAmenities = amenities.reduce((validAmenities, amenity) => {
+    const validAmenities = amenities.reduce<Amenity[]>((validAmenities, amenity) => {
       if ([OPTIONS_TYPE.BUILD, OPTIONS_TYPE.APT, OPTIONS_TYPE.OUT].includes(amenity.location)) {
         if (amenity.type === 'custom_amenity') {
           return [...validAmenities, amenity.amenity]
@@ -224,51 +225,54 @@ const extract = {
     }, [])
     return validAmenities.join(', ')
   },
-  hasBalcony({ amenities }: EstateWithDetails): boolean {
-    return hasAmenity(amenities, "apt_balcony")
+  hasBalcony ({ amenities }: EstateWithDetails): boolean {
+    return hasAmenity(amenities, 'apt_balcony')
   },
-  hasCellar({ amenities }: EstateWithDetails): boolean {
-    return hasAmenity(amenities, "cellar")
+  hasCellar ({ amenities }: EstateWithDetails): boolean {
+    return hasAmenity(amenities, 'cellar')
   },
-  hasGuestToilet({ amenities }: EstateWithDetails): boolean {
-    return hasAmenity(amenities, "apartment.amenities.WC_bathroom.guest_toilet")
+  hasGuestToilet ({ amenities }: EstateWithDetails): boolean {
+    return hasAmenity(amenities, 'apartment.amenities.WC_bathroom.guest_toilet')
   },
-  hasLift({ amenities }: EstateWithDetails): boolean {
-    return hasAmenity(amenities, "elevator")
+  hasLift ({ amenities }: EstateWithDetails): boolean {
+    return hasAmenity(amenities, 'elevator')
   },
-  heatingType({ heating_type: heatingType }: EstateWithDetails): EstateSyncHeatingType | undefined {
-    if (heatingType.length > 0 && heatingTypeMap[heatingType[0]]) {
+  heatingType ({ heating_type: heatingType }: EstateWithDetails): EstateSyncHeatingType | undefined {
+    if (heatingType.length > 0 && heatingTypeMap[heatingType[0]] !== undefined) {
       return heatingTypeMap[heatingType[0]]
     }
   },
-  interiorQuality({ amenities }: EstateWithDetails): EstateSyncInteriorQuality {
-    return hasAmenity(amenities, "apt_exclusive_high_quality_luxury") ? "high" : "standard"
+  interiorQuality ({ amenities }: EstateWithDetails): EstateSyncInteriorQuality {
+    return hasAmenity(amenities, 'apt_exclusive_high_quality_luxury') ? 'high' : 'standard'
   },
-  lastRefurbished({ last_modernization: lastModernization }: EstateWithDetails): number {
+  lastRefurbished ({ last_modernization: lastModernization }: EstateWithDetails): number {
     return lastModernization?.getFullYear()
   },
-  livingArea({ area }: EstateWithDetails): number {
-    return +area;
+  livingArea ({ area }: EstateWithDetails): number {
+    return +area
   },
-  parkingSpaceType({ parking_space_type: parkingSpaceType }: EstateWithDetails): EstateSyncParkingSpaceType {
+  parkingSpaceType ({ parking_space_type: parkingSpaceType }: EstateWithDetails): EstateSyncParkingSpaceType {
     return parkingSpaceTypeMap?.[parkingSpaceType?.[0]]
   },
-  petsAllowed({ pets_allowed: petsAllowed }: EstateWithDetails): boolean {
+  petsAllowed ({ pets_allowed: petsAllowed }: EstateWithDetails): boolean {
     return petsAllowed !== PETS.NO
   },
-  title({ rooms_number: roomsNumber, area, apt_type: aptType, city, country, category }: EstateWithDetails, isBuilding: boolean): string | undefined {
+  title ({ rooms_number: roomsNumber, area, apt_type: aptType, city, country, category }: EstateWithDetails, isBuilding: boolean): string | undefined {
     if (isBuilding) {
       return category?.name
     }
     let estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES.others
     const formatter = new Intl.NumberFormat('de-DE')
-    if (ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]) {
+    if (ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()] !== undefined) {
       estateSyncTitleTemplate = ESTATE_SYNC_TITLE_TEMPLATES[country.toLowerCase().trim()]
     }
-    const apartmentType = l.get(
+
+    const apartmentType = aptType !== null
+      ? l.get(
       `${APARTMENT_TYPE_KEYS[aptType]}.message`,
-      estateSyncTitleTemplate.lang
-    )
+      estateSyncTitleTemplate.lang)
+      : ''
+
     const mapObj = {
       rooms_number:
         parseFloat(roomsNumber) % 1 === 0 ? parseInt(roomsNumber) : formatter.format(parseFloat(roomsNumber)),
@@ -283,12 +287,11 @@ const extract = {
     })
     return title
   },
-  totalRent({ net_rent: netRent, extra_costs: extraCosts }: EstateWithDetails): number {
+  totalRent ({ net_rent: netRent, extra_costs: extraCosts }: EstateWithDetails): number {
     return +netRent + +extraCosts
   },
   // @todo currently not in use
-  composeEnergyClass({ energy_efficiency: energyEfficiency, firing }: EstateWithDetails) {
-
+  composeEnergyClass ({ energy_efficiency: energyEfficiency, firing }: EstateWithDetails) {
     const ENERGY_CLASS_USING_EFFICIENCY = [
       { level: 'A+', value: 30 },
       { level: 'A', value: 50 },
@@ -311,7 +314,7 @@ const extract = {
       return ENERGY_CLASS_USING_EFFICIENCY[idx].level
     }
 
-    const energyCert: Partial<EstateSyncProperty["residentialEnergyCertificate"]> = {}
+    const energyCert: Partial<EstateSyncProperty['residentialEnergyCertificate']> = {}
     if (energyEfficiency !== undefined) {
       energyCert.energyClass = calculateEnergyClassFromEfficiency(Number(energyEfficiency))
     }
@@ -327,56 +330,56 @@ const extract = {
   }
 }
 
-export type EstateSyncAttachment = {
-  url: string,
-  title: string,
-  type: string,
+export interface EstateSyncAttachment {
+  url: string
+  title: string
+  type: string
 }
 
 const attachment = {
-  create(url: string, name: string): EstateSyncAttachment | undefined {
+  create (url: string, name?: string): EstateSyncAttachment | undefined {
     const fileType = ContentType.getContentType(url)
 
-    let title = '';
-    if (name?.length > 0) {
+    let title = ''
+    if (name !== undefined && name?.length > 0) {
       const [titleKey, ...titleRest] = name?.split(' ')
-      title = name && [l.get(`${titleKey}.message`, SUPPORTED_LANGUAGES.DE), ...titleRest].join(" ")
+      title = [l.get(`${titleKey}.message`, SUPPORTED_LANGUAGES.DE), ...titleRest].join(' ')
     }
 
     // EstateSync only accepts image/jpeg and application/pdf
-    if (fileType.match(/^image/)) {
+    if (fileType.match(/^image/) != null) {
       return { url, title, type: ContentType.mimeTypes.jpeg }
     } else if (fileType === ContentType.mimeTypes.pdf) {
       return { url, title, type: fileType }
     }
   },
-  composeAll({ cover, rooms = [], files = [] }: EstateWithDetails): EstateSyncAttachment[] {
-    let attachments: { title: string, url: string, type: string }[] = []
+  composeAll ({ cover, rooms = [], files = [] }: EstateWithDetails): EstateSyncAttachment[] {
+    const attachments: Array<{ title: string, url: string, type: string }> = []
 
     // sort the rooms by id -> this is how it is shown on out webapp, keep the order
     rooms.sort((room1, room2) => room1.id - room2.id)
 
     // add a cover, but only when it is not the first image of the rooms anyway
-    if (cover && rooms[0]?.[0]?.url !== cover) {
-      const coverAtt = attachment.create(cover, "")
-      coverAtt && attachments.push(coverAtt)
+    if (cover !== null && rooms[0]?.[0]?.url !== cover) {
+      const coverAtt = attachment.create(cover, '')
+        ; (coverAtt != null) && attachments.push(coverAtt)
     }
 
     // images:
-    let att
+    let att: EstateSyncAttachment | undefined
     for (let i = 0; i < rooms.length; i++) {
       if (rooms[i].images.length > 0) {
         for (let k = 0; k < rooms[i].images.length; k++) {
           att = attachment.create(rooms[i].images[k].url, rooms[i].name)
-          att && attachments.push(att)
+          att !== undefined && attachments.push(att)
         }
       }
     }
     // files:
     for (let i = 0; i < files.length; i++) {
       if ([FILE_TYPE.EXTERNAL, FILE_TYPE.PLAN, FILE_TYPE.CUSTOM].includes(files[i].type)) {
-        att = attachment.create(files[i].url, "")
-        att && attachments.push(att)
+        att = attachment.create(files[i].url, '')
+        att !== undefined && attachments.push(att)
       }
     }
 
@@ -389,10 +392,8 @@ const attachment = {
   }
 }
 
-
-export class EstateSyncHelper {
-
-  static convertDataToEstateSyncFormat(estate: EstateWithDetails, isBuilding = false): EstateSyncProperty {
+export const EstateSyncHelper = {
+  convertDataToEstateSyncFormat (estate: EstateWithDetails, isBuilding = false): EstateSyncProperty {
     return {
       additionalCosts: +estate.extra_costs,
       additionalCostsIncludeHeatingCosts: extract.additionalCostsIncludeHeating(estate),
@@ -423,11 +424,11 @@ export class EstateSyncHelper {
       // residentialEnergyCertificate: extract.composeEnergyClass(estate),
       title: extract.title(estate, isBuilding),
       totalRent: extract.totalRent(estate),
-      usableArea: extract.livingArea(estate),
+      usableArea: extract.livingArea(estate)
     }
-  }
+  },
 
-  static composeAttachments(estate: EstateWithDetails): EstateSyncAttachment[] {
+  composeAttachments (estate: EstateWithDetails): EstateSyncAttachment[] {
     return attachment.composeAll(estate)
   }
 }

@@ -166,18 +166,18 @@ export const mimeTypes = {
   zip: 'application/zip'
 }
 
-export type Extensions = keyof typeof mimeTypes;
+export type Extensions = keyof typeof mimeTypes
 
-export type MimeTypes = typeof mimeTypes[keyof typeof mimeTypes];
+export type MimeTypes = typeof mimeTypes[keyof typeof mimeTypes]
 
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class ContentType {
-
   static mimeTypes = mimeTypes
 
-  static getContentType(fileName: string): string {
-    if (fileName.indexOf(".") >= 0) {
-      const ext = fileName.split(".").pop() || ""
-      return mimeTypes[ext] || 'application/octet-stream'
+  static getContentType (fileName: string): string {
+    if (fileName.includes('.')) {
+      const ext = fileName.split('.').pop() ?? ''
+      return mimeTypes[ext] ?? 'application/octet-stream'
     }
     return 'application/octet-stream'
   }

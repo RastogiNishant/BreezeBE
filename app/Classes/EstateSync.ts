@@ -1,28 +1,42 @@
 'use_strict'
 
-import { ENVIRONMENT } from "@App/constants"
-import { EstateWithDetails } from "./EstateTypes"
-import { EstateSyncAttachment, EstateSyncHelper, EstateSyncProperty } from "./EstateSyncHelper"
-import axios, { AxiosInstance } from "axios"
+import { ENVIRONMENT } from '@App/constants'
+import { EstateWithDetails } from './EstateTypes'
+import { EstateSyncHelper } from './EstateSyncHelper'
+import axios, { AxiosInstance } from 'axios'
 
+export type FetchResponse =
+  Promise<{
+    success: false
+    data?: any
+  } | {
+    success: true
+    data: any
+  }>
 
 export class EstateSync {
   fetcher: AxiosInstance
 
   // @refactor apiKey should rather be the credentials with targetId and apiKey
-  constructor(private apiKey = '') {
+  constructor (private readonly apiKey = '') {
     this.fetcher = axios.create({
-      baseURL: `https://api.estatesync.com`,
-    });
+      baseURL: 'https://api.estatesync.com'
+    })
     this.fetcher.defaults.headers.common.Authorization = `Bearer ${this.apiKey}`
   }
 
-  generateEstateData({ type = 'apartmentRent', estate, contactId }: { type?: string, estate: EstateWithDetails, contactId: string }, isBuilding = false) {
+  generateEstateData ({ type = 'apartmentRent', estate, contactId }: { type?: string, estate: EstateWithDetails, contactId: string }, isBuilding = false): {
+    type: string
+    fields: ReturnType<typeof EstateSyncHelper['convertDataToEstateSyncFormat']>
+    attachments: ReturnType<typeof EstateSyncHelper['composeAttachments']>
+    externalId: string
+    contactId: string
+  } {
     // replace / with - for estate sync
-    let externalId = `Breeze-${estate.property_id.split("/").join("-")}`
+    let externalId = `Breeze-${estate.property_id.split('/').join('-')}`
 
-    // external id must match ^[a-zA-Z0-9/_#+:@\s\-]+$ 
-    if (!/^[a-zA-Z0-9/_#+:@\s\-]+$/.test(externalId)) {
+    // external id must match ^[a-zA-Z0-9/_#+:@\s\-]+$
+    if (!/^[a-zA-Z0-9/_#+:@\s-]+$/.test(externalId)) {
       externalId = `Breeze-${estate.id}`
     }
 
@@ -36,39 +50,34 @@ export class EstateSync {
 
     // mark the external id with the env if not prod
     if (process.env.NODE_ENV !== ENVIRONMENT.PROD) {
-      body.externalId = `${externalId}-#${process.env.NODE_ENV}`
+      body.externalId = `${externalId}-#${process.env.NODE_ENV ?? 'TNT'}`
     }
 
     return body
   }
 
-  async postEstate({ type = 'apartmentRent', estate, contactId = '' }: { type: string, estate: EstateWithDetails, contactId: string }, isBuilding = false) {
+  async postEstate ({ type = 'apartmentRent', estate, contactId = '' }: { type: string, estate: EstateWithDetails, contactId: string }, isBuilding = false): FetchResponse {
     try {
       const body = this.generateEstateData({ type, estate, contactId }, isBuilding)
-      const ret = await this.fetcher.post(`/properties`, body, { timeout: 5000 })
+      const ret = await this.fetcher.post('/properties', body, { timeout: 5000 })
       return {
         success: true,
         data: ret.data
       }
     } catch (err) {
       // @todo handle errors properly with sentry / httpexception
-      await require('../Service/MailService').sendEmailToOhneMakler(
-        `EstateSync.postEstate: ERROR ` + JSON.stringify(err),
-        'barudo@gmail.com'
-      )
-      if (err?.response?.data) {
-        return {
-          success: false,
-          data: err.response.data
-        }
-      }
+      // await require('../Service/MailService').sendEmailToOhneMakler(
+      //   'EstateSync.postEstate: ERROR ' + JSON.stringify(err),
+      //   'barudo@gmail.com'
+      // )
       return {
-        success: false
+        success: false,
+        data: err?.response?.data
       }
     }
   }
 
-  async updateEstate({
+  async updateEstate ({
     type = 'apartmentRent',
     estate,
     contactId,
@@ -78,15 +87,15 @@ export class EstateSync {
     locationDescriptionOverride,
     furnishingDescriptionOverride
   }: {
-    type?: string,
-    estate: EstateWithDetails,
-    contactId: string,
-    propertyId: string,
-    titleOverride?: string,
-    descriptionOverride?: string,
-    locationDescriptionOverride?: string,
+    type?: string
+    estate: EstateWithDetails
+    contactId: string
+    propertyId: string
+    titleOverride?: string
+    descriptionOverride?: string
+    locationDescriptionOverride?: string
     furnishingDescriptionOverride?: string
-  }) {
+  }): FetchResponse {
     try {
       // ignore the externalId, it cannot be set on update
       const { externalId: _, ...body } = this.generateEstateData({ type, estate, contactId })
@@ -135,10 +144,10 @@ export class EstateSync {
     }
   }
 
-  async publishEstate({ propertyId, targetId }) {
+  async publishEstate ({ propertyId, targetId }): FetchResponse {
     try {
       const ret = await this.fetcher.post(
-        `/listings`,
+        '/listings',
         { propertyId, targetId },
         { timeout: 5000 }
       )
@@ -155,7 +164,7 @@ export class EstateSync {
     }
   }
 
-  async post(type: string, data) {
+  async post (type: string, data: any): FetchResponse {
     const possibleTypes = [
       'account',
       'properties',
@@ -166,7 +175,9 @@ export class EstateSync {
       'webhooks'
     ]
     if (!possibleTypes.includes(type)) {
-      return false
+      return {
+        success: false
+      }
     }
     try {
       const ret = await this.fetcher.post(`/${type}`, data, { timeout: 5000 })
@@ -183,7 +194,7 @@ export class EstateSync {
     }
   }
 
-  async put(type: string, data, id = '') {
+  async put (type: string, data, id = ''): FetchResponse {
     const possibleTypes = [
       'account/credentials/immobilienscout-24',
       'account/credentials/immobilienscout-24-sandbox',
@@ -192,10 +203,12 @@ export class EstateSync {
       'contacts'
     ]
     if (!possibleTypes.includes(type)) {
-      return false
+      return {
+        success: false
+      }
     }
     try {
-      const ret = await this.fetcher.put(`/${type}${id ? '/' + id : ''}`, data)
+      const ret = await this.fetcher.put(`/${type}${id.length > 0 ? '/' + id : ''}`, data)
       return {
         success: true,
         data: ret.data
@@ -209,7 +222,7 @@ export class EstateSync {
     }
   }
 
-  async get(type = 'properties', id = '') {
+  async get (type = 'properties', id = ''): FetchResponse {
     const possibleTypes = [
       'account',
       'properties',
@@ -220,10 +233,12 @@ export class EstateSync {
       'webhooks'
     ]
     if (!possibleTypes.includes(type)) {
-      return false
+      return {
+        success: false
+      }
     }
     try {
-      const ret = await this.fetcher.get(`/${type}${id ? '/' + id : ''}`)
+      const ret = await this.fetcher.get(`/${type}${id.length > 0 ? '/' + id : ''}`)
       return {
         success: true,
         data: ret?.data
@@ -237,20 +252,25 @@ export class EstateSync {
     }
   }
 
-  async delete(id: string, type = 'properties') {
+  async delete (id: string, type = 'properties'): FetchResponse {
     const possibleTypes = ['properties', 'targets', 'listings', 'contacts', 'requests', 'webhooks']
     if (!possibleTypes.includes(type)) {
-      return false
+      return {
+        success: false
+      }
     }
-    if (!id) {
-      return false
+    if (id === undefined) {
+      return {
+        success: false
+      }
     }
 
     try {
-      const ret = await this.fetcher.delete(`/${type}${id ? '/' + id : ''}`)
+      const ret = await this.fetcher.delete(`/${type}${id.length > 0 ? '/' + id : ''}`)
       if (ret?.status === 200) {
         return {
-          success: true
+          success: true,
+          data: ret.data
         }
       }
       return {
@@ -260,7 +280,7 @@ export class EstateSync {
       // @todo handle errors properly with sentry / httpexception
       return {
         success: false,
-        message: err?.response?.data
+        data: err?.response?.data
       }
     }
   }

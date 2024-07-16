@@ -1734,7 +1734,46 @@
       "GET"
     ],
     "middle": [],
-    "handler": "EstateSyncTestController.generateEstateData"
+    "handler": "generateEstateData"
+  },
+  {
+    "route": "/api/v1/estate-sync/test/publishProperty",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "publishProperty"
+  },
+  {
+    "route": "/api/v1/estate-sync/test/removeProperty",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "removeProperty"
+  },
+  {
+    "route": "/api/v1/estate-sync/test/updateProperty",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
+    "handler": "updateProperty"
   },
   {
     "route": "/api/v1/estate-view-invitation/:code",
