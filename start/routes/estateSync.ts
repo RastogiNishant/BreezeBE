@@ -1,3 +1,4 @@
+import { EstateSyncTestController } from '@App/Controllers/Http/EstateSyncTestController'
 import { HTTP_METHODS, Routes } from './_helper'
 
 export const estateSyncRoutes: Routes = {
@@ -18,6 +19,30 @@ export const estateSyncRoutes: Routes = {
     },
     [HTTP_METHODS.DELETE]: {
       controller: 'EstateSyncController.deleteApiKey',
+      middleware: ['auth:jwtLandlord']
+    }
+  },
+  '/test/estate': {
+    [HTTP_METHODS.GET]: {
+      controller: EstateSyncTestController.generateEstateData,
+      middleware: ['auth:jwtLandlord']
+    }
+  },
+  '/test/publishProperty': {
+    [HTTP_METHODS.GET]: {
+      controller: EstateSyncTestController.publishProperty,
+      middleware: ['auth:jwtLandlord']
+    }
+  },
+  '/test/updateProperty': {
+    [HTTP_METHODS.GET]: {
+      controller: EstateSyncTestController.updateProperty,
+      middleware: ['auth:jwtLandlord']
+    }
+  },
+  '/test/removeProperty': {
+    [HTTP_METHODS.GET]: {
+      controller: EstateSyncTestController.removeProperty,
       middleware: ['auth:jwtLandlord']
     }
   },
