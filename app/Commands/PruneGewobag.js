@@ -3,9 +3,9 @@
 const { Command } = require('@adonisjs/ace')
 const ThirdPartyOfferService = require('../Services/ThirdPartyOfferService')
 
-class PullGebowag extends Command {
+class PruneGebowag extends Command {
   static get signature() {
-    return 'pull:gewobag'
+    return 'prune:gewobag'
   }
 
   static get description() {
@@ -13,8 +13,8 @@ class PullGebowag extends Command {
   }
 
   async handle(args, options) {
-    await ThirdPartyOfferService.pullGewobagNew()
+    await ThirdPartyOfferService.pruneGewobag()
   }
 }
 
-module.exports = PullGebowag
+module.exports = PruneGebowag

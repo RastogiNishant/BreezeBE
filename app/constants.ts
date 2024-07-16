@@ -30,6 +30,7 @@ export enum FILE_TYPE {
   GALLERY = 'gallery',
   UNASSIGNED = 'unassigned',
   ENERGY_CERTIFICATE = 'energy_certificate',
+  INTERNAL = 'internal'
 }
 
 export enum ENVIRONMENT {
@@ -1403,6 +1404,16 @@ Estates: [ESTATES]
     family_size_min: 1,
     family_size_max: 2
   },
+  GEWOBAG_DEFAULT_PREFERENCE_FOR_MATCH_SCORING: {
+    credit_history_status: 1, // NO_NEGATIVE
+    budget: 30,
+    rent_arrears: false,
+    min_age: 25,
+    max_age: 65,
+    pets_allowed: 2, // PETS_SMALL
+    family_size_min: 1,
+    family_size_max: 2
+  },
   THIRD_PARTY_OFFER_SOURCES: ['ohnemakler', 'gewobag'],
   THIRD_PARTY_OFFER_PROVIDER_INFORMATION: {
     ohnemakler: {
@@ -1600,7 +1611,10 @@ Estates: [ESTATES]
   IS24_PUBLISHING_STATUS_NO_STATUS: 0,
   IS24_PUBLISHING_STATUS_INIT: 1,
   IS24_PUBLISHING_STATUS_POSTED: 2,
-  IS24_PUBLISHING_STATUS_PUBLISHED: 3
+  IS24_PUBLISHING_STATUS_PUBLISHED: 3,
+
+  GEWOBAG_ACCOUNT_USER_ID: 23288,
+  GEWOBAG_MARKETPLACE_PUBLISHERS: ['immowelt', 'immobilienscout-24', 'ebay-kleinanzeigen']
 }
 
 module.exports = {

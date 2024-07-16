@@ -303,6 +303,10 @@ export const administrationRoutes: Routes = {
     [HTTP_METHODS.PUT]: {
       controller: 'Admin/UtilityController.updateEstateSyncProperty',
       middleware: ['auth:jwtAdministrator', 'valid:UpdateEstateSyncProperty']
+    },
+    [HTTP_METHODS.POST]: {
+      controller: 'Admin/UtilityController.postEstateSyncProperty',
+      middleware: ['auth:jwtAdministrator', 'valid:PostEstateSyncProperty']
     }
   }
 }
