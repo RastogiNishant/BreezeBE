@@ -24,7 +24,7 @@ const {
   IS24_PUBLISHING_STATUS_PUBLISHED
 } = require('../constants')
 
-const EstateSync = use('App/Classes/EstateSync')
+const { EstateSync } = use('App/Classes/EstateSync')
 const EstateService = use('App/Services/EstateService')
 const EstateSyncCredential = use('App/Models/EstateSyncCredential')
 const EstateSyncTarget = use('App/Models/EstateSyncTarget')
@@ -292,10 +292,10 @@ class EstateSyncService {
         .where('estate_id', estate_id)
         .whereNotNull('estate_sync_listing_id')
         .where('status', ESTATE_SYNC_LISTING_STATUS_SCHEDULED_FOR_DELETE)
-        .where('publishing_error', false) // we're going to process only those that didn't have error yet
+        // .where('publishing_error', false) // we're going to process only those that didn't have error yet
         .fetch()
 
-      let estate = await EstateService.getByIdWithDetail(estate_id)
+      let estate = await EstateService.getQuery().where({ id: estate_id }).first()
       estate = estate.toJSON()
       const credential = await EstateSyncService.getLandlordEstateSyncCredential(estate.user_id)
       const estateSync = new EstateSync(credential.api_key)

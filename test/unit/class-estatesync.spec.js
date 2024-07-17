@@ -1,7 +1,7 @@
 'use strict'
 const { faker } = require('@faker-js/faker')
 const { test } = use('Test/Suite')('Class EstateSync')
-const EstateSync = use('App/Classes/EstateSync')
+const {EstateSync} = use('App/Classes/EstateSync')
 const { sample } = require('lodash')
 const {
   BUILDING_STATUS_FIRST_TIME_OCCUPIED,

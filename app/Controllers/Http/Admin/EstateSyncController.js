@@ -2,7 +2,7 @@
 
 const HttpException = require('../../../Exceptions/HttpException')
 const { ESTATE_SYNC_CREDENTIAL_TYPE_BREEZE } = require('../../../constants')
-const EstateSync = use('App/Classes/EstateSync')
+const {EstateSync} = use('App/Classes/EstateSync')
 const EstateSyncTarget = use('App/Models/EstateSyncTarget')
 const EstateSyncCredential = use('App/Models/EstateSyncCredential')
 

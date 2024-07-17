@@ -1744,7 +1744,11 @@
       "HEAD",
       "GET"
     ],
-    "middle": [],
+    "middle": [
+      "auth:jwtLandlord",
+      "agreement",
+      "plan"
+    ],
     "handler": "generateEstateData"
   },
   {
@@ -2939,6 +2943,15 @@
       "plan"
     ],
     "handler": "EstateCurrentTenantController.revokeInvitation"
+  },
+  {
+    "route": "/api/v1/estates/test/expiring",
+    "method": [
+      "HEAD",
+      "GET"
+    ],
+    "middle": [],
+    "handler": "getEstatesToExpire"
   },
   {
     "route": "/api/v1/estates/upcomingShows",
