@@ -108,7 +108,7 @@ export const EstateSyncTestController = {
     if (propertyId !== undefined) {
       const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
       const listings = await estateSync.get('listings')
-      let listingArr = listings !== false ? listings.data : []
+      let listingArr = listings.success ? listings.data : []
 
       // filter for current property
       listingArr = listingArr.filter(

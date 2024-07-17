@@ -1,3 +1,4 @@
+import { EstateTestController } from '@App/Controllers/Http/EstateTestController'
 import { HTTP_METHODS, Routes, addMiddlewareToRoutes, prefixAll } from './_helper'
 import { estateAmenitiesRoutes } from './estates.amenities'
 import { estateBuildingRoutes } from './estates.building'
@@ -238,6 +239,12 @@ const estateIndexRoute: Routes = {
     [HTTP_METHODS.GET]: {
       controller: 'EstateCurrentTenantController.retrieveLinkByCode',
       middleware: ['valid:InvitationLinkRetrieveCode', 'UserCanGetInvitationLink']
+    }
+  },
+  '/test/expiring': {
+    [HTTP_METHODS.GET]: {
+      controller: EstateTestController.getEstatesToExpire
+      // middleware: ['valid:InvitationLinkRetrieveCode', 'UserCanGetInvitationLink']
     }
   },
   '/:estate_id/slots/free': {

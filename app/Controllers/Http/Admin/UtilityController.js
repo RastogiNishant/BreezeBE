@@ -30,7 +30,7 @@ const {
   PUBLISH_STATUS_APPROVED_BY_ADMIN
 } = use('App/constants')
 const Estate = use('App/Models/Estate')
-const EstateSync = use('App/Classes/EstateSync')
+const {EstateSync} = use('App/Classes/EstateSync')
 
 class UtilityController {
   async uploadContactRequest({ request, response }) {
@@ -230,7 +230,7 @@ class UtilityController {
       throw new HttpException('This property is NOT posted to EstateSync')
     }
     const credentials = await EstateSyncCredential.query().where('type', 'breeze').first()
-    const EstateSync = use('App/Classes/EstateSync')
+    const {EstateSync} = use('App/Classes/EstateSync')
     const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
 
     let estate = await EstateService.getByIdWithDetail(estateId)
