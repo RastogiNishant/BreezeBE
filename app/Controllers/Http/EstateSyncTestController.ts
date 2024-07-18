@@ -7,7 +7,7 @@ import {
   PUBLISH_STATUS,
   ESTATE_SYNC_LISTING_STATUS
 } from '../../constants'
-import { credentials, EstateSyncServiceNew } from '@App/Services/EstateSyncServiceNew'
+import { credentials } from '@App/Services/EstateSyncServiceNew'
 
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -131,7 +131,7 @@ export const EstateSyncTestController = {
   },
 
   async getListings ({ request, response }): Promise<void> {
-    let { propertyId } = request.all()
+    const { propertyId } = request.all()
 
     const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
     const listings = await estateSync.get('listings')
@@ -146,21 +146,21 @@ export const EstateSyncTestController = {
   },
 
   async testCredentials ({ request, response }): Promise<void> {
-    let { userId } = request.all()
-    const breeze = await credentials.forBreeze()
-    const lluser = await credentials.forLandlord(userId)
-    response.res({
-      breeze,
-      lluser
-    })
+    // const { userId } = request.all()
+    // const breeze = await credentials.forBreeze()
+    // const lluser = await credentials.forLandlord(userId)
+    // response.res({
+    //   breeze,
+    //   lluser
+    // })
   },
 
   async postEstate ({ request, response }): Promise<void> {
-    const EstateSyncService = use("App/Services/EstateSyncService")
+    const EstateSyncService = use('App/Services/EstateSyncService')
 
     const { estateId, keyId } = request.all()
 
-    if (keyId === "123456") {
+    if (keyId === '123456') {
       const result = EstateSyncService.postEstate({ estate_id: estateId })
       response.res(result)
     }

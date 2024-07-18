@@ -48,7 +48,7 @@ export const estateSyncRoutes: Routes = {
   },
   '/test/postEstate': {
     [HTTP_METHODS.GET]: {
-      controller: EstateSyncTestController.postEstate,
+      controller: EstateSyncTestController.postEstate
       // middleware: ['auth:jwtLandlord']
     }
   },
