@@ -18,6 +18,7 @@ export interface Estate {
   heating_type: HEATING_TYPE[]
   last_modernization: Date
   area: string
+  usable_area: string | null
   number_floors: number
   parking_space: number
   rooms_number: string
