@@ -7,6 +7,7 @@ import {
   PUBLISH_STATUS,
   ESTATE_SYNC_LISTING_STATUS
 } from '../../constants'
+import { credentials } from '@App/Services/EstateSyncServiceNew'
 
 const HttpException = use('App/Exceptions/HttpException')
 
@@ -127,5 +128,43 @@ export const EstateSyncTestController = {
         response.res(exc)
       }
     }
+  },
+
+  async getListings ({ request, response }): Promise<void> {
+    const { propertyId } = request.all()
+
+    const estateSync = new EstateSync(process.env.ESTATE_SYNC_API_KEY)
+    const listings = await estateSync.get('listings')
+    let listingArr = listings.success ? listings.data : []
+
+    // filter for current property
+    listingArr = listingArr.filter(
+      (listing: any) => listing.propertyId === propertyId
+    )
+
+    response.res(listingArr)
+  },
+
+  async testCredentials ({ request, response }): Promise<void> {
+    // const { userId } = request.all()
+    // const breeze = await credentials.forBreeze()
+    // const lluser = await credentials.forLandlord(userId)
+    // response.res({
+    //   breeze,
+    //   lluser
+    // })
+  },
+
+  async postEstate ({ request, response }): Promise<void> {
+    const EstateSyncService = use('App/Services/EstateSyncService')
+
+    const { estateId, keyId } = request.all()
+
+    if (keyId === '123456') {
+      const result = EstateSyncService.postEstate({ estate_id: estateId })
+      response.res(result)
+    }
+
+    // EstateSyncService.propertyProcessingSucceeded({ id: "tuOnwPZHBllq51eCIPPN" })
   }
 }

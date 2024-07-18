@@ -30,7 +30,7 @@
     "setup-env:prod": "cp ./.env.dev ./.env",
     "prepare": "husky install",
     "pre-commit": "lint-staged && tsc -noEmit",
-    "ts-standard": "ts-standard --ext ts",
+    "ts-standard": "ts-standard --ext ts --fix",
     "js-standard": "eslint --quiet \"{app,config,providers,start}/**/*.js\""
   },
   "ts-standard": {

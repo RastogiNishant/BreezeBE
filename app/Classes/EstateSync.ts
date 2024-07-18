@@ -56,7 +56,7 @@ export class EstateSync {
     return body
   }
 
-  async postEstate ({ type = 'apartmentRent', estate, contactId = '' }: { type: string, estate: EstateWithDetails, contactId: string }, isBuilding = false): FetchResponse {
+  async postEstate ({ type = 'apartmentRent', estate, contactId = '' }: { type?: string, estate: EstateWithDetails, contactId: string }, isBuilding = false): FetchResponse {
     try {
       const body = this.generateEstateData({ type, estate, contactId }, isBuilding)
       const ret = await this.fetcher.post('/properties', body, { timeout: 5000 })
