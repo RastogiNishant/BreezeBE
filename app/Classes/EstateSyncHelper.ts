@@ -1,4 +1,4 @@
-import { APARTMENT_TYPE, BUILDING_STATUS, FILE_TYPE, FIRING_TYPE, HEATING_TYPE, OPTIONS_TYPE, PARKING_SPACE_TYPE, PETS, SUPPORTED_LANGUAGES } from '@App/constants'
+import { APARTMENT_TYPE, BUILDING_STATUS, CURRENCY, FILE_TYPE, FIRING_TYPE, HEATING_TYPE, OPTIONS_TYPE, PARKING_SPACE_TYPE, PETS, SUPPORTED_LANGUAGES } from '@App/constants'
 import { Amenity, EstateWithDetails } from './EstateTypes'
 import { ContentType } from './ContentType'
 
@@ -202,10 +202,12 @@ const extract = {
       return deposit.toString()
     }
 
+    // convert deposit into netRent factor
     let num = deposit / netRent
-    // round to one decimal
     num = Math.round(num * 10) / 10
-    return `${num} ${l.get('landlord.property.lease_price.deposit_in_monthly_rents', SUPPORTED_LANGUAGES.DE) as string}`
+    const netRentLabel = `${num}x ${l.get('landlord.property.lease_price.net_rent.message', SUPPORTED_LANGUAGES.DE) as string}`
+    const depositNr = new Intl.NumberFormat('de-DE', { style: 'currency', currency: CURRENCY.EUR }).format(deposit)
+    return `${netRentLabel} (${depositNr})`
   },
   description ({ amenities }: EstateWithDetails): string {
     if (!(amenities?.length > 0)) {
@@ -342,8 +344,17 @@ const attachment = {
 
     let title = ''
     if (name !== undefined && name?.length > 0) {
-      const [titleKey, ...titleRest] = name?.split(' ')
-      title = [l.get(`${titleKey}.message`, SUPPORTED_LANGUAGES.DE), ...titleRest].join(' ')
+      let [titleKey, ...titleRest] = name?.split(' ')
+      // we usually have a number on the second place
+      // (in case there are 2 rooms of the same type)
+      // get rid of the 1 as they are confusing keep others (like bedroom 2)
+      if (titleRest.length === 1 && titleRest[0] === '1') {
+        titleRest = ['']
+      }
+      title = [
+        l.get(`${titleKey}.message`, SUPPORTED_LANGUAGES.DE).replace(/\.message$/, ''),
+        ...titleRest
+      ].join(' ').trim()
     }
 
     // EstateSync only accepts image/jpeg and application/pdf
@@ -356,13 +367,17 @@ const attachment = {
   composeAll ({ cover, rooms = [], files = [] }: EstateWithDetails): EstateSyncAttachment[] {
     const attachments: Array<{ title: string, url: string, type: string }> = []
 
-    // sort the rooms by id -> this is how it is shown on out webapp, keep the order
-    rooms.sort((room1, room2) => room1.id - room2.id)
+    // sort the rooms by order -> this is how it is shown on out webapp, keep the order
+    // same with the images attached to every room
+    rooms.sort((room1, room2) => room1.order - room2.order)
+    rooms.forEach(
+      (room) => room.images.sort((img1, img2) => img1.order - img2.order)
+    )
 
     // add a cover, but only when it is not the first image of the rooms anyway
-    if (cover !== null && rooms[0]?.[0]?.url !== cover) {
-      const coverAtt = attachment.create(cover, '')
-        ; (coverAtt != null) && attachments.push(coverAtt)
+    if (cover !== null && rooms[0]?.images[0]?.url !== cover) {
+      const coverAtt = attachment.create(cover, 'Titelbild');
+      (coverAtt !== undefined) && attachments.push(coverAtt)
     }
 
     // images:
@@ -377,15 +392,25 @@ const attachment = {
     }
     // files:
     for (let i = 0; i < files.length; i++) {
-      if ([FILE_TYPE.EXTERNAL, FILE_TYPE.PLAN, FILE_TYPE.CUSTOM].includes(files[i].type)) {
+      if (files[i].type === FILE_TYPE.CUSTOM) {
         att = attachment.create(files[i].url, '')
+        att !== undefined && attachments.push(att)
+      }
+
+      if (files[i].type === FILE_TYPE.PLAN) {
+        att = attachment.create(files[i].url, 'landlord.property.component.tab_floor_plan')
+        att !== undefined && attachments.push(att)
+      }
+
+      if (files[i].type === FILE_TYPE.EXTERNAL) {
+        att = attachment.create(files[i].url, 'landlord.property.component.tab_outside_view')
         att !== undefined && attachments.push(att)
       }
     }
 
     // // @todo remove again for envs
-    // for (var i = 0; i < attachments.length; ++i) {
-    //   attachments[i].url = attachments[i].url.replace("breeze-files-dev", "breeze-files")
+    // for (let i = 0; i < attachments.length; ++i) {
+    //   attachments[i].url = attachments[i].url.replace('breeze-files-dev', 'breeze-files')
     // }
 
     return attachments
